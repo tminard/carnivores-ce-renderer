@@ -1,0 +1,168 @@
+#include "C2WorldModel.h"
+
+#include "C2Texture.h"
+#include "C2Geometry.h"
+#include "C2Animation.h"
+
+C2WorldModel::C2WorldModel(std::ifstream& instream)
+{
+  this->m_old_object_info = new TObjInfo();
+  
+  instream.read(reinterpret_cast<char *>(this->m_old_object_info), 64);
+  this->m_old_object_info->Radius *= 2;
+  this->m_old_object_info->YLo *= 2;
+  this->m_old_object_info->YHi *= 2;
+  this->m_old_object_info->linelenght = (this->m_old_object_info->linelenght / 128) * 128;
+
+  int _vcount, _fcount, _object_count, _tsize, texture_height; // a C2 world model can contain multiple sub objects. The game doesn't care about this, and throws the details away.
+  std::vector<uint8_t> _obj_buffer;
+  std::vector<TFace> face_data;
+  std::vector<TPoint3d> vertex_data;
+  std::vector<WORD> texture_data; // object texture
+  std::vector<uint16_t> spirit_texture_data;
+  
+  instream.read(reinterpret_cast<char *>(&_vcount), 4);
+  instream.read(reinterpret_cast<char *>(&_fcount), 4);
+  instream.read(reinterpret_cast<char *>(&_object_count), 4);
+  instream.read(reinterpret_cast<char *>(&_tsize), 4);
+  texture_height = 256;//_tsize>>9; // All c2 stock objects bitmaps are 256 px height
+
+  spirit_texture_data.resize(128*128);
+  texture_data.resize(_tsize);
+  face_data.resize(_fcount);
+  vertex_data.resize(_vcount);
+  _obj_buffer.resize(_object_count*48); // just throw these details away for now
+  
+  instream.read(reinterpret_cast<char *>(face_data.data()), _fcount<<6);
+  instream.read(reinterpret_cast<char *>(vertex_data.data()), _vcount<<4);
+  instream.read(reinterpret_cast<char *>(_obj_buffer.data()), _object_count*48);
+  instream.read(reinterpret_cast<char *>(texture_data.data()), _tsize);
+
+  std::unique_ptr<C2Geometry> mGeo = std::unique_ptr<C2Geometry>(new C2Geometry(vertex_data, face_data, texture_data, texture_height));
+  
+  instream.read(reinterpret_cast<char *>(spirit_texture_data.data()), 128*128*2);
+  
+  std::unique_ptr<C2Texture> cTexture = std::unique_ptr<C2Texture>(new C2Texture(spirit_texture_data, 128*128*2, 128, 128));
+  cTexture->brighten();
+  this->m_far_texture = std::move(cTexture);
+  this->m_geometry = std::move(mGeo);
+  
+  // load bmp model
+  float mxx = vertex_data[0].x+0.5f;
+  float mnx = vertex_data[0].x-0.5f;
+  
+  float mxy = vertex_data[0].x+0.5f;
+  float mny = vertex_data[0].y-0.5f;
+  
+  for (int v=0; v<_vcount; v++) {
+    float x = vertex_data[v].x;
+    float y = vertex_data[v].y;
+    if (x > mxx) mxx=x;
+    if (x < mnx) mnx=x;
+    if (y > mxy) mxy=y;
+    if (y < mny) mny=y;
+  }
+  
+  m_far_vertices[0].x = mnx;
+  m_far_vertices[0].y = mxy;
+  m_far_vertices[0].z = 0;
+  
+  m_far_vertices[1].x = mxx;
+  m_far_vertices[1].y = mxy;
+  m_far_vertices[1].z = 0;
+  
+  m_far_vertices[2].x = mxx;
+  m_far_vertices[2].y = mny;
+  m_far_vertices[2].z = 0;
+  
+  m_far_vertices[3].x = mnx;
+  m_far_vertices[3].y = mny;
+  m_far_vertices[3].z = 0;
+  
+  // process flags
+  if (m_old_object_info->flags & objectNOLIGHT) {
+    m_geometry->removeLightInfo();
+  }
+  
+  if (m_old_object_info->flags & objectANIMATED) {
+    std::vector<short int> raw_animation_data;
+    int ani_vcount;
+    int kps, total_frames, total_ani_ms;
+    instream.read(reinterpret_cast<char *>(&ani_vcount), 4); // some vertice info we dont need
+    instream.read(reinterpret_cast<char *>(&ani_vcount), 4); // Repeated, for some reason...
+    instream.read(reinterpret_cast<char *>(&kps), 4);
+    instream.read(reinterpret_cast<char *>(&total_frames), 4); // FILE FORMAT BUG: 1 minus actual amount
+    instream.read(reinterpret_cast<char *>(&total_ani_ms), 4);
+    total_frames++; // fix the bug in the file manually
+    
+    raw_animation_data.resize(ani_vcount*total_frames*6);
+    total_ani_ms = (total_frames * 1000) / kps;
+    instream.read(reinterpret_cast<char *>(raw_animation_data.data()), ani_vcount*total_frames*6);
+    std::unique_ptr<C2Animation> mAni = std::unique_ptr<C2Animation>( new C2Animation("OBJECT_ANIMATION", kps, total_frames, total_ani_ms));
+    mAni->setAnimationData(raw_animation_data);
+    this->m_animation = std::move(mAni);
+  }
+  
+  if (m_old_object_info->flags & objectBOUND) {
+    this->_generateBoundingBox(vertex_data);
+  }
+}
+
+void C2WorldModel::_generateBoundingBox(std::vector<TPoint3d>& vertex_data)
+{
+  float x1 = 0.0, x2=0.0, y1=0.0, y2=0.0, z1=0.0, z2=0.0;
+  bool first;
+  
+  for (int o=0; o<8; o++) {
+    first = true;
+    m_bounding_box[o].a = -1;
+    
+    
+    for (int v=0; v<(int)vertex_data.size(); v++) {
+      TPoint3d p = vertex_data[v];
+      if (p.hide) continue;
+      if (p.owner!=o) continue;
+      
+      if (first) {
+        x1 = p.x-1.0f;	x2 = p.x+1.0f;
+        y1 = p.y-1.0f;	y2 = p.y+1.0f;
+        z1 = p.z-1.0f;	z2 = p.z+1.0f;
+        first = false;
+      }
+      
+      if (p.x < x1) x1=p.x;
+      if (p.x > x2) x2=p.x;
+      
+      if (p.y < y1) y1=p.y;
+      if (p.y > y2) y2=p.y;
+      
+      if (p.z < z1) z1=p.z;
+      if (p.z > z2) z2=p.z;
+    }
+    
+    if (first) continue;
+    
+    x1-=72.f;
+    x2+=72.f;
+    z1-=72.f;
+    z2+=72.f;
+    
+    m_bounding_box[o].y1 = y1;
+    m_bounding_box[o].y2 = y2;
+    m_bounding_box[o].cx = (x1+x2) / 2;
+    m_bounding_box[o].cy = (z1+z2) / 2;
+    m_bounding_box[o].a  = (x2-x1) / 2;
+    m_bounding_box[o].b  = (z2-z1) / 2;
+    
+  }
+}
+
+C2WorldModel::~C2WorldModel()
+{
+  delete this->m_old_object_info;
+}
+
+TObjInfo* C2WorldModel::getObjectInfo()
+{
+  return this->m_old_object_info;
+}

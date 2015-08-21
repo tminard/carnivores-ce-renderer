@@ -11,11 +11,14 @@
 #include "C2Geometry.h"
 #include "C2Animation.h"
 #include "C2SoundFX.h"
+#include "C2Texture.h"
 
 #include <iostream>
 #include <fstream>
 
 #include "g_shared.h"
+
+#include "IndexedMeshLoader.h"
 
 void Console_PrintLogString(std::string log_msg);
 
@@ -45,37 +48,16 @@ C2Animation* C2CarFile::getAnimationByName(std::string animation_name)
   return this->m_animations[animation_name].get();
 }
 
-/*
-void C2CarFile::generate_animations()
-{
-  for (int a = 0; a < c_char_info.AniCount; a++) {
-    std::string animation_name = c_char_info.Animation[a].aniName;
-    int animation_KPS = c_char_info.Animation[a].aniKPS;
-    
-    int animation_data_length = (this->m_model_data->VCount*c_char_info.Animation[a].FramesCount*6);
-    std::vector<short int> animation_data;
-
-    for (int a_d = 0; a_d < animation_data_length; a_d++)
-    {
-      animation_data.push_back(c_char_info.Animation[a].aniData[a_d]);
-    }
-
-    //std::cout << "Animation loaded: " << animation_name << "\n";
-    this->m_animations[animation_name] = std::make_unique<C2Animation>(animation_name, animation_KPS,
-                                                              c_char_info.Animation[a].FramesCount,c_char_info.Animation[a].AniTime,animation_data);
-
-  }
-}*/
-
 void C2CarFile::load_file(std::string file_name)
 {
   std::ifstream infile;
   TCharacterInfo c_char_info; //place holder for information from file
+  std::unique_ptr<C2Texture> m_texture;
 
   int _vcount, _fcount, _texture_size, _texture_height;
   std::vector<TPoint3d> _vertices;
   std::vector<TFace> _faces;
-  std::vector<WORD> _texture_data;
+  std::vector<uint16_t> _texture_data;
 
   infile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
 
@@ -103,6 +85,7 @@ void C2CarFile::load_file(std::string file_name)
   
   _texture_data.resize(tsize);
   infile.read(reinterpret_cast<char *>(_texture_data.data()), tsize);
+  m_texture = std::unique_ptr<C2Texture>(new C2Texture(_texture_data, 256*256, 256, 256));
 
   for (int ani = 0; ani < c_char_info.AniCount; ani++) {
 	  int _ani_kps, _frames_count;
@@ -150,11 +133,39 @@ void C2CarFile::load_file(std::string file_name)
 
   // data correction
   for (int v=0; v < _vcount; v++) {
-    _vertices[v].x *= 2.f;
-    _vertices[v].y *= 2.f;
-    _vertices[v].z *= -2.f;
+    _vertices[v].x *= 2.0f;
+    _vertices[v].y *= 2.0f;
+    _vertices[v].z *= -2.0f;
   }
 
   // load instance
-  this->m_geometry = make_unique<C2Geometry>(_vertices, _faces, _texture_data, _texture_height);
+  IndexedMeshLoader* m_loader = new IndexedMeshLoader(_vertices, _faces);
+  this->m_geometry = make_unique<C2Geometry>(m_loader->getVertices(), m_loader->getIndices(), std::move(m_texture));
+  
+  delete m_loader;
 }
+
+
+
+
+/*
+ void C2CarFile::generate_animations()
+ {
+ for (int a = 0; a < c_char_info.AniCount; a++) {
+ std::string animation_name = c_char_info.Animation[a].aniName;
+ int animation_KPS = c_char_info.Animation[a].aniKPS;
+ 
+ int animation_data_length = (this->m_model_data->VCount*c_char_info.Animation[a].FramesCount*6);
+ std::vector<short int> animation_data;
+ 
+ for (int a_d = 0; a_d < animation_data_length; a_d++)
+ {
+ animation_data.push_back(c_char_info.Animation[a].aniData[a_d]);
+ }
+ 
+ //std::cout << "Animation loaded: " << animation_name << "\n";
+ this->m_animations[animation_name] = std::make_unique<C2Animation>(animation_name, animation_KPS,
+ c_char_info.Animation[a].FramesCount,c_char_info.Animation[a].AniTime,animation_data);
+ 
+ }
+ }*/

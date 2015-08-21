@@ -4,6 +4,11 @@
 #include "C2Geometry.h"
 #include "C2Animation.h"
 
+#include "vertex.h"
+#include <map>
+
+#include "IndexedMeshLoader.h"
+
 C2WorldModel::C2WorldModel(std::ifstream& instream)
 {
   this->m_old_object_info = new TObjInfo();
@@ -17,8 +22,9 @@ C2WorldModel::C2WorldModel(std::ifstream& instream)
   int _vcount, _fcount, _object_count, _tsize, texture_height; // a C2 world model can contain multiple sub objects. The game doesn't care about this, and throws the details away.
   std::vector<uint8_t> _obj_buffer;
   std::vector<TFace> face_data;
-  std::vector<TPoint3d> vertex_data;
-  std::vector<WORD> texture_data; // object texture
+  std::vector<TPoint3d> file_vertex_data;
+
+  std::vector<uint16_t> texture_data; // object texture
   std::vector<uint16_t> spirit_texture_data;
   
   instream.read(reinterpret_cast<char *>(&_vcount), 4);
@@ -30,15 +36,19 @@ C2WorldModel::C2WorldModel(std::ifstream& instream)
   spirit_texture_data.resize(128*128);
   texture_data.resize(_tsize);
   face_data.resize(_fcount);
-  vertex_data.resize(_vcount);
+  file_vertex_data.resize(_vcount);
   _obj_buffer.resize(_object_count*48); // just throw these details away for now
   
   instream.read(reinterpret_cast<char *>(face_data.data()), _fcount<<6);
-  instream.read(reinterpret_cast<char *>(vertex_data.data()), _vcount<<4);
+  instream.read(reinterpret_cast<char *>(file_vertex_data.data()), _vcount<<4);
   instream.read(reinterpret_cast<char *>(_obj_buffer.data()), _object_count*48);
   instream.read(reinterpret_cast<char *>(texture_data.data()), _tsize);
 
-  std::unique_ptr<C2Geometry> mGeo = std::unique_ptr<C2Geometry>(new C2Geometry(vertex_data, face_data, texture_data, texture_height));
+  IndexedMeshLoader* m_loader = new IndexedMeshLoader(file_vertex_data, face_data);
+
+  // load the geo
+  std::unique_ptr<C2Texture> mTexture = std::unique_ptr<C2Texture>(new C2Texture(texture_data, 256*256*2, 256, 256));
+  std::unique_ptr<C2Geometry> mGeo = std::unique_ptr<C2Geometry>(new C2Geometry(m_loader->getVertices(), m_loader->getIndices(), std::move(mTexture)));
   
   instream.read(reinterpret_cast<char *>(spirit_texture_data.data()), 128*128*2);
   
@@ -48,15 +58,15 @@ C2WorldModel::C2WorldModel(std::ifstream& instream)
   this->m_geometry = std::move(mGeo);
   
   // load bmp model
-  float mxx = vertex_data[0].x+0.5f;
-  float mnx = vertex_data[0].x-0.5f;
+  float mxx = file_vertex_data.at(0).x+0.5f;
+  float mnx = file_vertex_data.at(0).x-0.5f;
   
-  float mxy = vertex_data[0].x+0.5f;
-  float mny = vertex_data[0].y-0.5f;
+  float mxy = file_vertex_data.at(0).x+0.5f;
+  float mny = file_vertex_data.at(0).y-0.5f;
   
   for (int v=0; v<_vcount; v++) {
-    float x = vertex_data[v].x;
-    float y = vertex_data[v].y;
+    float x = file_vertex_data.at(v).x;
+    float y = file_vertex_data.at(v).y;
     if (x > mxx) mxx=x;
     if (x < mnx) mnx=x;
     if (y > mxy) mxy=y;
@@ -81,7 +91,7 @@ C2WorldModel::C2WorldModel(std::ifstream& instream)
   
   // process flags
   if (m_old_object_info->flags & objectNOLIGHT) {
-    m_geometry->removeLightInfo();
+    m_geometry->hint_ignoreLighting();
   }
   
   if (m_old_object_info->flags & objectANIMATED) {
@@ -104,11 +114,19 @@ C2WorldModel::C2WorldModel(std::ifstream& instream)
   }
   
   if (m_old_object_info->flags & objectBOUND) {
-    this->_generateBoundingBox(vertex_data);
+    std::vector<Vertex> vData = m_loader->getVertices();
+    this->_generateBoundingBox(vData);
   }
+  
+  delete m_loader;
 }
 
-void C2WorldModel::_generateBoundingBox(std::vector<TPoint3d>& vertex_data)
+C2Geometry* C2WorldModel::getGeometry()
+{
+  return this->m_geometry.get();
+}
+
+void C2WorldModel::_generateBoundingBox(std::vector<Vertex>& vertex_data)
 {
   float x1 = 0.0, x2=0.0, y1=0.0, y2=0.0, z1=0.0, z2=0.0;
   bool first;
@@ -119,25 +137,25 @@ void C2WorldModel::_generateBoundingBox(std::vector<TPoint3d>& vertex_data)
     
     
     for (int v=0; v<(int)vertex_data.size(); v++) {
-      TPoint3d p = vertex_data[v];
-      if (p.hide) continue;
-      if (p.owner!=o) continue;
+      Vertex p = vertex_data.at(v);
+      if (p.isHidden()) continue;
+      if (p.getOwner()!=o) continue;
       
       if (first) {
-        x1 = p.x-1.0f;	x2 = p.x+1.0f;
-        y1 = p.y-1.0f;	y2 = p.y+1.0f;
-        z1 = p.z-1.0f;	z2 = p.z+1.0f;
+        x1 = p.getPos().x-1.0f;	x2 = p.getPos().x+1.0f;
+        y1 = p.getPos().y-1.0f;	y2 = p.getPos().y+1.0f;
+        z1 = p.getPos().z-1.0f;	z2 = p.getPos().z+1.0f;
         first = false;
       }
       
-      if (p.x < x1) x1=p.x;
-      if (p.x > x2) x2=p.x;
+      if (p.getPos().x < x1) x1=p.getPos().x;
+      if (p.getPos().x > x2) x2=p.getPos().x;
       
-      if (p.y < y1) y1=p.y;
-      if (p.y > y2) y2=p.y;
+      if (p.getPos().y < y1) y1=p.getPos().y;
+      if (p.getPos().y > y2) y2=p.getPos().y;
       
-      if (p.z < z1) z1=p.z;
-      if (p.z > z2) z2=p.z;
+      if (p.getPos().z < z1) z1=p.getPos().z;
+      if (p.getPos().z > z2) z2=p.getPos().z;
     }
     
     if (first) continue;

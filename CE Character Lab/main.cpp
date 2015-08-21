@@ -8,6 +8,9 @@
 
 #define GLFW_INCLUDE_GLCOREARB
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+#include <glm/gtx/transform.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include <iostream>
 
@@ -25,6 +28,8 @@
 
 #include "C2MapFile.h"
 #include "C2MapRscFile.h"
+
+#include "C2WorldModel.h"
 
 #include "shader.h"
 
@@ -46,18 +51,15 @@ int main(int argc, const char * argv[])
   std::unique_ptr<C2CarFilePreloader> cFileLoad(new C2CarFilePreloader);
 
   /* Load rendering */
-  GLFWwindow* window;
   if (!glfwInit())
     return -1;
 
-  /*glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 3 );
+  glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 3 );
   glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 2 );
-  glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );*/
-
-  int major, minor, rev;
-  glfwGetVersion(&major, &minor, &rev);
-  std::cout << "OpenGL - " << major << "." << minor << "." << rev << std::endl;
+  glfwWindowHint( GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE );
+  glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );
   
+  GLFWwindow* window;
   window = glfwCreateWindow(800, 600, "Hello World", NULL, NULL);
   if (!window)
   {
@@ -67,6 +69,18 @@ int main(int argc, const char * argv[])
   
   glfwMakeContextCurrent(window);
   glfwSwapInterval(1);
+  glEnable(GL_DEPTH_TEST);
+  glDepthFunc(GL_LESS); 
+  glEnable(GL_CULL_FACE);
+  glCullFace(GL_BACK);
+  glClearColor(0,0,1,0);
+  
+  int major, minor, rev;
+  glfwGetVersion(&major, &minor, &rev);
+  std::cout << "OpenGL - " << major << "." << minor << "." << rev << std::endl;
+  std::cout << glfwGetVersionString() << std::endl;
+  const GLubyte* renderer = glGetString(GL_RENDERER);
+  std::cout << renderer << " : " << glGetString(GL_VERSION) << std::endl;
   
   int RealTime, PrevTime, TimeDt;
   PrevTime = timeGetTime();
@@ -77,22 +91,26 @@ int main(int argc, const char * argv[])
   std::unique_ptr<CE_Allosaurus> allo(new CE_Allosaurus(cFileLoad.get(), "/Users/tminard/Source/CE Character Lab/CE Character Lab/ALLO.CAR"));
   allo->setScale(2.f);
   C2Geometry* allG = allo->getCurrentModelForRender();
+  C2Geometry* world_geo = cMapRsc->getWorldModel(10)->getGeometry();
   
   Shader shader("/Users/tminard/Source/CE Character Lab/CE Character Lab/basicShader");
+  Camera cam(glm::vec3(0.f,0.f,-5.f), 70.f, 800.f / 600.0f, 0.1f, 100.0f);
+  Transform mTrans(glm::vec3(0,0,0), glm::vec3(0,180.f,0), glm::vec3(0.25f, 0.25f, 0.25f));
   
   while (!glfwWindowShouldClose(window))
   {
+    glfwMakeContextCurrent(window);
     /* Game loop */
-    RealTime = timeGetTime();
+    /*RealTime = timeGetTime();
     srand( (unsigned)RealTime );
     TimeDt = RealTime - PrevTime;
     if (TimeDt<0) TimeDt = 10;
     if (TimeDt>10000) TimeDt = 10;
     if (TimeDt>1000) TimeDt = 1000;
-    PrevTime = RealTime;
+    PrevTime = RealTime;*/
     
     // Process AI
-    allo->intelligence->think(TimeDt);
+    //allo->intelligence->think(TimeDt);
 
     /* Render here */
     float ratio;
@@ -101,10 +119,15 @@ int main(int argc, const char * argv[])
     ratio = width / (float) height;
     glViewport(0, 0, width, height);
   
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     shader.Bind();
-    allG->Render();
+    mTrans.GetScale()->x = 0.005;
+    mTrans.GetScale()->y = 0.005;
+    mTrans.GetScale()->z = 0.005;
+    shader.Update(mTrans, cam);
+    //allG->Draw();
+    world_geo->Draw();
     
     /* Swap front and back buffers */
     glfwSwapBuffers(window);

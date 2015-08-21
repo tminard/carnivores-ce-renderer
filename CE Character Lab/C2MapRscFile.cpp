@@ -31,6 +31,11 @@ C2MapRscFile::~C2MapRscFile()
   
 }
 
+C2WorldModel* C2MapRscFile::getWorldModel(int i)
+{
+  return this->m_models.at(i).get();
+}
+
 void C2MapRscFile::load(const std::string &file_name)
 {
   std::ifstream infile;

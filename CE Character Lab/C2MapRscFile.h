@@ -38,6 +38,8 @@ private:
 public:
   C2MapRscFile(const std::string& file_name);
   ~C2MapRscFile();
+  
+  C2WorldModel* getWorldModel(int i);
 };
 
 #endif /* defined(__CE_Character_Lab__C2MapRscFile__) */

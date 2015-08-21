@@ -28,6 +28,7 @@
 class C2Texture;
 class C2Animation;
 class C2Geometry;
+class Vertex;
 
 #define objectPLACEWATER       1
 #define objectPLACEGROUND      2
@@ -56,12 +57,13 @@ private:
   
   TObjInfo* m_old_object_info; // Easier to use old object for now
   
-  void _generateBoundingBox(std::vector<TPoint3d>& vertex_data); // old method for bounding box. Move to geo when able
+  void _generateBoundingBox(std::vector<Vertex>& vertex_data); // old method for bounding box. Move to geo when able
 
 public:
   C2WorldModel(std::ifstream& instream); // construct object using file data
   ~C2WorldModel();
   
+  C2Geometry* getGeometry();
   TObjInfo* getObjectInfo(); // TODO: Make this unnecessary
 };
 

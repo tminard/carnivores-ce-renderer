@@ -1,13 +1,13 @@
-#version 120
+#version 330
 
-varying vec2 texCoord0;
-varying vec3 normal0;
+in vec2 texCoord0;
 
-uniform sampler2D sampler;
-uniform vec3 lightDirection;
+out vec4 outputColor;
 
 void main()
 {
-  gl_FragColor = texture2D(sampler, texCoord0) *
-		clamp(dot(-lightDirection, normal0), 0.0, 1.0);
+  float lerpValue = gl_FragCoord.y / 500.0f;
+  
+  outputColor = mix(vec4(1.0f, 1.0f, 1.0f, 1.0f),
+                    vec4(0.2f, 0.2f, 0.2f, 1.0f), lerpValue);
 }

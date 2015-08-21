@@ -171,7 +171,7 @@ C2Geometry* C2AnimatableModel::getMorphedModel(std::string animation_name, int a
   C2Geometry* sharedGeo = this->m_car_file->getGeometry();
   C2Animation* animation = this->m_car_file->getAnimationByName(animation_name);
   
-  int currentFrame = ((animation->m_number_of_frames-1) * at_time * 256) / animation->m_total_time;
+  /*int currentFrame = ((animation->m_number_of_frames-1) * at_time * 256) / animation->m_total_time;
   int splineDelta = currentFrame & 0xFF;
   currentFrame = currentFrame >> 8;
   
@@ -191,15 +191,15 @@ C2Geometry* C2AnimatableModel::getMorphedModel(std::string animation_name, int a
   }
 
   sharedGeo->setVertices(m_vertices);
-  sharedGeo->syncOldVerticeData(); //support the old way. TODO: Eventually remove them when renderer can be refactord
+  sharedGeo->syncOldVerticeData(); //support the old way. TODO: Eventually remove them when renderer can be refactord*/
   return sharedGeo;
 }
 
 C2Geometry* C2AnimatableModel::getBetweenMorphedModel(std::string animation_previous_name, std::string animation_target_name, int at_time_previous, int at_time_target, int current_morph_time, float scale, float character_beta, float character_gamma, float character_bend)
 {
-//#warning This method suffers from the same incompleteness as getMorphedModel()
-  C2Geometry* sharedGeo = this->m_car_file->getGeometry();
 
+  C2Geometry* sharedGeo = this->m_car_file->getGeometry();
+/*
   C2Animation* previous_animation = m_car_file->getAnimationByName(animation_previous_name);
   C2Animation* target_animation = m_car_file->getAnimationByName(animation_target_name);
   
@@ -276,6 +276,7 @@ C2Geometry* C2AnimatableModel::getBetweenMorphedModel(std::string animation_prev
     }
     
     // FI value will be in range -1.0...+1.0
+ */
     /*
      STANDARD:
      Y represents forward/back.
@@ -301,7 +302,7 @@ C2Geometry* C2AnimatableModel::getBetweenMorphedModel(std::string animation_prev
     // character bend represents how sharp of an angle the character is currently turning towards
     // his target alpha (where PI speed means complete 180). Taking this into account here
     // allows us to speed up/slow down the animation process based on bend (the animation effectively slows down when character makes a sharp turn).
-    fi *= character_bend;
+    /*fi *= character_bend;
     
     // bend will be max of 0.628
     float bendc = (float)std::cos(fi); // right/left bend
@@ -318,6 +319,6 @@ C2Geometry* C2AnimatableModel::getBetweenMorphedModel(std::string animation_prev
   }
   
   sharedGeo->setVertices(m_vertices);
-  sharedGeo->syncOldVerticeData();
+  sharedGeo->syncOldVerticeData();*/
   return sharedGeo;
 }

@@ -74,8 +74,8 @@ int main(int argc, const char * argv[])
   glDepthFunc(GL_LESS);
   glDisable(GL_CULL_FACE);
   
-  //glEnable(GL_BLEND);
-  //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   glClearColor(.5,.5,.5,0);
   glFrontFace (GL_CCW); // GL_CCW for counter clock-wise
@@ -92,11 +92,11 @@ int main(int argc, const char * argv[])
   
   std::unique_ptr<CE_Allosaurus> allo(new CE_Allosaurus(cFileLoad.get(), "/Users/tminard/Source/CE Character Lab/CE Character Lab/ALLO.CAR"));
   allo->setScale(2.f);
-  //std::unique_ptr<C2MapFile> cMap(new C2MapFile("/Users/tminard/Source/CE Character Lab/CE Character Lab/AREA1.MAP"));
+  std::unique_ptr<C2MapFile> cMap(new C2MapFile("/Users/tminard/Source/CE Character Lab/CE Character Lab/AREA1.MAP"));
   std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile("/Users/tminard/Source/CE Character Lab/CE Character Lab/AREA1.RSC"));
 
   
-  C2Geometry* world_geo = cMapRsc->getWorldModel(9)->getGeometry();
+  C2Geometry* world_geo = cMapRsc->getWorldModel(10)->getGeometry();
   C2Geometry* allG = allo->getCurrentModelForRender();
   
   Shader shader("/Users/tminard/Source/CE Character Lab/CE Character Lab/basicShader");
@@ -133,10 +133,11 @@ int main(int argc, const char * argv[])
     mTrans.GetScale()->y = 0.005;
     mTrans.GetScale()->z = 0.005;
     shader.Update(mTrans, cam);
-    
+    allG->Draw();
+
     world_geo->Draw();
     //glUniform1i(glGetUniformLocation(shader.getProgram(), "basic_texture"), 0);
-    allG->Draw();
+    
     
     /* Swap front and back buffers */
     glfwSwapBuffers(window);

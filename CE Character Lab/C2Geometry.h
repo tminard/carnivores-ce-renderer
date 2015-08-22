@@ -44,6 +44,8 @@ public:
   
   void loadObjectIntoMemoryBuffer(); // loads the object into OpenGL's memory
   void hint_ignoreLighting(); // instruct the geom to ignore lighting. Depreciated. Used with old C2 models.
+  
+  C2Texture* getTexture();
 
   void exportAsOBJ(const std::string& file_name);
   void saveTextureAsBMP(const std::string& file_name );

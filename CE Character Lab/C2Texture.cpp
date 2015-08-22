@@ -6,6 +6,8 @@
 
 #include "bitmap.h"
 
+#include "shader.h"
+
 
 // These helpers and forward declares are only needed to support old code. Remove when able.
 struct LimitTo
@@ -31,78 +33,37 @@ extern WORD  FadeTab[65][0x8000]; // OOoooo scary. Be careful
 
 C2Texture::~C2Texture()
 {
-  if (_did_load_map_texture_data) {
-    delete m_old_texture_data;
-  }
+  glDeleteTextures(1, &this->m_texture_id);
 }
 
 C2Texture::C2Texture(const std::vector<uint16_t>& raw_texture_data, int texture_size, int texture_height, int texture_width)
   : m_raw_data(raw_texture_data), m_height(texture_height), m_width(texture_width)
 {
+  this->loadTextureIntoHardwareMemory();
 }
 
-void C2Texture::brighten()
+void C2Texture::Use()
 {
-  BrightenTexture(this->m_raw_data.data(), (int)this->m_raw_data.capacity()/2);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, m_texture_id);
 }
 
-// WARNING: Only call this once! Otherwise, CRAZY things may happen
-void C2Texture::_generate_old_texture_data()
+void C2Texture::loadTextureIntoHardwareMemory()
 {
-  if (_did_load_map_texture_data) {
-    return;
-  }
-
-  this->m_old_texture_data = new TEXTURE;
-
-  if (this->m_height < 64 || this->m_width < 64) {
-    throw "ERROR: using C2Texture with image smaller than 64x64. Edit base class to bypass TEXTURE generation.";
-  }
-
-  // copy over
-  std::copy_if(this->m_raw_data.begin(), this->m_raw_data.end(), this->m_old_texture_data->DataA, LimitTo(128*128)); // note old TEXTURE data is limited to 128*128. results may be unpredictable if height <> 128 or width <> 128
-
-  // copied this from old code
-  int tsize_limited = std::min(this->m_height*this->m_width, 128*128);
-  for (int td = 0; td < tsize_limited; td++) {
-    if (!this->m_old_texture_data->DataA[td]) {
-      this->m_old_texture_data->DataA[td] = 1;
-    }
-  }
+  glGenTextures(1, &this->m_texture_id);
+  glBindTexture(GL_TEXTURE_2D, m_texture_id);
   
-  BrightenTexture(this->m_old_texture_data->DataA, tsize_limited);
-  CalcMidColor(this->m_old_texture_data->DataA, tsize_limited, this->m_old_texture_data->mR, this->m_old_texture_data->mG, this->m_old_texture_data->mB); // When you remove this, be sure to introduce mid color to this class. Needed for map view
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB5_A1, m_width, m_height, 0, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, m_raw_data.data());
 
-  GenerateMipMap(this->m_old_texture_data->DataA, this->m_old_texture_data->DataB, 64); // Note: we assume that textures smaller than 128*128 using this class will not be a problem at 64*64... Be careful
-  GenerateMipMap(this->m_old_texture_data->DataB, this->m_old_texture_data->DataC, 32);
-  GenerateMipMap(this->m_old_texture_data->DataC, this->m_old_texture_data->DataD, 16);
-  memcpy(this->m_old_texture_data->SDataC[0], this->m_old_texture_data->DataC, 32*32*2);
-  memcpy(this->m_old_texture_data->SDataC[1], this->m_old_texture_data->DataC, 32*32*2);
+  glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   
-  DATASHIFT((unsigned short *)this->m_old_texture_data, sizeof(TEXTURE)); // WTF
-  for (int w=0; w<32*32; w++)
-    this->m_old_texture_data->SDataC[1][w] = FadeTab[48][this->m_old_texture_data->SDataC[1][w]>>1];
-  
-  ApplyAlphaFlags(this->m_old_texture_data->DataA, tsize_limited);
-  ApplyAlphaFlags(this->m_old_texture_data->DataB, 64*64);
-  ApplyAlphaFlags(this->m_old_texture_data->DataC, 32*32);
-  
-  _did_load_map_texture_data = true;
-}
-
-// Not really thread safe. TODO: make this unnecessary. Generates on first use. ONLY use for map textures! Assumes 128*128.
-TEXTURE* C2Texture::getMapTextureData()
-{
-  if (_did_load_map_texture_data) {
-    return this->m_old_texture_data;
-  } else {
-    this->_generate_old_texture_data();
-    return this->m_old_texture_data;
-  }
+  glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 // Saves the C2Texture as a bitmap (32 bit).
-// TODO: This is not very efficient...
 void C2Texture::saveToBMPFile(std::string file_name)
 {
   CBitmap* cBit = new CBitmap();
@@ -137,4 +98,6 @@ void C2Texture::saveToBMPFile(std::string file_name)
   } else {
     std::cout << "Failed to save bitmap! set bits failed";
   }
+  
+  delete cBit;
 }

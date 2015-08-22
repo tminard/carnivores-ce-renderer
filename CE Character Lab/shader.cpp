@@ -37,6 +37,11 @@ Shader::~Shader()
   glDeleteProgram(m_program);
 }
 
+GLuint Shader::getProgram()
+{
+  return this->m_program;
+}
+
 void Shader::Bind()
 {
   glUseProgram(m_program);

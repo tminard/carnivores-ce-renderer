@@ -1,27 +1,3 @@
-/*
- //initialization
- glGenVertexArrays
- glBindVertexArray
- 
- glGenBuffers
- glBindBuffer
- glBufferData
- 
- glVertexAttribPointer
- glEnableVertexAttribArray
- 
- glBindVertexArray(0)
- 
- glDeleteBuffers //you can already delete it after the VAO is unbound, since the
- //VAO still references it, keeping it alive (see comments below).
- 
- ...
- 
- //rendering
- glBindVertexArray
- glDrawWhatever
- */
-
 #include <iterator>
 
 #include "C2Geometry.h"
@@ -50,6 +26,10 @@ C2Geometry::~C2Geometry()
   glDeleteVertexArrays(1, &this->m_vertexArrayObject);
 }
 
+C2Texture* C2Geometry::getTexture()
+{
+  return this->m_texture.get();
+}
 
 void C2Geometry::saveTextureAsBMP(const std::string &file_name)
 {
@@ -64,7 +44,7 @@ void C2Geometry::loadObjectIntoMemoryBuffer()
   glGenBuffers(NUM_BUFFERS, this->m_vertexArrayBuffers);
 
   glBindBuffer(GL_ARRAY_BUFFER, this->m_vertexArrayBuffers[VERTEX_VB]);
-  glBufferData(GL_ARRAY_BUFFER, (int)this->m_vertices.size()*sizeof(Vertex), this->m_vertices.data(), GL_DYNAMIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, (int)this->m_vertices.size()*sizeof(Vertex), this->m_vertices.data(), GL_STATIC_DRAW);
   
   glEnableVertexAttribArray(0); // position
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
@@ -81,12 +61,11 @@ void C2Geometry::loadObjectIntoMemoryBuffer()
 
 void C2Geometry::Draw()
 {
+  m_texture->Use();
   glBindVertexArray(this->m_vertexArrayObject);
-  //glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 
   //glDrawArrays(GL_TRIANGLES, 0, (int)this->m_indices.size());
   glDrawElementsBaseVertex(GL_TRIANGLES, (int)this->m_indices.size(), GL_UNSIGNED_INT, 0, 0);
-  //glDrawElements(GL_TRIANGLES, this->m_indices.size(), GL_UNSIGNED_INT, 0);
   
   glBindVertexArray(0);
 }

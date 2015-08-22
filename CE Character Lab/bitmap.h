@@ -539,6 +539,18 @@ public:
     return m_BitmapData;
   }
   
+#include <vector>
+  std::vector<unsigned int> getRGBA8()
+  {
+    std::vector<unsigned int> buf;
+    buf.resize(GetWidth()*GetHeight());
+    unsigned int s = 0;
+
+    this->GetBits(buf.data(), s, 0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000, true);
+    
+    return buf;
+  }
+  
   /* Copies internal RGBA buffer to user specified buffer and converts it into destination
    * bit format specified by component masks.
    *

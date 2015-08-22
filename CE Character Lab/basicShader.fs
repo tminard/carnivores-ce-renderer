@@ -4,10 +4,9 @@ in vec2 texCoord0;
 
 out vec4 outputColor;
 
+uniform sampler2D basic_texture;
+
 void main()
 {
-  float lerpValue = gl_FragCoord.y / 500.0f;
-  
-  outputColor = mix(vec4(1.0f, 1.0f, 1.0f, 1.0f),
-                    vec4(0.2f, 0.2f, 0.2f, 1.0f), lerpValue);
+  outputColor = texture( basic_texture, texCoord0 );
 }

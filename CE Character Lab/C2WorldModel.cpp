@@ -53,7 +53,6 @@ C2WorldModel::C2WorldModel(std::ifstream& instream)
   instream.read(reinterpret_cast<char *>(spirit_texture_data.data()), 128*128*2);
   
   std::unique_ptr<C2Texture> cTexture = std::unique_ptr<C2Texture>(new C2Texture(spirit_texture_data, 128*128*2, 128, 128));
-  cTexture->brighten();
   this->m_far_texture = std::move(cTexture);
   this->m_geometry = std::move(mGeo);
   

@@ -20,6 +20,7 @@
 
 #include "Hunt.h"
 #include "C2Geometry.h"
+#include "C2Texture.h"
 
 #include "CE_ArtificialIntelligence.h"
 
@@ -70,10 +71,14 @@ int main(int argc, const char * argv[])
   glfwMakeContextCurrent(window);
   glfwSwapInterval(1);
   glEnable(GL_DEPTH_TEST);
-  glDepthFunc(GL_LESS); 
-  glEnable(GL_CULL_FACE);
-  glCullFace(GL_BACK);
-  glClearColor(0,0,1,0);
+  glDepthFunc(GL_LESS);
+  glDisable(GL_CULL_FACE);
+  
+  //glEnable(GL_BLEND);
+  //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+  glClearColor(.5,.5,.5,0);
+  glFrontFace (GL_CCW); // GL_CCW for counter clock-wise
   
   int major, minor, rev;
   glfwGetVersion(&major, &minor, &rev);
@@ -85,32 +90,34 @@ int main(int argc, const char * argv[])
   int RealTime, PrevTime, TimeDt;
   PrevTime = timeGetTime();
   
-  std::unique_ptr<C2MapFile> cMap(new C2MapFile("/Users/tminard/Source/CE Character Lab/CE Character Lab/AREA1.MAP"));
-  std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile("/Users/tminard/Source/CE Character Lab/CE Character Lab/AREA1.RSC"));
-
   std::unique_ptr<CE_Allosaurus> allo(new CE_Allosaurus(cFileLoad.get(), "/Users/tminard/Source/CE Character Lab/CE Character Lab/ALLO.CAR"));
   allo->setScale(2.f);
+  //std::unique_ptr<C2MapFile> cMap(new C2MapFile("/Users/tminard/Source/CE Character Lab/CE Character Lab/AREA1.MAP"));
+  std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile("/Users/tminard/Source/CE Character Lab/CE Character Lab/AREA1.RSC"));
+
+  
+  C2Geometry* world_geo = cMapRsc->getWorldModel(9)->getGeometry();
   C2Geometry* allG = allo->getCurrentModelForRender();
-  C2Geometry* world_geo = cMapRsc->getWorldModel(10)->getGeometry();
   
   Shader shader("/Users/tminard/Source/CE Character Lab/CE Character Lab/basicShader");
-  Camera cam(glm::vec3(0.f,0.f,-5.f), 70.f, 800.f / 600.0f, 0.1f, 100.0f);
+  Camera cam(glm::vec3(0.f,1.25f,-3.f), 70.f, 800.f / 600.0f, 0.1f, 100.0f);
   Transform mTrans(glm::vec3(0,0,0), glm::vec3(0,180.f,0), glm::vec3(0.25f, 0.25f, 0.25f));
+
   
   while (!glfwWindowShouldClose(window))
   {
     glfwMakeContextCurrent(window);
     /* Game loop */
-    /*RealTime = timeGetTime();
+    RealTime = timeGetTime();
     srand( (unsigned)RealTime );
     TimeDt = RealTime - PrevTime;
     if (TimeDt<0) TimeDt = 10;
     if (TimeDt>10000) TimeDt = 10;
     if (TimeDt>1000) TimeDt = 1000;
-    PrevTime = RealTime;*/
-    
+    PrevTime = RealTime;
+
     // Process AI
-    //allo->intelligence->think(TimeDt);
+    allo->intelligence->think(TimeDt);
 
     /* Render here */
     float ratio;
@@ -126,8 +133,10 @@ int main(int argc, const char * argv[])
     mTrans.GetScale()->y = 0.005;
     mTrans.GetScale()->z = 0.005;
     shader.Update(mTrans, cam);
-    //allG->Draw();
+    
     world_geo->Draw();
+    //glUniform1i(glGetUniformLocation(shader.getProgram(), "basic_texture"), 0);
+    allG->Draw();
     
     /* Swap front and back buffers */
     glfwSwapBuffers(window);

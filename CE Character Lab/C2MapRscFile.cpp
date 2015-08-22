@@ -59,7 +59,6 @@ void C2MapRscFile::load(const std::string &file_name)
       infile.read(reinterpret_cast<char *>(raw_texture_data.data()), 128*128*sizeof(uint16_t));
       
       std::unique_ptr<C2Texture> cTexture = std::unique_ptr<C2Texture>(new C2Texture(raw_texture_data, 128*128, 128, 128));
-      //cTexture->saveToBMPFile("/Users/tminard/Dino/" + std::to_string(tx) + ".bmp");
       this->m_textures.push_back(std::move(cTexture));
     }
     

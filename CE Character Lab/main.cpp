@@ -34,6 +34,8 @@
 
 #include "shader.h"
 
+#include "TerrainRenderer.h"
+
 void CreateFadeTab();
 unsigned int timeGetTime();
 WORD  FadeTab[65][0x8000];
@@ -96,13 +98,18 @@ int main(int argc, const char * argv[])
   std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile("/Users/tminard/Source/CE Character Lab/CE Character Lab/AREA1.RSC"));
 
   
-  C2Geometry* world_geo = cMapRsc->getWorldModel(10)->getGeometry();
+  C2WorldModel* plant = cMapRsc->getWorldModel(0);
+  C2WorldModel* tree_plant = cMapRsc->getWorldModel(12);
   C2Geometry* allG = allo->getCurrentModelForRender();
   
   Shader shader("/Users/tminard/Source/CE Character Lab/CE Character Lab/basicShader");
-  Camera cam(glm::vec3(0.f,1.25f,-3.f), 70.f, 800.f / 600.0f, 0.1f, 100.0f);
-  Transform mTrans(glm::vec3(0,0,0), glm::vec3(0,180.f,0), glm::vec3(0.25f, 0.25f, 0.25f));
-
+  Shader t_shader("/Users/tminard/Source/CE Character Lab/CE Character Lab/terrain");
+  //1024.0f / 768.0f
+  //60.f, 1.7777777777777777777777777777778f, 1.f, 150000.f );
+  Camera cam(glm::vec3(0.f,6.f,-6.f), 70.f, 1024.0f / 768.0f, 0.1f, 350.f);
+  Transform mTrans(glm::vec3(0,0,0), glm::vec3(0,90.f,0), glm::vec3(0.25f, 0.25f, 0.25f));
+  
+  TerrainRenderer* ter = new TerrainRenderer();
   
   while (!glfwWindowShouldClose(window))
   {
@@ -127,16 +134,42 @@ int main(int argc, const char * argv[])
     glViewport(0, 0, width, height);
   
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    
+    t_shader.Bind();
+    Transform mTrans_land(glm::vec3(0,0,0), glm::vec3(0,0,0), glm::vec3(1.f, 1.f, 1.f));
+    t_shader.Update(mTrans_land, cam);
+    cMapRsc->getTexture(0)->Use();
+    ter->Render();
 
     shader.Bind();
-    mTrans.GetScale()->x = 0.005;
+    /*mTrans.GetScale()->x = 0.005;
     mTrans.GetScale()->y = 0.005;
-    mTrans.GetScale()->z = 0.005;
+    mTrans.GetScale()->z = 0.005;*/
+    mTrans.GetPos()->z = 15.f; //20 yards (60ft) , dino at 45mph hits character in 1 second, 13 seconds for human walk
     shader.Update(mTrans, cam);
-    allG->Draw();
+    //allG->Draw();
 
-    world_geo->Draw();
-    //glUniform1i(glGetUniformLocation(shader.getProgram(), "basic_texture"), 0);
+    Transform mTrans_c(glm::vec3(100.f,0,310.f), glm::vec3(0,180.f,0), glm::vec3(0.25f, 0.25f, 0.25f));
+    /*mTrans_c.GetScale()->x = 0.005;
+    mTrans_c.GetScale()->y = 0.005;
+    mTrans_c.GetScale()->z = 0.005;*/
+    shader.Update(mTrans_c, cam);
+    tree_plant->render();
+
+    Transform mTrans_b(glm::vec3(-1.f,0,60.f), glm::vec3(0,180.f,0), glm::vec3(0.25f, 0.25f, 0.25f));
+    /*mTrans_b.GetScale()->x = 0.005;
+    mTrans_b.GetScale()->y = 0.005;
+    mTrans_b.GetScale()->z = 0.005;*/
+    shader.Update(mTrans_b, cam);
+    plant->render();
+    
+    /* Render loop*/
+    
+    // Render things in order of back to front
+    // Render sky
+    // Render characters
+    // Render models
+    // Render terrain
     
     
     /* Swap front and back buffers */
@@ -148,6 +181,8 @@ int main(int argc, const char * argv[])
   
   glfwDestroyWindow(window);
   glfwTerminate();
+  
+  delete ter;
 
   return 0;
 }

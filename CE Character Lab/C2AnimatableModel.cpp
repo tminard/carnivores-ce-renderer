@@ -151,6 +151,16 @@ void C2AnimatableModel::setAnimation(std::string animation_name)
   //ActivateCharacterFx(cptr);
 }
 
+/*
+ *
+ */
+void C2AnimatableModel::render()
+{
+  // update matrix
+  // update textures and shader if needed (pass in current shader so we know?)
+  // call draw
+}
+
 C2Geometry* C2AnimatableModel::getCurrentModelForRender()
 {
   if (this->m_current_animation_name == "") {

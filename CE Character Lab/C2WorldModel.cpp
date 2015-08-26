@@ -9,6 +9,11 @@
 
 #include "IndexedMeshLoader.h"
 
+#include <glfw/glfw3.h>
+
+#include "transform.h"
+#include "shader.h"
+
 C2WorldModel::C2WorldModel(std::ifstream& instream)
 {
   this->m_old_object_info = new TObjInfo();
@@ -43,6 +48,12 @@ C2WorldModel::C2WorldModel(std::ifstream& instream)
   instream.read(reinterpret_cast<char *>(file_vertex_data.data()), _vcount<<4);
   instream.read(reinterpret_cast<char *>(_obj_buffer.data()), _object_count*48);
   instream.read(reinterpret_cast<char *>(texture_data.data()), _tsize);
+
+  for (int v=0; v < _vcount; v++) {
+    file_vertex_data[v].x *= 0.25f;
+    file_vertex_data[v].y *= 0.25f;
+    file_vertex_data[v].z *= -0.25f;
+  }
 
   IndexedMeshLoader* m_loader = new IndexedMeshLoader(file_vertex_data, face_data);
 
@@ -182,4 +193,12 @@ C2WorldModel::~C2WorldModel()
 TObjInfo* C2WorldModel::getObjectInfo()
 {
   return this->m_old_object_info;
+}
+
+void C2WorldModel::render()
+{
+  // update view matrix
+  // set shader if different from current shader?
+  // set texture if different from current texture?
+  m_geometry->Draw();
 }

@@ -57,6 +57,11 @@ void Shader::Update(const Transform& transform, const Camera& camera)
   glUniform3f(m_uniforms[2], 0.0f, 0.0f, 1.0f);
 }
 
+GLuint Shader::getMVPUniform()
+{
+  return this->m_uniforms[0];
+}
+
 std::string Shader::LoadShader(const std::string& fileName)
 {
   std::ifstream file;

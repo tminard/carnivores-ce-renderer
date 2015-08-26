@@ -133,9 +133,9 @@ void C2CarFile::load_file(std::string file_name)
 
   // data correction
   for (int v=0; v < _vcount; v++) {
-    _vertices[v].x *= 2.0f;
-    _vertices[v].y *= 2.0f;
-    _vertices[v].z *= -2.0f;
+    _vertices[v].x *= 0.25f;
+    _vertices[v].y *= 0.25f;
+    _vertices[v].z *= -0.25f;
   }
 
   // load instance

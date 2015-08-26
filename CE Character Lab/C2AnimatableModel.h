@@ -67,6 +67,9 @@ public:
   void setAnimation(std::string animation_name);
   void animate(int time_delta);
   
+  /* Rendering */
+  void render();
+  
   // Creates a complex morphed representation for between animations.
   C2Geometry* getBetweenMorphedModel(std::string animation_previous_name, std::string animation_target_name, int at_time_previous, int at_time_target, int current_morph_time, float scale, float character_beta, float character_gamma, float character_bend);
 

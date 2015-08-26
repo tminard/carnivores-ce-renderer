@@ -13,6 +13,7 @@
 		D61CCC091B7E653E004BD900 /* C2MapRscFile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D61CCC071B7E653E004BD900 /* C2MapRscFile.cpp */; };
 		D61CCC0C1B7E68D0004BD900 /* C2Texture.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D61CCC0A1B7E68D0004BD900 /* C2Texture.cpp */; };
 		D61CCC0F1B7E7BF5004BD900 /* C2WorldModel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D61CCC0D1B7E7BF5004BD900 /* C2WorldModel.cpp */; };
+		D6247C171B88F30F00088EB2 /* TerrainRenderer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6247C151B88F30F00088EB2 /* TerrainRenderer.cpp */; };
 		D64585421B7A818B00D6327E /* carnivores_mock_functions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D64585411B7A818B00D6327E /* carnivores_mock_functions.cpp */; };
 		D655522D1B73DA2000CC5309 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D655522C1B73DA2000CC5309 /* main.cpp */; };
 		D65552391B73DA4900CC5309 /* C2AnimatableModel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D65552341B73DA4900CC5309 /* C2AnimatableModel.cpp */; };
@@ -65,6 +66,8 @@
 		D61CCC0D1B7E7BF5004BD900 /* C2WorldModel.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = C2WorldModel.cpp; sourceTree = "<group>"; };
 		D61CCC0E1B7E7BF5004BD900 /* C2WorldModel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = C2WorldModel.h; sourceTree = "<group>"; };
 		D61CCC111B811C28004BD900 /* bitmap.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bitmap.h; sourceTree = "<group>"; };
+		D6247C151B88F30F00088EB2 /* TerrainRenderer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = TerrainRenderer.cpp; sourceTree = "<group>"; };
+		D6247C161B88F30F00088EB2 /* TerrainRenderer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TerrainRenderer.h; sourceTree = "<group>"; };
 		D64585411B7A818B00D6327E /* carnivores_mock_functions.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = carnivores_mock_functions.cpp; sourceTree = "<group>"; };
 		D65552291B73DA2000CC5309 /* CE Character Lab */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "CE Character Lab"; sourceTree = BUILT_PRODUCTS_DIR; };
 		D655522C1B73DA2000CC5309 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
@@ -256,6 +259,8 @@
 				D6F2F8871B83E4810018DBF0 /* shader.h */,
 				D6F2F8891B83E57D0018DBF0 /* transform.h */,
 				D6F2F88A1B83E5AF0018DBF0 /* camera.h */,
+				D6247C151B88F30F00088EB2 /* TerrainRenderer.cpp */,
+				D6247C161B88F30F00088EB2 /* TerrainRenderer.h */,
 			);
 			name = World;
 			sourceTree = "<group>";
@@ -359,6 +364,7 @@
 				D65552481B73DA7000CC5309 /* C2HuntableCharacter.cpp in Sources */,
 				D655525F1B74315900CC5309 /* C2Animation.cpp in Sources */,
 				D65552391B73DA4900CC5309 /* C2AnimatableModel.cpp in Sources */,
+				D6247C171B88F30F00088EB2 /* TerrainRenderer.cpp in Sources */,
 				D655529C1B76955900CC5309 /* C2SoundFX.cpp in Sources */,
 				D655522D1B73DA2000CC5309 /* main.cpp in Sources */,
 				D61CCC061B7E6361004BD900 /* AREA1.MAP in Sources */,

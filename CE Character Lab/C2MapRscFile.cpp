@@ -31,6 +31,11 @@ C2MapRscFile::~C2MapRscFile()
   
 }
 
+C2Texture* C2MapRscFile::getTexture(int i)
+{
+  return this->m_textures.at(i).get();
+}
+
 C2WorldModel* C2MapRscFile::getWorldModel(int i)
 {
   return this->m_models.at(i).get();
@@ -52,7 +57,8 @@ void C2MapRscFile::load(const std::string &file_name)
     
     infile.read(reinterpret_cast<char *>(this->m_fade_rgb), 4*3*3);
     infile.read(reinterpret_cast<char *>(this->m_trans_rgb), 4*3*3);
-    
+
+    /*
     for (int tx = 0; tx < texture_count; tx++) {
       std::vector<uint16_t> raw_texture_data; //rgba5551
       raw_texture_data.resize(128*128);
@@ -60,7 +66,49 @@ void C2MapRscFile::load(const std::string &file_name)
       
       std::unique_ptr<C2Texture> cTexture = std::unique_ptr<C2Texture>(new C2Texture(raw_texture_data, 128*128, 128, 128));
       this->m_textures.push_back(std::move(cTexture));
+    }*/
+    
+    // read all the textures into a single buffer
+    
+    std::vector<uint16_t> raw_texture_data; //rgba5551
+    raw_texture_data.resize(128*128*texture_count);
+    infile.read(reinterpret_cast<char *>(raw_texture_data.data()), 128*128*sizeof(uint16_t)*texture_count);
+
+
+    // lets combine all the textures into a single texture for ease of opengl use.
+    // TODO: Record the number of ground textures and the locations for lookup by shader
+    std::vector<uint16_t> combined_texture_data; //rgba5551
+    int texture_rows = static_cast<int>(sqrt(static_cast<float>(texture_count)));
+    int squared_texture_rows = static_cast<int>(sqrt(static_cast<float>(texture_count)) + .99f); // number of rows and columns needed to fit the data
+    int empty_images_needed = (squared_texture_rows*squared_texture_rows) - texture_count;
+
+    for (int line = 0; line < (squared_texture_rows*128); line++) {
+      for (int col = 0; col < squared_texture_rows; col++) {
+        int lin_to_row = static_cast<int>(line/128);
+        int tx_c = ((lin_to_row)*squared_texture_rows)+col;
+        int tex_start = line % 128;
+
+        if (tx_c >= texture_count) {
+          std::vector<uint16_t> tx_filler(128);
+          combined_texture_data.insert(combined_texture_data.end(), tx_filler.begin(), tx_filler.end());
+        } else {
+          std::vector<uint16_t>::const_iterator first = raw_texture_data.begin() + (tx_c*128*128) + (tex_start*128);
+          std::vector<uint16_t>::const_iterator last = raw_texture_data.begin() + (tx_c*128*128) + (tex_start*128) + 128;
+          combined_texture_data.insert(combined_texture_data.end(), first, last);
+        }
+      }
     }
+    
+    int missing_bits = (squared_texture_rows*128*squared_texture_rows*128) - combined_texture_data.size();
+    std::vector<uint16_t> tx_filler(missing_bits);
+    combined_texture_data.insert(combined_texture_data.end(), tx_filler.begin(), tx_filler.end());
+
+    std::unique_ptr<C2Texture> cTexture = std::unique_ptr<C2Texture>(new C2Texture(combined_texture_data, squared_texture_rows*128*squared_texture_rows*128, squared_texture_rows*128, squared_texture_rows*128));
+    this->m_texture_atlas_width = squared_texture_rows;
+    this->m_texture_count = texture_count;
+    //cTexture->saveToBMPFile("/Users/tminard/Dino/tex/mapim2.bmp");
+    this->m_textures.push_back(std::move(cTexture));
+
     
     // Load 3d models
     for (int m=0; m < model_count; m++) {

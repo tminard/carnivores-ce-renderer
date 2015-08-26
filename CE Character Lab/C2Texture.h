@@ -38,6 +38,7 @@ public:
   void saveToBMPFile(std::string file_name);
   void Use();
   std::unique_ptr<CBitmap> getCBitmap();
+  std::vector<uint16_t>* getRawData();
 };
 
 #endif /* defined(__CE_Character_Lab__C2Texture__) */

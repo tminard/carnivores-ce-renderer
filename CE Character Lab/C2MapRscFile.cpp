@@ -58,8 +58,7 @@ void C2MapRscFile::load(const std::string &file_name)
     infile.read(reinterpret_cast<char *>(this->m_fade_rgb), 4*3*3);
     infile.read(reinterpret_cast<char *>(this->m_trans_rgb), 4*3*3);
 
-    /*
-    for (int tx = 0; tx < texture_count; tx++) {
+    /*for (int tx = 0; tx < texture_count; tx++) {
       std::vector<uint16_t> raw_texture_data; //rgba5551
       raw_texture_data.resize(128*128);
       infile.read(reinterpret_cast<char *>(raw_texture_data.data()), 128*128*sizeof(uint16_t));

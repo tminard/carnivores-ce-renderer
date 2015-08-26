@@ -52,10 +52,7 @@ void C2Texture::loadTextureIntoHardwareMemory()
 {
   glGenTextures(1, &this->m_texture_id);
   glBindTexture(GL_TEXTURE_2D, m_texture_id);
-  //glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-  
-  //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB5_A1, m_width, m_height, 0, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, m_raw_data.data());
-  //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB5_A1, m_width, m_height, 0, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, m_raw_data.data());
+
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB5_A1, m_width, m_height, 0, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, m_raw_data.data());
 
   glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);

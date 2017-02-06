@@ -117,7 +117,7 @@ GLuint Shader::CreateShader(const std::string& text, unsigned int type)
   const GLchar* p[1];
   p[0] = text.c_str();
   GLint lengths[1];
-  lengths[0] = text.length();
+  lengths[0] = static_cast<int>(text.length());
   
   glShaderSource(shader, 1, p, lengths);
   glCompileShader(shader);

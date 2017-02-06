@@ -13,13 +13,10 @@
 #include <vector>
 
 class Vertex;
+class C2MapFile;
 class TerrainRenderer
 {
 private:
-  constexpr static const float SIZE_PER_SIDE = 129;
-  constexpr static const float MIN_POS = 0.f;
-  constexpr static const float POS_RANGE = 10.f;
-  constexpr static const float WORLD_SIZE = 500.f;
   std::vector < Vertex > m_vertices;
   std::vector < unsigned int > m_indices;
   int m_num_indices;
@@ -29,9 +26,18 @@ private:
   GLuint m_vertexArrayBuffer;
   GLuint m_indicesArrayBuffer;
   
+  C2MapFile* m_cmap_data_weak;
+  
   void loadIntoHardwareMemory();
 public:
-  TerrainRenderer();
+  constexpr static const float WORLD_SIZE = 1024.f;
+  constexpr static const float TILE_SIZE = 256.f;
+
+  constexpr static const float TCMAX = 255.5f;
+  constexpr static const float TCMIN = 0.5f;
+  constexpr static const float _ZSCALE = (16.f*65534.f);
+
+  TerrainRenderer(C2MapFile* cMapWeak);
   ~TerrainRenderer();
 
   void Render();

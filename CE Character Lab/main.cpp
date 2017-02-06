@@ -97,23 +97,22 @@ int main(int argc, const char * argv[])
   std::unique_ptr<C2MapFile> cMap(new C2MapFile("/Users/tminard/Source/CE Character Lab/CE Character Lab/AREA1.MAP"));
   std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile("/Users/tminard/Source/CE Character Lab/CE Character Lab/AREA1.RSC"));
 
-  
-  C2WorldModel* plant = cMapRsc->getWorldModel(0);
-  C2WorldModel* tree_plant = cMapRsc->getWorldModel(12);
   C2Geometry* allG = allo->getCurrentModelForRender();
   
   Shader shader("/Users/tminard/Source/CE Character Lab/CE Character Lab/basicShader");
   Shader t_shader("/Users/tminard/Source/CE Character Lab/CE Character Lab/terrain");
   //1024.0f / 768.0f
   //60.f, 1.7777777777777777777777777777778f, 1.f, 150000.f );
-  Camera cam(glm::vec3(0.f,6.f,-6.f), 70.f, 1024.0f / 768.0f, 0.1f, 350.f);
+  float VIEW_R = 100.5f * TerrainRenderer::TILE_SIZE;
+  Camera cam(glm::vec3(0.f,6.f,0), 5.f, 800.f / 600.f, 0.1f, VIEW_R);
   Transform mTrans(glm::vec3(0,0,0), glm::vec3(0,90.f,0), glm::vec3(0.25f, 0.25f, 0.25f));
   
-  TerrainRenderer* ter = new TerrainRenderer();
+  TerrainRenderer* ter = new TerrainRenderer(cMap.get());
   
   while (!glfwWindowShouldClose(window))
   {
     glfwMakeContextCurrent(window);
+
     /* Game loop */
     RealTime = timeGetTime();
     srand( (unsigned)RealTime );
@@ -122,6 +121,8 @@ int main(int argc, const char * argv[])
     if (TimeDt>10000) TimeDt = 10;
     if (TimeDt>1000) TimeDt = 1000;
     PrevTime = RealTime;
+    
+    glm::vec3 current_pos = cam.GetCurrentPos();
 
     // Process AI
     allo->intelligence->think(TimeDt);
@@ -139,29 +140,50 @@ int main(int argc, const char * argv[])
     Transform mTrans_land(glm::vec3(0,0,0), glm::vec3(0,0,0), glm::vec3(1.f, 1.f, 1.f));
     t_shader.Update(mTrans_land, cam);
     cMapRsc->getTexture(0)->Use();
+
     ter->Render();
 
     shader.Bind();
-    /*mTrans.GetScale()->x = 0.005;
-    mTrans.GetScale()->y = 0.005;
-    mTrans.GetScale()->z = 0.005;*/
-    mTrans.GetPos()->z = 15.f; //20 yards (60ft) , dino at 45mph hits character in 1 second, 13 seconds for human walk
-    shader.Update(mTrans, cam);
-    //allG->Draw();
+    allo->render();
 
-    Transform mTrans_c(glm::vec3(100.f,0,310.f), glm::vec3(0,180.f,0), glm::vec3(0.25f, 0.25f, 0.25f));
-    /*mTrans_c.GetScale()->x = 0.005;
-    mTrans_c.GetScale()->y = 0.005;
-    mTrans_c.GetScale()->z = 0.005;*/
-    shader.Update(mTrans_c, cam);
-    tree_plant->render();
+    // loop through visible objects
+    float cur_x = current_pos.x;
+    float cur_y = current_pos.z;
+    int current_row = static_cast<int>(cur_y / TerrainRenderer::TILE_SIZE);
+    int current_col = static_cast<int>(cur_x / TerrainRenderer::TILE_SIZE);
+    int view_distance_squares = (VIEW_R / TerrainRenderer::TILE_SIZE) / 2;
 
-    Transform mTrans_b(glm::vec3(-1.f,0,60.f), glm::vec3(0,180.f,0), glm::vec3(0.25f, 0.25f, 0.25f));
-    /*mTrans_b.GetScale()->x = 0.005;
-    mTrans_b.GetScale()->y = 0.005;
-    mTrans_b.GetScale()->z = 0.005;*/
-    shader.Update(mTrans_b, cam);
-    plant->render();
+
+    // For each row/col, decide whether or not to draw
+    for (int view_row = current_row + view_distance_squares; view_row > (current_row - view_distance_squares); view_row--) {
+      for (int view_col = current_col - view_distance_squares; view_col < current_col + view_distance_squares; view_col++) {
+        int obj_id = cMap->getObjectAt(((view_row)*TerrainRenderer::WORLD_SIZE)+view_col);
+        
+        if (obj_id != 255 && obj_id != 254) {
+          C2WorldModel* w_obj = cMapRsc->getWorldModel(obj_id);
+          int obj_height = cMap->getHeightAt((view_row*TerrainRenderer::WORLD_SIZE) + view_col);
+          Transform mTrans_c(glm::vec3(view_col*TerrainRenderer::TILE_SIZE,obj_height,view_row*TerrainRenderer::TILE_SIZE), glm::vec3(0,0,0), glm::vec3(1.f, 1.f, 1.f));
+          shader.Update(mTrans_c, cam);
+          w_obj->render();
+        }
+      }
+    }
+    
+    /*
+    //int view_range = int(VIEW_R);
+    for (int vy = cur_y+(VIEW_R/TerrainRenderer::TILE_SIZE); vy > cur_y-(VIEW_R/TerrainRenderer::TILE_SIZE); vy -= TerrainRenderer::TILE_SIZE) {
+      for (int x = cur_x-(VIEW_R/TerrainRenderer::TILE_SIZE); x < cur_x+(VIEW_R/TerrainRenderer::TILE_SIZE); x += TerrainRenderer::TILE_SIZE) {
+        int obj_id = cMap->getObjectAt(((vy/TerrainRenderer::TILE_SIZE)*TerrainRenderer::WORLD_SIZE)+(x/TerrainRenderer::TILE_SIZE));
+        
+        if (obj_id != 255 && obj_id != 254) {
+          C2WorldModel* w_obj = cMapRsc->getWorldModel(obj_id);
+          int obj_height = cMap->getHeightAt(int((floorf(vy/TerrainRenderer::TILE_SIZE)*TerrainRenderer::WORLD_SIZE)+floorf(x/TerrainRenderer::TILE_SIZE)));
+          Transform mTrans_c(glm::vec3(x,obj_height,vy), glm::vec3(0,0,0), glm::vec3(0.125f, 0.125f, 0.125f));
+          shader.Update(mTrans_c, cam);
+          w_obj->render();
+        }
+      }
+    }*/
     
     /* Render loop*/
     
@@ -170,6 +192,45 @@ int main(int argc, const char * argv[])
     // Render characters
     // Render models
     // Render terrain
+    
+    float FLY_SPEED = 300.f;//10.5f;
+    
+    if (glfwGetKey(window, GLFW_KEY_UP ) == GLFW_PRESS) {
+      cam.MoveForward(FLY_SPEED);
+    }
+    
+    if (glfwGetKey(window, GLFW_KEY_DOWN ) == GLFW_PRESS) {
+      //current_pos.z -= 1.125f;
+      cam.MoveForward(-(FLY_SPEED));
+    }
+    
+    if (glfwGetKey(window, GLFW_KEY_RIGHT ) == GLFW_PRESS) {
+      //current_pos.x -= 1.125f;
+      cam.MoveRight(-(FLY_SPEED));
+    }
+    
+    if (glfwGetKey(window, GLFW_KEY_LEFT ) == GLFW_PRESS) {
+      //current_pos.x += 1.125f;
+      cam.MoveRight(FLY_SPEED);
+    }
+    
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+      cam.RotateY(0.025f);
+    }
+    
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+      cam.RotateY(-0.025f);
+    }
+    
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+      cam.MoveUp(-FLY_SPEED);
+    }
+    
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+      cam.MoveUp(FLY_SPEED);
+    }
+
+    //cam.SetHeight(cMap->getHeightAt(int((floorf(current_pos.z/TerrainRenderer::TILE_SIZE)*TerrainRenderer::WORLD_SIZE)+floorf(current_pos.x/TerrainRenderer::TILE_SIZE))) + 6.f);
     
     
     /* Swap front and back buffers */
@@ -186,5 +247,30 @@ int main(int argc, const char * argv[])
 
   return 0;
 }
+
+
+/*
+ mTrans.GetScale()->x = 0.005;
+ mTrans.GetScale()->y = 0.005;
+ mTrans.GetScale()->z = 0.005;
+mTrans.GetPos()->z = 190.f; //20 yards (60ft) , dino at 45mph hits character in 1 second, 13 seconds for human walk
+shader.Update(mTrans, cam);
+allG->Draw();
+
+Transform mTrans_c(glm::vec3(100.f,0,310.f), glm::vec3(0,180.f,0), glm::vec3(0.25f, 0.25f, 0.25f));
+mTrans_c.GetScale()->x = 0.005;
+ mTrans_c.GetScale()->y = 0.005;
+ mTrans_c.GetScale()->z = 0.005;
+shader.Update(mTrans_c, cam);
+tree_plant->render();
+
+Transform mTrans_b(glm::vec3(-25.f,0,60.f), glm::vec3(0,180.f,0), glm::vec3(0.25f, 0.25f, 0.25f));
+mTrans_b.GetScale()->x = 0.005;
+ mTrans_b.GetScale()->y = 0.005;
+ mTrans_b.GetScale()->z = 0.005;
+shader.Update(mTrans_b, cam);
+tree_plant->render();
+
+*/
 
 

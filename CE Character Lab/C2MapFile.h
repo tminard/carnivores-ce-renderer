@@ -37,6 +37,10 @@ public:
   C2MapFile(const std::string& map_file_name);
   ~C2MapFile();
   
+  float getHeightAt(int xy);
+  int getObjectAt(int xy);
+  int getTextureIDAt(int xy);
+  
   void load(const std::string& file_name);
 };
 

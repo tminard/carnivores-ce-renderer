@@ -20,9 +20,9 @@ private:
   glm::vec3 m_position;
   glm::vec2 m_uv_coord;
   glm::vec3 m_normal;
-  
-  bool m_hide = false;
+
   uint32_t m_owner = 0; // C2 specific flag ranging 0-8. Used for bounding box
+  bool m_hide = false;
 
 public:
   Vertex(const glm::vec3& position, const glm::vec2& texture_coord, const glm::vec3& normal, bool hidden, uint32_t owner);

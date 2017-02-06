@@ -38,6 +38,10 @@ C2Texture* C2MapRscFile::getTexture(int i)
 
 C2WorldModel* C2MapRscFile::getWorldModel(int i)
 {
+  if (i < 0 || i >= this->m_models.size()) {
+    return nullptr;
+  }
+
   return this->m_models.at(i).get();
 }
 
@@ -77,9 +81,9 @@ void C2MapRscFile::load(const std::string &file_name)
     // lets combine all the textures into a single texture for ease of opengl use.
     // TODO: Record the number of ground textures and the locations for lookup by shader
     std::vector<uint16_t> combined_texture_data; //rgba5551
-    int texture_rows = static_cast<int>(sqrt(static_cast<float>(texture_count)));
+    // int texture_rows = static_cast<int>(sqrt(static_cast<float>(texture_count)));
     int squared_texture_rows = static_cast<int>(sqrt(static_cast<float>(texture_count)) + .99f); // number of rows and columns needed to fit the data
-    int empty_images_needed = (squared_texture_rows*squared_texture_rows) - texture_count;
+    // int empty_images_needed = (squared_texture_rows*squared_texture_rows) - texture_count;
 
     for (int line = 0; line < (squared_texture_rows*128); line++) {
       for (int col = 0; col < squared_texture_rows; col++) {

@@ -11,7 +11,7 @@ public:
   {
     this->pos = pos;
     this->forward = glm::vec3(0.0f, 0.0f, 1.0f);
-    this->up = glm::vec3(0.0f, 1.0f, 0.0f);
+    this->up = glm::vec3(0.0f, -1.0f, 0.0f);
     this->projection = glm::perspective(fov, aspect, zNear, zFar);
   }
   
@@ -20,15 +20,34 @@ public:
     return projection * glm::lookAt(pos, pos + forward, up);
   }
   
-  //void MoveForward(float amt)
-  //{
-  //	pos += forward * amt;
-  //}
+  void SetPos(const glm::vec3& new_pos)
+  {
+    this->pos = new_pos;
+  }
   
-  //void MoveRight(float amt)
-  //{
-  //	pos += glm::cross(up, forward) * amt;
-  //}
+  const glm::vec3& GetCurrentPos()
+  {
+    return this->pos;
+  }
+  
+  void MoveForward(float amt)
+  {
+  	pos += forward * amt;
+  }
+  
+  void MoveUp(float amt)
+  {
+    pos += up * amt;
+  }
+  
+  void MoveRight(float amt)
+  {
+  	pos += glm::cross(up, forward) * amt;
+  }
+  
+  void SetHeight(float height) {
+    pos.y = height;
+  }
   
   //void Pitch(float angle)
   //{
@@ -38,15 +57,15 @@ public:
   //	up = glm::normalize(glm::cross(forward, right));
   //}
   
-  //void RotateY(float angle)
-  //{
-  //	static const glm::vec3 UP(0.0f, 1.0f, 0.0f);
+  void RotateY(float angle)
+  {
+  	static const glm::vec3 UP(0.0f, 1.0f, 0.0f);
   
-  //	glm::mat4 rotation = glm::rotate(angle, UP);
+  	glm::mat4 rotation = glm::rotate(angle, UP);
   
-  //	forward = glm::vec3(glm::normalize(rotation * glm::vec4(forward, 0.0)));
-  //	up = glm::vec3(glm::normalize(rotation * glm::vec4(up, 0.0)));
-  //}
+  	forward = glm::vec3(glm::normalize(rotation * glm::vec4(forward, 0.0)));
+  	up = glm::vec3(glm::normalize(rotation * glm::vec4(up, 0.0)));
+  }
   
 protected:
 private:

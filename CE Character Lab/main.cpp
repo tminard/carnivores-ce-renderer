@@ -97,7 +97,7 @@ int main(int argc, const char * argv[])
   std::unique_ptr<C2MapFile> cMap(new C2MapFile("/Users/tminard/Source/CE Character Lab/CE Character Lab/AREA1.MAP"));
   std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile("/Users/tminard/Source/CE Character Lab/CE Character Lab/AREA1.RSC"));
 
-  C2Geometry* allG = allo->getCurrentModelForRender();
+  // C2Geometry* allG = allo->getCurrentModelForRender();
   
   Shader shader("/Users/tminard/Source/CE Character Lab/CE Character Lab/basicShader");
   Shader t_shader("/Users/tminard/Source/CE Character Lab/CE Character Lab/terrain");

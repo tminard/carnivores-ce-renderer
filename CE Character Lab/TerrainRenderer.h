@@ -9,7 +9,7 @@
 #include <stdio.h>
 
 #include <OpenGL/gl3.h>
-#include <GLFW/glfw3.h>
+//#include <GLFW/glfw3.h>
 #include <vector>
 
 class Vertex;

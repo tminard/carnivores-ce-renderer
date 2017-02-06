@@ -179,7 +179,7 @@ C2Geometry* C2AnimatableModel::getMorphedModel(std::string animation_name, int a
 {
 //  #warning TODO: This modifies the original shared model. Fix this. Also check for nulls
   C2Geometry* sharedGeo = this->m_car_file->getGeometry();
-  C2Animation* animation = this->m_car_file->getAnimationByName(animation_name);
+  //C2Animation* animation = this->m_car_file->getAnimationByName(animation_name);
 
   /*int currentFrame = ((animation->m_number_of_frames-1) * at_time * 256) / animation->m_total_time;
   int splineDelta = currentFrame & 0xFF;

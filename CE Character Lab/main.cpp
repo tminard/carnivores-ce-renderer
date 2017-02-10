@@ -159,19 +159,19 @@ int main(int argc, const char * argv[])
 
 
     // For each row/col, decide whether or not to draw
-//    for (int view_row = current_row + view_distance_squares; view_row > (current_row - view_distance_squares); view_row--) {
-//      for (int view_col = current_col - view_distance_squares; view_col < current_col + view_distance_squares; view_col++) {
-//        int obj_id = cMap->getObjectAt(((view_row)*cMap->getWidth())+view_col);
-//        
-//        if (obj_id != 255 && obj_id != 254) {
-//          C2WorldModel* w_obj = cMapRsc->getWorldModel(obj_id);
-//          int obj_height = cMap->getHeightAt((view_row*cMap->getWidth()) + view_col);
-//          Transform mTrans_c(glm::vec3(view_col*cMap->getTileLength(),obj_height,view_row*cMap->getTileLength()), glm::vec3(0,0,0), glm::vec3(2.f, 2.f, 2.f));
-//          shader.Update(mTrans_c, cam);
-//          w_obj->render();
-//        }
-//      }
-//    }
+    for (int view_row = current_row + view_distance_squares; view_row > (current_row - view_distance_squares); view_row--) {
+      for (int view_col = current_col - view_distance_squares; view_col < current_col + view_distance_squares; view_col++) {
+        int obj_id = cMap->getObjectAt(((view_row)*cMap->getWidth())+view_col);
+        
+        if (obj_id != 255 && obj_id != 254) {
+          C2WorldModel* w_obj = cMapRsc->getWorldModel(obj_id);
+          int obj_height = cMap->getHeightAt((view_row*cMap->getWidth()) + view_col);
+          Transform mTrans_c(glm::vec3(view_col*cMap->getTileLength(),obj_height,view_row*cMap->getTileLength()), glm::vec3(0,0,0), glm::vec3(2.f, 2.f, 2.f));
+          shader.Update(mTrans_c, cam);
+          w_obj->render();
+        }
+      }
+    }
 
     /*
     //int view_range = int(VIEW_R);

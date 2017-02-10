@@ -64,7 +64,6 @@ void C2Geometry::Draw()
   m_texture->Use();
   glBindVertexArray(this->m_vertexArrayObject);
 
-  //glDrawArrays(GL_TRIANGLES, 0, (int)this->m_indices.size());
   glDrawElementsBaseVertex(GL_TRIANGLES, (int)this->m_indices.size(), GL_UNSIGNED_INT, 0, 0);
   
   glBindVertexArray(0);

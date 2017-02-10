@@ -20,11 +20,12 @@ const int FOG_END = 18000;
 void main()
 {
   int tex = texID0; // get tile´s texture ID
-  float tex_size_square = 8.f; //TODO: get this from the map rsc file
+  float tex_size_square = 8.f; //TODO: get this from the map rsc file - textures are stored in a single atlas
   int tex_y = int(floor(float(tex)/tex_size_square));
 
-  vec2 UV = vec2((1.f/tex_size_square) * (tex + fract(texCoord0.x/6.f)), (1.f/tex_size_square) * (tex_y + fract(texCoord0.y/6.f)));
+  float unit_increase = (1.f / tex_size_square);
 
+  vec2 UV = vec2(((tex * unit_increase) + (texCoord0.x * unit_increase)), ((tex_y * unit_increase) + (texCoord0.y * unit_increase)));
   vec4 sC = texture( basic_texture, UV );
 
   float dist = length(worldPos);

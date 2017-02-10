@@ -63,7 +63,7 @@ int main(int argc, const char * argv[])
   glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );
   
   GLFWwindow* window;
-  window = glfwCreateWindow(800, 600, "Hello World", NULL, NULL);
+  window = glfwCreateWindow(800, 600, "Carnivores Renderer", NULL, NULL);
   if (!window)
   {
     glfwTerminate();
@@ -98,16 +98,20 @@ int main(int argc, const char * argv[])
   std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile("/Users/tminard/Source/CE Character Lab/CE Character Lab/AREA1.RSC"));
 
   // C2Geometry* allG = allo->getCurrentModelForRender();
+
+  std::cout << "Map texture atlas width: " << cMapRsc->getTextureAtlasWidth();
   
   Shader shader("/Users/tminard/Source/CE Character Lab/CE Character Lab/basicShader");
   Shader t_shader("/Users/tminard/Source/CE Character Lab/CE Character Lab/terrain");
-  //1024.0f / 768.0f
+
   //60.f, 1.7777777777777777777777777777778f, 1.f, 150000.f );
-  float VIEW_R = 100.5f * TerrainRenderer::TILE_SIZE;
-  Camera cam(glm::vec3(0.f,6.f,0), 5.f, 800.f / 600.f, 0.1f, VIEW_R);
-  Transform mTrans(glm::vec3(0,0,0), glm::vec3(0,90.f,0), glm::vec3(0.25f, 0.25f, 0.25f));
+
+  float VIEW_R = 100.5f * cMap->getTileLength();
+  Camera cam(glm::vec3(0.f,15.f,0), 45.f, (float)800.f / (float)600.f, 0.1f, VIEW_R);
+  //Transform mTrans(glm::vec3(0,0,0), glm::vec3(0,90.f,0), glm::vec3(0.25f, 0.25f, 0.25f));
   
-  TerrainRenderer* ter = new TerrainRenderer(cMap.get());
+  TerrainRenderer* ter = new TerrainRenderer(cMap.get(), cMapRsc.get());
+  bool wireframe_mode = false;
   
   while (!glfwWindowShouldClose(window))
   {
@@ -149,26 +153,26 @@ int main(int argc, const char * argv[])
     // loop through visible objects
     float cur_x = current_pos.x;
     float cur_y = current_pos.z;
-    int current_row = static_cast<int>(cur_y / TerrainRenderer::TILE_SIZE);
-    int current_col = static_cast<int>(cur_x / TerrainRenderer::TILE_SIZE);
-    int view_distance_squares = (VIEW_R / TerrainRenderer::TILE_SIZE) / 2;
+    int current_row = static_cast<int>(cur_y / cMap->getTileLength());
+    int current_col = static_cast<int>(cur_x / cMap->getTileLength());
+    int view_distance_squares = (VIEW_R / cMap->getTileLength()) / 2;
 
 
     // For each row/col, decide whether or not to draw
-    for (int view_row = current_row + view_distance_squares; view_row > (current_row - view_distance_squares); view_row--) {
-      for (int view_col = current_col - view_distance_squares; view_col < current_col + view_distance_squares; view_col++) {
-        int obj_id = cMap->getObjectAt(((view_row)*TerrainRenderer::WORLD_SIZE)+view_col);
-        
-        if (obj_id != 255 && obj_id != 254) {
-          C2WorldModel* w_obj = cMapRsc->getWorldModel(obj_id);
-          int obj_height = cMap->getHeightAt((view_row*TerrainRenderer::WORLD_SIZE) + view_col);
-          Transform mTrans_c(glm::vec3(view_col*TerrainRenderer::TILE_SIZE,obj_height,view_row*TerrainRenderer::TILE_SIZE), glm::vec3(0,0,0), glm::vec3(1.f, 1.f, 1.f));
-          shader.Update(mTrans_c, cam);
-          w_obj->render();
-        }
-      }
-    }
-    
+//    for (int view_row = current_row + view_distance_squares; view_row > (current_row - view_distance_squares); view_row--) {
+//      for (int view_col = current_col - view_distance_squares; view_col < current_col + view_distance_squares; view_col++) {
+//        int obj_id = cMap->getObjectAt(((view_row)*cMap->getWidth())+view_col);
+//        
+//        if (obj_id != 255 && obj_id != 254) {
+//          C2WorldModel* w_obj = cMapRsc->getWorldModel(obj_id);
+//          int obj_height = cMap->getHeightAt((view_row*cMap->getWidth()) + view_col);
+//          Transform mTrans_c(glm::vec3(view_col*cMap->getTileLength(),obj_height,view_row*cMap->getTileLength()), glm::vec3(0,0,0), glm::vec3(2.f, 2.f, 2.f));
+//          shader.Update(mTrans_c, cam);
+//          w_obj->render();
+//        }
+//      }
+//    }
+
     /*
     //int view_range = int(VIEW_R);
     for (int vy = cur_y+(VIEW_R/TerrainRenderer::TILE_SIZE); vy > cur_y-(VIEW_R/TerrainRenderer::TILE_SIZE); vy -= TerrainRenderer::TILE_SIZE) {
@@ -193,7 +197,7 @@ int main(int argc, const char * argv[])
     // Render models
     // Render terrain
     
-    float FLY_SPEED = 300.f;//10.5f;
+    float FLY_SPEED = 150.f;//10.5f;
     
     if (glfwGetKey(window, GLFW_KEY_UP ) == GLFW_PRESS) {
       cam.MoveForward(FLY_SPEED);
@@ -223,14 +227,24 @@ int main(int argc, const char * argv[])
     }
     
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-      cam.MoveUp(-FLY_SPEED);
+      cam.MoveUp(FLY_SPEED);
     }
     
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-      cam.MoveUp(FLY_SPEED);
+      cam.MoveUp(-FLY_SPEED);
     }
 
-    //cam.SetHeight(cMap->getHeightAt(int((floorf(current_pos.z/TerrainRenderer::TILE_SIZE)*TerrainRenderer::WORLD_SIZE)+floorf(current_pos.x/TerrainRenderer::TILE_SIZE))) + 6.f);
+    if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) {
+      wireframe_mode = !wireframe_mode;
+
+      if (wireframe_mode) {
+        glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+      } else {
+        glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+      }
+    }
+
+    //cam.SetHeight(cMap->getHeightAt(int((floorf(current_pos.z/TerrainRenderer::TILE_SIZE)*TerrainRenderer::WORLD_SIZE)+floorf(current_pos.x/TerrainRenderer::TILE_SIZE))) + 200.f);
     
     
     /* Swap front and back buffers */

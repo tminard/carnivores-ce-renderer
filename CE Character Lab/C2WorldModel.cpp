@@ -49,11 +49,11 @@ C2WorldModel::C2WorldModel(std::ifstream& instream)
   instream.read(reinterpret_cast<char *>(_obj_buffer.data()), _object_count*48);
   instream.read(reinterpret_cast<char *>(texture_data.data()), _tsize);
 
-  for (int v=0; v < _vcount; v++) {
-    file_vertex_data[v].x *= 4.0f;
-    file_vertex_data[v].y *= 4.0f;
-    file_vertex_data[v].z *= -4.0f;
-  }
+//  for (int v=0; v < _vcount; v++) {
+//    file_vertex_data[v].x *= 4.0f;
+//    file_vertex_data[v].y *= 4.0f;
+//    file_vertex_data[v].z *= -4.0f;
+//  }
 
   IndexedMeshLoader* m_loader = new IndexedMeshLoader(file_vertex_data, face_data);
 

@@ -1,10 +1,6 @@
 //
 //  C2MapFile.cpp
 //  CE Character Lab
-//
-//  Created by Tyler Minard on 8/14/15.
-//  Copyright (c) 2015 Tyler Minard. All rights reserved.
-//
 
 #include "C2MapFile.h"
 #include <iostream>
@@ -22,13 +18,33 @@ C2MapFile::~C2MapFile()
   
 }
 
+float C2MapFile::getWidth()
+{
+  return SIZE;
+}
+
+float C2MapFile::getHeight()
+{
+  return SIZE;
+}
+
+float C2MapFile::getTileLength()
+{
+  return 256.f;
+}
+
 int C2MapFile::getTextureIDAt(int xy)
 {
-  if (xy < 0 || xy >= this->m_texture_A_index_data.size()) {
-    return 0;
-  }
-  
+//  if (xy < 0 || xy >= this->m_texture_A_index_data.size()) {
+//    return 0;
+//  }
+
   return int(this->m_texture_A_index_data.at(xy));
+}
+
+uint16_t C2MapFile::getFlagsAt(int xy)
+{
+  return this->m_flags_data.at(xy);
 }
 
 float C2MapFile::getHeightAt(int xy)
@@ -37,7 +53,7 @@ float C2MapFile::getHeightAt(int xy)
     return 0;
   }
 
-  float h_scale = 64.f;//8.25f;//0.25f;
+  float h_scale = 64.f;
   float scaled_height = this->m_heightmap_data.at(xy) * h_scale;
   
   // nh = (16 / H) * -1

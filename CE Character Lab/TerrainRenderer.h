@@ -7,13 +7,16 @@
 #define __CE_Character_Lab__TerrainRenderer__
 
 #include <stdio.h>
+#include <exception>
 
 #include <OpenGL/gl3.h>
-//#include <GLFW/glfw3.h>
+#include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
 #include <vector>
 
 class Vertex;
 class C2MapFile;
+class C2MapRscFile;
 class TerrainRenderer
 {
 private:
@@ -27,17 +30,19 @@ private:
   GLuint m_indicesArrayBuffer;
   
   C2MapFile* m_cmap_data_weak;
+  C2MapRscFile* m_crsc_data_weak;
   
   void loadIntoHardwareMemory();
+  glm::vec2 calcAtlasUV(int texID, glm::vec2 uv);
+  glm::vec3 calcWorldVertex(int tile_x, int tile_y);
+  std::array<glm::vec2, 4> calcUVMapForQuad(int x, int y, bool quad_reversed, int rotation_code);
 public:
-  constexpr static const float WORLD_SIZE = 1024.f;
-  constexpr static const float TILE_SIZE = 256.f;
 
   constexpr static const float TCMAX = 255.5f;
   constexpr static const float TCMIN = 0.5f;
   constexpr static const float _ZSCALE = (16.f*65534.f);
 
-  TerrainRenderer(C2MapFile* cMapWeak);
+  TerrainRenderer(C2MapFile* cMapWeak, C2MapRscFile* cRscWeak);
   ~TerrainRenderer();
 
   void Render();

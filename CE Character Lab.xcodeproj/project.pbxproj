@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		D61CCBFF1B7E2566004BD900 /* CE_Level.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D61CCBFD1B7E2566004BD900 /* CE_Level.cpp */; };
 		D61CCC031B7E5CC8004BD900 /* C2MapFile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D61CCC011B7E5CC8004BD900 /* C2MapFile.cpp */; };
-		D61CCC061B7E6361004BD900 /* AREA1.MAP in Sources */ = {isa = PBXBuildFile; fileRef = D61CCC041B7E6361004BD900 /* AREA1.MAP */; };
 		D61CCC091B7E653E004BD900 /* C2MapRscFile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D61CCC071B7E653E004BD900 /* C2MapRscFile.cpp */; };
 		D61CCC0C1B7E68D0004BD900 /* C2Texture.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D61CCC0A1B7E68D0004BD900 /* C2Texture.cpp */; };
 		D61CCC0F1B7E7BF5004BD900 /* C2WorldModel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D61CCC0D1B7E7BF5004BD900 /* C2WorldModel.cpp */; };
@@ -29,8 +28,6 @@
 		D65552A41B797DC200CC5309 /* AI_Allosaurus.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D65552A31B797DC200CC5309 /* AI_Allosaurus.cpp */; };
 		D65552A71B7A325C00CC5309 /* CE_AIUtilities.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D65552A51B7A325C00CC5309 /* CE_AIUtilities.cpp */; };
 		D657B8951B851D3A0051BCC7 /* IndexedMeshLoader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D657B8931B851D3A0051BCC7 /* IndexedMeshLoader.cpp */; };
-		D6ADAC311B9BD24C00E2AA7D /* AREA5.MAP in Sources */ = {isa = PBXBuildFile; fileRef = D6ADAC2D1B9BD24C00E2AA7D /* AREA5.MAP */; };
-		D6ADAC321B9BD24C00E2AA7D /* TROPHY.MAP in Sources */ = {isa = PBXBuildFile; fileRef = D6ADAC2F1B9BD24C00E2AA7D /* TROPHY.MAP */; };
 		D6F2F86A1B836F3A0018DBF0 /* C2Sky.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6F2F8681B836F3A0018DBF0 /* C2Sky.cpp */; };
 		D6F2F86C1B8377E60018DBF0 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D61CCBFB1B7E200E004BD900 /* OpenGL.framework */; };
 		D6F2F8751B83855A0018DBF0 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D6F2F8741B83855A0018DBF0 /* IOKit.framework */; };
@@ -381,10 +378,7 @@
 				D6247C171B88F30F00088EB2 /* TerrainRenderer.cpp in Sources */,
 				D655529C1B76955900CC5309 /* C2SoundFX.cpp in Sources */,
 				D655522D1B73DA2000CC5309 /* main.cpp in Sources */,
-				D6ADAC311B9BD24C00E2AA7D /* AREA5.MAP in Sources */,
-				D61CCC061B7E6361004BD900 /* AREA1.MAP in Sources */,
 				D64585421B7A818B00D6327E /* carnivores_mock_functions.cpp in Sources */,
-				D6ADAC321B9BD24C00E2AA7D /* TROPHY.MAP in Sources */,
 				D65552A41B797DC200CC5309 /* AI_Allosaurus.cpp in Sources */,
 				D61CCC0F1B7E7BF5004BD900 /* C2WorldModel.cpp in Sources */,
 			);

@@ -40,6 +40,8 @@ private:
 public:
   C2MapRscFile(const std::string& file_name);
   ~C2MapRscFile();
+
+  int getTextureAtlasWidth();
   
   C2WorldModel* getWorldModel(int i);
   C2Texture* getTexture(int i);

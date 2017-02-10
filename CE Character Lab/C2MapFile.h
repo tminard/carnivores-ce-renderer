@@ -33,9 +33,20 @@ private:
   std::array<uint8_t, 512*512> m_fog_data;
   std::array<uint8_t, 512*512> m_soundfx_data;
 
+  constexpr static const float SIZE = 1024.f;
+
 public:
   C2MapFile(const std::string& map_file_name);
   ~C2MapFile();
+  
+  float getHeightAt(int xy);
+  int getObjectAt(int xy);
+  int getTextureIDAt(int xy);
+  uint16_t getFlagsAt(int xy);
+
+  float getHeight();
+  float getWidth();
+  float getTileLength();
   
   void load(const std::string& file_name);
 };

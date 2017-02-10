@@ -17,7 +17,7 @@ inline void delay( unsigned long ms )
 
 #include <unistd.h>
 
-inline void delay( unsigned long ms )
+inline void delay( useconds_t ms )
 {
   usleep( ms * 1000 );
 }

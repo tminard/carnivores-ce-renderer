@@ -19,7 +19,7 @@ C2AnimatableModel::C2AnimatableModel(const std::shared_ptr<C2CarFile>& car_file)
   this->m_position.x = 0.f;
   this->m_position.z = 0.f;
   this->m_position.y = 0.f;
-  
+
   this->m_current_animation_name = "";
   this->m_previous_animation_name = "";
 }
@@ -34,7 +34,7 @@ C2AnimatableModel::~C2AnimatableModel()
 void C2AnimatableModel::moveTo(float x, float z, bool blocked_by_water, bool blocked_by_models)
 {
   Vector3d p = this->m_position;
-  
+
   if (CheckPlaceCollision2(p, (int)blocked_by_water)) {
     this->m_position.x += x / 2;
     this->m_position.z += z / 2;
@@ -43,18 +43,18 @@ void C2AnimatableModel::moveTo(float x, float z, bool blocked_by_water, bool blo
 
   p.x+=x;
   p.z+=z;
-  
+
   if (!CheckPlaceCollision2(p, (int)blocked_by_water)) {
     this->m_position = p;
     return;
   }
-  
+
   p = this->m_position;
   p.x += x / 2;
   p.z += z / 2;
   if (!CheckPlaceCollision2(p, (int)blocked_by_water)) this->m_position = p;
   p = this->m_position;
-  
+
   p.x+=x/4;
   p.z+=z/4;
   this->m_position = p;
@@ -123,7 +123,7 @@ void C2AnimatableModel::animate(const int dtime)
   }
   this->m_frame_time += dtime;
   C2Animation* animation = this->m_car_file->getAnimationByName(this->m_current_animation_name);
- 
+
   if (this->m_frame_time >= animation->m_total_time)
   {
     this->m_frame_time %= animation->m_total_time;
@@ -151,6 +151,16 @@ void C2AnimatableModel::setAnimation(std::string animation_name)
   //ActivateCharacterFx(cptr);
 }
 
+/*
+ *
+ */
+void C2AnimatableModel::render()
+{
+  // update matrix
+  // update textures and shader if needed (pass in current shader so we know?)
+  // call draw
+}
+
 C2Geometry* C2AnimatableModel::getCurrentModelForRender()
 {
   if (this->m_current_animation_name == "") {
@@ -169,12 +179,12 @@ C2Geometry* C2AnimatableModel::getMorphedModel(std::string animation_name, int a
 {
 //  #warning TODO: This modifies the original shared model. Fix this. Also check for nulls
   C2Geometry* sharedGeo = this->m_car_file->getGeometry();
-  C2Animation* animation = this->m_car_file->getAnimationByName(animation_name);
-  
-  int currentFrame = ((animation->m_number_of_frames-1) * at_time * 256) / animation->m_total_time;
+  //C2Animation* animation = this->m_car_file->getAnimationByName(animation_name);
+
+  /*int currentFrame = ((animation->m_number_of_frames-1) * at_time * 256) / animation->m_total_time;
   int splineDelta = currentFrame & 0xFF;
   currentFrame = currentFrame >> 8;
-  
+
   float k2 = (float)(splineDelta) / 256.f;
   float k1 = 1.0f - k2;
   k1 = k1/8.f;
@@ -183,7 +193,7 @@ C2Geometry* C2AnimatableModel::getMorphedModel(std::string animation_name, int a
   std::vector<TPoint3d> m_vertices = sharedGeo->getVertices();
   int vcount = (int)m_vertices.size();
   int aniOffset = currentFrame*vcount*3;
-  
+
   for (int v=0; v<vcount; v++) {
 	  m_vertices[v].x = (float)animation->m_animation_data[(aniOffset)+(v * 3 + 0)] * k1 + (float)animation->m_animation_data[(aniOffset) + ((v + vcount) * 3 + 0)] * k2;
 	  m_vertices[v].y = (float)animation->m_animation_data[(aniOffset)+(v * 3 + 1)] * k1 + (float)animation->m_animation_data[(aniOffset) + ((v + vcount) * 3 + 1)] * k2;
@@ -191,81 +201,81 @@ C2Geometry* C2AnimatableModel::getMorphedModel(std::string animation_name, int a
   }
 
   sharedGeo->setVertices(m_vertices);
-  sharedGeo->syncOldVerticeData(); //support the old way. TODO: Eventually remove them when renderer can be refactord
+  sharedGeo->syncOldVerticeData(); //support the old way. TODO: Eventually remove them when renderer can be refactord*/
   return sharedGeo;
 }
 
 C2Geometry* C2AnimatableModel::getBetweenMorphedModel(std::string animation_previous_name, std::string animation_target_name, int at_time_previous, int at_time_target, int current_morph_time, float scale, float character_beta, float character_gamma, float character_bend)
 {
-//#warning This method suffers from the same incompleteness as getMorphedModel()
-  C2Geometry* sharedGeo = this->m_car_file->getGeometry();
 
+  C2Geometry* sharedGeo = this->m_car_file->getGeometry();
+/*
   C2Animation* previous_animation = m_car_file->getAnimationByName(animation_previous_name);
   C2Animation* target_animation = m_car_file->getAnimationByName(animation_target_name);
-  
+
   int previousFrame = 0, previousSplineDelta = 0;
-  
+
   int currentFrame = ((target_animation->m_number_of_frames-1) * at_time_target * 256) / target_animation->m_total_time;
   int splineDelta = currentFrame & 0xFF;
   currentFrame = currentFrame >> 8;
-  
+
   // Should I even try to morph?
   const int MAXMORPHTIME = 256;
   bool ShouldMorphPrevious = (animation_previous_name != animation_target_name) && (current_morph_time < MAXMORPHTIME);
-  
+
   if (ShouldMorphPrevious) {
     previousFrame = ((previous_animation->m_number_of_frames-1) * at_time_previous * 256) / previous_animation->m_total_time;
     previousSplineDelta = previousFrame & 0xFF;
     previousFrame = previousFrame >> 8;
   }
-  
+
   float k2 = (float)(splineDelta) / 256.f;
   float k1 = 1.0f - k2;
   k1 /= 8.f;
   k2 /= 8.f;
-  
+
   float previous_k1 = 0.f, previous_k2 = 0.f, pmk1 = 0.f, pmk2 = 0.f;
-  
+
   if (ShouldMorphPrevious) {
     previous_k2 = (float)(previousSplineDelta) / 256.f;
     previous_k1 = 1.0f - previous_k2;
-    
+
     previous_k1 /= 8.f;
     previous_k2 /= 8.f;
     pmk1 = (float)current_morph_time / MAXMORPHTIME;
     pmk2 = 1.f - pmk1;
   }
- 
+
   std::vector<TPoint3d> m_vertices = sharedGeo->getVertices();
   int vcount = m_vertices.size();
   float sb = (float)std::sin(character_beta) * scale;
   float cb = (float)std::cos(character_beta) * scale;
   float sg = (float)std::sin(character_gamma);
   float cg = (float)std::cos(character_gamma);
-  
+
   float x, xx, y, yy, z, zz, px, py, pz;
 
   for (int v=0; v<vcount; v++) {
     x = target_animation->m_animation_data[v*3+0] * k1 + target_animation->m_animation_data[(v+vcount)*3+0] * k2;
     y = target_animation->m_animation_data[v*3+1] * k1 + target_animation->m_animation_data[(v+vcount)*3+1] * k2;
     z = -(target_animation->m_animation_data[v*3+2] * k1 + target_animation->m_animation_data[(v+vcount)*3+2] * k2);
-    
+
     if (ShouldMorphPrevious) {
       px = previous_animation->m_animation_data[v*3+0] * previous_k1 + previous_animation->m_animation_data[(v+vcount)*3+0] * previous_k2;
       py = previous_animation->m_animation_data[v*3+1] * previous_k1 + previous_animation->m_animation_data[(v+vcount)*3+1] * previous_k2;
       pz = -(previous_animation->m_animation_data[v*3+2] * previous_k1 + previous_animation->m_animation_data[(v+vcount)*3+2] * previous_k2);
-      
+
       x = x*pmk1 + px * pmk2;
       y = y*pmk1 + py * pmk2;
       z = z*pmk1 + pz * pmk2;
     }
-    
+
     // Calculate 'FI' (used to determine whether or not to slow down the animation morph)
-    
+
     zz = z;
     xx = cg * x - sg * y;
     yy = cg * y + sg * x;
-    
+
     float fi = 0.f;
     if (z > 0) {
       fi = z / 240.f;
@@ -274,35 +284,36 @@ C2Geometry* C2AnimatableModel::getBetweenMorphedModel(std::string animation_prev
       fi = z / 380.f;
       if (fi < -1.f) fi = - 1.f;
     }
-    
+
     // FI value will be in range -1.0...+1.0
+ */
     /*
      STANDARD:
      Y represents forward/back.
      Z is height.
      X is shift right/left
-     
+
      beta is front-back rotation off X-0
      gamma is side-side rotation off Y-0
      alpha is facing direction off Z-0
-     
+
      NOTE: In carnivores, Y axis acts as the Z axis and vice versa (per RexHunter99, 30-July 2008):
-     
+
      C2:
      Z represents forward/back.
      Y is height.
      X is shift right/left
-     
+
      beta is front-back rotation off X-0
      gamma is side-side rotation off Z-0
      alpha is facing direction off Y-0
      */
-    
+
     // character bend represents how sharp of an angle the character is currently turning towards
     // his target alpha (where PI speed means complete 180). Taking this into account here
     // allows us to speed up/slow down the animation process based on bend (the animation effectively slows down when character makes a sharp turn).
-    fi *= character_bend;
-    
+    /*fi *= character_bend;
+
     // bend will be max of 0.628
     float bendc = (float)std::cos(fi); // right/left bend
     float bends = (float)std::sin(fi); // forward/back bend
@@ -310,14 +321,14 @@ C2Geometry* C2AnimatableModel::getBetweenMorphedModel(std::string animation_prev
     float bz = bendc * zz + bends * xx;
     zz = bz;
     xx = bx;
-    
+
     // finally done...
 	m_vertices[v].x = xx * scale;
 	m_vertices[v].y = cb * yy - sb * zz;
 	m_vertices[v].z = cb * zz + sb * yy;
   }
-  
+
   sharedGeo->setVertices(m_vertices);
-  sharedGeo->syncOldVerticeData();
+  sharedGeo->syncOldVerticeData();*/
   return sharedGeo;
 }

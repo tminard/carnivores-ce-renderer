@@ -18,24 +18,27 @@
 #include <vector>
 #include <string>
 
+#include <glfw/glfw3.h>
+
+class Shader;
+class CBitmap;
 class C2Texture
 {
 private:
   std::vector<uint16_t> m_raw_data; //argb1555 (ifA1R5G5B5)
+  GLuint m_texture_id;
   int m_height;
   int m_width;
 
-  TEXTURE* m_old_texture_data;
-  bool _did_load_map_texture_data = false;
-  void _generate_old_texture_data();
+  void loadTextureIntoHardwareMemory();
 public:
   C2Texture(const std::vector<uint16_t>& raw_texture_data, int texture_size = 128*128*2, int texture_height = 128, int texture_width = 128);
   ~C2Texture();
-  
-  void brighten();
-  void saveToBMPFile(std::string file_name);
 
-  TEXTURE* getMapTextureData(); // need access to this for old rendering
+  void saveToBMPFile(std::string file_name);
+  void Use();
+  std::unique_ptr<CBitmap> getCBitmap();
+  std::vector<uint16_t>* getRawData();
 };
 
 #endif /* defined(__CE_Character_Lab__C2Texture__) */

@@ -37,6 +37,11 @@ Shader::~Shader()
   glDeleteProgram(m_program);
 }
 
+GLuint Shader::getProgram()
+{
+  return this->m_program;
+}
+
 void Shader::Bind()
 {
   glUseProgram(m_program);
@@ -50,6 +55,11 @@ void Shader::Update(const Transform& transform, const Camera& camera)
   glUniformMatrix4fv(m_uniforms[0], 1, GL_FALSE, &MVP[0][0]);
   glUniformMatrix4fv(m_uniforms[1], 1, GL_FALSE, &Normal[0][0]);
   glUniform3f(m_uniforms[2], 0.0f, 0.0f, 1.0f);
+}
+
+GLuint Shader::getMVPUniform()
+{
+  return this->m_uniforms[0];
 }
 
 std::string Shader::LoadShader(const std::string& fileName)
@@ -107,7 +117,7 @@ GLuint Shader::CreateShader(const std::string& text, unsigned int type)
   const GLchar* p[1];
   p[0] = text.c_str();
   GLint lengths[1];
-  lengths[0] = text.length();
+  lengths[0] = static_cast<int>(text.length());
   
   glShaderSource(shader, 1, p, lengths);
   glCompileShader(shader);

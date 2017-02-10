@@ -16,6 +16,7 @@
 
 #include "transform.h"
 
+//glUniform1i(glGetUniformLocation(shader.getProgram(), "basic_texture"), 0);
 class Shader
 {
 public:
@@ -23,6 +24,8 @@ public:
   
   void Bind();
   void Update(const Transform& transform, const Camera& camera);
+  GLuint getProgram();
+  GLuint getMVPUniform();
   
   virtual ~Shader();
 protected:

@@ -9,10 +9,10 @@
 /* Begin PBXBuildFile section */
 		D61CCBFF1B7E2566004BD900 /* CE_Level.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D61CCBFD1B7E2566004BD900 /* CE_Level.cpp */; };
 		D61CCC031B7E5CC8004BD900 /* C2MapFile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D61CCC011B7E5CC8004BD900 /* C2MapFile.cpp */; };
-		D61CCC061B7E6361004BD900 /* AREA1.MAP in Sources */ = {isa = PBXBuildFile; fileRef = D61CCC041B7E6361004BD900 /* AREA1.MAP */; };
 		D61CCC091B7E653E004BD900 /* C2MapRscFile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D61CCC071B7E653E004BD900 /* C2MapRscFile.cpp */; };
 		D61CCC0C1B7E68D0004BD900 /* C2Texture.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D61CCC0A1B7E68D0004BD900 /* C2Texture.cpp */; };
 		D61CCC0F1B7E7BF5004BD900 /* C2WorldModel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D61CCC0D1B7E7BF5004BD900 /* C2WorldModel.cpp */; };
+		D6247C171B88F30F00088EB2 /* TerrainRenderer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6247C151B88F30F00088EB2 /* TerrainRenderer.cpp */; };
 		D64585421B7A818B00D6327E /* carnivores_mock_functions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D64585411B7A818B00D6327E /* carnivores_mock_functions.cpp */; };
 		D655522D1B73DA2000CC5309 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D655522C1B73DA2000CC5309 /* main.cpp */; };
 		D65552391B73DA4900CC5309 /* C2AnimatableModel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D65552341B73DA4900CC5309 /* C2AnimatableModel.cpp */; };
@@ -27,6 +27,7 @@
 		D655529C1B76955900CC5309 /* C2SoundFX.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D655529A1B76955900CC5309 /* C2SoundFX.cpp */; };
 		D65552A41B797DC200CC5309 /* AI_Allosaurus.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D65552A31B797DC200CC5309 /* AI_Allosaurus.cpp */; };
 		D65552A71B7A325C00CC5309 /* CE_AIUtilities.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D65552A51B7A325C00CC5309 /* CE_AIUtilities.cpp */; };
+		D657B8951B851D3A0051BCC7 /* IndexedMeshLoader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D657B8931B851D3A0051BCC7 /* IndexedMeshLoader.cpp */; };
 		D6F2F86A1B836F3A0018DBF0 /* C2Sky.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6F2F8681B836F3A0018DBF0 /* C2Sky.cpp */; };
 		D6F2F86C1B8377E60018DBF0 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D61CCBFB1B7E200E004BD900 /* OpenGL.framework */; };
 		D6F2F8751B83855A0018DBF0 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D6F2F8741B83855A0018DBF0 /* IOKit.framework */; };
@@ -64,6 +65,8 @@
 		D61CCC0D1B7E7BF5004BD900 /* C2WorldModel.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = C2WorldModel.cpp; sourceTree = "<group>"; };
 		D61CCC0E1B7E7BF5004BD900 /* C2WorldModel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = C2WorldModel.h; sourceTree = "<group>"; };
 		D61CCC111B811C28004BD900 /* bitmap.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bitmap.h; sourceTree = "<group>"; };
+		D6247C151B88F30F00088EB2 /* TerrainRenderer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = TerrainRenderer.cpp; sourceTree = "<group>"; };
+		D6247C161B88F30F00088EB2 /* TerrainRenderer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TerrainRenderer.h; sourceTree = "<group>"; };
 		D64585411B7A818B00D6327E /* carnivores_mock_functions.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = carnivores_mock_functions.cpp; sourceTree = "<group>"; };
 		D65552291B73DA2000CC5309 /* CE Character Lab */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "CE Character Lab"; sourceTree = BUILT_PRODUCTS_DIR; };
 		D655522C1B73DA2000CC5309 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
@@ -95,6 +98,12 @@
 		D65552A51B7A325C00CC5309 /* CE_AIUtilities.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CE_AIUtilities.cpp; sourceTree = "<group>"; };
 		D65552A61B7A325C00CC5309 /* CE_AIUtilities.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CE_AIUtilities.h; sourceTree = "<group>"; };
 		D65552A81B7A3B8E00CC5309 /* g_shared.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = g_shared.h; sourceTree = "<group>"; };
+		D657B8931B851D3A0051BCC7 /* IndexedMeshLoader.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = IndexedMeshLoader.cpp; sourceTree = "<group>"; };
+		D657B8941B851D3A0051BCC7 /* IndexedMeshLoader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndexedMeshLoader.h; sourceTree = "<group>"; };
+		D6ADAC2D1B9BD24C00E2AA7D /* AREA5.MAP */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = "sourcecode.module-map"; path = AREA5.MAP; sourceTree = "<group>"; };
+		D6ADAC2E1B9BD24C00E2AA7D /* AREA5.RSC */ = {isa = PBXFileReference; lastKnownFileType = file; path = AREA5.RSC; sourceTree = "<group>"; };
+		D6ADAC2F1B9BD24C00E2AA7D /* TROPHY.MAP */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = "sourcecode.module-map"; path = TROPHY.MAP; sourceTree = "<group>"; };
+		D6ADAC301B9BD24C00E2AA7D /* TROPHY.RSC */ = {isa = PBXFileReference; lastKnownFileType = file; path = TROPHY.RSC; sourceTree = "<group>"; };
 		D6F2F8681B836F3A0018DBF0 /* C2Sky.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = C2Sky.cpp; sourceTree = "<group>"; };
 		D6F2F8691B836F3A0018DBF0 /* C2Sky.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = C2Sky.h; sourceTree = "<group>"; };
 		D6F2F8741B83855A0018DBF0 /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
@@ -109,6 +118,8 @@
 		D6F2F88A1B83E5AF0018DBF0 /* camera.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = camera.h; sourceTree = "<group>"; };
 		D6F2F88B1B83E62F0018DBF0 /* basicShader.fs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = basicShader.fs; sourceTree = "<group>"; };
 		D6F2F88C1B83E6490018DBF0 /* basicShader.vs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = basicShader.vs; sourceTree = "<group>"; };
+		D6FBA2631B975CC200607297 /* terrain.fs */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = terrain.fs; sourceTree = "<group>"; };
+		D6FBA2641B975CC800607297 /* terrain.vs */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = terrain.vs; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -221,6 +232,12 @@
 		D65552531B73E31C00CC5309 /* Files */ = {
 			isa = PBXGroup;
 			children = (
+				D6ADAC2D1B9BD24C00E2AA7D /* AREA5.MAP */,
+				D6ADAC2E1B9BD24C00E2AA7D /* AREA5.RSC */,
+				D6ADAC2F1B9BD24C00E2AA7D /* TROPHY.MAP */,
+				D6ADAC301B9BD24C00E2AA7D /* TROPHY.RSC */,
+				D6FBA2641B975CC800607297 /* terrain.vs */,
+				D6FBA2631B975CC200607297 /* terrain.fs */,
 				D61CCC041B7E6361004BD900 /* AREA1.MAP */,
 				D61CCC051B7E6361004BD900 /* AREA1.RSC */,
 				D65552521B73E31400CC5309 /* ALLO.CAR */,
@@ -253,6 +270,8 @@
 				D6F2F8871B83E4810018DBF0 /* shader.h */,
 				D6F2F8891B83E57D0018DBF0 /* transform.h */,
 				D6F2F88A1B83E5AF0018DBF0 /* camera.h */,
+				D6247C151B88F30F00088EB2 /* TerrainRenderer.cpp */,
+				D6247C161B88F30F00088EB2 /* TerrainRenderer.h */,
 			);
 			name = World;
 			sourceTree = "<group>";
@@ -276,6 +295,8 @@
 				D65552581B73E84E00CC5309 /* C2CarFile.cpp */,
 				D65552971B755BC000CC5309 /* C2CarFilePreloader.cpp */,
 				D65552981B755BC000CC5309 /* C2CarFilePreloader.h */,
+				D657B8931B851D3A0051BCC7 /* IndexedMeshLoader.cpp */,
+				D657B8941B851D3A0051BCC7 /* IndexedMeshLoader.h */,
 			);
 			name = Utilities;
 			sourceTree = "<group>";
@@ -306,7 +327,7 @@
 		D65552211B73DA2000CC5309 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0640;
+				LastUpgradeCheck = 0800;
 				ORGANIZATIONNAME = "Tyler Minard";
 				TargetAttributes = {
 					D65552281B73DA2000CC5309 = {
@@ -347,15 +368,16 @@
 				D655523A1B73DA4900CC5309 /* C2Character.cpp in Sources */,
 				D61CCC091B7E653E004BD900 /* C2MapRscFile.cpp in Sources */,
 				D6F2F8851B83DC0E0018DBF0 /* vertex.cpp in Sources */,
+				D657B8951B851D3A0051BCC7 /* IndexedMeshLoader.cpp in Sources */,
 				D6F2F86A1B836F3A0018DBF0 /* C2Sky.cpp in Sources */,
 				D65552471B73DA7000CC5309 /* C2Geometry.cpp in Sources */,
 				D61CCC0C1B7E68D0004BD900 /* C2Texture.cpp in Sources */,
 				D65552481B73DA7000CC5309 /* C2HuntableCharacter.cpp in Sources */,
 				D655525F1B74315900CC5309 /* C2Animation.cpp in Sources */,
 				D65552391B73DA4900CC5309 /* C2AnimatableModel.cpp in Sources */,
+				D6247C171B88F30F00088EB2 /* TerrainRenderer.cpp in Sources */,
 				D655529C1B76955900CC5309 /* C2SoundFX.cpp in Sources */,
 				D655522D1B73DA2000CC5309 /* main.cpp in Sources */,
-				D61CCC061B7E6361004BD900 /* AREA1.MAP in Sources */,
 				D64585421B7A818B00D6327E /* carnivores_mock_functions.cpp in Sources */,
 				D65552A41B797DC200CC5309 /* AI_Allosaurus.cpp in Sources */,
 				D61CCC0F1B7E7BF5004BD900 /* C2WorldModel.cpp in Sources */,
@@ -378,13 +400,16 @@
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -420,8 +445,10 @@
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;

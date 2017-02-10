@@ -1,13 +1,19 @@
-#version 120
+#version 330
 
-varying vec2 texCoord0;
-varying vec3 normal0;
+in vec2 texCoord0;
 
-uniform sampler2D sampler;
-uniform vec3 lightDirection;
+out vec4 outputColor;
+
+uniform sampler2D basic_texture;
 
 void main()
 {
-  gl_FragColor = texture2D(sampler, texCoord0) *
-		clamp(dot(-lightDirection, normal0), 0.0, 1.0);
+  vec4 sC = texture( basic_texture, texCoord0 );
+  float trans = 0.095;
+  
+  if (sC.r <= trans && sC.g <= trans && sC.b <= trans) {
+    discard;
+  }
+
+  outputColor = vec4(sC.b, sC.g, sC.r, 1.0f);
 }

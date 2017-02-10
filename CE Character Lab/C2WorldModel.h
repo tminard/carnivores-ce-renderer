@@ -23,11 +23,17 @@
 #include <iostream>
 #include <fstream>
 
+#include <glm/glm.hpp>
+
 #include "g_shared.h"
 
 class C2Texture;
 class C2Animation;
 class C2Geometry;
+class Vertex;
+
+class Transform;
+class Shader;
 
 #define objectPLACEWATER       1
 #define objectPLACEGROUND      2
@@ -48,7 +54,7 @@ private:
   std::unique_ptr<C2Texture> m_far_texture; // used to render object as a 2d bitmap at a distance
   std::unique_ptr<C2Animation> m_animation; // apparently, world models only support 1 animation. TODO: allow unlimited animations
   std::unique_ptr<C2Geometry> m_geometry;
-  
+
   std::string m_model_name;
 
   std::array<Vector3d, 4> m_far_vertices;
@@ -56,12 +62,15 @@ private:
   
   TObjInfo* m_old_object_info; // Easier to use old object for now
   
-  void _generateBoundingBox(std::vector<TPoint3d>& vertex_data); // old method for bounding box. Move to geo when able
+  void _generateBoundingBox(std::vector<Vertex>& vertex_data); // old method for bounding box. Move to geo when able
 
 public:
   C2WorldModel(std::ifstream& instream); // construct object using file data
   ~C2WorldModel();
+
+  void render();
   
+  C2Geometry* getGeometry();
   TObjInfo* getObjectInfo(); // TODO: Make this unnecessary
 };
 

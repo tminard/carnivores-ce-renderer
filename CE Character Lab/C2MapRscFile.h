@@ -26,6 +26,8 @@ private:
   int m_trans_rgb[3][3]; // calculated sky transparency values
   
   std::vector< std::unique_ptr<C2Texture> > m_textures; // control access to the textures
+  int m_texture_atlas_width;
+  int m_texture_count;
   std::vector< std::unique_ptr<C2WorldModel> > m_models;
   
   std::unique_ptr<C2Sky> m_dawn_sky;
@@ -38,6 +40,11 @@ private:
 public:
   C2MapRscFile(const std::string& file_name);
   ~C2MapRscFile();
+
+  int getTextureAtlasWidth();
+  
+  C2WorldModel* getWorldModel(int i);
+  C2Texture* getTexture(int i);
 };
 
 #endif /* defined(__CE_Character_Lab__C2MapRscFile__) */

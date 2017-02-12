@@ -1,5 +1,5 @@
 /*
-* This object is responsible for representing a C2Geometry by combining the geometry
+* This object is responsible for representing a CEGeometry by combining the geometry
 * with animations, sounds, and position.
 *
 * Allows the developer to animate geometry along with sounds.
@@ -15,17 +15,17 @@
 //#warning Bad C integration: remove hunt.h references
 #include "g_shared.h"
 
-class C2Geometry;
+class CEGeometry;
+
 class C2CarFile;
 
-class C2AnimatableModel {
+class CEAnimatableModel {
 private:
   std::shared_ptr<C2CarFile> m_car_file;
-  
-//#warning Do these belong in the C2Geometry object? (and set for Characters in the m_modified geo member)
+
   Vector3d m_position;
   float m_scale;
-  float m_alpha; // direction I am currently pointed
+  float m_alpha; // "direction I am currently pointed"
   float m_beta;
   float m_gamma;
   
@@ -39,8 +39,8 @@ private:
   bool m_did_animation_finish;
 
 public:
-  C2AnimatableModel(const std::shared_ptr<C2CarFile>& car_file);
-  ~C2AnimatableModel();
+  CEAnimatableModel(const std::shared_ptr<C2CarFile>& car_file);
+  ~CEAnimatableModel();
   
   /* Positioning details */
   Vector3d getCurrentPosition();
@@ -63,7 +63,7 @@ public:
   
   /* Animating */
   bool didAnimationFinish();
-  C2Geometry* getCurrentModelForRender();
+  CEGeometry* getCurrentModelForRender();
   void setAnimation(std::string animation_name);
   void animate(int time_delta);
   
@@ -71,8 +71,8 @@ public:
   void render();
   
   // Creates a complex morphed representation for between animations.
-  C2Geometry* getBetweenMorphedModel(std::string animation_previous_name, std::string animation_target_name, int at_time_previous, int at_time_target, int current_morph_time, float scale, float character_beta, float character_gamma, float character_bend);
+  CEGeometry* getBetweenMorphedModel(std::string animation_previous_name, std::string animation_target_name, int at_time_previous, int at_time_target, int current_morph_time, float scale, float character_beta, float character_gamma, float character_bend);
 
   // Creates a single morphed representation for a static animation.
-  C2Geometry* getMorphedModel(std::string animation_name, int at_time, float scale);
+  CEGeometry* getMorphedModel(std::string animation_name, int at_time, float scale);
 };

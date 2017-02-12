@@ -1,8 +1,8 @@
 #include "C2WorldModel.h"
 
-#include "C2Texture.h"
-#include "C2Geometry.h"
-#include "C2Animation.h"
+#include "CETexture.h"
+#include "CEGeometry.h"
+#include "CEAnimation.h"
 
 #include "vertex.h"
 #include <map>
@@ -58,12 +58,12 @@ C2WorldModel::C2WorldModel(std::ifstream& instream)
   IndexedMeshLoader* m_loader = new IndexedMeshLoader(file_vertex_data, face_data);
 
   // load the geo
-  std::unique_ptr<C2Texture> mTexture = std::unique_ptr<C2Texture>(new C2Texture(texture_data, 256*256*2, 256, 256));
-  std::unique_ptr<C2Geometry> mGeo = std::unique_ptr<C2Geometry>(new C2Geometry(m_loader->getVertices(), m_loader->getIndices(), std::move(mTexture)));
+  std::unique_ptr<CETexture> mTexture = std::unique_ptr<CETexture>(new CETexture(texture_data, 256*256*2, 256, 256));
+  std::unique_ptr<CEGeometry> mGeo = std::unique_ptr<CEGeometry>(new CEGeometry(m_loader->getVertices(), m_loader->getIndices(), std::move(mTexture)));
   
   instream.read(reinterpret_cast<char *>(spirit_texture_data.data()), 128*128*2);
   
-  std::unique_ptr<C2Texture> cTexture = std::unique_ptr<C2Texture>(new C2Texture(spirit_texture_data, 128*128*2, 128, 128));
+  std::unique_ptr<CETexture> cTexture = std::unique_ptr<CETexture>(new CETexture(spirit_texture_data, 128*128*2, 128, 128));
   this->m_far_texture = std::move(cTexture);
   this->m_geometry = std::move(mGeo);
   
@@ -101,7 +101,7 @@ C2WorldModel::C2WorldModel(std::ifstream& instream)
   
   // process flags
   if (m_old_object_info->flags & objectNOLIGHT) {
-    m_geometry->hint_ignoreLighting();
+    m_geometry->DEP_hint_ignoreLighting();
   }
   
   if (m_old_object_info->flags & objectANIMATED) {
@@ -118,7 +118,7 @@ C2WorldModel::C2WorldModel(std::ifstream& instream)
     raw_animation_data.resize(ani_vcount*total_frames*6);
     total_ani_ms = (total_frames * 1000) / kps;
     instream.read(reinterpret_cast<char *>(raw_animation_data.data()), ani_vcount*total_frames*6);
-    std::unique_ptr<C2Animation> mAni = std::unique_ptr<C2Animation>( new C2Animation("OBJECT_ANIMATION", kps, total_frames, total_ani_ms));
+    std::unique_ptr<CEAnimation> mAni = std::unique_ptr<CEAnimation>( new CEAnimation("OBJECT_ANIMATION", kps, total_frames, total_ani_ms));
     mAni->setAnimationData(raw_animation_data);
     this->m_animation = std::move(mAni);
   }
@@ -131,7 +131,7 @@ C2WorldModel::C2WorldModel(std::ifstream& instream)
   delete m_loader;
 }
 
-C2Geometry* C2WorldModel::getGeometry()
+CEGeometry* C2WorldModel::getGeometry()
 {
   return this->m_geometry.get();
 }

@@ -1,6 +1,6 @@
 /*
 * This object is responsible for storing immutable geometry (vertices, indices, etc),
-* and textures (eventually "C2Material").
+* and textures.
 *
 * Equivalent to SceneKit's SCNGeometry.
 */
@@ -17,9 +17,9 @@
 
 
 class Vertex;
-class C2Texture;
+class CETexture;
 
-class C2Geometry {
+class CEGeometry {
 private:
   int m_texture_height;
 
@@ -36,16 +36,16 @@ private:
 
   std::vector < Vertex > m_vertices;
   std::vector < unsigned int > m_indices;
-  std::unique_ptr<C2Texture> m_texture;
+  std::unique_ptr<CETexture> m_texture;
 
 public:
-  C2Geometry(std::vector < Vertex > vertices, std::vector < unsigned int > indices, std::unique_ptr<C2Texture> texture);
-  ~C2Geometry();
+  CEGeometry(std::vector < Vertex > vertices, std::vector < unsigned int > indices, std::unique_ptr<CETexture> texture);
+  ~CEGeometry();
   
   void loadObjectIntoMemoryBuffer(); // loads the object into OpenGL's memory
-  void hint_ignoreLighting(); // instruct the geom to ignore lighting. Depreciated. Used with old C2 models.
+  void DEP_hint_ignoreLighting(); // instruct the geom to ignore lighting. Depreciated. Used with old C2 models.
   
-  C2Texture* getTexture();
+  CETexture* getTexture();
 
   void exportAsOBJ(const std::string& file_name);
   void saveTextureAsBMP(const std::string& file_name );

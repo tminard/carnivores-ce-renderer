@@ -15,7 +15,7 @@
 #include <vector>
 #include <memory>
 
-class C2Texture;
+class CETexture;
 class C2WorldModel;
 class C2Sky;
 
@@ -25,7 +25,7 @@ private:
   int m_fade_rgb[3][3]; // calculated sky RGB base values
   int m_trans_rgb[3][3]; // calculated sky transparency values
   
-  std::vector< std::unique_ptr<C2Texture> > m_textures; // control access to the textures
+  std::vector< std::unique_ptr<CETexture> > m_textures; // control access to the textures
   int m_texture_atlas_width;
   int m_texture_count;
   std::vector< std::unique_ptr<C2WorldModel> > m_models;
@@ -44,7 +44,7 @@ public:
   int getTextureAtlasWidth();
   
   C2WorldModel* getWorldModel(int i);
-  C2Texture* getTexture(int i);
+  CETexture* getTexture(int i);
 };
 
 #endif /* defined(__CE_Character_Lab__C2MapRscFile__) */

@@ -1,8 +1,8 @@
-#include "C2AnimatableModel.h"
+#include "CEAnimatableModel.h"
 #include "C2CarFile.h"
 
-#include "C2Geometry.h"
-#include "C2Animation.h"
+#include "CEGeometry.h"
+#include "CEAnimation.h"
 
 #include <cmath>
 #include <iostream>
@@ -11,7 +11,7 @@
 //#warning Deprecation: please remove these old references and bake code into ultilities class
 int CheckPlaceCollision2(Vector3d &v, int wc);
 
-C2AnimatableModel::C2AnimatableModel(const std::shared_ptr<C2CarFile>& car_file)
+CEAnimatableModel::CEAnimatableModel(const std::shared_ptr<C2CarFile>& car_file)
   : m_car_file(car_file)
 {
   this->m_frame_time = 0;
@@ -24,14 +24,14 @@ C2AnimatableModel::C2AnimatableModel(const std::shared_ptr<C2CarFile>& car_file)
   this->m_previous_animation_name = "";
 }
 
-C2AnimatableModel::~C2AnimatableModel()
+CEAnimatableModel::~CEAnimatableModel()
 {
 }
 
 //#warning Using the old code for movement. Need to fix collision detection to use world resource
 // This should be done in Character, which simply setsPos after transition. An animatableModel doesnt care
 // about collisions.
-void C2AnimatableModel::moveTo(float x, float z, bool blocked_by_water, bool blocked_by_models)
+void CEAnimatableModel::moveTo(float x, float z, bool blocked_by_water, bool blocked_by_models)
 {
   Vector3d p = this->m_position;
 
@@ -60,54 +60,54 @@ void C2AnimatableModel::moveTo(float x, float z, bool blocked_by_water, bool blo
   this->m_position = p;
 }
 
-void C2AnimatableModel::setScale(float scale)
+void CEAnimatableModel::setScale(float scale)
 {
   this->m_scale = scale;
 }
 
-float C2AnimatableModel::getScale()
+float CEAnimatableModel::getScale()
 {
   return this->m_scale;
 }
 
-void C2AnimatableModel::setPosition(float x, float z, float y)
+void CEAnimatableModel::setPosition(float x, float z, float y)
 {
   this->m_position.x = x;
   this->m_position.z = z;
   this->m_position.y = y;
 }
 
-Vector3d C2AnimatableModel::getCurrentPosition()
+Vector3d CEAnimatableModel::getCurrentPosition()
 {
   return this->m_position;
 }
 
-void C2AnimatableModel::setAlpha(float alpha)
+void CEAnimatableModel::setAlpha(float alpha)
 {
   this->m_alpha = alpha;
 }
 
-float C2AnimatableModel::getCurrentAlpha()
+float CEAnimatableModel::getCurrentAlpha()
 {
   return this->m_alpha;
 }
 
-void C2AnimatableModel::setBeta(float beta)
+void CEAnimatableModel::setBeta(float beta)
 {
   this->m_beta = beta;
 }
 
-float C2AnimatableModel::getBeta()
+float CEAnimatableModel::getBeta()
 {
   return this->m_beta;
 }
 
-void C2AnimatableModel::setGamma(float gamma)
+void CEAnimatableModel::setGamma(float gamma)
 {
   this->m_gamma = gamma;
 }
 
-float C2AnimatableModel::getGamma()
+float CEAnimatableModel::getGamma()
 {
   return this->m_gamma;
 }
@@ -116,13 +116,13 @@ float C2AnimatableModel::getGamma()
  * Keep playing the current animation + sound, and process loop behavior.
  * TODO: Actually process loop behavior. Currently the AI controls this, and it shouldn't (?).
  */
-void C2AnimatableModel::animate(const int dtime)
+void CEAnimatableModel::animate(const int dtime)
 {
   if (this->m_current_animation_name.empty()) {
     return;
   }
   this->m_frame_time += dtime;
-  C2Animation* animation = this->m_car_file->getAnimationByName(this->m_current_animation_name);
+  CEAnimation* animation = this->m_car_file->getAnimationByName(this->m_current_animation_name);
 
   if (this->m_frame_time >= animation->m_total_time)
   {
@@ -132,12 +132,12 @@ void C2AnimatableModel::animate(const int dtime)
   }
 }
 
-bool C2AnimatableModel::didAnimationFinish()
+bool CEAnimatableModel::didAnimationFinish()
 {
   return this->m_did_animation_finish;
 }
 
-void C2AnimatableModel::setAnimation(std::string animation_name)
+void CEAnimatableModel::setAnimation(std::string animation_name)
 {
   this->m_did_animation_finish = false;
 
@@ -154,14 +154,14 @@ void C2AnimatableModel::setAnimation(std::string animation_name)
 /*
  *
  */
-void C2AnimatableModel::render()
+void CEAnimatableModel::render()
 {
   // update matrix
   // update textures and shader if needed (pass in current shader so we know?)
   // call draw
 }
 
-C2Geometry* C2AnimatableModel::getCurrentModelForRender()
+CEGeometry* CEAnimatableModel::getCurrentModelForRender()
 {
   if (this->m_current_animation_name == "") {
 	  return this->m_car_file->getGeometry();
@@ -175,11 +175,11 @@ C2Geometry* C2AnimatableModel::getCurrentModelForRender()
   }
 }
 
-C2Geometry* C2AnimatableModel::getMorphedModel(std::string animation_name, int at_time, float scale)
+CEGeometry* CEAnimatableModel::getMorphedModel(std::string animation_name, int at_time, float scale)
 {
 //  #warning TODO: This modifies the original shared model. Fix this. Also check for nulls
-  C2Geometry* sharedGeo = this->m_car_file->getGeometry();
-  //C2Animation* animation = this->m_car_file->getAnimationByName(animation_name);
+  CEGeometry* sharedGeo = this->m_car_file->getGeometry();
+  //CEAnimation* animation = this->m_car_file->getAnimationByName(animation_name);
 
   /*int currentFrame = ((animation->m_number_of_frames-1) * at_time * 256) / animation->m_total_time;
   int splineDelta = currentFrame & 0xFF;
@@ -205,13 +205,13 @@ C2Geometry* C2AnimatableModel::getMorphedModel(std::string animation_name, int a
   return sharedGeo;
 }
 
-C2Geometry* C2AnimatableModel::getBetweenMorphedModel(std::string animation_previous_name, std::string animation_target_name, int at_time_previous, int at_time_target, int current_morph_time, float scale, float character_beta, float character_gamma, float character_bend)
+CEGeometry* CEAnimatableModel::getBetweenMorphedModel(std::string animation_previous_name, std::string animation_target_name, int at_time_previous, int at_time_target, int current_morph_time, float scale, float character_beta, float character_gamma, float character_bend)
 {
 
-  C2Geometry* sharedGeo = this->m_car_file->getGeometry();
+  CEGeometry* sharedGeo = this->m_car_file->getGeometry();
 /*
-  C2Animation* previous_animation = m_car_file->getAnimationByName(animation_previous_name);
-  C2Animation* target_animation = m_car_file->getAnimationByName(animation_target_name);
+  CEAnimation* previous_animation = m_car_file->getAnimationByName(animation_previous_name);
+  CEAnimation* target_animation = m_car_file->getAnimationByName(animation_target_name);
 
   int previousFrame = 0, previousSplineDelta = 0;
 

@@ -16,16 +16,16 @@
 #include <iostream>
 #include <fstream>
 
-class C2Texture;
+class CETexture;
 
 class C2Sky
 {
 private:
-  std::unique_ptr<C2Texture> m_texture;
+  std::unique_ptr<CETexture> m_texture;
 
 public:
   C2Sky(std::ifstream& instream);
-  C2Sky(std::unique_ptr<C2Texture> sky_texture);
+  C2Sky(std::unique_ptr<CETexture> sky_texture);
   ~C2Sky();
   
   void saveTextureAsBMP(const std::string& file_name );

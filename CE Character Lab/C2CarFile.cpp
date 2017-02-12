@@ -8,10 +8,9 @@
 
 #include "C2CarFile.h"
 
-#include "C2Geometry.h"
-#include "C2Animation.h"
-#include "C2SoundFX.h"
-#include "C2Texture.h"
+#include "CEGeometry.h"
+#include "CEAnimation.h"
+#include "CETexture.h"
 
 #include <iostream>
 #include <fstream>
@@ -38,12 +37,12 @@ C2CarFile::~C2CarFile()
 {
 }
 
-C2Geometry* C2CarFile::getGeometry()
+CEGeometry* C2CarFile::getGeometry()
 {
   return this->m_geometry.get();
 }
 
-C2Animation* C2CarFile::getAnimationByName(std::string animation_name)
+CEAnimation* C2CarFile::getAnimationByName(std::string animation_name)
 {
   return this->m_animations[animation_name].get();
 }
@@ -52,7 +51,7 @@ void C2CarFile::load_file(std::string file_name)
 {
   std::ifstream infile;
   TCharacterInfo c_char_info; //place holder for information from file
-  std::unique_ptr<C2Texture> m_texture;
+  std::unique_ptr<CETexture> m_texture;
 
   int _vcount, _fcount, _texture_size, _texture_height;
   std::vector<TPoint3d> _vertices;
@@ -85,7 +84,7 @@ void C2CarFile::load_file(std::string file_name)
   
   _texture_data.resize(tsize);
   infile.read(reinterpret_cast<char *>(_texture_data.data()), tsize);
-  m_texture = std::unique_ptr<C2Texture>(new C2Texture(_texture_data, 256*256, 256, 256));
+  m_texture = std::unique_ptr<CETexture>(new CETexture(_texture_data, 256*256, 256, 256));
 
   for (int ani = 0; ani < c_char_info.AniCount; ani++) {
 	  int _ani_kps, _frames_count;
@@ -102,7 +101,7 @@ void C2CarFile::load_file(std::string file_name)
     infile.read(reinterpret_cast<char *>(_aniData.data()), _vcount*_frames_count*6);
 
     std::string animation_name(_aniName);
-	std::unique_ptr<C2Animation> chAni = make_unique<C2Animation>(animation_name, _ani_kps,
+	std::unique_ptr<CEAnimation> chAni = make_unique<CEAnimation>(animation_name, _ani_kps,
 		_frames_count, (int)animation_length);
 	chAni->setAnimationData(_aniData);
 
@@ -140,7 +139,7 @@ void C2CarFile::load_file(std::string file_name)
 
   // load instance
   IndexedMeshLoader* m_loader = new IndexedMeshLoader(_vertices, _faces);
-  this->m_geometry = make_unique<C2Geometry>(m_loader->getVertices(), m_loader->getIndices(), std::move(m_texture));
+  this->m_geometry = make_unique<CEGeometry>(m_loader->getVertices(), m_loader->getIndices(), std::move(m_texture));
   
   delete m_loader;
 }
@@ -164,7 +163,7 @@ void C2CarFile::load_file(std::string file_name)
  }
  
  //std::cout << "Animation loaded: " << animation_name << "\n";
- this->m_animations[animation_name] = std::make_unique<C2Animation>(animation_name, animation_KPS,
+ this->m_animations[animation_name] = std::make_unique<CEAnimation>(animation_name, animation_KPS,
  c_char_info.Animation[a].FramesCount,c_char_info.Animation[a].AniTime,animation_data);
  
  }

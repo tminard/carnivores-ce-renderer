@@ -10,11 +10,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "CE Character Lab/C2CarFile.h"
-            timestampString = "461711154.46864"
+            timestampString = "508622022.428704"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "30"
-            endingLineNumber = "30">
+            startingLineNumber = "29"
+            endingLineNumber = "29">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy

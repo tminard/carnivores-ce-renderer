@@ -10,7 +10,7 @@
 #include <iostream>
 #include <fstream>
 
-#include "C2Texture.h"
+#include "CETexture.h"
 #include "C2WorldModel.h"
 #include "C2Sky.h"
 
@@ -31,7 +31,7 @@ C2MapRscFile::~C2MapRscFile()
   
 }
 
-C2Texture* C2MapRscFile::getTexture(int i)
+CETexture* C2MapRscFile::getTexture(int i)
 {
   return this->m_textures.at(i).get();
 }
@@ -73,7 +73,7 @@ void C2MapRscFile::load(const std::string &file_name)
       raw_texture_data.resize(128*128);
       infile.read(reinterpret_cast<char *>(raw_texture_data.data()), 128*128*sizeof(uint16_t));
       
-      std::unique_ptr<C2Texture> cTexture = std::unique_ptr<C2Texture>(new C2Texture(raw_texture_data, 128*128, 128, 128));
+      std::unique_ptr<CETexture> cTexture = std::unique_ptr<CETexture>(new CETexture(raw_texture_data, 128*128, 128, 128));
       this->m_textures.push_back(std::move(cTexture));
     }*/
     
@@ -112,7 +112,7 @@ void C2MapRscFile::load(const std::string &file_name)
     std::vector<uint16_t> tx_filler(missing_bits);
     combined_texture_data.insert(combined_texture_data.end(), tx_filler.begin(), tx_filler.end());
 
-    std::unique_ptr<C2Texture> cTexture = std::unique_ptr<C2Texture>(new C2Texture(combined_texture_data, squared_texture_rows*TEXTURE_SQUARE_SIZE*squared_texture_rows*TEXTURE_SQUARE_SIZE, squared_texture_rows*TEXTURE_SQUARE_SIZE, squared_texture_rows*TEXTURE_SQUARE_SIZE));
+    std::unique_ptr<CETexture> cTexture = std::unique_ptr<CETexture>(new CETexture(combined_texture_data, squared_texture_rows*TEXTURE_SQUARE_SIZE*squared_texture_rows*TEXTURE_SQUARE_SIZE, squared_texture_rows*TEXTURE_SQUARE_SIZE, squared_texture_rows*TEXTURE_SQUARE_SIZE));
     this->m_texture_atlas_width = squared_texture_rows;
     this->m_texture_count = texture_count;
     cTexture->saveToBMPFile("/Users/tminard/mapim2.bmp");

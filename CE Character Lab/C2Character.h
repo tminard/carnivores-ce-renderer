@@ -9,12 +9,12 @@
 #include <time.h>
 #include <memory>
 #include <string>
-#include "C2AnimatableModel.h"
+#include "CEAnimatableModel.h"
 
 class CE_ArtificialIntelligence;
 class C2CarFile;
 
-class C2Character: public C2AnimatableModel {
+class C2Character: public CEAnimatableModel {
   public:
     CE_ArtificialIntelligence* intelligence; // dont let go out of scope... need to fix this
 

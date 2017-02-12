@@ -34,12 +34,14 @@ private:
   std::array<uint8_t, 512*512> m_soundfx_data;
 
   constexpr static const float SIZE = 1024.f;
+  constexpr static const float HEIGHT_SCALE = 64.f;
 
 public:
   C2MapFile(const std::string& map_file_name);
   ~C2MapFile();
   
   float getHeightAt(int xy);
+  float getObjectHeightAt(int xy);
   int getObjectAt(int xy);
   int getTextureIDAt(int xy);
   uint16_t getFlagsAt(int xy);
@@ -47,6 +49,7 @@ public:
   float getHeight();
   float getWidth();
   float getTileLength();
+  float getHeightmapScale();
   
   void load(const std::string& file_name);
 };

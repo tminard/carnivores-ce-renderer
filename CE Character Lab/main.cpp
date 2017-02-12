@@ -63,7 +63,7 @@ int main(int argc, const char * argv[])
   glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );
   
   GLFWwindow* window;
-  window = glfwCreateWindow(800, 600, "Carnivores Renderer", NULL, NULL);
+  window = glfwCreateWindow(1024, 768, "Carnivores Renderer", NULL, NULL);
   if (!window)
   {
     glfwTerminate();
@@ -92,22 +92,20 @@ int main(int argc, const char * argv[])
   int RealTime, PrevTime, TimeDt;
   PrevTime = timeGetTime();
   
-  std::unique_ptr<CE_Allosaurus> allo(new CE_Allosaurus(cFileLoad.get(), "/Users/tminard/Source/CE Character Lab/CE Character Lab/ALLO.CAR"));
+  std::unique_ptr<CE_Allosaurus> allo(new CE_Allosaurus(cFileLoad.get(), "ALLO.CAR"));
   allo->setScale(2.f);
-  std::unique_ptr<C2MapFile> cMap(new C2MapFile("/Users/tminard/Source/CE Character Lab/CE Character Lab/AREA1.MAP"));
-  std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile("/Users/tminard/Source/CE Character Lab/CE Character Lab/AREA1.RSC"));
+  std::unique_ptr<C2MapFile> cMap(new C2MapFile("AREA1.MAP"));
+  std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile("AREA1.RSC"));
 
   // C2Geometry* allG = allo->getCurrentModelForRender();
 
   std::cout << "Map texture atlas width: " << cMapRsc->getTextureAtlasWidth();
   
-  Shader shader("/Users/tminard/Source/CE Character Lab/CE Character Lab/basicShader");
-  Shader t_shader("/Users/tminard/Source/CE Character Lab/CE Character Lab/terrain");
-
-  //60.f, 1.7777777777777777777777777777778f, 1.f, 150000.f );
+  Shader shader("basicShader");
+  Shader t_shader("terrain");
 
   float VIEW_R = 100.5f * cMap->getTileLength();
-  Camera cam(glm::vec3(0.f,15.f,0), 45.f, (float)800.f / (float)600.f, 0.1f, VIEW_R);
+  Camera cam(glm::vec3(0.f,45.f,0), 45.f, (float)1024.f / (float)768.f, 0.1f, VIEW_R);
   //Transform mTrans(glm::vec3(0,0,0), glm::vec3(0,90.f,0), glm::vec3(0.25f, 0.25f, 0.25f));
   
   TerrainRenderer* ter = new TerrainRenderer(cMap.get(), cMapRsc.get());
@@ -159,36 +157,25 @@ int main(int argc, const char * argv[])
 
 
     // For each row/col, decide whether or not to draw
-    for (int view_row = current_row + view_distance_squares; view_row > (current_row - view_distance_squares); view_row--) {
-      for (int view_col = current_col - view_distance_squares; view_col < current_col + view_distance_squares; view_col++) {
-        int obj_id = cMap->getObjectAt(((view_row)*cMap->getWidth())+view_col);
-        
-        if (obj_id != 255 && obj_id != 254) {
-          C2WorldModel* w_obj = cMapRsc->getWorldModel(obj_id);
-          int obj_height = cMap->getHeightAt((view_row*cMap->getWidth()) + view_col);
-          Transform mTrans_c(glm::vec3(view_col*cMap->getTileLength(),obj_height,view_row*cMap->getTileLength()), glm::vec3(0,0,0), glm::vec3(2.f, 2.f, 2.f));
-          shader.Update(mTrans_c, cam);
-          w_obj->render();
-        }
-      }
-    }
+//    for (int view_row = current_row + view_distance_squares; view_row > (current_row - view_distance_squares); view_row--) {
+//      for (int view_col = current_col - view_distance_squares; view_col < current_col + view_distance_squares; view_col++) {
+//        int obj_id = cMap->getObjectAt(((view_row)*cMap->getWidth())+view_col);
+//        
+//        if (obj_id != 255 && obj_id != 254) {
+//          C2WorldModel* w_obj = cMapRsc->getWorldModel(obj_id);
+//          float obj_height = cMap->getHeightAt((view_row*cMap->getWidth()) + view_col);
+//
+//          if (obj_height == 0.0f) {
+//            obj_height = cMap->getObjectHeightAt((view_row*cMap->getWidth()) + view_col);
+//          }
+//
+//          Transform mTrans_c(glm::vec3(view_col*cMap->getTileLength(),obj_height,view_row*cMap->getTileLength()), glm::vec3(0,0,0), glm::vec3(2.f, 2.f, 2.f));
+//          shader.Update(mTrans_c, cam);
+//          w_obj->render();
+//        }
+//      }
+//    }
 
-    /*
-    //int view_range = int(VIEW_R);
-    for (int vy = cur_y+(VIEW_R/TerrainRenderer::TILE_SIZE); vy > cur_y-(VIEW_R/TerrainRenderer::TILE_SIZE); vy -= TerrainRenderer::TILE_SIZE) {
-      for (int x = cur_x-(VIEW_R/TerrainRenderer::TILE_SIZE); x < cur_x+(VIEW_R/TerrainRenderer::TILE_SIZE); x += TerrainRenderer::TILE_SIZE) {
-        int obj_id = cMap->getObjectAt(((vy/TerrainRenderer::TILE_SIZE)*TerrainRenderer::WORLD_SIZE)+(x/TerrainRenderer::TILE_SIZE));
-        
-        if (obj_id != 255 && obj_id != 254) {
-          C2WorldModel* w_obj = cMapRsc->getWorldModel(obj_id);
-          int obj_height = cMap->getHeightAt(int((floorf(vy/TerrainRenderer::TILE_SIZE)*TerrainRenderer::WORLD_SIZE)+floorf(x/TerrainRenderer::TILE_SIZE)));
-          Transform mTrans_c(glm::vec3(x,obj_height,vy), glm::vec3(0,0,0), glm::vec3(0.125f, 0.125f, 0.125f));
-          shader.Update(mTrans_c, cam);
-          w_obj->render();
-        }
-      }
-    }*/
-    
     /* Render loop*/
     
     // Render things in order of back to front

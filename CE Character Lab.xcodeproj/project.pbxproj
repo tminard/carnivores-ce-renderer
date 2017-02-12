@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		D61CCBFF1B7E2566004BD900 /* CE_Level.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D61CCBFD1B7E2566004BD900 /* CE_Level.cpp */; };
 		D61CCC031B7E5CC8004BD900 /* C2MapFile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D61CCC011B7E5CC8004BD900 /* C2MapFile.cpp */; };
 		D61CCC091B7E653E004BD900 /* C2MapRscFile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D61CCC071B7E653E004BD900 /* C2MapRscFile.cpp */; };
 		D61CCC0C1B7E68D0004BD900 /* C2Texture.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D61CCC0A1B7E68D0004BD900 /* C2Texture.cpp */; };
@@ -52,8 +51,6 @@
 
 /* Begin PBXFileReference section */
 		D61CCBFB1B7E200E004BD900 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
-		D61CCBFD1B7E2566004BD900 /* CE_Level.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CE_Level.cpp; sourceTree = "<group>"; };
-		D61CCBFE1B7E2566004BD900 /* CE_Level.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CE_Level.h; sourceTree = "<group>"; };
 		D61CCC011B7E5CC8004BD900 /* C2MapFile.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = C2MapFile.cpp; sourceTree = "<group>"; };
 		D61CCC021B7E5CC8004BD900 /* C2MapFile.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = C2MapFile.h; sourceTree = "<group>"; };
 		D61CCC041B7E6361004BD900 /* AREA1.MAP */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = "sourcecode.module-map"; path = AREA1.MAP; sourceTree = "<group>"; };
@@ -138,13 +135,6 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		D61CCC001B7E294F004BD900 /* Humans */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			name = Humans;
-			sourceTree = "<group>";
-		};
 		D65552201B73DA2000CC5309 = {
 			isa = PBXGroup;
 			children = (
@@ -251,8 +241,6 @@
 		D65552541B73E33E00CC5309 /* World */ = {
 			isa = PBXGroup;
 			children = (
-				D61CCBFD1B7E2566004BD900 /* CE_Level.cpp */,
-				D61CCBFE1B7E2566004BD900 /* CE_Level.h */,
 				D61CCC011B7E5CC8004BD900 /* C2MapFile.cpp */,
 				D61CCC021B7E5CC8004BD900 /* C2MapFile.h */,
 				D61CCC071B7E653E004BD900 /* C2MapRscFile.cpp */,
@@ -279,7 +267,6 @@
 		D65552551B73E34A00CC5309 /* Source */ = {
 			isa = PBXGroup;
 			children = (
-				D61CCC001B7E294F004BD900 /* Humans */,
 				D65552561B73E3DB00CC5309 /* Utilities */,
 				D655524E1B73DD9300CC5309 /* Characters */,
 				D65552501B73DDC900CC5309 /* Engine */,
@@ -363,7 +350,6 @@
 				D65552A71B7A325C00CC5309 /* CE_AIUtilities.cpp in Sources */,
 				D6F2F8881B83E4810018DBF0 /* shader.cpp in Sources */,
 				D65552591B73E84E00CC5309 /* C2CarFile.cpp in Sources */,
-				D61CCBFF1B7E2566004BD900 /* CE_Level.cpp in Sources */,
 				D65552991B755BC000CC5309 /* C2CarFilePreloader.cpp in Sources */,
 				D655523A1B73DA4900CC5309 /* C2Character.cpp in Sources */,
 				D61CCC091B7E653E004BD900 /* C2MapRscFile.cpp in Sources */,

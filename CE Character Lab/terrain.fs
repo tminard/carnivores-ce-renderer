@@ -36,8 +36,6 @@ void main()
 
   fogFactor = clamp( fogFactor, 0.0, 1.0 );
 
-  //if you inverse color in glsl mix function you have to
-  //put 1.0 - fogFactor
   finalColor = mix(fogColor, lightColor, fogFactor);
 
   outputColor = vec4(finalColor, 1.0);

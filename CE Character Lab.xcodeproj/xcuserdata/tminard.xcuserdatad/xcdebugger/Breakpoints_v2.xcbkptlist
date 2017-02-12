@@ -140,7 +140,7 @@
             startingLineNumber = "43"
             endingLineNumber = "43"
             landmarkName = "IndexedMeshLoader::IndexedMeshLoader(std::vector&lt;TPoint3d&gt; vertices, std::vector&lt;TFace&gt; faces)"
-            landmarkType = "5">
+            landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -156,7 +156,7 @@
             startingLineNumber = "49"
             endingLineNumber = "49"
             landmarkName = "IndexedMeshLoader::IndexedMeshLoader(std::vector&lt;TPoint3d&gt; vertices, std::vector&lt;TFace&gt; faces)"
-            landmarkType = "5">
+            landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy

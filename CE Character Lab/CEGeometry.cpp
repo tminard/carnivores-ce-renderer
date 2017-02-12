@@ -1,7 +1,7 @@
 #include <iterator>
 
-#include "C2Geometry.h"
-#include "C2Texture.h"
+#include "CEGeometry.h"
+#include "CETexture.h"
 #include "Vertex.h"
 
 /*
@@ -9,34 +9,34 @@
  * We carry this over as a hint, which may be ignored
  * in the modern renderer.
  */
-void C2Geometry::hint_ignoreLighting()
+void CEGeometry::DEP_hint_ignoreLighting()
 {
   // Yeah, ignore this for now
 }
 
-C2Geometry::C2Geometry(std::vector < Vertex > vertices, std::vector < uint32_t > indices, std::unique_ptr<C2Texture> texture)
+CEGeometry::CEGeometry(std::vector < Vertex > vertices, std::vector < uint32_t > indices, std::unique_ptr<CETexture> texture)
 : m_vertices(vertices), m_indices(indices), m_texture(std::move(texture))
 {
   this->loadObjectIntoMemoryBuffer();
 }
 
-C2Geometry::~C2Geometry()
+CEGeometry::~CEGeometry()
 {
   glDeleteBuffers(NUM_BUFFERS, m_vertexArrayBuffers);
   glDeleteVertexArrays(1, &this->m_vertexArrayObject);
 }
 
-C2Texture* C2Geometry::getTexture()
+CETexture* CEGeometry::getTexture()
 {
   return this->m_texture.get();
 }
 
-void C2Geometry::saveTextureAsBMP(const std::string &file_name)
+void CEGeometry::saveTextureAsBMP(const std::string &file_name)
 {
   this->m_texture->saveToBMPFile(file_name);
 }
 
-void C2Geometry::loadObjectIntoMemoryBuffer()
+void CEGeometry::loadObjectIntoMemoryBuffer()
 {
   glGenVertexArrays(1, &this->m_vertexArrayObject);
   glBindVertexArray(this->m_vertexArrayObject);
@@ -59,7 +59,7 @@ void C2Geometry::loadObjectIntoMemoryBuffer()
   glBindVertexArray(0);
 }
 
-void C2Geometry::Draw()
+void CEGeometry::Draw()
 {
   m_texture->Use();
   glBindVertexArray(this->m_vertexArrayObject);
@@ -69,7 +69,7 @@ void C2Geometry::Draw()
   glBindVertexArray(0);
 }
 
-void C2Geometry::exportAsOBJ(const std::string& file_name)
+void CEGeometry::exportAsOBJ(const std::string& file_name)
 {
   
 }

@@ -8,7 +8,7 @@
 
 #include "C2Sky.h"
 
-#include "C2Texture.h"
+#include "CETexture.h"
 
 C2Sky::C2Sky(std::ifstream& instream)
 {
@@ -16,10 +16,10 @@ C2Sky::C2Sky(std::ifstream& instream)
   raw_sky_texture_data.resize(256*256);
   instream.read(reinterpret_cast<char *>(raw_sky_texture_data.data()), 256*256*sizeof(uint16_t));
   
-  this->m_texture = std::unique_ptr<C2Texture>(new C2Texture(raw_sky_texture_data, 256*256, 256, 256));
+  this->m_texture = std::unique_ptr<CETexture>(new CETexture(raw_sky_texture_data, 256*256, 256, 256));
 }
 
-C2Sky::C2Sky(std::unique_ptr<C2Texture> sky_texture)
+C2Sky::C2Sky(std::unique_ptr<CETexture> sky_texture)
 : m_texture(std::move(sky_texture))
 {
   

@@ -1,4 +1,4 @@
-#include "C2Texture.h"
+#include "CETexture.h"
 
 #include <list>
 #include <iterator>
@@ -31,24 +31,24 @@ void CalcMidColor(WORD* tptr, int l, int &mr, int &mg, int &mb);
 extern WORD  FadeTab[65][0x8000]; // OOoooo scary. Be careful
 
 
-C2Texture::~C2Texture()
+CETexture::~CETexture()
 {
   glDeleteTextures(1, &this->m_texture_id);
 }
 
-C2Texture::C2Texture(const std::vector<uint16_t>& raw_texture_data, int texture_size, int texture_height, int texture_width)
+CETexture::CETexture(const std::vector<uint16_t>& raw_texture_data, int texture_size, int texture_height, int texture_width)
   : m_raw_data(raw_texture_data), m_height(texture_height), m_width(texture_width)
 {
   this->loadTextureIntoHardwareMemory();
 }
 
-void C2Texture::Use()
+void CETexture::Use()
 {
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, m_texture_id);
 }
 
-void C2Texture::loadTextureIntoHardwareMemory()
+void CETexture::loadTextureIntoHardwareMemory()
 {
   glGenTextures(1, &this->m_texture_id);
   glBindTexture(GL_TEXTURE_2D, m_texture_id);
@@ -63,8 +63,8 @@ void C2Texture::loadTextureIntoHardwareMemory()
   glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-// Saves the C2Texture as a bitmap (32 bit).
-void C2Texture::saveToBMPFile(std::string file_name)
+// Saves the CETexture as a bitmap (32 bit).
+void CETexture::saveToBMPFile(std::string file_name)
 {
   CBitmap* cBit = new CBitmap();
   uint32_t RedMask = 0;
@@ -102,7 +102,7 @@ void C2Texture::saveToBMPFile(std::string file_name)
   delete cBit;
 }
 
-std::vector<uint16_t>* C2Texture::getRawData()
+std::vector<uint16_t>* CETexture::getRawData()
 {
   return &m_raw_data;
 }

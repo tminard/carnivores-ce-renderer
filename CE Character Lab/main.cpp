@@ -19,8 +19,8 @@
 #include "C2CarFilePreloader.h"
 
 #include "Hunt.h"
-#include "C2Geometry.h"
-#include "C2Texture.h"
+#include "CEGeometry.h"
+#include "CETexture.h"
 
 #include "CE_ArtificialIntelligence.h"
 
@@ -97,7 +97,7 @@ int main(int argc, const char * argv[])
   std::unique_ptr<C2MapFile> cMap(new C2MapFile("AREA1.MAP"));
   std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile("AREA1.RSC"));
 
-  // C2Geometry* allG = allo->getCurrentModelForRender();
+  // CEGeometry* allG = allo->getCurrentModelForRender();
 
   std::cout << "Map texture atlas width: " << cMapRsc->getTextureAtlasWidth();
   

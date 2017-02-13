@@ -12,8 +12,6 @@
 #include <exception>
 #include <memory>
 
-#include <vector>
-
 class CEGeometry;
 
 class CETerrain

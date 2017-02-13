@@ -28,6 +28,8 @@
 		D657B8951B851D3A0051BCC7 /* IndexedMeshLoader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D657B8931B851D3A0051BCC7 /* IndexedMeshLoader.cpp */; };
 		D6C849601E50F59000ED46B7 /* CEMap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6C8495E1E50F59000ED46B7 /* CEMap.cpp */; };
 		D6C849641E510A5800ED46B7 /* CETerrain.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6C849631E510A5800ED46B7 /* CETerrain.cpp */; };
+		D6C849691E516A6F00ED46B7 /* CEVertexBuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6C849681E516A6F00ED46B7 /* CEVertexBuffer.cpp */; };
+		D6C8496B1E517D1F00ED46B7 /* CETerrainVertexBuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6C8496A1E517D1F00ED46B7 /* CETerrainVertexBuffer.cpp */; };
 		D6F2F86A1B836F3A0018DBF0 /* C2Sky.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6F2F8681B836F3A0018DBF0 /* C2Sky.cpp */; };
 		D6F2F86C1B8377E60018DBF0 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D61CCBFB1B7E200E004BD900 /* OpenGL.framework */; };
 		D6F2F8751B83855A0018DBF0 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D6F2F8741B83855A0018DBF0 /* IOKit.framework */; };
@@ -105,6 +107,10 @@
 		D6C849611E50F62E00ED46B7 /* CEMapBlock.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CEMapBlock.h; sourceTree = "<group>"; };
 		D6C849621E50F68C00ED46B7 /* CETerrain.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CETerrain.h; sourceTree = "<group>"; };
 		D6C849631E510A5800ED46B7 /* CETerrain.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CETerrain.cpp; sourceTree = "<group>"; };
+		D6C849661E51690800ED46B7 /* CEVertexBuffer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CEVertexBuffer.h; sourceTree = "<group>"; };
+		D6C849671E51691900ED46B7 /* CETerrainVertexBuffer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CETerrainVertexBuffer.h; sourceTree = "<group>"; };
+		D6C849681E516A6F00ED46B7 /* CEVertexBuffer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CEVertexBuffer.cpp; sourceTree = "<group>"; };
+		D6C8496A1E517D1F00ED46B7 /* CETerrainVertexBuffer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CETerrainVertexBuffer.cpp; sourceTree = "<group>"; };
 		D6F2F8681B836F3A0018DBF0 /* C2Sky.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = C2Sky.cpp; sourceTree = "<group>"; };
 		D6F2F8691B836F3A0018DBF0 /* C2Sky.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = C2Sky.h; sourceTree = "<group>"; };
 		D6F2F8741B83855A0018DBF0 /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
@@ -212,6 +218,7 @@
 		D65552501B73DDC900CC5309 /* Engine */ = {
 			isa = PBXGroup;
 			children = (
+				D6C849651E5168D900ED46B7 /* VertexBufferTypes */,
 				D6C8495D1E50F57400ED46B7 /* Areas */,
 				D64C5F211E50F22E00958C8E /* Support */,
 				D655523E1B73DA7000CC5309 /* CEGeometry.h */,
@@ -311,6 +318,17 @@
 			name = Areas;
 			sourceTree = "<group>";
 		};
+		D6C849651E5168D900ED46B7 /* VertexBufferTypes */ = {
+			isa = PBXGroup;
+			children = (
+				D6C849661E51690800ED46B7 /* CEVertexBuffer.h */,
+				D6C849681E516A6F00ED46B7 /* CEVertexBuffer.cpp */,
+				D6C849671E51691900ED46B7 /* CETerrainVertexBuffer.h */,
+				D6C8496A1E517D1F00ED46B7 /* CETerrainVertexBuffer.cpp */,
+			);
+			name = VertexBufferTypes;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -372,11 +390,13 @@
 				D65552491B73DA7000CC5309 /* CE_Allosaurus.cpp in Sources */,
 				D6C849601E50F59000ED46B7 /* CEMap.cpp in Sources */,
 				D65552A71B7A325C00CC5309 /* CE_AIUtilities.cpp in Sources */,
+				D6C849691E516A6F00ED46B7 /* CEVertexBuffer.cpp in Sources */,
 				D6F2F8881B83E4810018DBF0 /* shader.cpp in Sources */,
 				D65552591B73E84E00CC5309 /* C2CarFile.cpp in Sources */,
 				D65552991B755BC000CC5309 /* C2CarFilePreloader.cpp in Sources */,
 				D655523A1B73DA4900CC5309 /* C2Character.cpp in Sources */,
 				D61CCC091B7E653E004BD900 /* C2MapRscFile.cpp in Sources */,
+				D6C8496B1E517D1F00ED46B7 /* CETerrainVertexBuffer.cpp in Sources */,
 				D6F2F8851B83DC0E0018DBF0 /* vertex.cpp in Sources */,
 				D6C849641E510A5800ED46B7 /* CETerrain.cpp in Sources */,
 				D657B8951B851D3A0051BCC7 /* IndexedMeshLoader.cpp in Sources */,
@@ -482,6 +502,7 @@
 		D65552311B73DA2000CC5309 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				CLANG_ENABLE_MODULES = YES;
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
@@ -496,6 +517,7 @@
 		D65552321B73DA2000CC5309 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				CLANG_ENABLE_MODULES = YES;
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",

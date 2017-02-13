@@ -21,12 +21,6 @@
 
 void Console_PrintLogString(std::string log_msg);
 
-template <typename T, typename... Args>
-auto make_unique(Args&&... args) -> std::unique_ptr<T>
-{
-  return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
-}
-
 C2CarFile::C2CarFile(std::string file_name)
 {
 	Console_PrintLogString("Loading file " + file_name);
@@ -101,7 +95,7 @@ void C2CarFile::load_file(std::string file_name)
     infile.read(reinterpret_cast<char *>(_aniData.data()), _vcount*_frames_count*6);
 
     std::string animation_name(_aniName);
-	std::unique_ptr<CEAnimation> chAni = make_unique<CEAnimation>(animation_name, _ani_kps,
+	std::unique_ptr<CEAnimation> chAni = std::make_unique<CEAnimation>(animation_name, _ani_kps,
 		_frames_count, (int)animation_length);
 	chAni->setAnimationData(_aniData);
 
@@ -139,7 +133,7 @@ void C2CarFile::load_file(std::string file_name)
 
   // load instance
   IndexedMeshLoader* m_loader = new IndexedMeshLoader(_vertices, _faces);
-  this->m_geometry = make_unique<CEGeometry>(m_loader->getVertices(), m_loader->getIndices(), std::move(m_texture));
+  this->m_geometry = std::make_unique<CEGeometry>(m_loader->getVertices(), m_loader->getIndices(), std::move(m_texture));
   
   delete m_loader;
 }

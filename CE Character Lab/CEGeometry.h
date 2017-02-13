@@ -18,6 +18,7 @@
 
 class Vertex;
 class CETexture;
+class CEVertexBuffer;
 
 class CEGeometry {
 private:
@@ -37,12 +38,14 @@ private:
   std::vector < Vertex > m_vertices;
   std::vector < unsigned int > m_indices;
   std::shared_ptr<CETexture> m_texture;
+  std::unique_ptr<CEVertexBuffer> m_vertex_buffer;
 
 public:
   CEGeometry(std::vector < Vertex > vertices, std::vector < unsigned int > indices, std::shared_ptr<CETexture> texture);
+  CEGeometry(std::vector < Vertex > vertices, std::vector < unsigned int > indices, std::shared_ptr<CETexture> texture, std::unique_ptr<CEVertexBuffer> vertex_buffer);
+
   ~CEGeometry();
-  
-  void loadObjectIntoMemoryBuffer(); // loads the object into OpenGL's memory
+
   void DEP_hint_ignoreLighting(); // instruct the geom to ignore lighting. Depreciated. Used with old C2 models.
   
   CETexture* getTexture();

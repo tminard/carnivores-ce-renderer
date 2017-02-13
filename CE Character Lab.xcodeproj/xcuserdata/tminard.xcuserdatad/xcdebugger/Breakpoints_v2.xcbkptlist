@@ -230,27 +230,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "CE Character Lab/TerrainRenderer.cpp"
-            timestampString = "508629680.87238"
+            timestampString = "508657245.583043"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "304"
-            endingLineNumber = "304"
-            landmarkName = "TerrainRenderer::loadIntoHardwareMemory()"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "CE Character Lab/TerrainRenderer.cpp"
-            timestampString = "508629680.87238"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "312"
-            endingLineNumber = "312"
+            startingLineNumber = "214"
+            endingLineNumber = "214"
             landmarkName = "TerrainRenderer::loadIntoHardwareMemory()"
             landmarkType = "7">
          </BreakpointContent>
@@ -278,27 +262,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "CE Character Lab/TerrainRenderer.cpp"
-            timestampString = "508629680.87238"
+            timestampString = "508657245.583043"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "341"
-            endingLineNumber = "341"
-            landmarkName = "TerrainRenderer::calcAtlasUV(int texID, glm::vec2 uv)"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "CE Character Lab/TerrainRenderer.cpp"
-            timestampString = "508628222.900778"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "260"
-            endingLineNumber = "260"
+            startingLineNumber = "175"
+            endingLineNumber = "175"
             landmarkName = "TerrainRenderer::loadIntoHardwareMemory()"
             landmarkType = "7">
          </BreakpointContent>
@@ -332,6 +300,22 @@
             startingLineNumber = "94"
             endingLineNumber = "94"
             landmarkName = "C2WorldModel::C2WorldModel(std::ifstream&amp; instream)"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "CE Character Lab/CEVertexBuffer.cpp"
+            timestampString = "508656035.551404"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "61"
+            endingLineNumber = "61"
+            landmarkName = "CEVertexBuffer::uploadToGPU(const Vertex* vertex_data, int vertex_data_size, const unsigned int* indice_data, int indice_data_size)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>

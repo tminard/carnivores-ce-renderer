@@ -12,6 +12,9 @@
 #include "C2MapFile.h"
 #include "C2MapRscFile.h"
 
+#include "CEGeometry.h"
+#include "CETerrain.h"
+
 #include <cstdint>
 
 TerrainRenderer::TerrainRenderer(C2MapFile* c_map_weak, C2MapRscFile* c_rsc_weak)
@@ -289,6 +292,12 @@ void TerrainRenderer::loadIntoHardwareMemory()
   }
 
   m_num_indices = (int)m_indices.size();
+
+  CEGeometry* m_geo = new CEGeometry(m_vertices, m_indices, this->m_crsc_data_weak->getTextureForUse(0));
+
+  this->m_terrain = std::unique_ptr<CETerrain>(new CETerrain(std::unique_ptr<CEGeometry>(m_geo)));
+
+  return; //TODO: Somehow include TexID in the Vertex data... Maybe need to make CEGeo texture-atlas aware.
   
   // generate buffers and upload
   glGenVertexArrays(1, &this->m_vertexArrayObject);
@@ -334,12 +343,13 @@ glm::vec2 TerrainRenderer::calcAtlasUV(int texID, glm::vec2 uv)
 
 void TerrainRenderer::Render()
 {
-  glBindVertexArray(this->m_vertexArrayObject);
-
-
-  glDrawElementsBaseVertex(GL_TRIANGLES, m_num_indices, GL_UNSIGNED_INT, 0, 0);
-  
-  glBindVertexArray(0);
+//  glBindVertexArray(this->m_vertexArrayObject);
+//
+//
+//  glDrawElementsBaseVertex(GL_TRIANGLES, m_num_indices, GL_UNSIGNED_INT, 0, 0);
+//  
+//  glBindVertexArray(0);
+  this->m_terrain->Draw();
 }
 
 void TerrainRenderer::UpdateForPos()

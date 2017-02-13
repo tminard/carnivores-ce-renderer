@@ -14,8 +14,8 @@ void CEGeometry::DEP_hint_ignoreLighting()
   // Yeah, ignore this for now
 }
 
-CEGeometry::CEGeometry(std::vector < Vertex > vertices, std::vector < uint32_t > indices, std::unique_ptr<CETexture> texture)
-: m_vertices(vertices), m_indices(indices), m_texture(std::move(texture))
+CEGeometry::CEGeometry(std::vector < Vertex > vertices, std::vector < uint32_t > indices, std::shared_ptr<CETexture> texture)
+: m_vertices(vertices), m_indices(indices), m_texture(texture)
 {
   this->loadObjectIntoMemoryBuffer();
 }

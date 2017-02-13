@@ -50,6 +50,11 @@ int C2MapRscFile::getTextureAtlasWidth()
   return this->m_texture_atlas_width;
 }
 
+std::shared_ptr<CETexture> C2MapRscFile::getTextureForUse(int i)
+{
+  return this->m_textures.at(i);
+}
+
 void C2MapRscFile::load(const std::string &file_name)
 {
   std::ifstream infile;
@@ -112,11 +117,10 @@ void C2MapRscFile::load(const std::string &file_name)
     std::vector<uint16_t> tx_filler(missing_bits);
     combined_texture_data.insert(combined_texture_data.end(), tx_filler.begin(), tx_filler.end());
 
-    std::unique_ptr<CETexture> cTexture = std::unique_ptr<CETexture>(new CETexture(combined_texture_data, squared_texture_rows*TEXTURE_SQUARE_SIZE*squared_texture_rows*TEXTURE_SQUARE_SIZE, squared_texture_rows*TEXTURE_SQUARE_SIZE, squared_texture_rows*TEXTURE_SQUARE_SIZE));
+    CETexture* cTexture = new CETexture(combined_texture_data, squared_texture_rows*TEXTURE_SQUARE_SIZE*squared_texture_rows*TEXTURE_SQUARE_SIZE, squared_texture_rows*TEXTURE_SQUARE_SIZE, squared_texture_rows*TEXTURE_SQUARE_SIZE);
     this->m_texture_atlas_width = squared_texture_rows;
     this->m_texture_count = texture_count;
-    cTexture->saveToBMPFile("/Users/tminard/mapim2.bmp");
-    this->m_textures.push_back(std::move(cTexture));
+    this->m_textures.push_back(std::shared_ptr<CETexture>(cTexture));
 
     
     // Load 3d models

@@ -13,10 +13,14 @@
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <vector>
+#include <memory>
 
 class Vertex;
 class C2MapFile;
 class C2MapRscFile;
+class CETerrain;
+class CETexture;
+
 class TerrainRenderer
 {
 private:
@@ -36,6 +40,10 @@ private:
   glm::vec2 calcAtlasUV(int texID, glm::vec2 uv);
   glm::vec3 calcWorldVertex(int tile_x, int tile_y);
   std::array<glm::vec2, 4> calcUVMapForQuad(int x, int y, bool quad_reversed, int rotation_code);
+
+  // WIP: Move to CETerrain blocks
+  std::unique_ptr<CETerrain> m_terrain;
+
 public:
 
   constexpr static const float TCMAX = 255.5f;

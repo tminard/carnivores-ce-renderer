@@ -30,6 +30,7 @@
 		D6C849641E510A5800ED46B7 /* CETerrain.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6C849631E510A5800ED46B7 /* CETerrain.cpp */; };
 		D6C849691E516A6F00ED46B7 /* CEVertexBuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6C849681E516A6F00ED46B7 /* CEVertexBuffer.cpp */; };
 		D6C8496B1E517D1F00ED46B7 /* CETerrainVertexBuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6C8496A1E517D1F00ED46B7 /* CETerrainVertexBuffer.cpp */; };
+		D6C8496D1E51833900ED46B7 /* CEMapBlock.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6C8496C1E51833900ED46B7 /* CEMapBlock.cpp */; };
 		D6F2F86A1B836F3A0018DBF0 /* C2Sky.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6F2F8681B836F3A0018DBF0 /* C2Sky.cpp */; };
 		D6F2F86C1B8377E60018DBF0 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D61CCBFB1B7E200E004BD900 /* OpenGL.framework */; };
 		D6F2F8751B83855A0018DBF0 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D6F2F8741B83855A0018DBF0 /* IOKit.framework */; };
@@ -111,6 +112,7 @@
 		D6C849671E51691900ED46B7 /* CETerrainVertexBuffer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CETerrainVertexBuffer.h; sourceTree = "<group>"; };
 		D6C849681E516A6F00ED46B7 /* CEVertexBuffer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CEVertexBuffer.cpp; sourceTree = "<group>"; };
 		D6C8496A1E517D1F00ED46B7 /* CETerrainVertexBuffer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CETerrainVertexBuffer.cpp; sourceTree = "<group>"; };
+		D6C8496C1E51833900ED46B7 /* CEMapBlock.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CEMapBlock.cpp; sourceTree = "<group>"; };
 		D6F2F8681B836F3A0018DBF0 /* C2Sky.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = C2Sky.cpp; sourceTree = "<group>"; };
 		D6F2F8691B836F3A0018DBF0 /* C2Sky.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = C2Sky.h; sourceTree = "<group>"; };
 		D6F2F8741B83855A0018DBF0 /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
@@ -272,8 +274,8 @@
 				D61CCC021B7E5CC8004BD900 /* C2MapFile.h */,
 				D61CCC071B7E653E004BD900 /* C2MapRscFile.cpp */,
 				D61CCC081B7E653E004BD900 /* C2MapRscFile.h */,
-				D61CCC0D1B7E7BF5004BD900 /* C2WorldModel.cpp */,
 				D61CCC0E1B7E7BF5004BD900 /* C2WorldModel.h */,
+				D61CCC0D1B7E7BF5004BD900 /* C2WorldModel.cpp */,
 				D6F2F8681B836F3A0018DBF0 /* C2Sky.cpp */,
 				D6F2F8691B836F3A0018DBF0 /* C2Sky.h */,
 				D6247C151B88F30F00088EB2 /* TerrainRenderer.cpp */,
@@ -312,6 +314,7 @@
 				D6C8495E1E50F59000ED46B7 /* CEMap.cpp */,
 				D6C8495F1E50F59000ED46B7 /* CEMap.h */,
 				D6C849611E50F62E00ED46B7 /* CEMapBlock.h */,
+				D6C8496C1E51833900ED46B7 /* CEMapBlock.cpp */,
 				D6C849621E50F68C00ED46B7 /* CETerrain.h */,
 				D6C849631E510A5800ED46B7 /* CETerrain.cpp */,
 			);
@@ -387,6 +390,7 @@
 			files = (
 				D655524A1B73DA7000CC5309 /* CE_ArtificialIntelligence.cpp in Sources */,
 				D61CCC031B7E5CC8004BD900 /* C2MapFile.cpp in Sources */,
+				D6C8496D1E51833900ED46B7 /* CEMapBlock.cpp in Sources */,
 				D65552491B73DA7000CC5309 /* CE_Allosaurus.cpp in Sources */,
 				D6C849601E50F59000ED46B7 /* CEMap.cpp in Sources */,
 				D65552A71B7A325C00CC5309 /* CE_AIUtilities.cpp in Sources */,
@@ -455,7 +459,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
@@ -493,7 +497,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = macosx;
 			};

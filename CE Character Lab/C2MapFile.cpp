@@ -22,32 +22,32 @@ C2MapFile::~C2MapFile()
 
 }
 
-float C2MapFile::getWidth()
+const float C2MapFile::getWidth()
 {
   return SIZE;
 }
 
-float C2MapFile::getHeight()
+const float C2MapFile::getHeight()
 {
   return SIZE;
 }
 
-float C2MapFile::getTileLength()
+const float C2MapFile::getTileLength()
 {
   return 256.f;
 }
 
-int C2MapFile::getTextureIDAt(int xy)
+const int C2MapFile::getTextureIDAt(int xy)
 {
   return int(this->m_texture_A_index_data.at(xy));
 }
 
-uint16_t C2MapFile::getFlagsAt(int xy)
+const uint16_t C2MapFile::getFlagsAt(int xy)
 {
   return this->m_flags_data.at(xy);
 }
 
-float C2MapFile::getHeightAt(int xy)
+const float C2MapFile::getHeightAt(int xy)
 {
   if (xy <0 || xy >= this->m_heightmap_data.size()) {
     return 0;
@@ -58,7 +58,7 @@ float C2MapFile::getHeightAt(int xy)
   return (scaled_height);
 }
 
-int C2MapFile::getObjectAt(int xy)
+const int C2MapFile::getObjectAt(int xy)
 {
   if (xy <0 || xy >= this->m_object_index_data.size()) {
     return 255;
@@ -67,12 +67,12 @@ int C2MapFile::getObjectAt(int xy)
   return int(this->m_object_index_data.at(xy));
 }
 
-float C2MapFile::getHeightmapScale()
+const float C2MapFile::getHeightmapScale()
 {
   return HEIGHT_SCALE;
 }
 
-float C2MapFile::getObjectHeightAt(int xy)
+const float C2MapFile::getObjectHeightAt(int xy)
 {
   if (xy < 0 || xy >= this->m_heightmap_data.size()) {
     return 0;

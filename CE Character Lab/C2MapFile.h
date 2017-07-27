@@ -40,16 +40,16 @@ public:
   C2MapFile(const std::string& map_file_name);
   ~C2MapFile();
   
-  float getHeightAt(int xy);
-  float getObjectHeightAt(int xy);
-  int getObjectAt(int xy);
-  int getTextureIDAt(int xy);
-  uint16_t getFlagsAt(int xy);
+  const float getHeightAt(int xy);
+  const float getObjectHeightAt(int xy);
+  const int getObjectAt(int xy);
+  const int getTextureIDAt(int xy);
+  const uint16_t getFlagsAt(int xy);
 
-  float getHeight();
-  float getWidth();
-  float getTileLength();
-  float getHeightmapScale();
+  const float getHeight();
+  const float getWidth();
+  const float getTileLength();
+  const float getHeightmapScale();
   
   void load(const std::string& file_name);
 };

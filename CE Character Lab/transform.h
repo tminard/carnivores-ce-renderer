@@ -1,6 +1,7 @@
 #ifndef TRANSFORM_INCLUDED_H
 #define TRANSFORM_INCLUDED_H
 
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
 #include "camera.h"

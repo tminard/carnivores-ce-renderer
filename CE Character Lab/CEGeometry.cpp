@@ -2,7 +2,7 @@
 
 #include "CEGeometry.h"
 #include "CETexture.h"
-#include "Vertex.h"
+#include "vertex.h"
 
 /*
  * The old C2 model format supported ignoring lighting.
@@ -65,12 +65,6 @@ void CEGeometry::Draw()
   glBindVertexArray(this->m_vertexArrayObject);
 
   glDrawElementsBaseVertex(GL_TRIANGLES, (int)this->m_indices.size(), GL_UNSIGNED_INT, 0, 0);
-  
+    
   glBindVertexArray(0);
 }
-
-void CEGeometry::exportAsOBJ(const std::string& file_name)
-{
-  
-}
-

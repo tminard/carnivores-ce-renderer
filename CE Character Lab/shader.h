@@ -9,6 +9,7 @@
 #ifndef __CE_Character_Lab__shader__
 #define __CE_Character_Lab__shader__
 
+#define GLM_ENABLE_EXPERIMENTAL
 #define GLFW_INCLUDE_GLCOREARB
 #include <GLFW/glfw3.h>
 #include <stdio.h>
@@ -16,7 +17,6 @@
 
 #include "transform.h"
 
-//glUniform1i(glGetUniformLocation(shader.getProgram(), "basic_texture"), 0);
 class Shader
 {
 public:
@@ -24,6 +24,7 @@ public:
   
   void Bind();
   void Update(const Transform& transform, const Camera& camera);
+  void UpdateMVP(glm::mat4 mpv);
   GLuint getProgram();
   GLuint getMVPUniform();
   

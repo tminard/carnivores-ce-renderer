@@ -5,12 +5,10 @@
 //  Created by Tyler Minard on 8/6/15.
 //  Copyright (c) 2015 Tyler Minard. All rights reserved.
 //
-
+#define GLM_ENABLE_EXPERIMENTAL
 #define GLFW_INCLUDE_GLCOREARB
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
-#include <glm/gtx/transform.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 
 #include <iostream>
 
@@ -24,6 +22,9 @@
 
 #include "CE_ArtificialIntelligence.h"
 
+#include "CEObservable.hpp"
+#include "CEPlayer.hpp"
+
 #include "g_shared.h"
 #include <chrono>
 
@@ -36,131 +37,204 @@
 
 #include "TerrainRenderer.h"
 
+#include "LocalInputManager.hpp"
+#include "LocalVideoManager.hpp"
+
+#include "C2Sky.h"
+
 void CreateFadeTab();
 unsigned int timeGetTime();
 WORD  FadeTab[65][0x8000];
 
+std::unique_ptr<LocalInputManager> input_manager(new LocalInputManager());
+
 template <typename T, typename... Args>
 auto make_unique(Args&&... args) -> std::unique_ptr<T>
 {
-  return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+    return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+}
+
+struct ObjLoc {
+    C2WorldModel* mModel;
+    Transform mTrans;
+};
+
+void cursorPosCallback(GLFWwindow* window, double xpos, double ypos)
+{
+    input_manager->cursorPosCallback(window, xpos, ypos);
 }
 
 int main(int argc, const char * argv[])
 {
-  /* Load Resources */
-  CreateFadeTab();
-
-  std::unique_ptr<C2CarFilePreloader> cFileLoad(new C2CarFilePreloader);
-
-  /* Load rendering */
-  if (!glfwInit())
-    return -1;
-
-  glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 3 );
-  glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 2 );
-  glfwWindowHint( GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE );
-  glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );
-  
-  GLFWwindow* window;
-  window = glfwCreateWindow(1024, 768, "Carnivores Renderer", NULL, NULL);
-  if (!window)
-  {
-    glfwTerminate();
-    return -1;
-  }
-  
-  glfwMakeContextCurrent(window);
-  glfwSwapInterval(1);
-  glEnable(GL_DEPTH_TEST);
-  glDepthFunc(GL_LESS);
-  glDisable(GL_CULL_FACE);
-  
-  glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-  glClearColor(.5,.5,.5,0);
-  glFrontFace (GL_CCW); // GL_CCW for counter clock-wise
-  
-  int major, minor, rev;
-  glfwGetVersion(&major, &minor, &rev);
-  std::cout << "OpenGL - " << major << "." << minor << "." << rev << std::endl;
-  std::cout << glfwGetVersionString() << std::endl;
-  const GLubyte* renderer = glGetString(GL_RENDERER);
-  std::cout << renderer << " : " << glGetString(GL_VERSION) << std::endl;
-  
-  int RealTime, PrevTime, TimeDt;
-  PrevTime = timeGetTime();
-  
-  std::unique_ptr<CE_Allosaurus> allo(new CE_Allosaurus(cFileLoad.get(), "ALLO.CAR"));
-  allo->setScale(2.f);
-  std::unique_ptr<C2MapFile> cMap(new C2MapFile("AREA1.MAP"));
-  std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile("AREA1.RSC"));
-
-  // CEGeometry* allG = allo->getCurrentModelForRender();
-
-  std::cout << "Map texture atlas width: " << cMapRsc->getTextureAtlasWidth();
-  
-  Shader shader("basicShader");
-  Shader t_shader("terrain");
-
-  float VIEW_R = 100.5f * cMap->getTileLength();
-  Camera cam(glm::vec3(0.f,45.f,0), 45.f, (float)1024.f / (float)768.f, 0.1f, VIEW_R);
-  //Transform mTrans(glm::vec3(0,0,0), glm::vec3(0,90.f,0), glm::vec3(0.25f, 0.25f, 0.25f));
-  
-  TerrainRenderer* ter = new TerrainRenderer(cMap.get(), cMapRsc.get());
-  bool wireframe_mode = false;
-  
-  while (!glfwWindowShouldClose(window))
-  {
-    glfwMakeContextCurrent(window);
-
-    /* Game loop */
-    RealTime = timeGetTime();
-    srand( (unsigned)RealTime );
-    TimeDt = RealTime - PrevTime;
-    if (TimeDt<0) TimeDt = 10;
-    if (TimeDt>10000) TimeDt = 10;
-    if (TimeDt>1000) TimeDt = 1000;
-    PrevTime = RealTime;
+    CreateFadeTab();
+    std::unique_ptr<C2CarFilePreloader> cFileLoad(new C2CarFilePreloader);
+    std::unique_ptr<LocalVideoManager> video_manager(new LocalVideoManager());
+    std::shared_ptr<C2MapFile> cMap(new C2MapFile("AREA1.MAP"));
+    std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile("AREA1.RSC"));
+    std::shared_ptr<CEPlayer> m_player(new CEPlayer(cMap));
+    std::unique_ptr<TerrainRenderer> terrain(new TerrainRenderer(cMap.get(), cMapRsc.get()));
     
-    glm::vec3 current_pos = cam.GetCurrentPos();
-
-    // Process AI
-    allo->intelligence->think(TimeDt);
-
-    /* Render here */
-    float ratio;
-    int width, height;
-    glfwGetFramebufferSize(window, &width, &height);
-    ratio = width / (float) height;
-    glViewport(0, 0, width, height);
-  
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    std::cout << "Map texture atlas width: " << cMapRsc->getTextureAtlasWidth();
     
-    t_shader.Bind();
+    Shader shader("basicShader");
+    Shader t_shader("terrain");
+
     Transform mTrans_land(glm::vec3(0,0,0), glm::vec3(0,0,0), glm::vec3(1.f, 1.f, 1.f));
-    t_shader.Update(mTrans_land, cam);
-    cMapRsc->getTexture(0)->Use();
+    Camera* camera = m_player->getCamera();
+    GLFWwindow* window = video_manager->GetWindow();
+    
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-    ter->Render();
+    input_manager->Bind(m_player);
+    glfwSetCursorPosCallback(window, &cursorPosCallback);
 
-    shader.Bind();
-    allo->render();
+    int RealTime, PrevTime, TimeDt;
+    PrevTime = timeGetTime();
+    double preTime, curTime, deltaTime;
+    preTime = glfwGetTime();
+    
+    std::vector<ObjLoc> visible_objects = {};
 
-    // loop through visible objects
-    float cur_x = current_pos.x;
-    float cur_y = current_pos.z;
-    int current_row = static_cast<int>(cur_y / cMap->getTileLength());
-    int current_col = static_cast<int>(cur_x / cMap->getTileLength());
-    int view_distance_squares = (VIEW_R / cMap->getTileLength()) / 2;
+    while (!glfwWindowShouldClose(window))
+    {
+        glfwMakeContextCurrent(window);
+
+        /* Game loop */
+        RealTime = timeGetTime();
+        srand( (unsigned)RealTime );
+        TimeDt = RealTime - PrevTime;
+        if (TimeDt<0) TimeDt = 10;
+        if (TimeDt>10000) TimeDt = 10;
+        if (TimeDt>1000) TimeDt = 1000;
+        
+        PrevTime = RealTime;
+        
+        curTime = glfwGetTime();
+        deltaTime = curTime - preTime;
+        preTime = curTime;
+
+        /* Render here */
+        int width, height;
+        glfwGetFramebufferSize(window, &width, &height);
+        glViewport(0, 0, width, height);
+
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        
+        glDepthFunc(GL_LESS);
+        cMapRsc->getDaySky()->Render(window, *camera);
+        
+        if (visible_objects.empty()) {
+            glm::vec3 current_pos = camera->GetCurrentPos();
+            float cur_x = current_pos.x;
+            float cur_y = current_pos.z;
+            int current_row = static_cast<int>(cur_y / cMap->getTileLength());
+            int current_col = static_cast<int>(cur_x / cMap->getTileLength());
+            int view_distance_squares = 50;
+            
+            shader.Bind();
+            for (int view_row = current_row + view_distance_squares; view_row > (current_row - view_distance_squares); view_row--) {
+                for (int view_col = current_col - view_distance_squares; view_col < current_col + view_distance_squares; view_col++) {
+                    int obj_id = cMap->getObjectAt(((view_row)*cMap->getWidth())+view_col);
+                    
+                    if (obj_id != 255 && obj_id != 254) {
+                        C2WorldModel* w_obj = cMapRsc->getWorldModel(obj_id);
+                        float obj_height = cMap->getHeightAt((view_row*cMap->getWidth()) + view_col);
+                        
+                        if (obj_height == 0.0f) {
+                            obj_height = cMap->getObjectHeightAt((view_row*cMap->getWidth()) + view_col);
+                        }
+                        
+                        Transform mTrans_c(glm::vec3((view_col*cMap->getTileLength()) + 128.f, obj_height - 15, (view_row*cMap->getTileLength()) + 128.f), glm::vec3(0,0,0), glm::vec3(2.f, 2.f, 2.f));
+                        
+                        ObjLoc mo = { w_obj, mTrans_c };
+                        visible_objects.push_back(mo);
+                    }
+                }
+            }
+        } else {
+            shader.Bind();
+            for (auto &mo : visible_objects)
+            {
+                shader.Update(mo.mTrans, *camera);
+                
+                glDepthFunc(GL_LEQUAL);
+                mo.mModel->render();
+            }
+        }
+
+        
+        t_shader.Bind();
+        t_shader.Update(mTrans_land, *camera);
+        cMapRsc->getTexture(0)->Use();
+        
+        glDepthFunc(GL_LESS);
+        terrain->Render();
+        
+        /* User Input */
+        input_manager->ProcessLocalInput(window, deltaTime);
+        
+        if (glfwGetKey(window, GLFW_KEY_M ) == GLFW_PRESS) {
+            visible_objects.clear();
+        }
+
+        /* Swap front and back buffers */
+        glfwSwapBuffers(window);
+        
+        /* Poll for and process events */
+        glfwPollEvents();
+    }
+    
+    return 0;
+}
+
+//cam.SetHeight(cMap->getHeightAt(int((floorf(current_pos.z/TerrainRenderer::TILE_SIZE)*TerrainRenderer::WORLD_SIZE)+floorf(current_pos.x/TerrainRenderer::TILE_SIZE))) + 200.f);
+//float real_fps = 1000.f / (float)TimeDt;
+
+/*
+ // Process AI
+ std::unique_ptr<CE_Allosaurus> allo(new CE_Allosaurus(cFileLoad.get(), "ALLO.CAR"));
+ allo->setScale(2.f);
+ allo->intelligence->think(TimeDt);
+         allo->render();
+ */
+
+/*
+ mTrans.GetScale()->x = 0.005;
+ mTrans.GetScale()->y = 0.005;
+ mTrans.GetScale()->z = 0.005;
+ mTrans.GetPos()->z = 190.f; //20 yards (60ft) , dino at 45mph hits character in 1 second, 13 seconds for human walk
+ shader.Update(mTrans, cam);
+ allG->Draw();
+ 
+ Transform mTrans_c(glm::vec3(100.f,0,310.f), glm::vec3(0,180.f,0), glm::vec3(0.25f, 0.25f, 0.25f));
+ mTrans_c.GetScale()->x = 0.005;
+ mTrans_c.GetScale()->y = 0.005;
+ mTrans_c.GetScale()->z = 0.005;
+ shader.Update(mTrans_c, cam);
+ tree_plant->render();
+ 
+ Transform mTrans_b(glm::vec3(-25.f,0,60.f), glm::vec3(0,180.f,0), glm::vec3(0.25f, 0.25f, 0.25f));
+ mTrans_b.GetScale()->x = 0.005;
+ mTrans_b.GetScale()->y = 0.005;
+ mTrans_b.GetScale()->z = 0.005;
+ shader.Update(mTrans_b, cam);
+ tree_plant->render();
+ 
+ */
+
+// loop through visible objects
+//    float cur_x = current_pos.x;
+//    float cur_y = current_pos.z;
+//    int current_row = static_cast<int>(cur_y / cMap->getTileLength());
+//    int current_col = static_cast<int>(cur_x / cMap->getTileLength());
+//    int view_distance_squares = (VIEW_R / cMap->getTileLength()) / 2;
 
 
-    // For each row/col, decide whether or not to draw
+// For each row/col, decide whether or not to draw
 //    for (int view_row = current_row + view_distance_squares; view_row > (current_row - view_distance_squares); view_row--) {
 //      for (int view_col = current_col - view_distance_squares; view_col < current_col + view_distance_squares; view_col++) {
 //        int obj_id = cMap->getObjectAt(((view_row)*cMap->getWidth())+view_col);
-//        
+//
 //        if (obj_id != 255 && obj_id != 254) {
 //          C2WorldModel* w_obj = cMapRsc->getWorldModel(obj_id);
 //          float obj_height = cMap->getHeightAt((view_row*cMap->getWidth()) + view_col);
@@ -175,103 +249,4 @@ int main(int argc, const char * argv[])
 //        }
 //      }
 //    }
-
-    /* Render loop*/
-    
-    // Render things in order of back to front
-    // Render sky
-    // Render characters
-    // Render models
-    // Render terrain
-    
-    float FLY_SPEED = 150.f;//10.5f;
-    
-    if (glfwGetKey(window, GLFW_KEY_UP ) == GLFW_PRESS) {
-      cam.MoveForward(FLY_SPEED);
-    }
-    
-    if (glfwGetKey(window, GLFW_KEY_DOWN ) == GLFW_PRESS) {
-      //current_pos.z -= 1.125f;
-      cam.MoveForward(-(FLY_SPEED));
-    }
-    
-    if (glfwGetKey(window, GLFW_KEY_RIGHT ) == GLFW_PRESS) {
-      //current_pos.x -= 1.125f;
-      cam.MoveRight(-(FLY_SPEED));
-    }
-    
-    if (glfwGetKey(window, GLFW_KEY_LEFT ) == GLFW_PRESS) {
-      //current_pos.x += 1.125f;
-      cam.MoveRight(FLY_SPEED);
-    }
-    
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-      cam.RotateY(0.025f);
-    }
-    
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-      cam.RotateY(-0.025f);
-    }
-    
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-      cam.MoveUp(FLY_SPEED);
-    }
-    
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-      cam.MoveUp(-FLY_SPEED);
-    }
-
-    if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) {
-      wireframe_mode = !wireframe_mode;
-
-      if (wireframe_mode) {
-        glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
-      } else {
-        glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
-      }
-    }
-
-    //cam.SetHeight(cMap->getHeightAt(int((floorf(current_pos.z/TerrainRenderer::TILE_SIZE)*TerrainRenderer::WORLD_SIZE)+floorf(current_pos.x/TerrainRenderer::TILE_SIZE))) + 200.f);
-    
-    
-    /* Swap front and back buffers */
-    glfwSwapBuffers(window);
-    
-    /* Poll for and process events */
-    glfwPollEvents();
-  }
-  
-  glfwDestroyWindow(window);
-  glfwTerminate();
-  
-  delete ter;
-
-  return 0;
-}
-
-
-/*
- mTrans.GetScale()->x = 0.005;
- mTrans.GetScale()->y = 0.005;
- mTrans.GetScale()->z = 0.005;
-mTrans.GetPos()->z = 190.f; //20 yards (60ft) , dino at 45mph hits character in 1 second, 13 seconds for human walk
-shader.Update(mTrans, cam);
-allG->Draw();
-
-Transform mTrans_c(glm::vec3(100.f,0,310.f), glm::vec3(0,180.f,0), glm::vec3(0.25f, 0.25f, 0.25f));
-mTrans_c.GetScale()->x = 0.005;
- mTrans_c.GetScale()->y = 0.005;
- mTrans_c.GetScale()->z = 0.005;
-shader.Update(mTrans_c, cam);
-tree_plant->render();
-
-Transform mTrans_b(glm::vec3(-25.f,0,60.f), glm::vec3(0,180.f,0), glm::vec3(0.25f, 0.25f, 0.25f));
-mTrans_b.GetScale()->x = 0.005;
- mTrans_b.GetScale()->y = 0.005;
- mTrans_b.GetScale()->z = 0.005;
-shader.Update(mTrans_b, cam);
-tree_plant->render();
-
-*/
-
 

@@ -47,7 +47,6 @@ public:
   
   CETexture* getTexture();
 
-  void exportAsOBJ(const std::string& file_name);
   void saveTextureAsBMP(const std::string& file_name );
   void Draw();
 };

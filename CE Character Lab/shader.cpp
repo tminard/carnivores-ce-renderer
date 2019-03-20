@@ -57,6 +57,11 @@ void Shader::Update(const Transform& transform, const Camera& camera)
   glUniform3f(m_uniforms[2], 0.0f, 0.0f, 1.0f);
 }
 
+void Shader::UpdateMVP(glm::mat4 mvp)
+{
+    glUniformMatrix4fv(m_uniforms[0], 1, GL_FALSE, &mvp[0][0]);
+}
+
 GLuint Shader::getMVPUniform()
 {
   return this->m_uniforms[0];

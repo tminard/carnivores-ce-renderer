@@ -1,6 +1,13 @@
 /*
  * The purpose of this class is to handle the loading and rendering of the current
  * visible terrain.
+ *
+ * TODO:
+ *  [] Generate BSP tree
+ *      [] Generate multiple-LOD (MRBSP) trees (see: http://graphicsinterface.org/wp-content/uploads/gi1997-10.pdf)
+ *      [] Merge in object data at runtime
+ *      [] Include knowledge of the current camera location and handle perspective
+ *  [] Properly implement texture mapping
 */
 
 #ifndef __CE_Character_Lab__TerrainRenderer__
@@ -24,10 +31,10 @@ private:
   std::vector < unsigned int > m_indices;
   int m_num_indices;
 
-  GLuint m_vertexArrayObject;
+  GLuint m_vertex_array_object;
 
-  GLuint m_vertexArrayBuffer;
-  GLuint m_indicesArrayBuffer;
+  GLuint m_vertex_array_buffer;
+  GLuint m_indices_array_buffer;
   
   C2MapFile* m_cmap_data_weak;
   C2MapRscFile* m_crsc_data_weak;
@@ -37,11 +44,9 @@ private:
   glm::vec3 calcWorldVertex(int tile_x, int tile_y);
   std::array<glm::vec2, 4> calcUVMapForQuad(int x, int y, bool quad_reversed, int rotation_code);
 public:
-
-  constexpr static const float TCMAX = 255.5f;
-  constexpr static const float TCMIN = 0.5f;
-  constexpr static const float _ZSCALE = (16.f*65534.f);
-
+    constexpr static const float TCMAX = 255.5f;
+    constexpr static const float TCMIN = 0.5f;
+    constexpr static const float _ZSCALE = (16.f*65534.f); // MAX_UNSIGNED_SHORT*16 - original engine used this for scaling heights
   TerrainRenderer(C2MapFile* cMapWeak, C2MapRscFile* cRscWeak);
   ~TerrainRenderer();
 

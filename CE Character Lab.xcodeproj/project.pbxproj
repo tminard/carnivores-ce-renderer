@@ -26,11 +26,17 @@
 		D65552A41B797DC200CC5309 /* AI_Allosaurus.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D65552A31B797DC200CC5309 /* AI_Allosaurus.cpp */; };
 		D65552A71B7A325C00CC5309 /* CE_AIUtilities.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D65552A51B7A325C00CC5309 /* CE_AIUtilities.cpp */; };
 		D657B8951B851D3A0051BCC7 /* IndexedMeshLoader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D657B8931B851D3A0051BCC7 /* IndexedMeshLoader.cpp */; };
+		D6D3CD7320CADD3500E3ABAC /* CEObservable.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6D3CD7120CADD3500E3ABAC /* CEObservable.cpp */; };
+		D6D3CD7620CAE07000E3ABAC /* CEPlayer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6D3CD7420CAE07000E3ABAC /* CEPlayer.cpp */; };
+		D6D3CD7920CAE6A100E3ABAC /* LocalInputManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6D3CD7720CAE6A100E3ABAC /* LocalInputManager.cpp */; };
+		D6D3CD7C20CAEBBC00E3ABAC /* LocalVideoManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6D3CD7A20CAEBBC00E3ABAC /* LocalVideoManager.cpp */; };
+		D6D3CD8620CF123400E3ABAC /* CEShaderProgram.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6D3CD8420CF123400E3ABAC /* CEShaderProgram.cpp */; };
+		D6E5DF0E20CA11DB0071464C /* CEBSPTree.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6E5DF0C20CA11DB0071464C /* CEBSPTree.cpp */; };
+		D6E7B8241FAB9ADF00D1C100 /* libglfw.3.2.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = D6E7B8231FAB9ADF00D1C100 /* libglfw.3.2.dylib */; };
 		D6F2F86A1B836F3A0018DBF0 /* C2Sky.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6F2F8681B836F3A0018DBF0 /* C2Sky.cpp */; };
 		D6F2F86C1B8377E60018DBF0 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D61CCBFB1B7E200E004BD900 /* OpenGL.framework */; };
 		D6F2F8751B83855A0018DBF0 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D6F2F8741B83855A0018DBF0 /* IOKit.framework */; };
 		D6F2F8771B8385600018DBF0 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D6F2F8761B8385600018DBF0 /* Cocoa.framework */; };
-		D6F2F8791B8386870018DBF0 /* libglfw3.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D6F2F8781B8386870018DBF0 /* libglfw3.a */; };
 		D6F2F87B1B8389330018DBF0 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D6F2F87A1B8389330018DBF0 /* QuartzCore.framework */; };
 		D6F2F8851B83DC0E0018DBF0 /* vertex.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6F2F8831B83DC0E0018DBF0 /* vertex.cpp */; };
 		D6F2F8881B83E4810018DBF0 /* shader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6F2F8861B83E4810018DBF0 /* shader.cpp */; };
@@ -61,6 +67,8 @@
 		D61CCC0D1B7E7BF5004BD900 /* C2WorldModel.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = C2WorldModel.cpp; sourceTree = "<group>"; };
 		D61CCC0E1B7E7BF5004BD900 /* C2WorldModel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = C2WorldModel.h; sourceTree = "<group>"; };
 		D61CCC111B811C28004BD900 /* bitmap.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bitmap.h; sourceTree = "<group>"; };
+		D6212D202242B93300DAC1DD /* new_shader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = new_shader.h; sourceTree = "<group>"; };
+		D6212D222243128700DAC1DD /* day_cloudtop */ = {isa = PBXFileReference; lastKnownFileType = folder; path = day_cloudtop; sourceTree = "<group>"; };
 		D6247C151B88F30F00088EB2 /* TerrainRenderer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = TerrainRenderer.cpp; sourceTree = "<group>"; };
 		D6247C161B88F30F00088EB2 /* TerrainRenderer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TerrainRenderer.h; sourceTree = "<group>"; };
 		D64585411B7A818B00D6327E /* carnivores_mock_functions.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = carnivores_mock_functions.cpp; sourceTree = "<group>"; };
@@ -98,6 +106,21 @@
 		D6ADAC2E1B9BD24C00E2AA7D /* AREA5.RSC */ = {isa = PBXFileReference; lastKnownFileType = file; path = AREA5.RSC; sourceTree = "<group>"; };
 		D6ADAC2F1B9BD24C00E2AA7D /* TROPHY.MAP */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = "sourcecode.module-map"; path = TROPHY.MAP; sourceTree = "<group>"; };
 		D6ADAC301B9BD24C00E2AA7D /* TROPHY.RSC */ = {isa = PBXFileReference; lastKnownFileType = file; path = TROPHY.RSC; sourceTree = "<group>"; };
+		D6D3CD7120CADD3500E3ABAC /* CEObservable.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CEObservable.cpp; sourceTree = "<group>"; };
+		D6D3CD7220CADD3500E3ABAC /* CEObservable.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CEObservable.hpp; sourceTree = "<group>"; };
+		D6D3CD7420CAE07000E3ABAC /* CEPlayer.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CEPlayer.cpp; sourceTree = "<group>"; };
+		D6D3CD7520CAE07000E3ABAC /* CEPlayer.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CEPlayer.hpp; sourceTree = "<group>"; };
+		D6D3CD7720CAE6A100E3ABAC /* LocalInputManager.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LocalInputManager.cpp; sourceTree = "<group>"; };
+		D6D3CD7820CAE6A100E3ABAC /* LocalInputManager.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LocalInputManager.hpp; sourceTree = "<group>"; };
+		D6D3CD7A20CAEBBC00E3ABAC /* LocalVideoManager.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LocalVideoManager.cpp; sourceTree = "<group>"; };
+		D6D3CD7B20CAEBBC00E3ABAC /* LocalVideoManager.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LocalVideoManager.hpp; sourceTree = "<group>"; };
+		D6D3CD7D20CB020E00E3ABAC /* sky.vs */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = sky.vs; sourceTree = "<group>"; };
+		D6D3CD7E20CB022D00E3ABAC /* sky.fs */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = sky.fs; sourceTree = "<group>"; };
+		D6D3CD8420CF123400E3ABAC /* CEShaderProgram.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CEShaderProgram.cpp; sourceTree = "<group>"; };
+		D6D3CD8520CF123400E3ABAC /* CEShaderProgram.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CEShaderProgram.hpp; sourceTree = "<group>"; };
+		D6E5DF0C20CA11DB0071464C /* CEBSPTree.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CEBSPTree.cpp; sourceTree = "<group>"; };
+		D6E5DF0D20CA11DB0071464C /* CEBSPTree.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CEBSPTree.hpp; sourceTree = "<group>"; };
+		D6E7B8231FAB9ADF00D1C100 /* libglfw.3.2.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libglfw.3.2.dylib; path = ../../../../usr/local/Cellar/glfw/3.2.1/lib/libglfw.3.2.dylib; sourceTree = "<group>"; };
 		D6F2F8681B836F3A0018DBF0 /* C2Sky.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = C2Sky.cpp; sourceTree = "<group>"; };
 		D6F2F8691B836F3A0018DBF0 /* C2Sky.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = C2Sky.h; sourceTree = "<group>"; };
 		D6F2F8741B83855A0018DBF0 /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
@@ -121,8 +144,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D6E7B8241FAB9ADF00D1C100 /* libglfw.3.2.dylib in Frameworks */,
 				D6F2F87B1B8389330018DBF0 /* QuartzCore.framework in Frameworks */,
-				D6F2F8791B8386870018DBF0 /* libglfw3.a in Frameworks */,
 				D6F2F8771B8385600018DBF0 /* Cocoa.framework in Frameworks */,
 				D6F2F8751B83855A0018DBF0 /* IOKit.framework in Frameworks */,
 				D6F2F86C1B8377E60018DBF0 /* OpenGL.framework in Frameworks */,
@@ -142,6 +165,7 @@
 				D6F2F8861B83E4810018DBF0 /* shader.cpp */,
 				D6F2F8891B83E57D0018DBF0 /* transform.h */,
 				D6F2F88A1B83E5AF0018DBF0 /* camera.h */,
+				D6212D202242B93300DAC1DD /* new_shader.h */,
 			);
 			name = Support;
 			sourceTree = "<group>";
@@ -156,6 +180,7 @@
 				D61CCBFB1B7E200E004BD900 /* OpenGL.framework */,
 				D655522B1B73DA2000CC5309 /* CE Character Lab */,
 				D655522A1B73DA2000CC5309 /* Products */,
+				D6E7B8221FAB9ADF00D1C100 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -198,6 +223,14 @@
 				D65552381B73DA4900CC5309 /* C2HuntableCharacter.h */,
 				D65552371B73DA4900CC5309 /* C2Character.h */,
 				D65552361B73DA4900CC5309 /* C2Character.cpp */,
+				D6D3CD7120CADD3500E3ABAC /* CEObservable.cpp */,
+				D6D3CD7220CADD3500E3ABAC /* CEObservable.hpp */,
+				D6D3CD7420CAE07000E3ABAC /* CEPlayer.cpp */,
+				D6D3CD7520CAE07000E3ABAC /* CEPlayer.hpp */,
+				D6D3CD7720CAE6A100E3ABAC /* LocalInputManager.cpp */,
+				D6D3CD7820CAE6A100E3ABAC /* LocalInputManager.hpp */,
+				D6D3CD7A20CAEBBC00E3ABAC /* LocalVideoManager.cpp */,
+				D6D3CD7B20CAEBBC00E3ABAC /* LocalVideoManager.hpp */,
 			);
 			name = Common;
 			sourceTree = "<group>";
@@ -214,6 +247,8 @@
 				D655525D1B74315900CC5309 /* CEAnimation.cpp */,
 				D61CCC0B1B7E68D0004BD900 /* CETexture.h */,
 				D61CCC0A1B7E68D0004BD900 /* CETexture.cpp */,
+				D6D3CD8420CF123400E3ABAC /* CEShaderProgram.cpp */,
+				D6D3CD8520CF123400E3ABAC /* CEShaderProgram.hpp */,
 			);
 			name = Engine;
 			sourceTree = "<group>";
@@ -234,6 +269,7 @@
 		D65552531B73E31C00CC5309 /* Files */ = {
 			isa = PBXGroup;
 			children = (
+				D6212D222243128700DAC1DD /* day_cloudtop */,
 				D6ADAC2D1B9BD24C00E2AA7D /* AREA5.MAP */,
 				D6ADAC2E1B9BD24C00E2AA7D /* AREA5.RSC */,
 				D6ADAC2F1B9BD24C00E2AA7D /* TROPHY.MAP */,
@@ -246,6 +282,8 @@
 				D655525C1B742C3200CC5309 /* Notes.rtf */,
 				D6F2F88B1B83E62F0018DBF0 /* basicShader.fs */,
 				D6F2F88C1B83E6490018DBF0 /* basicShader.vs */,
+				D6D3CD7D20CB020E00E3ABAC /* sky.vs */,
+				D6D3CD7E20CB022D00E3ABAC /* sky.fs */,
 			);
 			name = Files;
 			sourceTree = "<group>";
@@ -263,6 +301,8 @@
 				D6F2F8691B836F3A0018DBF0 /* C2Sky.h */,
 				D6247C151B88F30F00088EB2 /* TerrainRenderer.cpp */,
 				D6247C161B88F30F00088EB2 /* TerrainRenderer.h */,
+				D6E5DF0C20CA11DB0071464C /* CEBSPTree.cpp */,
+				D6E5DF0D20CA11DB0071464C /* CEBSPTree.hpp */,
 			);
 			name = World;
 			sourceTree = "<group>";
@@ -289,6 +329,14 @@
 				D657B8941B851D3A0051BCC7 /* IndexedMeshLoader.h */,
 			);
 			name = Utilities;
+			sourceTree = "<group>";
+		};
+		D6E7B8221FAB9ADF00D1C100 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				D6E7B8231FAB9ADF00D1C100 /* libglfw.3.2.dylib */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -347,13 +395,17 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D6D3CD7920CAE6A100E3ABAC /* LocalInputManager.cpp in Sources */,
 				D655524A1B73DA7000CC5309 /* CE_ArtificialIntelligence.cpp in Sources */,
 				D61CCC031B7E5CC8004BD900 /* C2MapFile.cpp in Sources */,
+				D6D3CD8620CF123400E3ABAC /* CEShaderProgram.cpp in Sources */,
 				D65552491B73DA7000CC5309 /* CE_Allosaurus.cpp in Sources */,
 				D65552A71B7A325C00CC5309 /* CE_AIUtilities.cpp in Sources */,
+				D6D3CD7620CAE07000E3ABAC /* CEPlayer.cpp in Sources */,
 				D6F2F8881B83E4810018DBF0 /* shader.cpp in Sources */,
 				D65552591B73E84E00CC5309 /* C2CarFile.cpp in Sources */,
 				D65552991B755BC000CC5309 /* C2CarFilePreloader.cpp in Sources */,
+				D6D3CD7C20CAEBBC00E3ABAC /* LocalVideoManager.cpp in Sources */,
 				D655523A1B73DA4900CC5309 /* C2Character.cpp in Sources */,
 				D61CCC091B7E653E004BD900 /* C2MapRscFile.cpp in Sources */,
 				D6F2F8851B83DC0E0018DBF0 /* vertex.cpp in Sources */,
@@ -362,12 +414,14 @@
 				D65552471B73DA7000CC5309 /* CEGeometry.cpp in Sources */,
 				D61CCC0C1B7E68D0004BD900 /* CETexture.cpp in Sources */,
 				D65552481B73DA7000CC5309 /* C2HuntableCharacter.cpp in Sources */,
+				D6E5DF0E20CA11DB0071464C /* CEBSPTree.cpp in Sources */,
 				D655525F1B74315900CC5309 /* CEAnimation.cpp in Sources */,
 				D65552391B73DA4900CC5309 /* CEAnimatableModel.cpp in Sources */,
 				D6247C171B88F30F00088EB2 /* TerrainRenderer.cpp in Sources */,
 				D655522D1B73DA2000CC5309 /* main.cpp in Sources */,
 				D64585421B7A818B00D6327E /* carnivores_mock_functions.cpp in Sources */,
 				D65552A41B797DC200CC5309 /* AI_Allosaurus.cpp in Sources */,
+				D6D3CD7320CADD3500E3ABAC /* CEObservable.cpp in Sources */,
 				D61CCC0F1B7E7BF5004BD900 /* C2WorldModel.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -466,7 +520,10 @@
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					/usr/local/include,
 				);
-				LIBRARY_SEARCH_PATHS = /usr/local/lib;
+				LIBRARY_SEARCH_PATHS = (
+					/usr/local/lib,
+					/usr/local/Cellar/glfw/3.2.1/lib,
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -480,7 +537,10 @@
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					/usr/local/include,
 				);
-				LIBRARY_SEARCH_PATHS = /usr/local/lib;
+				LIBRARY_SEARCH_PATHS = (
+					/usr/local/lib,
+					/usr/local/Cellar/glfw/3.2.1/lib,
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;

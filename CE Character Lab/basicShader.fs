@@ -8,11 +8,13 @@ out vec4 outputColor;
 uniform sampler2D basic_texture;
 
 const vec3 fogColor = vec3(0.94, 0.97, 1.0);
-const int FOG_START = 10240;
-const int FOG_END = 12544;
+const int HIDE_START = 256*40;
+const int FOG_START = 256*30;
+const int FOG_END = 256*49;
 
 void main()
 {
+    float alpha = 1.0f;
     vec4 sC = texture( basic_texture, texCoord0 );
     float dist = abs(distanceToCamera);
     float trans = 0.095;
@@ -29,8 +31,11 @@ void main()
     lightColor = 1.55 * lightColor.rgb * vec3(0.94, 0.97, 1.0);
     fogFactor = clamp(fogFactor, 0.0, 1.0 );
     
-    finalColor = mix(fogColor, lightColor, fogFactor);
-    outputColor = vec4(finalColor, 1.0f);
+    float distToFade = (dist - HIDE_START); //1-(6-5)/(10-5)
+    if (distToFade > 0) {
+        alpha = 1.f - (distToFade / float(FOG_END - HIDE_START));
+    }
     
-    //outputColor = vec4(sC.b, sC.g, sC.r, 1.0f);
+    finalColor = mix(fogColor, lightColor, fogFactor);
+    outputColor = vec4(finalColor, alpha);
 }

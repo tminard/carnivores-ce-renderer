@@ -204,7 +204,7 @@ void C2MapRscFile::load(const std::string &file_name)
         std::unique_ptr<CETexture> cTexture = std::unique_ptr<CETexture>(new CETexture(final_texture_data, squared_texture_rows*TEXTURE_SQUARE_SIZE*squared_texture_rows*TEXTURE_SQUARE_SIZE, squared_texture_rows*TEXTURE_SQUARE_SIZE, squared_texture_rows*TEXTURE_SQUARE_SIZE));
         this->m_texture_atlas_width = squared_texture_rows;
         this->m_texture_count = texture_count;
-        cTexture->saveToBMPFile("/Users/tminard/mapim2.bmp");
+        //cTexture->saveToBMPFile("/Users/tminard/mapim2.bmp");
         this->m_textures.push_back(std::move(cTexture));
         
         

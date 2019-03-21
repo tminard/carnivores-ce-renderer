@@ -3,15 +3,18 @@
    version = "1.0">
    <ContextStates>
       <ContextState
+         contextName = "C2MapFile::load(std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; const&amp;):C2MapFile.cpp">
+      </ContextState>
+      <ContextState
+         contextName = "C2WorldModel::C2WorldModel(std::__1::basic_ifstream&lt;char, std::__1::char_traits&lt;char&gt; &gt;&amp;):C2WorldModel.cpp">
+      </ContextState>
+      <ContextState
          contextName = "C2MapRscFile::load(std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; const&amp;):C2MapRscFile.cpp">
          <PersistentStrings>
             <PersistentString
                value = "">
             </PersistentString>
          </PersistentStrings>
-      </ContextState>
-      <ContextState
-         contextName = "C2MapFile::load(std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; const&amp;):C2MapFile.cpp">
       </ContextState>
    </ContextStates>
 </VariablesViewState>

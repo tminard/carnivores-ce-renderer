@@ -9,7 +9,7 @@
  * Note that no stock C2 world objects actually have animation data.
  *
  * TODO: Move common code into AnimatableModel, and allow this to derive from it
-*/
+ */
 
 #ifndef __CE_Character_Lab__C2WorldModel__
 #define __CE_Character_Lab__C2WorldModel__
@@ -30,9 +30,11 @@
 class CETexture;
 class CEAnimation;
 class CEGeometry;
+class CESimpleGeometry;
 class Vertex;
 
 class Transform;
+class Camera;
 class Shader;
 
 #define objectPLACEWATER       1
@@ -51,27 +53,30 @@ class Shader;
 class C2WorldModel
 {
 private:
-  std::unique_ptr<CETexture> m_far_texture; // used to render object as a 2d bitmap at a distance
-  std::unique_ptr<CEAnimation> m_animation; // apparently, world models only support 1 animation. TODO: allow unlimited animations
-  std::unique_ptr<CEGeometry> m_geometry;
-
-  std::string m_model_name;
-
-  std::array<Vector3d, 4> m_far_vertices;
-  std::array<TBound, 8> m_bounding_box;
-  
-  TObjInfo* m_old_object_info; // Easier to use old object for now
-  
-  void _generateBoundingBox(std::vector<Vertex>& vertex_data); // old method for bounding box. Move to geo when able
-
+    std::unique_ptr<CEAnimation> m_animation; // apparently, world models only support 1 animation. TODO: allow unlimited animations
+    std::unique_ptr<CEGeometry> m_geometry;
+    
+    std::string m_model_name;
+    
+    std::array<Vector3d, 6> m_far_vertices;
+    std::array<TBound, 8> m_bounding_box;
+    //std::unique_ptr<CETexture> m_far_texture; // used to render object as a 2d bitmap at a distance
+    std::unique_ptr<CESimpleGeometry> m_far_geometry;
+    
+    TObjInfo* m_old_object_info; // Easier to use old object for now
+    
+    void _generateBoundingBox(std::vector<Vertex>& vertex_data); // old method for bounding box. Move to geo when able
+    
 public:
-  C2WorldModel(std::ifstream& instream); // construct object using file data
-  ~C2WorldModel();
-
-  void render();
-  
-  CEGeometry* getGeometry();
-  TObjInfo* getObjectInfo(); // TODO: Make this unnecessary
+    C2WorldModel(std::ifstream& instream); // construct object using file data
+    ~C2WorldModel();
+    
+    void render();
+    void renderFar(const Transform& transform, const Camera& camera);
+    
+    CEGeometry* getGeometry();
+    CESimpleGeometry* getFarGeometry();
+    TObjInfo* getObjectInfo(); // TODO: Make this unnecessary
 };
 
 #endif /* defined(__CE_Character_Lab__C2WorldModel__) */
@@ -87,7 +92,7 @@ public:
  TModel  *model; - OK
  TVTL    vtl; - OK
  } TObject;
-
+ 
  typedef struct _ObjInfo {
  int  Radius;
  int  YLo, YHi;
@@ -103,7 +108,7 @@ public:
  
  
  typedef struct _TBound {
-	float cx, cy, a, b,  y1, y2;
+ float cx, cy, a, b,  y1, y2;
  } TBound;
  
  typedef struct _VTLdata {
@@ -113,9 +118,9 @@ public:
  
  typedef struct _TBMPModel {
  Vector3d  gVertex[4];
-	WORD     *lpTexture;
+ WORD     *lpTexture;
  } TBMPModel;
-
-
-
-*/
+ 
+ 
+ 
+ */

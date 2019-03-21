@@ -26,6 +26,7 @@
 		D65552A41B797DC200CC5309 /* AI_Allosaurus.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D65552A31B797DC200CC5309 /* AI_Allosaurus.cpp */; };
 		D65552A71B7A325C00CC5309 /* CE_AIUtilities.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D65552A51B7A325C00CC5309 /* CE_AIUtilities.cpp */; };
 		D657B8951B851D3A0051BCC7 /* IndexedMeshLoader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D657B8931B851D3A0051BCC7 /* IndexedMeshLoader.cpp */; };
+		D67F82A32243EC5000AC81B7 /* CESimpleGeometry.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D67F82A12243EC5000AC81B7 /* CESimpleGeometry.cpp */; };
 		D6D3CD7320CADD3500E3ABAC /* CEObservable.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6D3CD7120CADD3500E3ABAC /* CEObservable.cpp */; };
 		D6D3CD7620CAE07000E3ABAC /* CEPlayer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6D3CD7420CAE07000E3ABAC /* CEPlayer.cpp */; };
 		D6D3CD7920CAE6A100E3ABAC /* LocalInputManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6D3CD7720CAE6A100E3ABAC /* LocalInputManager.cpp */; };
@@ -58,8 +59,8 @@
 		D61CCBFB1B7E200E004BD900 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 		D61CCC011B7E5CC8004BD900 /* C2MapFile.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = C2MapFile.cpp; sourceTree = "<group>"; };
 		D61CCC021B7E5CC8004BD900 /* C2MapFile.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = C2MapFile.h; sourceTree = "<group>"; };
-		D61CCC041B7E6361004BD900 /* AREA1.MAP */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = "sourcecode.module-map"; path = AREA1.MAP; sourceTree = "<group>"; };
-		D61CCC051B7E6361004BD900 /* AREA1.RSC */ = {isa = PBXFileReference; lastKnownFileType = file; path = AREA1.RSC; sourceTree = "<group>"; };
+		D61CCC041B7E6361004BD900 /* AREA1.MAP */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = "sourcecode.module-map"; name = AREA1.MAP; path = "/Source/carnivores-ce-renderer/CE Character Lab/AREA1.MAP"; sourceTree = "<absolute>"; };
+		D61CCC051B7E6361004BD900 /* AREA1.RSC */ = {isa = PBXFileReference; lastKnownFileType = file; name = AREA1.RSC; path = "/Source/carnivores-ce-renderer/CE Character Lab/AREA1.RSC"; sourceTree = "<absolute>"; };
 		D61CCC071B7E653E004BD900 /* C2MapRscFile.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = C2MapRscFile.cpp; sourceTree = "<group>"; };
 		D61CCC081B7E653E004BD900 /* C2MapRscFile.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = C2MapRscFile.h; sourceTree = "<group>"; };
 		D61CCC0A1B7E68D0004BD900 /* CETexture.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CETexture.cpp; sourceTree = "<group>"; };
@@ -68,7 +69,7 @@
 		D61CCC0E1B7E7BF5004BD900 /* C2WorldModel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = C2WorldModel.h; sourceTree = "<group>"; };
 		D61CCC111B811C28004BD900 /* bitmap.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bitmap.h; sourceTree = "<group>"; };
 		D6212D202242B93300DAC1DD /* new_shader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = new_shader.h; sourceTree = "<group>"; };
-		D6212D222243128700DAC1DD /* day_cloudtop */ = {isa = PBXFileReference; lastKnownFileType = folder; path = day_cloudtop; sourceTree = "<group>"; };
+		D6212D222243128700DAC1DD /* day_cloudtop */ = {isa = PBXFileReference; lastKnownFileType = text; name = day_cloudtop; path = "/Source/carnivores-ce-renderer/CE Character Lab/day_cloudtop"; sourceTree = "<absolute>"; };
 		D6247C151B88F30F00088EB2 /* TerrainRenderer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = TerrainRenderer.cpp; sourceTree = "<group>"; };
 		D6247C161B88F30F00088EB2 /* TerrainRenderer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TerrainRenderer.h; sourceTree = "<group>"; };
 		D64585411B7A818B00D6327E /* carnivores_mock_functions.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = carnivores_mock_functions.cpp; sourceTree = "<group>"; };
@@ -88,10 +89,10 @@
 		D65552421B73DA7000CC5309 /* CE_ArtificialIntelligence.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CE_ArtificialIntelligence.cpp; sourceTree = "<group>"; };
 		D65552431B73DA7000CC5309 /* CE_ArtificialIntelligence.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CE_ArtificialIntelligence.h; sourceTree = "<group>"; };
 		D655524C1B73DA7F00CC5309 /* Hunt.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Hunt.h; sourceTree = "<group>"; };
-		D65552521B73E31400CC5309 /* ALLO.CAR */ = {isa = PBXFileReference; lastKnownFileType = file; path = ALLO.CAR; sourceTree = "<group>"; };
+		D65552521B73E31400CC5309 /* ALLO.CAR */ = {isa = PBXFileReference; lastKnownFileType = file; name = ALLO.CAR; path = "/Source/carnivores-ce-renderer/CE Character Lab/ALLO.CAR"; sourceTree = "<absolute>"; };
 		D65552571B73E41900CC5309 /* C2CarFile.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = C2CarFile.h; sourceTree = "<group>"; };
 		D65552581B73E84E00CC5309 /* C2CarFile.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = C2CarFile.cpp; sourceTree = "<group>"; };
-		D655525C1B742C3200CC5309 /* Notes.rtf */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.rtf; path = Notes.rtf; sourceTree = "<group>"; };
+		D655525C1B742C3200CC5309 /* Notes.rtf */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.rtf; name = Notes.rtf; path = "/Source/carnivores-ce-renderer/CE Character Lab/Notes.rtf"; sourceTree = "<absolute>"; };
 		D655525D1B74315900CC5309 /* CEAnimation.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CEAnimation.cpp; sourceTree = "<group>"; };
 		D655525E1B74315900CC5309 /* CEAnimation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CEAnimation.h; sourceTree = "<group>"; };
 		D65552971B755BC000CC5309 /* C2CarFilePreloader.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = C2CarFilePreloader.cpp; sourceTree = "<group>"; };
@@ -102,10 +103,36 @@
 		D65552A81B7A3B8E00CC5309 /* g_shared.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = g_shared.h; sourceTree = "<group>"; };
 		D657B8931B851D3A0051BCC7 /* IndexedMeshLoader.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = IndexedMeshLoader.cpp; sourceTree = "<group>"; };
 		D657B8941B851D3A0051BCC7 /* IndexedMeshLoader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndexedMeshLoader.h; sourceTree = "<group>"; };
-		D6ADAC2D1B9BD24C00E2AA7D /* AREA5.MAP */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = "sourcecode.module-map"; path = AREA5.MAP; sourceTree = "<group>"; };
-		D6ADAC2E1B9BD24C00E2AA7D /* AREA5.RSC */ = {isa = PBXFileReference; lastKnownFileType = file; path = AREA5.RSC; sourceTree = "<group>"; };
-		D6ADAC2F1B9BD24C00E2AA7D /* TROPHY.MAP */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = "sourcecode.module-map"; path = TROPHY.MAP; sourceTree = "<group>"; };
-		D6ADAC301B9BD24C00E2AA7D /* TROPHY.RSC */ = {isa = PBXFileReference; lastKnownFileType = file; path = TROPHY.RSC; sourceTree = "<group>"; };
+		D67F828B2243199800AC81B7 /* tga.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = tga.h; sourceTree = "<group>"; };
+		D67F828C22432B5400AC81B7 /* Notes.rtf */ = {isa = PBXFileReference; lastKnownFileType = text.rtf; path = Notes.rtf; sourceTree = "<group>"; };
+		D67F828D22432B5500AC81B7 /* TROPHY.RSC */ = {isa = PBXFileReference; lastKnownFileType = file; path = TROPHY.RSC; sourceTree = "<group>"; };
+		D67F828E22432B5500AC81B7 /* terrain.vs */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = terrain.vs; sourceTree = "<group>"; };
+		D67F828F22432B5500AC81B7 /* ALLO.CAR */ = {isa = PBXFileReference; lastKnownFileType = file; path = ALLO.CAR; sourceTree = "<group>"; };
+		D67F829022432B5500AC81B7 /* basicShader.vs */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = basicShader.vs; sourceTree = "<group>"; };
+		D67F829122432B5500AC81B7 /* AREA5.MAP */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.module-map"; path = AREA5.MAP; sourceTree = "<group>"; };
+		D67F829222432B5500AC81B7 /* sky.vs */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = sky.vs; sourceTree = "<group>"; };
+		D67F829322432B5500AC81B7 /* terrain.fs */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = terrain.fs; sourceTree = "<group>"; };
+		D67F829422432B5500AC81B7 /* TROPHY.MAP */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.module-map"; path = TROPHY.MAP; sourceTree = "<group>"; };
+		D67F829522432B5500AC81B7 /* AREA1.MAP */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.module-map"; path = AREA1.MAP; sourceTree = "<group>"; };
+		D67F829622432B5500AC81B7 /* day_cloudtop */ = {isa = PBXFileReference; lastKnownFileType = text; path = day_cloudtop; sourceTree = "<group>"; };
+		D67F829722432B5500AC81B7 /* AREA5.RSC */ = {isa = PBXFileReference; lastKnownFileType = file; path = AREA5.RSC; sourceTree = "<group>"; };
+		D67F829822432B5500AC81B7 /* AREA1.RSC */ = {isa = PBXFileReference; lastKnownFileType = file; path = AREA1.RSC; sourceTree = "<group>"; };
+		D67F829922432B5500AC81B7 /* sky.fs */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = sky.fs; sourceTree = "<group>"; };
+		D67F829A22432B5500AC81B7 /* basicShader.fs */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = basicShader.fs; sourceTree = "<group>"; };
+		D67F829B2243D9D500AC81B7 /* AREA3.RSC */ = {isa = PBXFileReference; lastKnownFileType = file; name = AREA3.RSC; path = "CE Character Lab/AREA3.RSC"; sourceTree = SOURCE_ROOT; };
+		D67F829C2243D9D500AC81B7 /* AREA4.MAP */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.module-map"; name = AREA4.MAP; path = "CE Character Lab/AREA4.MAP"; sourceTree = SOURCE_ROOT; };
+		D67F829D2243D9D500AC81B7 /* AREA2.RSC */ = {isa = PBXFileReference; lastKnownFileType = file; name = AREA2.RSC; path = "CE Character Lab/AREA2.RSC"; sourceTree = SOURCE_ROOT; };
+		D67F829E2243D9D500AC81B7 /* AREA4.RSC */ = {isa = PBXFileReference; lastKnownFileType = file; name = AREA4.RSC; path = "CE Character Lab/AREA4.RSC"; sourceTree = SOURCE_ROOT; };
+		D67F829F2243D9D500AC81B7 /* AREA2.MAP */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.module-map"; name = AREA2.MAP; path = "CE Character Lab/AREA2.MAP"; sourceTree = SOURCE_ROOT; };
+		D67F82A02243D9D500AC81B7 /* AREA3.MAP */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.module-map"; name = AREA3.MAP; path = "CE Character Lab/AREA3.MAP"; sourceTree = SOURCE_ROOT; };
+		D67F82A12243EC5000AC81B7 /* CESimpleGeometry.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CESimpleGeometry.cpp; sourceTree = "<group>"; };
+		D67F82A22243EC5000AC81B7 /* CESimpleGeometry.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CESimpleGeometry.h; sourceTree = "<group>"; };
+		D67F82A42243EE3D00AC81B7 /* simple_geo.vs */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; name = simple_geo.vs; path = "CE Character Lab/simple_geo.vs"; sourceTree = SOURCE_ROOT; };
+		D67F82A52243EE5500AC81B7 /* simple_geo.fs */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; name = simple_geo.fs; path = "CE Character Lab/simple_geo.fs"; sourceTree = SOURCE_ROOT; };
+		D6ADAC2D1B9BD24C00E2AA7D /* AREA5.MAP */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = "sourcecode.module-map"; name = AREA5.MAP; path = "/Source/carnivores-ce-renderer/CE Character Lab/AREA5.MAP"; sourceTree = "<absolute>"; };
+		D6ADAC2E1B9BD24C00E2AA7D /* AREA5.RSC */ = {isa = PBXFileReference; lastKnownFileType = file; name = AREA5.RSC; path = "/Source/carnivores-ce-renderer/CE Character Lab/AREA5.RSC"; sourceTree = "<absolute>"; };
+		D6ADAC2F1B9BD24C00E2AA7D /* TROPHY.MAP */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = "sourcecode.module-map"; name = TROPHY.MAP; path = "/Source/carnivores-ce-renderer/CE Character Lab/TROPHY.MAP"; sourceTree = "<absolute>"; };
+		D6ADAC301B9BD24C00E2AA7D /* TROPHY.RSC */ = {isa = PBXFileReference; lastKnownFileType = file; name = TROPHY.RSC; path = "/Source/carnivores-ce-renderer/CE Character Lab/TROPHY.RSC"; sourceTree = "<absolute>"; };
 		D6D3CD7120CADD3500E3ABAC /* CEObservable.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CEObservable.cpp; sourceTree = "<group>"; };
 		D6D3CD7220CADD3500E3ABAC /* CEObservable.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CEObservable.hpp; sourceTree = "<group>"; };
 		D6D3CD7420CAE07000E3ABAC /* CEPlayer.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CEPlayer.cpp; sourceTree = "<group>"; };
@@ -114,8 +141,8 @@
 		D6D3CD7820CAE6A100E3ABAC /* LocalInputManager.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LocalInputManager.hpp; sourceTree = "<group>"; };
 		D6D3CD7A20CAEBBC00E3ABAC /* LocalVideoManager.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LocalVideoManager.cpp; sourceTree = "<group>"; };
 		D6D3CD7B20CAEBBC00E3ABAC /* LocalVideoManager.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LocalVideoManager.hpp; sourceTree = "<group>"; };
-		D6D3CD7D20CB020E00E3ABAC /* sky.vs */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = sky.vs; sourceTree = "<group>"; };
-		D6D3CD7E20CB022D00E3ABAC /* sky.fs */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = sky.fs; sourceTree = "<group>"; };
+		D6D3CD7D20CB020E00E3ABAC /* sky.vs */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; name = sky.vs; path = "/Source/carnivores-ce-renderer/CE Character Lab/sky.vs"; sourceTree = "<absolute>"; };
+		D6D3CD7E20CB022D00E3ABAC /* sky.fs */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; name = sky.fs; path = "/Source/carnivores-ce-renderer/CE Character Lab/sky.fs"; sourceTree = "<absolute>"; };
 		D6D3CD8420CF123400E3ABAC /* CEShaderProgram.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CEShaderProgram.cpp; sourceTree = "<group>"; };
 		D6D3CD8520CF123400E3ABAC /* CEShaderProgram.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CEShaderProgram.hpp; sourceTree = "<group>"; };
 		D6E5DF0C20CA11DB0071464C /* CEBSPTree.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CEBSPTree.cpp; sourceTree = "<group>"; };
@@ -133,10 +160,10 @@
 		D6F2F8871B83E4810018DBF0 /* shader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = shader.h; sourceTree = "<group>"; };
 		D6F2F8891B83E57D0018DBF0 /* transform.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = transform.h; sourceTree = "<group>"; };
 		D6F2F88A1B83E5AF0018DBF0 /* camera.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = camera.h; sourceTree = "<group>"; };
-		D6F2F88B1B83E62F0018DBF0 /* basicShader.fs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = basicShader.fs; sourceTree = "<group>"; };
-		D6F2F88C1B83E6490018DBF0 /* basicShader.vs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = basicShader.vs; sourceTree = "<group>"; };
-		D6FBA2631B975CC200607297 /* terrain.fs */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = terrain.fs; sourceTree = "<group>"; };
-		D6FBA2641B975CC800607297 /* terrain.vs */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = terrain.vs; sourceTree = "<group>"; };
+		D6F2F88B1B83E62F0018DBF0 /* basicShader.fs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; name = basicShader.fs; path = "/Source/carnivores-ce-renderer/CE Character Lab/basicShader.fs"; sourceTree = "<absolute>"; };
+		D6F2F88C1B83E6490018DBF0 /* basicShader.vs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; name = basicShader.vs; path = "/Source/carnivores-ce-renderer/CE Character Lab/basicShader.vs"; sourceTree = "<absolute>"; };
+		D6FBA2631B975CC200607297 /* terrain.fs */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; name = terrain.fs; path = "/Source/carnivores-ce-renderer/CE Character Lab/terrain.fs"; sourceTree = "<absolute>"; };
+		D6FBA2641B975CC800607297 /* terrain.vs */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; name = terrain.vs; path = "/Source/carnivores-ce-renderer/CE Character Lab/terrain.vs"; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -166,6 +193,7 @@
 				D6F2F8891B83E57D0018DBF0 /* transform.h */,
 				D6F2F88A1B83E5AF0018DBF0 /* camera.h */,
 				D6212D202242B93300DAC1DD /* new_shader.h */,
+				D67F828B2243199800AC81B7 /* tga.h */,
 			);
 			name = Support;
 			sourceTree = "<group>";
@@ -180,6 +208,21 @@
 				D61CCBFB1B7E200E004BD900 /* OpenGL.framework */,
 				D655522B1B73DA2000CC5309 /* CE Character Lab */,
 				D655522A1B73DA2000CC5309 /* Products */,
+				D6212D222243128700DAC1DD /* day_cloudtop */,
+				D6ADAC2D1B9BD24C00E2AA7D /* AREA5.MAP */,
+				D6ADAC2E1B9BD24C00E2AA7D /* AREA5.RSC */,
+				D6ADAC2F1B9BD24C00E2AA7D /* TROPHY.MAP */,
+				D6ADAC301B9BD24C00E2AA7D /* TROPHY.RSC */,
+				D6FBA2641B975CC800607297 /* terrain.vs */,
+				D6FBA2631B975CC200607297 /* terrain.fs */,
+				D61CCC041B7E6361004BD900 /* AREA1.MAP */,
+				D61CCC051B7E6361004BD900 /* AREA1.RSC */,
+				D65552521B73E31400CC5309 /* ALLO.CAR */,
+				D655525C1B742C3200CC5309 /* Notes.rtf */,
+				D6F2F88B1B83E62F0018DBF0 /* basicShader.fs */,
+				D6F2F88C1B83E6490018DBF0 /* basicShader.vs */,
+				D6D3CD7D20CB020E00E3ABAC /* sky.vs */,
+				D6D3CD7E20CB022D00E3ABAC /* sky.fs */,
 				D6E7B8221FAB9ADF00D1C100 /* Frameworks */,
 			);
 			sourceTree = "<group>";
@@ -249,6 +292,8 @@
 				D61CCC0A1B7E68D0004BD900 /* CETexture.cpp */,
 				D6D3CD8420CF123400E3ABAC /* CEShaderProgram.cpp */,
 				D6D3CD8520CF123400E3ABAC /* CEShaderProgram.hpp */,
+				D67F82A12243EC5000AC81B7 /* CESimpleGeometry.cpp */,
+				D67F82A22243EC5000AC81B7 /* CESimpleGeometry.h */,
 			);
 			name = Engine;
 			sourceTree = "<group>";
@@ -269,24 +314,33 @@
 		D65552531B73E31C00CC5309 /* Files */ = {
 			isa = PBXGroup;
 			children = (
-				D6212D222243128700DAC1DD /* day_cloudtop */,
-				D6ADAC2D1B9BD24C00E2AA7D /* AREA5.MAP */,
-				D6ADAC2E1B9BD24C00E2AA7D /* AREA5.RSC */,
-				D6ADAC2F1B9BD24C00E2AA7D /* TROPHY.MAP */,
-				D6ADAC301B9BD24C00E2AA7D /* TROPHY.RSC */,
-				D6FBA2641B975CC800607297 /* terrain.vs */,
-				D6FBA2631B975CC200607297 /* terrain.fs */,
-				D61CCC041B7E6361004BD900 /* AREA1.MAP */,
-				D61CCC051B7E6361004BD900 /* AREA1.RSC */,
-				D65552521B73E31400CC5309 /* ALLO.CAR */,
-				D655525C1B742C3200CC5309 /* Notes.rtf */,
-				D6F2F88B1B83E62F0018DBF0 /* basicShader.fs */,
-				D6F2F88C1B83E6490018DBF0 /* basicShader.vs */,
-				D6D3CD7D20CB020E00E3ABAC /* sky.vs */,
-				D6D3CD7E20CB022D00E3ABAC /* sky.fs */,
+				D67F829F2243D9D500AC81B7 /* AREA2.MAP */,
+				D67F829D2243D9D500AC81B7 /* AREA2.RSC */,
+				D67F82A02243D9D500AC81B7 /* AREA3.MAP */,
+				D67F829B2243D9D500AC81B7 /* AREA3.RSC */,
+				D67F829C2243D9D500AC81B7 /* AREA4.MAP */,
+				D67F829E2243D9D500AC81B7 /* AREA4.RSC */,
+				D67F829622432B5500AC81B7 /* day_cloudtop */,
+				D67F829122432B5500AC81B7 /* AREA5.MAP */,
+				D67F829722432B5500AC81B7 /* AREA5.RSC */,
+				D67F829422432B5500AC81B7 /* TROPHY.MAP */,
+				D67F828D22432B5500AC81B7 /* TROPHY.RSC */,
+				D67F828E22432B5500AC81B7 /* terrain.vs */,
+				D67F829322432B5500AC81B7 /* terrain.fs */,
+				D67F829522432B5500AC81B7 /* AREA1.MAP */,
+				D67F829822432B5500AC81B7 /* AREA1.RSC */,
+				D67F828F22432B5500AC81B7 /* ALLO.CAR */,
+				D67F828C22432B5400AC81B7 /* Notes.rtf */,
+				D67F829A22432B5500AC81B7 /* basicShader.fs */,
+				D67F829022432B5500AC81B7 /* basicShader.vs */,
+				D67F829222432B5500AC81B7 /* sky.vs */,
+				D67F829922432B5500AC81B7 /* sky.fs */,
+				D67F82A42243EE3D00AC81B7 /* simple_geo.vs */,
+				D67F82A52243EE5500AC81B7 /* simple_geo.fs */,
 			);
 			name = Files;
-			sourceTree = "<group>";
+			path = "../../../../../../../../Source/carnivores-ce-renderer/CE Character Lab";
+			sourceTree = BUILT_PRODUCTS_DIR;
 		};
 		D65552541B73E33E00CC5309 /* World */ = {
 			isa = PBXGroup;
@@ -401,6 +455,7 @@
 				D6D3CD8620CF123400E3ABAC /* CEShaderProgram.cpp in Sources */,
 				D65552491B73DA7000CC5309 /* CE_Allosaurus.cpp in Sources */,
 				D65552A71B7A325C00CC5309 /* CE_AIUtilities.cpp in Sources */,
+				D67F82A32243EC5000AC81B7 /* CESimpleGeometry.cpp in Sources */,
 				D6D3CD7620CAE07000E3ABAC /* CEPlayer.cpp in Sources */,
 				D6F2F8881B83E4810018DBF0 /* shader.cpp in Sources */,
 				D65552591B73E84E00CC5309 /* C2CarFile.cpp in Sources */,

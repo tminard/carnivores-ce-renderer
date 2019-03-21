@@ -18,11 +18,21 @@ public:
         this->projection = glm::perspective(fov, aspect, zNear, zFar);
     }
     
-    inline glm::mat4 GetVM()
+    inline glm::vec3 GetPosition() const
+    {
+        return this->pos;
+    }
+
+    inline glm::mat4 GetVM() const
     {
         return glm::lookAt(pos, pos + forward, up);
     }
     
+    inline glm::mat4 GetProjection() const
+    {
+        return projection;
+    }
+
     inline glm::mat4 GetViewProjection() const
     {
         return projection * glm::lookAt(pos, pos + forward, up);
@@ -62,14 +72,6 @@ public:
         pos.y = height;
     }
     
-    //void Pitch(float angle)
-    //{
-    //	glm::vec3 right = glm::normalize(glm::cross(up, forward));
-    
-    //	forward = glm::vec3(glm::normalize(glm::rotate(angle, right) * glm::vec4(forward, 0.0)));
-    //	up = glm::normalize(glm::cross(forward, right));
-    //}
-    
     void SetLookAt(glm::vec3 fw) {
         this->forward = fw;
     }
@@ -82,6 +84,11 @@ public:
 
         this->forward = glm::vec3(rotation * glm::vec4(this->forward, 0.0));
         this->up = glm::vec3(rotation * glm::vec4(this->up, 0.0));
+    }
+    
+    inline glm::vec3 GetForward() const
+    {
+        return this->forward;
     }
     
 protected:

@@ -11,6 +11,9 @@
 
 #include "C2MapFile.h"
 #include "C2MapRscFile.h"
+#include "new_shader.h"
+#include "camera.h"
+#include "transform.h"
 
 #include <cstdint>
 
@@ -18,6 +21,7 @@ TerrainRenderer::TerrainRenderer(C2MapFile* c_map_weak, C2MapRscFile* c_rsc_weak
 : m_cmap_data_weak(c_map_weak), m_crsc_data_weak(c_rsc_weak)
 {
     this->loadIntoHardwareMemory();
+    this->loadShader();
 }
 
 TerrainRenderer::~TerrainRenderer()
@@ -25,6 +29,11 @@ TerrainRenderer::~TerrainRenderer()
     glDeleteBuffers(1, &this->m_vertex_array_buffer);
     glDeleteBuffers(1, &this->m_indices_array_buffer);
     glDeleteVertexArrays(1, &this->m_vertex_array_object);
+}
+
+void TerrainRenderer::loadShader()
+{
+    this->m_shader = std::unique_ptr<NewShader>(new NewShader("terrain.vs", "terrain.fs"));
 }
 
 //      /*
@@ -35,8 +44,16 @@ TerrainRenderer::~TerrainRenderer()
 //       * We basically need to map the uv coords properly based on the position of the
 //       * tile.
 //       *
-//       * TODO: Handle rotation from map RSC - improve below implementation
 //       */
+
+void TerrainRenderer::Update(const Transform& transform, const Camera& camera)
+{
+    glm::mat4 MVP = transform.GetMVP(camera);
+
+    this->m_shader->use();
+    this->m_shader->setInt("texSquareSize", this->m_crsc_data_weak->getTextureAtlasWidth());
+    this->m_shader->setMat4("MVP", MVP);
+}
 
 glm::vec3 TerrainRenderer::calcWorldVertex(int tile_x, int tile_y)
 {
@@ -262,13 +279,11 @@ glm::vec2 TerrainRenderer::calcAtlasUV(int texID, glm::vec2 uv)
 
 void TerrainRenderer::Render()
 {
+    this->m_shader->use();
+
     glBindVertexArray(this->m_vertex_array_object);
     
     glDrawElementsBaseVertex(GL_TRIANGLES, m_num_indices, GL_UNSIGNED_INT, 0, 0);
 
     glBindVertexArray(0);
-}
-
-void TerrainRenderer::UpdateForPos()
-{
 }

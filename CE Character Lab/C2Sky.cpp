@@ -13,6 +13,8 @@
 #include "transform.h"
 #include "camera.h"
 
+#include "tga.h"
+
 C2Sky::C2Sky(std::ifstream& instream)
 {
     std::vector<uint16_t> raw_sky_texture_data;
@@ -49,12 +51,35 @@ void C2Sky::loadTextureIntoMemory()
     glGenTextures(1, &textureID);
     glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
     
-    for (int i = 0; i < 6; i++) {
-        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB5_A1, 256, 256, 0, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, this->m_texture->getRawData()->data());
+    /*
+     GL_TEXTURE_CUBE_MAP_POSITIVE_X    Right
+     GL_TEXTURE_CUBE_MAP_NEGATIVE_X    Left
+     GL_TEXTURE_CUBE_MAP_POSITIVE_Y    Top
+     GL_TEXTURE_CUBE_MAP_NEGATIVE_Y    Bottom
+     GL_TEXTURE_CUBE_MAP_POSITIVE_Z    Back
+     GL_TEXTURE_CUBE_MAP_NEGATIVE_Z    Front
+     */
+    std::vector<std::string> faces = {
+        "day_cloudtop/cloudtop_rt.tga",
+        "day_cloudtop/cloudtop_lf.tga",
+        "day_cloudtop/cloudtop_up.tga",
+        "day_cloudtop/cloudtop_dn.tga",
+        "day_cloudtop/cloudtop_bk.tga",
+        "day_cloudtop/cloudtop_ft.tga"
+    };
+    
+    for (int i = 0; i < faces.size(); i++) {
+       // if (i == 22) {
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB5_A1, 256, 256, 0, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, this->m_texture->getRawData()->data());
+//        } else {
+//            std::unique_ptr<Tga> mtga = std::unique_ptr<Tga>(new Tga(faces[i].data()));
+//            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, mtga->HasAlphaChannel() ? GL_RGBA : GL_RGB, mtga->GetWidth(), mtga->GetWidth(), 0, mtga->HasAlphaChannel() ? GL_RGBA : GL_RGB, GL_UNSIGNED_BYTE, mtga->GetPixels().data());
+//        }
     }
     
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
@@ -64,7 +89,7 @@ void C2Sky::loadTextureIntoMemory()
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-// Build object
+// Build objects
 void C2Sky::loadIntoHardwareMemory()
 {
     float skyboxVertices[] = {
@@ -97,6 +122,7 @@ void C2Sky::loadIntoHardwareMemory()
         SKY_DISTANCE, -SKY_DISTANCE,  SKY_DISTANCE,
         -SKY_DISTANCE, -SKY_DISTANCE,  SKY_DISTANCE,
         
+        // TOP
         -SKY_DISTANCE,  SKY_DISTANCE, -SKY_DISTANCE,
         SKY_DISTANCE,  SKY_DISTANCE, -SKY_DISTANCE,
         SKY_DISTANCE,  SKY_DISTANCE,  SKY_DISTANCE,
@@ -122,6 +148,8 @@ void C2Sky::loadIntoHardwareMemory()
     glGenVertexArrays(1, &this->m_vertex_array_object);
     glBindVertexArray(this->m_vertex_array_object);
     glBindBuffer(GL_ARRAY_BUFFER, this->m_vertex_array_buffer);
+
+    // configure shader locations
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)0);
     

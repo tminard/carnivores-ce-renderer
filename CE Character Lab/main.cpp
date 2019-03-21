@@ -57,6 +57,7 @@ auto make_unique(Args&&... args) -> std::unique_ptr<T>
 struct ObjLoc {
     C2WorldModel* mModel;
     Transform mTrans;
+    bool isFar;
 };
 
 void cursorPosCallback(GLFWwindow* window, double xpos, double ypos)
@@ -69,15 +70,14 @@ int main(int argc, const char * argv[])
     CreateFadeTab();
     std::unique_ptr<C2CarFilePreloader> cFileLoad(new C2CarFilePreloader);
     std::unique_ptr<LocalVideoManager> video_manager(new LocalVideoManager());
-    std::shared_ptr<C2MapFile> cMap(new C2MapFile("AREA1.MAP"));
-    std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile("AREA1.RSC"));
+    std::shared_ptr<C2MapFile> cMap(new C2MapFile("AREA4.MAP"));
+    std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile("AREA4.RSC"));
     std::shared_ptr<CEPlayer> m_player(new CEPlayer(cMap));
     std::unique_ptr<TerrainRenderer> terrain(new TerrainRenderer(cMap.get(), cMapRsc.get()));
     
     std::cout << "Map texture atlas width: " << cMapRsc->getTextureAtlasWidth();
     
     Shader shader("basicShader");
-    Shader t_shader("terrain");
 
     Transform mTrans_land(glm::vec3(0,0,0), glm::vec3(0,0,0), glm::vec3(1.f, 1.f, 1.f));
     Camera* camera = m_player->getCamera();
@@ -119,54 +119,66 @@ int main(int argc, const char * argv[])
         glViewport(0, 0, width, height);
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        
-        glDepthFunc(GL_LESS);
+
+        glDisable(GL_DEPTH_TEST);
         cMapRsc->getDaySky()->Render(window, *camera);
+        glEnable(GL_DEPTH_TEST);
+
+        glm::vec3 current_pos = camera->GetCurrentPos();
+        float cur_x = current_pos.x;
+        float cur_y = current_pos.z;
+        int current_row = static_cast<int>(cur_y / cMap->getTileLength());
+        int current_col = static_cast<int>(cur_x / cMap->getTileLength());
+        int view_distance_squares = 45;
+        int rendered_objects = 0;
+        const int MAX_OBJECTS = 10000;
         
-        if (visible_objects.empty()) {
-            glm::vec3 current_pos = camera->GetCurrentPos();
-            float cur_x = current_pos.x;
-            float cur_y = current_pos.z;
-            int current_row = static_cast<int>(cur_y / cMap->getTileLength());
-            int current_col = static_cast<int>(cur_x / cMap->getTileLength());
-            int view_distance_squares = 50;
-            
-            shader.Bind();
-            for (int view_row = current_row + view_distance_squares; view_row > (current_row - view_distance_squares); view_row--) {
-                for (int view_col = current_col - view_distance_squares; view_col < current_col + view_distance_squares; view_col++) {
-                    int obj_id = cMap->getObjectAt(((view_row)*cMap->getWidth())+view_col);
+        for (int view_row = current_row + view_distance_squares; view_row > (current_row - view_distance_squares); view_row--) {
+            for (int view_col = current_col - view_distance_squares; view_col < current_col + view_distance_squares; view_col++) {
+                if (view_col < 0 || view_row < 0) continue;
+                bool isFar = true;
+                int xy = (view_row*cMap->getWidth()) + view_col;
+                
+                if (abs(view_col - current_col) < 20 && (view_row - current_row) < 20) {
+                    isFar = false;
+                }
+
+                if (rendered_objects >= MAX_OBJECTS && !isFar) continue;
+
+                int obj_id = cMap->getObjectAt(xy);
+                
+                if (obj_id != 255 && obj_id != 254) {
+                    float map_height = cMap->getHeightAt(xy);
+                    C2WorldModel* w_obj = cMapRsc->getWorldModel(obj_id);
+                    float obj_height = cMap->getObjectHeightAt(xy);
                     
-                    if (obj_id != 255 && obj_id != 254) {
-                        C2WorldModel* w_obj = cMapRsc->getWorldModel(obj_id);
-                        float obj_height = cMap->getHeightAt((view_row*cMap->getWidth()) + view_col);
-                        
-                        if (obj_height == 0.0f) {
-                            obj_height = cMap->getObjectHeightAt((view_row*cMap->getWidth()) + view_col);
-                        }
-                        
-                        Transform mTrans_c(glm::vec3((view_col*cMap->getTileLength()) + 128.f, obj_height - 15, (view_row*cMap->getTileLength()) + 128.f), glm::vec3(0,0,0), glm::vec3(2.f, 2.f, 2.f));
-                        
-                        ObjLoc mo = { w_obj, mTrans_c };
-                        visible_objects.push_back(mo);
+                    if (obj_height == 0.0f) {
+                        obj_height = map_height + w_obj->getObjectInfo()->YLo;
+                    }
+
+                    if (isFar) {
+                        Transform mTrans_f(
+                                           glm::vec3((view_col*cMap->getTileLength()) + 128.f, obj_height, (view_row*cMap->getTileLength()) + 128.f),
+                                           glm::vec3(0, 0, 0),
+                                           glm::vec3(1.f, 1.f, 1.f)
+                        );
+                        glDepthFunc(GL_LESS);
+                        w_obj->renderFar(mTrans_f, *camera);
+                    } else {
+                        rendered_objects++;
+                        shader.Bind();
+                        Transform mTrans_c(glm::vec3((view_col*cMap->getTileLength()) + 128.f, obj_height, (view_row*cMap->getTileLength()) + 128.f), glm::vec3(0,0,0), glm::vec3(1.f, 1.f, 1.f));
+
+                        shader.Update(mTrans_c, *camera);
+                        glDepthFunc(GL_LESS);
+                        w_obj->render();
                     }
                 }
             }
-        } else {
-            shader.Bind();
-            for (auto &mo : visible_objects)
-            {
-                shader.Update(mo.mTrans, *camera);
-                
-                glDepthFunc(GL_LEQUAL);
-                mo.mModel->render();
-            }
         }
 
-        
-        t_shader.Bind();
-        t_shader.Update(mTrans_land, *camera);
         cMapRsc->getTexture(0)->Use();
-        
+        terrain->Update(mTrans_land, *camera);
         glDepthFunc(GL_LESS);
         terrain->Render();
         

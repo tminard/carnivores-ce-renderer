@@ -25,18 +25,24 @@ class CETexture;
 class NewShader;
 class Camera;
 class Transform;
+class Tga;
 
 class C2Sky
 {
 private:
     const float SKY_DISTANCE = 40000.f;
+    const float SKY_HEIGHT = 7680.f;
 
-    std::unique_ptr<CETexture> m_texture;
     std::unique_ptr<NewShader> m_shader;
     
     GLuint m_vertex_array_object;
     GLuint m_vertex_array_buffer;
     GLuint m_cube_texture;
+    
+    GLuint m_clouds_array_object;
+    GLuint m_clouds_array_buffer;
+    std::unique_ptr<CETexture> m_texture;
+    std::unique_ptr<NewShader> m_cloud_shader;
     
     void loadIntoHardwareMemory();
     void loadTextureIntoMemory();

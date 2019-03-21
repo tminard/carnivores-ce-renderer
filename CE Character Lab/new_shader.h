@@ -12,6 +12,8 @@
 #include <sstream>
 #include <iostream>
 
+// see https://stackoverflow.com/questions/8691697/why-are-there-multiple-ways-to-pass-vaos-to-a-glsl-program
+
 class NewShader
 {
 public:
@@ -162,6 +164,11 @@ public:
     void setMat4(const std::string &name, const glm::mat4 &mat) const
     {
         glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, &mat[0][0]);
+    }
+    
+    virtual ~NewShader()
+    {
+        glDeleteProgram(ID);
     }
     
 private:

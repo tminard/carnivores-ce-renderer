@@ -22,7 +22,7 @@ C2Sky::C2Sky(std::ifstream& instream)
     instream.read(reinterpret_cast<char *>(raw_sky_texture_data.data()), 256*256*sizeof(uint16_t));
     
     this->m_texture = std::unique_ptr<CETexture>(new CETexture(raw_sky_texture_data, 256*256, 256, 256));
-    this->m_shader = std::unique_ptr<NewShader>(new NewShader("sky.vs", "sky.fs"));
+    this->m_shader = std::unique_ptr<NewShader>(new NewShader("resources/sky.vs", "resources/sky.fs"));
     
     this->loadIntoHardwareMemory();
 }

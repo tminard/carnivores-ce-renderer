@@ -33,7 +33,7 @@ TerrainRenderer::~TerrainRenderer()
 
 void TerrainRenderer::loadShader()
 {
-    this->m_shader = std::unique_ptr<NewShader>(new NewShader("terrain.vs", "terrain.fs"));
+    this->m_shader = std::unique_ptr<NewShader>(new NewShader("resources/terrain.vs", "resources/terrain.fs"));
 }
 
 //      /*

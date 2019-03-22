@@ -70,14 +70,14 @@ int main(int argc, const char * argv[])
     CreateFadeTab();
     std::unique_ptr<C2CarFilePreloader> cFileLoad(new C2CarFilePreloader);
     std::unique_ptr<LocalVideoManager> video_manager(new LocalVideoManager());
-    std::shared_ptr<C2MapFile> cMap(new C2MapFile("AREA1.MAP"));
-    std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile("AREA1.RSC"));
+    std::shared_ptr<C2MapFile> cMap(new C2MapFile("resources/AREA1.MAP"));
+    std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile("resources/AREA1.RSC"));
     std::shared_ptr<CEPlayer> m_player(new CEPlayer(cMap));
     std::unique_ptr<TerrainRenderer> terrain(new TerrainRenderer(cMap.get(), cMapRsc.get()));
     
     std::cout << "Map texture atlas width: " << cMapRsc->getTextureAtlasWidth();
     
-    Shader shader("basicShader");
+    Shader shader("resources/basicShader");
 
     Transform mTrans_land(glm::vec3(0,0,0), glm::vec3(0,0,0), glm::vec3(1.f, 1.f, 1.f));
     Camera* camera = m_player->getCamera();

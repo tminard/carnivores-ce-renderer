@@ -32,7 +32,7 @@ NewShader* CESimpleGeometry::getShader()
 
 void CESimpleGeometry::loadObjectIntoMemoryBuffer()
 {
-    this->m_shader = std::unique_ptr<NewShader>(new NewShader("simple_geo.vs", "simple_geo.fs"));
+    this->m_shader = std::unique_ptr<NewShader>(new NewShader("resources/simple_geo.vs", "resources/simple_geo.fs"));
 
     glGenBuffers(1, &this->m_vertex_array_buffer);
     glBindBuffer(GL_ARRAY_BUFFER, this->m_vertex_array_buffer);

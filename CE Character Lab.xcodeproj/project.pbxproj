@@ -7,6 +7,29 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		73E124922244786500BE4A81 /* AREA2.MAP in CopyFiles */ = {isa = PBXBuildFile; fileRef = D67F829F2243D9D500AC81B7 /* AREA2.MAP */; };
+		73E124932244786500BE4A81 /* AREA2.RSC in CopyFiles */ = {isa = PBXBuildFile; fileRef = D67F829D2243D9D500AC81B7 /* AREA2.RSC */; };
+		73E124942244786500BE4A81 /* AREA3.MAP in CopyFiles */ = {isa = PBXBuildFile; fileRef = D67F82A02243D9D500AC81B7 /* AREA3.MAP */; };
+		73E124952244786500BE4A81 /* AREA3.RSC in CopyFiles */ = {isa = PBXBuildFile; fileRef = D67F829B2243D9D500AC81B7 /* AREA3.RSC */; };
+		73E124962244786500BE4A81 /* AREA4.MAP in CopyFiles */ = {isa = PBXBuildFile; fileRef = D67F829C2243D9D500AC81B7 /* AREA4.MAP */; };
+		73E124972244786500BE4A81 /* AREA4.RSC in CopyFiles */ = {isa = PBXBuildFile; fileRef = D67F829E2243D9D500AC81B7 /* AREA4.RSC */; };
+		73E124982244786500BE4A81 /* day_cloudtop in CopyFiles */ = {isa = PBXBuildFile; fileRef = D67F829622432B5500AC81B7 /* day_cloudtop */; };
+		73E124992244786500BE4A81 /* AREA5.MAP in CopyFiles */ = {isa = PBXBuildFile; fileRef = D67F829122432B5500AC81B7 /* AREA5.MAP */; };
+		73E1249A2244786500BE4A81 /* AREA5.RSC in CopyFiles */ = {isa = PBXBuildFile; fileRef = D67F829722432B5500AC81B7 /* AREA5.RSC */; };
+		73E1249B2244786500BE4A81 /* TROPHY.MAP in CopyFiles */ = {isa = PBXBuildFile; fileRef = D67F829422432B5500AC81B7 /* TROPHY.MAP */; };
+		73E1249C2244786500BE4A81 /* TROPHY.RSC in CopyFiles */ = {isa = PBXBuildFile; fileRef = D67F828D22432B5500AC81B7 /* TROPHY.RSC */; };
+		73E1249D2244786500BE4A81 /* terrain.vs in CopyFiles */ = {isa = PBXBuildFile; fileRef = D67F828E22432B5500AC81B7 /* terrain.vs */; };
+		73E1249E2244786500BE4A81 /* terrain.fs in CopyFiles */ = {isa = PBXBuildFile; fileRef = D67F829322432B5500AC81B7 /* terrain.fs */; };
+		73E1249F2244786500BE4A81 /* AREA1.MAP in CopyFiles */ = {isa = PBXBuildFile; fileRef = D67F829522432B5500AC81B7 /* AREA1.MAP */; };
+		73E124A02244786500BE4A81 /* AREA1.RSC in CopyFiles */ = {isa = PBXBuildFile; fileRef = D67F829822432B5500AC81B7 /* AREA1.RSC */; };
+		73E124A12244786500BE4A81 /* ALLO.CAR in CopyFiles */ = {isa = PBXBuildFile; fileRef = D67F828F22432B5500AC81B7 /* ALLO.CAR */; };
+		73E124A22244786500BE4A81 /* Notes.rtf in CopyFiles */ = {isa = PBXBuildFile; fileRef = D67F828C22432B5400AC81B7 /* Notes.rtf */; };
+		73E124A32244786500BE4A81 /* basicShader.fs in CopyFiles */ = {isa = PBXBuildFile; fileRef = D67F829A22432B5500AC81B7 /* basicShader.fs */; };
+		73E124A42244786500BE4A81 /* basicShader.vs in CopyFiles */ = {isa = PBXBuildFile; fileRef = D67F829022432B5500AC81B7 /* basicShader.vs */; };
+		73E124A52244786500BE4A81 /* sky.vs in CopyFiles */ = {isa = PBXBuildFile; fileRef = D67F829222432B5500AC81B7 /* sky.vs */; };
+		73E124A62244786500BE4A81 /* sky.fs in CopyFiles */ = {isa = PBXBuildFile; fileRef = D67F829922432B5500AC81B7 /* sky.fs */; };
+		73E124A72244786500BE4A81 /* simple_geo.vs in CopyFiles */ = {isa = PBXBuildFile; fileRef = D67F82A42243EE3D00AC81B7 /* simple_geo.vs */; };
+		73E124A82244786500BE4A81 /* simple_geo.fs in CopyFiles */ = {isa = PBXBuildFile; fileRef = D67F82A52243EE5500AC81B7 /* simple_geo.fs */; };
 		D61CCC031B7E5CC8004BD900 /* C2MapFile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D61CCC011B7E5CC8004BD900 /* C2MapFile.cpp */; };
 		D61CCC091B7E653E004BD900 /* C2MapRscFile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D61CCC071B7E653E004BD900 /* C2MapRscFile.cpp */; };
 		D61CCC0C1B7E68D0004BD900 /* CETexture.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D61CCC0A1B7E68D0004BD900 /* CETexture.cpp */; };
@@ -46,12 +69,35 @@
 /* Begin PBXCopyFilesBuildPhase section */
 		D65552271B73DA2000CC5309 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = /usr/share/man/man1/;
-			dstSubfolderSpec = 0;
+			buildActionMask = 12;
+			dstPath = resources;
+			dstSubfolderSpec = 16;
 			files = (
+				73E124922244786500BE4A81 /* AREA2.MAP in CopyFiles */,
+				73E124932244786500BE4A81 /* AREA2.RSC in CopyFiles */,
+				73E124942244786500BE4A81 /* AREA3.MAP in CopyFiles */,
+				73E124952244786500BE4A81 /* AREA3.RSC in CopyFiles */,
+				73E124962244786500BE4A81 /* AREA4.MAP in CopyFiles */,
+				73E124972244786500BE4A81 /* AREA4.RSC in CopyFiles */,
+				73E124982244786500BE4A81 /* day_cloudtop in CopyFiles */,
+				73E124992244786500BE4A81 /* AREA5.MAP in CopyFiles */,
+				73E1249A2244786500BE4A81 /* AREA5.RSC in CopyFiles */,
+				73E1249B2244786500BE4A81 /* TROPHY.MAP in CopyFiles */,
+				73E1249C2244786500BE4A81 /* TROPHY.RSC in CopyFiles */,
+				73E1249D2244786500BE4A81 /* terrain.vs in CopyFiles */,
+				73E1249E2244786500BE4A81 /* terrain.fs in CopyFiles */,
+				73E1249F2244786500BE4A81 /* AREA1.MAP in CopyFiles */,
+				73E124A02244786500BE4A81 /* AREA1.RSC in CopyFiles */,
+				73E124A12244786500BE4A81 /* ALLO.CAR in CopyFiles */,
+				73E124A22244786500BE4A81 /* Notes.rtf in CopyFiles */,
+				73E124A32244786500BE4A81 /* basicShader.fs in CopyFiles */,
+				73E124A42244786500BE4A81 /* basicShader.vs in CopyFiles */,
+				73E124A52244786500BE4A81 /* sky.vs in CopyFiles */,
+				73E124A62244786500BE4A81 /* sky.fs in CopyFiles */,
+				73E124A72244786500BE4A81 /* simple_geo.vs in CopyFiles */,
+				73E124A82244786500BE4A81 /* simple_geo.fs in CopyFiles */,
 			);
-			runOnlyForDeploymentPostprocessing = 1;
+			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
 
@@ -59,8 +105,6 @@
 		D61CCBFB1B7E200E004BD900 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 		D61CCC011B7E5CC8004BD900 /* C2MapFile.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = C2MapFile.cpp; sourceTree = "<group>"; };
 		D61CCC021B7E5CC8004BD900 /* C2MapFile.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = C2MapFile.h; sourceTree = "<group>"; };
-		D61CCC041B7E6361004BD900 /* AREA1.MAP */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = "sourcecode.module-map"; name = AREA1.MAP; path = "/Source/carnivores-ce-renderer/CE Character Lab/AREA1.MAP"; sourceTree = "<absolute>"; };
-		D61CCC051B7E6361004BD900 /* AREA1.RSC */ = {isa = PBXFileReference; lastKnownFileType = file; name = AREA1.RSC; path = "/Source/carnivores-ce-renderer/CE Character Lab/AREA1.RSC"; sourceTree = "<absolute>"; };
 		D61CCC071B7E653E004BD900 /* C2MapRscFile.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = C2MapRscFile.cpp; sourceTree = "<group>"; };
 		D61CCC081B7E653E004BD900 /* C2MapRscFile.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = C2MapRscFile.h; sourceTree = "<group>"; };
 		D61CCC0A1B7E68D0004BD900 /* CETexture.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CETexture.cpp; sourceTree = "<group>"; };
@@ -69,7 +113,6 @@
 		D61CCC0E1B7E7BF5004BD900 /* C2WorldModel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = C2WorldModel.h; sourceTree = "<group>"; };
 		D61CCC111B811C28004BD900 /* bitmap.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bitmap.h; sourceTree = "<group>"; };
 		D6212D202242B93300DAC1DD /* new_shader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = new_shader.h; sourceTree = "<group>"; };
-		D6212D222243128700DAC1DD /* day_cloudtop */ = {isa = PBXFileReference; lastKnownFileType = text; name = day_cloudtop; path = "/Source/carnivores-ce-renderer/CE Character Lab/day_cloudtop"; sourceTree = "<absolute>"; };
 		D6247C151B88F30F00088EB2 /* TerrainRenderer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = TerrainRenderer.cpp; sourceTree = "<group>"; };
 		D6247C161B88F30F00088EB2 /* TerrainRenderer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TerrainRenderer.h; sourceTree = "<group>"; };
 		D64585411B7A818B00D6327E /* carnivores_mock_functions.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = carnivores_mock_functions.cpp; sourceTree = "<group>"; };
@@ -89,10 +132,8 @@
 		D65552421B73DA7000CC5309 /* CE_ArtificialIntelligence.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CE_ArtificialIntelligence.cpp; sourceTree = "<group>"; };
 		D65552431B73DA7000CC5309 /* CE_ArtificialIntelligence.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CE_ArtificialIntelligence.h; sourceTree = "<group>"; };
 		D655524C1B73DA7F00CC5309 /* Hunt.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Hunt.h; sourceTree = "<group>"; };
-		D65552521B73E31400CC5309 /* ALLO.CAR */ = {isa = PBXFileReference; lastKnownFileType = file; name = ALLO.CAR; path = "/Source/carnivores-ce-renderer/CE Character Lab/ALLO.CAR"; sourceTree = "<absolute>"; };
 		D65552571B73E41900CC5309 /* C2CarFile.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = C2CarFile.h; sourceTree = "<group>"; };
 		D65552581B73E84E00CC5309 /* C2CarFile.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = C2CarFile.cpp; sourceTree = "<group>"; };
-		D655525C1B742C3200CC5309 /* Notes.rtf */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.rtf; name = Notes.rtf; path = "/Source/carnivores-ce-renderer/CE Character Lab/Notes.rtf"; sourceTree = "<absolute>"; };
 		D655525D1B74315900CC5309 /* CEAnimation.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CEAnimation.cpp; sourceTree = "<group>"; };
 		D655525E1B74315900CC5309 /* CEAnimation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CEAnimation.h; sourceTree = "<group>"; };
 		D65552971B755BC000CC5309 /* C2CarFilePreloader.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = C2CarFilePreloader.cpp; sourceTree = "<group>"; };
@@ -129,10 +170,6 @@
 		D67F82A22243EC5000AC81B7 /* CESimpleGeometry.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CESimpleGeometry.h; sourceTree = "<group>"; };
 		D67F82A42243EE3D00AC81B7 /* simple_geo.vs */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; name = simple_geo.vs; path = "CE Character Lab/simple_geo.vs"; sourceTree = SOURCE_ROOT; };
 		D67F82A52243EE5500AC81B7 /* simple_geo.fs */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; name = simple_geo.fs; path = "CE Character Lab/simple_geo.fs"; sourceTree = SOURCE_ROOT; };
-		D6ADAC2D1B9BD24C00E2AA7D /* AREA5.MAP */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = "sourcecode.module-map"; name = AREA5.MAP; path = "/Source/carnivores-ce-renderer/CE Character Lab/AREA5.MAP"; sourceTree = "<absolute>"; };
-		D6ADAC2E1B9BD24C00E2AA7D /* AREA5.RSC */ = {isa = PBXFileReference; lastKnownFileType = file; name = AREA5.RSC; path = "/Source/carnivores-ce-renderer/CE Character Lab/AREA5.RSC"; sourceTree = "<absolute>"; };
-		D6ADAC2F1B9BD24C00E2AA7D /* TROPHY.MAP */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = "sourcecode.module-map"; name = TROPHY.MAP; path = "/Source/carnivores-ce-renderer/CE Character Lab/TROPHY.MAP"; sourceTree = "<absolute>"; };
-		D6ADAC301B9BD24C00E2AA7D /* TROPHY.RSC */ = {isa = PBXFileReference; lastKnownFileType = file; name = TROPHY.RSC; path = "/Source/carnivores-ce-renderer/CE Character Lab/TROPHY.RSC"; sourceTree = "<absolute>"; };
 		D6D3CD7120CADD3500E3ABAC /* CEObservable.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CEObservable.cpp; sourceTree = "<group>"; };
 		D6D3CD7220CADD3500E3ABAC /* CEObservable.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CEObservable.hpp; sourceTree = "<group>"; };
 		D6D3CD7420CAE07000E3ABAC /* CEPlayer.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CEPlayer.cpp; sourceTree = "<group>"; };
@@ -141,8 +178,6 @@
 		D6D3CD7820CAE6A100E3ABAC /* LocalInputManager.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LocalInputManager.hpp; sourceTree = "<group>"; };
 		D6D3CD7A20CAEBBC00E3ABAC /* LocalVideoManager.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LocalVideoManager.cpp; sourceTree = "<group>"; };
 		D6D3CD7B20CAEBBC00E3ABAC /* LocalVideoManager.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LocalVideoManager.hpp; sourceTree = "<group>"; };
-		D6D3CD7D20CB020E00E3ABAC /* sky.vs */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; name = sky.vs; path = "/Source/carnivores-ce-renderer/CE Character Lab/sky.vs"; sourceTree = "<absolute>"; };
-		D6D3CD7E20CB022D00E3ABAC /* sky.fs */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; name = sky.fs; path = "/Source/carnivores-ce-renderer/CE Character Lab/sky.fs"; sourceTree = "<absolute>"; };
 		D6D3CD8420CF123400E3ABAC /* CEShaderProgram.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CEShaderProgram.cpp; sourceTree = "<group>"; };
 		D6D3CD8520CF123400E3ABAC /* CEShaderProgram.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CEShaderProgram.hpp; sourceTree = "<group>"; };
 		D6E5DF0C20CA11DB0071464C /* CEBSPTree.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CEBSPTree.cpp; sourceTree = "<group>"; };
@@ -160,10 +195,6 @@
 		D6F2F8871B83E4810018DBF0 /* shader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = shader.h; sourceTree = "<group>"; };
 		D6F2F8891B83E57D0018DBF0 /* transform.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = transform.h; sourceTree = "<group>"; };
 		D6F2F88A1B83E5AF0018DBF0 /* camera.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = camera.h; sourceTree = "<group>"; };
-		D6F2F88B1B83E62F0018DBF0 /* basicShader.fs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; name = basicShader.fs; path = "/Source/carnivores-ce-renderer/CE Character Lab/basicShader.fs"; sourceTree = "<absolute>"; };
-		D6F2F88C1B83E6490018DBF0 /* basicShader.vs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; name = basicShader.vs; path = "/Source/carnivores-ce-renderer/CE Character Lab/basicShader.vs"; sourceTree = "<absolute>"; };
-		D6FBA2631B975CC200607297 /* terrain.fs */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; name = terrain.fs; path = "/Source/carnivores-ce-renderer/CE Character Lab/terrain.fs"; sourceTree = "<absolute>"; };
-		D6FBA2641B975CC800607297 /* terrain.vs */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; name = terrain.vs; path = "/Source/carnivores-ce-renderer/CE Character Lab/terrain.vs"; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -208,21 +239,6 @@
 				D61CCBFB1B7E200E004BD900 /* OpenGL.framework */,
 				D655522B1B73DA2000CC5309 /* CE Character Lab */,
 				D655522A1B73DA2000CC5309 /* Products */,
-				D6212D222243128700DAC1DD /* day_cloudtop */,
-				D6ADAC2D1B9BD24C00E2AA7D /* AREA5.MAP */,
-				D6ADAC2E1B9BD24C00E2AA7D /* AREA5.RSC */,
-				D6ADAC2F1B9BD24C00E2AA7D /* TROPHY.MAP */,
-				D6ADAC301B9BD24C00E2AA7D /* TROPHY.RSC */,
-				D6FBA2641B975CC800607297 /* terrain.vs */,
-				D6FBA2631B975CC200607297 /* terrain.fs */,
-				D61CCC041B7E6361004BD900 /* AREA1.MAP */,
-				D61CCC051B7E6361004BD900 /* AREA1.RSC */,
-				D65552521B73E31400CC5309 /* ALLO.CAR */,
-				D655525C1B742C3200CC5309 /* Notes.rtf */,
-				D6F2F88B1B83E62F0018DBF0 /* basicShader.fs */,
-				D6F2F88C1B83E6490018DBF0 /* basicShader.vs */,
-				D6D3CD7D20CB020E00E3ABAC /* sky.vs */,
-				D6D3CD7E20CB022D00E3ABAC /* sky.fs */,
 				D6E7B8221FAB9ADF00D1C100 /* Frameworks */,
 			);
 			sourceTree = "<group>";

@@ -238,7 +238,9 @@
 				D655522A1B73DA2000CC5309 /* Products */,
 				D6E7B8221FAB9ADF00D1C100 /* Frameworks */,
 			);
+			indentWidth = 2;
 			sourceTree = "<group>";
+			tabWidth = 2;
 		};
 		D655522A1B73DA2000CC5309 /* Products */ = {
 			isa = PBXGroup;

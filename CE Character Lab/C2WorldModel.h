@@ -71,8 +71,8 @@ public:
     C2WorldModel(std::ifstream& instream); // construct object using file data
     ~C2WorldModel();
     
-    void render();
-    void renderFar(const Transform& transform, const Camera& camera);
+    void render(Transform& transform, Camera& camera);
+    void renderFar(Transform& transform, Camera& camera);
     
     CEGeometry* getGeometry();
     CESimpleGeometry* getFarGeometry();

@@ -18,10 +18,15 @@
 
 class Vertex;
 class CETexture;
+class NewShader;
+class Camera;
+class Transform;
 
 class CEGeometry {
 private:
   int m_texture_height;
+  
+  bool m_transparency;
 
   float m_vertice_light[4][1024];
 
@@ -37,6 +42,7 @@ private:
   std::vector < Vertex > m_vertices;
   std::vector < unsigned int > m_indices;
   std::unique_ptr<CETexture> m_texture;
+  std::unique_ptr<NewShader> m_shader;
 
 public:
   CEGeometry(std::vector < Vertex > vertices, std::vector < unsigned int > indices, std::unique_ptr<CETexture> texture);
@@ -48,6 +54,7 @@ public:
   CETexture* getTexture();
 
   void saveTextureAsBMP(const std::string& file_name );
+  void Update(Transform& transform, Camera& camera);
   void Draw();
 };
 

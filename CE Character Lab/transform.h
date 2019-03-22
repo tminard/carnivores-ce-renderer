@@ -14,9 +14,38 @@ public:
     this->pos = pos;
     this->rot = rot;
     this->scale = scale;
+    this->precalc_model = GetModel();
+  }
+
+  inline glm::mat4 GetStaticModel()
+  {
+    return this->precalc_model;
   }
   
-  inline glm::mat4 GetModel() const
+  inline glm::mat4 GetStaticModelVP(Camera& camera)
+  {
+    glm::mat4 VP = camera.GetViewProjection();
+    glm::mat4 M = this->precalc_model;
+
+    return VP * M;
+  }
+  
+  inline glm::mat4 GetMVP(Camera& camera)
+  {
+    return GetStaticModelVP(camera);
+  }
+  
+  inline glm::vec3* GetPos() { return &pos; }
+  inline glm::vec3* GetRot() { return &rot; }
+  inline glm::vec3* GetScale() { return &scale; }
+protected:
+private:
+  glm::vec3 pos;
+  glm::vec3 rot;
+  glm::vec3 scale;
+  glm::mat4 precalc_model;
+  
+  inline glm::mat4 GetModel()
   {
     glm::mat4 posMat = glm::translate(pos);
     glm::mat4 scaleMat = glm::scale(scale);
@@ -25,29 +54,10 @@ public:
     glm::mat4 rotZ = glm::rotate(rot.z, glm::vec3(0.0, 0.0, 1.0));
     glm::mat4 rotMat = rotX * rotY * rotZ;
     
-    return posMat * rotMat * scaleMat;
-  }
-  
-  inline glm::mat4 GetMVP(const Camera& camera) const
-  {
-    glm::mat4 VP = camera.GetViewProjection();
-    glm::mat4 M = GetModel();
+    glm::mat4 model = posMat * rotMat * scaleMat;
     
-    return VP * M;
+    return model;
   }
-  
-  inline glm::vec3* GetPos() { return &pos; }
-  inline glm::vec3* GetRot() { return &rot; }
-  inline glm::vec3* GetScale() { return &scale; }
-  
-  inline void SetPos(glm::vec3& pos) { this->pos = pos; }
-  inline void SetRot(glm::vec3& rot) { this->rot = rot; }
-  inline void SetScale(glm::vec3& scale) { this->scale = scale; }
-protected:
-private:
-  glm::vec3 pos;
-  glm::vec3 rot;
-  glm::vec3 scale;
 };
 
 #endif

@@ -27,17 +27,23 @@ IndexedMeshLoader::IndexedMeshLoader(std::vector<TPoint3d> vertices, std::vector
         Vertex v1(
                   glm::vec3(m_vertices_data.at(m_faces_data.at(f).v1).x, m_vertices_data.at(m_faces_data.at(f).v1).y, m_vertices_data.at(m_faces_data.at(f).v1).z),
                   glm::vec2((float)((float)m_faces_data.at(f).tax/256.f), (float)((float)m_faces_data.at(f).tay/256.f)),
-                  glm::vec3(0,0,0), m_vertices_data.at(m_faces_data.at(f).v1).hide == 1, m_vertices_data.at(m_faces_data.at(f).v1).owner
+                  glm::vec3(0,0,0), m_vertices_data.at(m_faces_data.at(f).v1).hide == 1,
+                  m_vertices_data.at(m_faces_data.at(f).v1).owner,
+                  m_faces_data.at(f).Flags
                   );
         Vertex v2(
                   glm::vec3(m_vertices_data.at(m_faces_data.at(f).v2).x, m_vertices_data.at(m_faces_data.at(f).v2).y, m_vertices_data.at(m_faces_data.at(f).v2).z),
                   glm::vec2((float)((float)m_faces_data.at(f).tbx/256.f), (float)((float)m_faces_data.at(f).tby/256.f)),
-                  glm::vec3(0,0,0), m_vertices_data.at(m_faces_data.at(f).v2).hide == 1, m_vertices_data.at(m_faces_data.at(f).v2).owner
+                  glm::vec3(0,0,0), m_vertices_data.at(m_faces_data.at(f).v2).hide == 1,
+                  m_vertices_data.at(m_faces_data.at(f).v2).owner,
+                  m_faces_data.at(f).Flags
                   );
         Vertex v3(
                   glm::vec3(m_vertices_data.at(m_faces_data.at(f).v3).x, m_vertices_data.at(m_faces_data.at(f).v3).y, m_vertices_data.at(m_faces_data.at(f).v3).z),
                   glm::vec2((float)((float)m_faces_data.at(f).tcx/256.f), (float)((float)m_faces_data.at(f).tcy/256.f)),
-                  glm::vec3(0,0,0), m_vertices_data.at(m_faces_data.at(f).v3).hide == 1, m_vertices_data.at(m_faces_data.at(f).v3).owner
+                  glm::vec3(0,0,0), m_vertices_data.at(m_faces_data.at(f).v3).hide == 1,
+                  m_vertices_data.at(m_faces_data.at(f).v3).owner,
+                  m_faces_data.at(f).Flags
                   );
         
         m_vertices.push_back(v1);

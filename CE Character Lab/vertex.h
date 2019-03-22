@@ -21,11 +21,13 @@ private:
   glm::vec2 m_uv_coord;
   glm::vec3 m_normal;
 
+  float m_alpha;
+  uint32_t m_flags;
   uint32_t m_owner = 0; // C2 specific flag ranging 0-8. Used for bounding box
   bool m_hide = false;
 
 public:
-  Vertex(const glm::vec3& position, const glm::vec2& texture_coord, const glm::vec3& normal, bool hidden, uint32_t owner);
+  Vertex(const glm::vec3& position, const glm::vec2& texture_coord, const glm::vec3& normal, bool hidden, uint32_t owner, uint32_t flags);
   
   friend bool operator== (Vertex &v1, Vertex &v2);
   friend bool operator!= (Vertex &v1, Vertex &v2);

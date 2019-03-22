@@ -5,14 +5,14 @@
 #include "camera.h"
 
 // Previous view range max was 49
-const float VIEW_R = (256.f * 100.f);
+const float VIEW_R = (256.f * 71.f);
 
 class CEObservable {
     Camera m_camera;
 
 public:
     CEObservable();
-    
+
     glm::vec3 virtual getPosition();
     Camera* getCamera();
     float getViewRange();

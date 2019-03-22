@@ -47,13 +47,13 @@ void Shader::Bind()
   glUseProgram(m_program);
 }
 
-void Shader::Update(const Transform& transform, const Camera& camera)
+void Shader::Update(Transform& transform, Camera& camera)
 {
-  glm::mat4 MVP = transform.GetMVP(camera);
-  glm::mat4 Normal = transform.GetModel();
+  glm::mat4 MVP = transform.GetStaticModelVP(camera);
+  //glm::mat4 Normal = transform.GetStaticModel();
   
   glUniformMatrix4fv(m_uniforms[0], 1, GL_FALSE, &MVP[0][0]);
-  glUniformMatrix4fv(m_uniforms[1], 1, GL_FALSE, &Normal[0][0]);
+  //glUniformMatrix4fv(m_uniforms[1], 1, GL_FALSE, &Normal[0][0]);
   glUniform3f(m_uniforms[2], 0.0f, 0.0f, 1.0f);
 }
 

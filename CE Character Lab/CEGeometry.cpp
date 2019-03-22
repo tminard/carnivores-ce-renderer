@@ -3,6 +3,10 @@
 #include "CEGeometry.h"
 #include "CETexture.h"
 #include "vertex.h"
+#include "new_shader.h"
+
+#include "camera.h"
+#include "transform.h"
 
 /*
  * The old C2 model format supported ignoring lighting.
@@ -38,6 +42,8 @@ void CEGeometry::saveTextureAsBMP(const std::string &file_name)
 
 void CEGeometry::loadObjectIntoMemoryBuffer()
 {
+  this->m_shader = std::unique_ptr<NewShader>(new NewShader("resources/basicShader.vs", "resources/basicShader.fs"));
+
   glGenVertexArrays(1, &this->m_vertexArrayObject);
   glBindVertexArray(this->m_vertexArrayObject);
   
@@ -52,6 +58,8 @@ void CEGeometry::loadObjectIntoMemoryBuffer()
   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)sizeof(glm::vec3));
   glEnableVertexAttribArray(2); // normal
   glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(glm::vec3)+sizeof(glm::vec2)));
+  glEnableVertexAttribArray(3); // face alpha (if 0, then face has transparency. Otherwise, it does not)
+  glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(glm::vec3)+sizeof(glm::vec2)+sizeof(glm::vec3)));
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_vertexArrayBuffers[INDEX_VB]);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, (int)this->m_indices.size()*sizeof(unsigned int), this->m_indices.data(), GL_STATIC_DRAW);
@@ -61,10 +69,20 @@ void CEGeometry::loadObjectIntoMemoryBuffer()
 
 void CEGeometry::Draw()
 {
-  m_texture->Use();
+  m_shader->use();
+  m_texture->use();
   glBindVertexArray(this->m_vertexArrayObject);
 
   glDrawElementsBaseVertex(GL_TRIANGLES, (int)this->m_indices.size(), GL_UNSIGNED_INT, 0, 0);
 
   glBindVertexArray(0);
+}
+
+void CEGeometry::Update(Transform &transform, Camera &camera)
+{
+  this->m_shader->use();
+  glm::mat4 MVP = transform.GetStaticModelVP(camera);
+
+  this->m_shader->setMat4("MVP", MVP);
+  this->m_shader->setBool("enable_transparency", true);
 }

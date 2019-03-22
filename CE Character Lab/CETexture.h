@@ -18,7 +18,11 @@
 #include <vector>
 #include <string>
 
+#define GLFW_INCLUDE_GLCOREARB
 #include <GLFW/glfw3.h>
+
+#define faceHasOpacity      4
+#define faceIsTransparent   8
 
 class Shader;
 class CBitmap;
@@ -36,7 +40,7 @@ public:
   ~CETexture();
 
   void saveToBMPFile(std::string file_name);
-  void Use();
+  void use();
   std::unique_ptr<CBitmap> getCBitmap();
   std::vector<uint16_t>* getRawData();
 };

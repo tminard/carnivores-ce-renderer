@@ -41,6 +41,6 @@ public:
     CETexture* getTexture();
     NewShader* getShader();
 
-    void Update(const Transform& transform, const Camera& camera);
+    void Update(Transform& transform, Camera& camera);
     void Draw();
 };

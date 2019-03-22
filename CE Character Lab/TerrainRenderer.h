@@ -21,6 +21,9 @@
 #include <glm/vec3.hpp>
 #include <glm/glm.hpp>
 #include <vector>
+#include <map>
+
+#include "transform.h"
 
 class Vertex;
 class C2MapFile;
@@ -28,9 +31,17 @@ class C2MapRscFile;
 class NewShader;
 class Transform;
 class Camera;
+class Shader; // TODO: replace global object shader with per object pool
 class TerrainRenderer
 {
 private:
+  struct _ObjLoc {
+    int m_obj_id;
+    glm::vec2 m_map_position; // in tiles
+    glm::vec3 m_world_position;
+    Transform m_transform;
+  };
+
   std::vector < Vertex > m_vertices;
   std::vector < unsigned int > m_indices;
   int m_num_indices;
@@ -42,15 +53,20 @@ private:
   
   std::unique_ptr<NewShader> m_shader;
   
+  std::map<int, std::map<int, std::vector<_ObjLoc>>> m_objects_by_quad;
+  
   C2MapFile* m_cmap_data_weak;
   C2MapRscFile* m_crsc_data_weak;
   
+  void preloadObjectMap();
   void loadShader();
   void loadIntoHardwareMemory();
   glm::vec2 calcAtlasUV(int texID, glm::vec2 uv);
   glm::vec2 scaleAtlasUV(glm::vec2 atlas_uv, int texture_id);
   glm::vec3 calcWorldVertex(int tile_x, int tile_y);
   std::array<glm::vec2, 4> calcUVMapForQuad(int x, int y, bool quad_reversed, int rotation_code);
+  
+  void renderObjectsAtQuad(Camera& camera, int quad_x, int quad_y, float maxd, float lowrd, glm::vec3 cur_pos);
 public:
   constexpr static const float TCMAX = 255.5f;
   constexpr static const float TCMIN = 0.5f;
@@ -58,8 +74,9 @@ public:
   TerrainRenderer(C2MapFile* cMapWeak, C2MapRscFile* cRscWeak);
   ~TerrainRenderer();
   
+  void RenderObjects(Camera& camera);
   void Render();
-  void Update(const Transform& transform, const Camera& camera);
+  void Update(Transform& transform, Camera& camera);
 };
 
 #endif /* defined(__CE_Character_Lab__TerrainRenderer__) */

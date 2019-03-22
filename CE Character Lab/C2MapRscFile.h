@@ -40,7 +40,6 @@ private:
     std::vector< std::unique_ptr<CETexture> > m_textures; // control access to the textures
     int m_texture_atlas_width;
     int m_texture_count;
-    std::vector< std::unique_ptr<C2WorldModel> > m_models;
     
     std::unique_ptr<C2Sky> m_dawn_sky;
     std::unique_ptr<C2Sky> m_day_sky;
@@ -50,6 +49,8 @@ private:
     
     void load(const std::string& file_name);
 public:
+  std::vector< std::unique_ptr<C2WorldModel> > m_models;
+  
     C2MapRscFile(const std::string& file_name);
     ~C2MapRscFile();
     

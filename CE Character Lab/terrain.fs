@@ -2,25 +2,15 @@
 
 in vec2 texCoord0;
 flat in int texID0;
-in vec3 worldPos;
-in vec4 viewSpace;
-in float distanceToCamera;
 
 out vec4 outputColor;
 
 uniform sampler2D basic_texture;
 uniform int texSquareSize;
 
-const vec3 fogColor = vec3(0.94, 0.97, 1.0);
-const int HIDE_START = 256*40;
-const int FOG_START = 256*30;
-const int FOG_END = 256*49;
-
 void main()
 {
-    float alpha = 1.0;
-    float dist = abs(distanceToCamera);
-    int tex = texID0; // get tile´s texture ID
+    int tex = texID0;
     float tex_size_square = float(texSquareSize);
     int tex_y = int(floor(float(tex)/tex_size_square));
     
@@ -34,21 +24,8 @@ void main()
     vec2 UV = vec2(tu, tv);
 
     vec4 sC = texture(basic_texture, UV);
-    
-    float fogFactor = (FOG_END - dist)/(FOG_END - FOG_START);
-    vec3 finalColor;
-    
-    vec3 lightColor = vec3(sC.b, sC.g, sC.r);
-    lightColor = 1.55 * lightColor.rgb * vec3(0.94, 0.97, 1.0);
-    
-    fogFactor = clamp(fogFactor, 0.0, 1.0);
-
-    float distToFade = (dist - HIDE_START);
-    if (distToFade > 0) {
-        alpha = 1.f - (distToFade / float(FOG_END - HIDE_START));
-    }
-    
-    finalColor = mix(fogColor, lightColor, fogFactor);
+    vec3 finalColor = vec3(sC.b, sC.g, sC.r);
+    finalColor = 1.55 * finalColor.rgb * vec3(0.94, 0.97, 1.0);
    
-    outputColor = vec4(finalColor, alpha);
+    outputColor = vec4(finalColor, 1.0);
 }

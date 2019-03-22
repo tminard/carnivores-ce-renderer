@@ -7,15 +7,8 @@ uniform sampler2D basic_texture;
 
 void main()
 {
-    vec4 sC = texture( basic_texture, texCoord0 );
-    float trans = 0.095;
-    
-    // TODO: Make this conditional
-    if (sC.r <= trans && sC.g <= trans && sC.b <= trans) {
-        discard;
-    }
-    
-    vec4 lightColor = vec4(sC.b, sC.g, sC.r, 1.f);
-    
-    FragColor = lightColor;
+    vec4 tx = texture( basic_texture, texCoord0 );
+    vec3 textureColor = vec3(tx.b, tx.g, tx.r);
+
+    FragColor = vec4(textureColor, 1.0);
 }

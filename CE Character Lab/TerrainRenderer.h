@@ -16,8 +16,9 @@
 #include <stdio.h>
 #include <exception>
 
-#include <OpenGL/gl3.h>
+#define GLFW_INCLUDE_GLCOREARB
 #include <GLFW/glfw3.h>
+#include <glm/vec3.hpp>
 #include <glm/glm.hpp>
 #include <vector>
 

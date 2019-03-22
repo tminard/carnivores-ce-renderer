@@ -73,17 +73,6 @@ void C2MapRscFile::load(const std::string &file_name)
         infile.read(reinterpret_cast<char *>(this->m_fade_rgb), 4*3*3);
         infile.read(reinterpret_cast<char *>(this->m_trans_rgb), 4*3*3);
         
-        /*for (int tx = 0; tx < texture_count; tx++) {
-         std::vector<uint16_t> raw_texture_data; //rgba5551
-         raw_texture_data.resize(128*128);
-         infile.read(reinterpret_cast<char *>(raw_texture_data.data()), 128*128*sizeof(uint16_t));
-         
-         std::unique_ptr<CETexture> cTexture = std::unique_ptr<CETexture>(new CETexture(raw_texture_data, 128*128, 128, 128));
-         this->m_textures.push_back(std::move(cTexture));
-         }*/
-        
-        // read all the textures into a single buffer
-        
         std::vector<uint16_t> raw_texture_data; //rgba5551
         raw_texture_data.resize(SOURCE_SQUARE_SIZE*SOURCE_SQUARE_SIZE*texture_count);
         infile.read(reinterpret_cast<char *>(raw_texture_data.data()), SOURCE_SQUARE_SIZE*SOURCE_SQUARE_SIZE*sizeof(uint16_t)*texture_count);
@@ -91,8 +80,7 @@ void C2MapRscFile::load(const std::string &file_name)
         // Combine all the textures into a single texture for ease of opengl use.
         // Add a buffer around images to mimic clamping with GL_LINEAR; see: https://stackoverflow.com/questions/19611745/opengl-black-lines-in-between-tiles
         std::vector<uint16_t> combined_texture_data; // rgba5551
-        
-        // int texture_rows = static_cast<int>(sqrt(static_cast<float>(texture_count)));
+
         int squared_texture_rows = static_cast<int>(sqrt(static_cast<float>(texture_count)) + .99f); // number of rows and columns needed to fit the data
         
         uint16_t pad_color;
@@ -204,7 +192,6 @@ void C2MapRscFile::load(const std::string &file_name)
         std::unique_ptr<CETexture> cTexture = std::unique_ptr<CETexture>(new CETexture(final_texture_data, squared_texture_rows*TEXTURE_SQUARE_SIZE*squared_texture_rows*TEXTURE_SQUARE_SIZE, squared_texture_rows*TEXTURE_SQUARE_SIZE, squared_texture_rows*TEXTURE_SQUARE_SIZE));
         this->m_texture_atlas_width = squared_texture_rows;
         this->m_texture_count = texture_count;
-        //cTexture->saveToBMPFile("/Users/tminard/mapim2.bmp");
         this->m_textures.push_back(std::move(cTexture));
         
         

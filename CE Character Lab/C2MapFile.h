@@ -20,38 +20,39 @@
 class C2MapFile
 {
 private:
-  std::array<uint8_t, 1024*1024> m_heightmap_data;
-  std::array<uint16_t, 1024*1024> m_texture_A_index_data;
-  std::array<uint16_t, 1024*1024> m_texture_B_index_data;
-  std::array<uint8_t, 1024*1024> m_object_index_data;
-  std::array<uint16_t, 1024*1024> m_flags_data;
-  std::array<uint8_t, 1024*1024> m_dawn_brightness_data;
-  std::array<uint8_t, 1024*1024> m_day_brightness_data;
-  std::array<uint8_t, 1024*1024> m_night_brightness_data;
-  std::array<uint8_t, 1024*1024> m_watermap_data;
-  std::array<uint8_t, 1024*1024> m_object_heightmap_data;
-  std::array<uint8_t, 512*512> m_fog_data;
-  std::array<uint8_t, 512*512> m_soundfx_data;
-
-  constexpr static const float SIZE = 1024.f;
-  constexpr static const float HEIGHT_SCALE = 64.f;
-
+    std::array<uint8_t, 1024*1024> m_heightmap_data;
+    std::array<uint16_t, 1024*1024> m_texture_A_index_data;
+    std::array<uint16_t, 1024*1024> m_texture_B_index_data;
+    std::array<uint8_t, 1024*1024> m_object_index_data;
+    std::array<uint16_t, 1024*1024> m_flags_data;
+    std::array<uint8_t, 1024*1024> m_dawn_brightness_data;
+    std::array<uint8_t, 1024*1024> m_day_brightness_data;
+    std::array<uint8_t, 1024*1024> m_night_brightness_data;
+    std::array<uint8_t, 1024*1024> m_watermap_data;
+    std::array<uint8_t, 1024*1024> m_object_heightmap_data;
+    std::array<uint8_t, 512*512> m_fog_data;
+    std::array<uint8_t, 512*512> m_soundfx_data;
+    
+    constexpr static const float SIZE = 1024.f;
+    constexpr static const float HEIGHT_SCALE = 64.f;
+    
 public:
-  C2MapFile(const std::string& map_file_name);
-  ~C2MapFile();
-  
-  float getHeightAt(int xy);
-  float getObjectHeightAt(int xy);
-  int getObjectAt(int xy);
-  int getTextureIDAt(int xy);
-  uint16_t getFlagsAt(int xy);
-
-  float getHeight();
-  float getWidth();
-  float getTileLength();
-  float getHeightmapScale();
-  
-  void load(const std::string& file_name);
+    C2MapFile(const std::string& map_file_name);
+    ~C2MapFile();
+    
+    float getHeightAt(int xy);
+    float getObjectHeightAt(int xy);
+    int getObjectHeightForRadius(int x, int y, int R);
+    int getObjectAt(int xy);
+    int getTextureIDAt(int xy);
+    uint16_t getFlagsAt(int xy);
+    
+    float getHeight();
+    float getWidth();
+    float getTileLength();
+    float getHeightmapScale();
+    
+    void load(const std::string& file_name);
 };
 
 #endif /* defined(__CE_Character_Lab__C2MapFile__) */

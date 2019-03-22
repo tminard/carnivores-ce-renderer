@@ -66,8 +66,8 @@ glm::vec3 TerrainRenderer::calcWorldVertex(int tile_x, int tile_y)
     }
     
     float tile_height = this->m_cmap_data_weak->getHeightAt((tile_y * width) + tile_x);
-    float vx = (tile_x*tile_size) + tile_size;
-    float vy = (tile_y*tile_size) + tile_size;
+    float vx = (tile_x*tile_size) + (tile_size/2.f);
+    float vy = (tile_y*tile_size) + (tile_size/2.f);
     
     return glm::vec3(vx, tile_height, vy);
 }

@@ -38,7 +38,7 @@ C2WorldModel::C2WorldModel(std::ifstream& instream)
     instream.read(reinterpret_cast<char *>(&_fcount), 4);
     instream.read(reinterpret_cast<char *>(&_object_count), 4);
     instream.read(reinterpret_cast<char *>(&_tsize), 4);
-    texture_height = 256;//_tsize>>9; // All c2 stock objects bitmaps are 256 px height
+    texture_height = 256; // All c2 stock objects bitmaps are 256 px height
     
     spirit_texture_data.resize(128*128);
     texture_data.resize(_tsize);
@@ -51,11 +51,11 @@ C2WorldModel::C2WorldModel(std::ifstream& instream)
     instream.read(reinterpret_cast<char *>(_obj_buffer.data()), _object_count*48);
     instream.read(reinterpret_cast<char *>(texture_data.data()), _tsize);
     
-    //  for (int v=0; v < _vcount; v++) {
-    //    file_vertex_data[v].x *= 4.0f;
-    //    file_vertex_data[v].y *= 4.0f;
-    //    file_vertex_data[v].z *= -4.0f;
-    //  }
+      for (int v=0; v < _vcount; v++) {
+        file_vertex_data[v].x *= 2.0f;
+        file_vertex_data[v].y *= 2.0f;
+        file_vertex_data[v].z *= -2.0f; // Original models need to be inverted across z axis
+      }
 
     instream.read(reinterpret_cast<char *>(spirit_texture_data.data()), 128*128*2);
     
@@ -75,29 +75,30 @@ C2WorldModel::C2WorldModel(std::ifstream& instream)
         if (y < mny) mny=y;
     }
     
-    m_far_vertices[0].x = mnx;//mnx;
-    m_far_vertices[0].y = mny;//mxy;
-    m_far_vertices[0].z = 0;
+    m_far_vertices[0].x = mnx;
+    m_far_vertices[0].y = mny;
+    m_far_vertices[0].z = 2; // UV - LL
     
-    m_far_vertices[1].x = mnx;//mxx;
-    m_far_vertices[1].y = mxy;//mxy;
-    m_far_vertices[1].z = 0;
+    m_far_vertices[1].x = mnx;
+    m_far_vertices[1].y = mxy;
+    m_far_vertices[1].z = 0; // UL
     
-    m_far_vertices[2].x = mxx;//mxx;
-    m_far_vertices[2].y = mny;//mny;
-    m_far_vertices[2].z = 0;
+    m_far_vertices[2].x = mxx;
+    m_far_vertices[2].y = mny;
+    m_far_vertices[2].z = 3; // LR
     
-    m_far_vertices[3].x = mxx;//mnx;
-    m_far_vertices[3].y = mny;//mxy;
-    m_far_vertices[3].z = 0;
     
-    m_far_vertices[4].x = mnx;//mxx;
-    m_far_vertices[4].y = mxy;//mxy;
-    m_far_vertices[4].z = 0;
+    m_far_vertices[3].x = mxx;
+    m_far_vertices[3].y = mny;
+    m_far_vertices[3].z = 3; // LR
     
-    m_far_vertices[5].x = mxx;//mxx;
-    m_far_vertices[5].y = mxy;//mny;
-    m_far_vertices[5].z = 0;
+    m_far_vertices[4].x = mnx;
+    m_far_vertices[4].y = mxy;
+    m_far_vertices[4].z = 0; // UL
+    
+    m_far_vertices[5].x = mxx;
+    m_far_vertices[5].y = mxy;
+    m_far_vertices[5].z = 1; // UR
     
     // process flags
     if (m_old_object_info->flags & objectNOLIGHT) {
@@ -115,10 +116,25 @@ C2WorldModel::C2WorldModel(std::ifstream& instream)
     std::vector<Vertex> cVertices;
     cVertices.clear();
     for (int v = 0; v < m_far_vertices.size(); v++) {
+        glm::vec2 uv;
+        switch ((int)m_far_vertices[v].z) {
+            case 0: // UL
+                uv = glm::vec2(0, 0);
+                break;
+            case 1: // UR
+                uv = glm::vec2(1, 0);
+                break;
+            case 2: // LL
+                uv = glm::vec2(0, 1);
+                break;
+            case 3: // LR
+                uv = glm::vec2(1, 1);
+                break;
+        }
         Vertex vt(
-                 glm::vec3(m_far_vertices[v].x, m_far_vertices[v].y, m_far_vertices[v].z),
-                 glm::vec2(0.f,1.f), // TODO: build UV
-                 glm::vec3(1.f,1.f,1.f), //TODO: build normals
+                 glm::vec3(m_far_vertices[v].x, m_far_vertices[v].y, 0.f),
+                 uv,
+                 glm::vec3(1.f,1.f,1.f), // TODO: build normals?
                  false,
                  0
                  );
@@ -233,8 +249,5 @@ void C2WorldModel::renderFar(const Transform& transform, const Camera& camera)
 }
 void C2WorldModel::render()
 {
-    // update view matrix
-    // set shader if different from current shader?
-    // set texture if different from current texture?
     m_geometry->Draw();
 }

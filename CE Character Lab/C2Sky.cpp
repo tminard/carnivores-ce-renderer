@@ -173,5 +173,6 @@ void C2Sky::Render(GLFWwindow* window, Camera& camera)
     glBindTexture(GL_TEXTURE_CUBE_MAP, this->m_cube_texture);
     
     glDrawArrays(GL_TRIANGLES, 0, 36);
+    
     glBindVertexArray(0);
 }

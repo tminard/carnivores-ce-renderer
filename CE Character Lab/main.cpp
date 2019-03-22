@@ -70,8 +70,8 @@ int main(int argc, const char * argv[])
     CreateFadeTab();
     std::unique_ptr<C2CarFilePreloader> cFileLoad(new C2CarFilePreloader);
     std::unique_ptr<LocalVideoManager> video_manager(new LocalVideoManager());
-    std::shared_ptr<C2MapFile> cMap(new C2MapFile("AREA4.MAP"));
-    std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile("AREA4.RSC"));
+    std::shared_ptr<C2MapFile> cMap(new C2MapFile("AREA1.MAP"));
+    std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile("AREA1.RSC"));
     std::shared_ptr<CEPlayer> m_player(new CEPlayer(cMap));
     std::unique_ptr<TerrainRenderer> terrain(new TerrainRenderer(cMap.get(), cMapRsc.get()));
     
@@ -131,7 +131,7 @@ int main(int argc, const char * argv[])
         int current_col = static_cast<int>(cur_x / cMap->getTileLength());
         int view_distance_squares = 45;
         int rendered_objects = 0;
-        const int MAX_OBJECTS = 10000;
+        const int MAX_OBJECTS = 2000;
         
         for (int view_row = current_row + view_distance_squares; view_row > (current_row - view_distance_squares); view_row--) {
             for (int view_col = current_col - view_distance_squares; view_col < current_col + view_distance_squares; view_col++) {
@@ -151,24 +151,39 @@ int main(int argc, const char * argv[])
                     float map_height = cMap->getHeightAt(xy);
                     C2WorldModel* w_obj = cMapRsc->getWorldModel(obj_id);
                     float obj_height = cMap->getObjectHeightAt(xy);
-                    
-                    if (obj_height == 0.0f) {
+                    if (obj_height == 0.f) {
                         obj_height = map_height + w_obj->getObjectInfo()->YLo;
                     }
 
+                    int rotation_idx = (cMap->getFlagsAt(xy) >> 2) & 3;
+                    glm::vec3 rotation;
+                    switch (rotation_idx) {
+                        case 0:
+                            rotation = glm::vec3(0, glm::radians(0.f), 0);
+                            break;
+                        case 1:
+                            rotation = glm::vec3(0, glm::radians(90.f), 0);
+                            break;
+                        case 2:
+                            rotation = glm::vec3(0, glm::radians(180.f), 0);
+                            break;
+                        case 3:
+                            rotation = glm::vec3(0, glm::radians(270.f), 0);
+                            break;
+                    }
+
+                    Transform mTrans_c(
+                                       glm::vec3(((float)(view_col)*cMap->getTileLength()) + 256.f, obj_height, ((float)(view_row)*cMap->getTileLength()) + 256.f),
+                                       rotation,
+                                       glm::vec3(1.f, 1.f, 1.f)
+                                       );
                     if (isFar) {
-                        Transform mTrans_f(
-                                           glm::vec3((view_col*cMap->getTileLength()) + 128.f, obj_height, (view_row*cMap->getTileLength()) + 128.f),
-                                           glm::vec3(0, 0, 0),
-                                           glm::vec3(1.f, 1.f, 1.f)
-                        );
                         glDepthFunc(GL_LESS);
-                        w_obj->renderFar(mTrans_f, *camera);
+                        w_obj->renderFar(mTrans_c, *camera);
                     } else {
                         rendered_objects++;
+                        
                         shader.Bind();
-                        Transform mTrans_c(glm::vec3((view_col*cMap->getTileLength()) + 128.f, obj_height, (view_row*cMap->getTileLength()) + 128.f), glm::vec3(0,0,0), glm::vec3(1.f, 1.f, 1.f));
-
                         shader.Update(mTrans_c, *camera);
                         glDepthFunc(GL_LESS);
                         w_obj->render();

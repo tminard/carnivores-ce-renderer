@@ -26,11 +26,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "CE Character Lab/main.cpp"
-            timestampString = "574890993.315775"
+            timestampString = "574910531.193818"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "265"
-            endingLineNumber = "265">
+            startingLineNumber = "280"
+            endingLineNumber = "280">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -40,11 +40,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "CE Character Lab/C2MapFile.cpp"
-            timestampString = "574713750.7467"
+            timestampString = "574910531.194694"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "111"
-            endingLineNumber = "111"
+            startingLineNumber = "129"
+            endingLineNumber = "129"
             landmarkName = "C2MapFile::load(const std::string &amp;file_name)"
             landmarkType = "7">
          </BreakpointContent>
@@ -56,11 +56,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "CE Character Lab/C2MapRscFile.cpp"
-            timestampString = "574890993.31654"
+            timestampString = "574910531.194896"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "210"
-            endingLineNumber = "210"
+            startingLineNumber = "197"
+            endingLineNumber = "197"
             landmarkName = "C2MapRscFile::load(const std::string &amp;file_name)"
             landmarkType = "7">
          </BreakpointContent>
@@ -136,7 +136,7 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "CE Character Lab/IndexedMeshLoader.cpp"
-            timestampString = "574875531.817579"
+            timestampString = "574910531.1951669"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "43"
@@ -152,7 +152,7 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "CE Character Lab/IndexedMeshLoader.cpp"
-            timestampString = "574875531.817771"
+            timestampString = "574910531.195353"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "49"
@@ -168,7 +168,7 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "CE Character Lab/bitmap.h"
-            timestampString = "574890993.31686"
+            timestampString = "574910531.195405"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "433"
@@ -232,7 +232,7 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "CE Character Lab/TerrainRenderer.cpp"
-            timestampString = "574890993.317151"
+            timestampString = "574910531.195644"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "276"
@@ -248,44 +248,12 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "CE Character Lab/IndexedMeshLoader.cpp"
-            timestampString = "574875531.81828"
+            timestampString = "574910531.195839"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "34"
             endingLineNumber = "34"
             landmarkName = "IndexedMeshLoader::IndexedMeshLoader(std::vector&lt;TPoint3d&gt; vertices, std::vector&lt;TFace&gt; faces)"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "CE Character Lab/C2WorldModel.cpp"
-            timestampString = "574890993.317505"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "128"
-            endingLineNumber = "128"
-            landmarkName = "C2WorldModel::C2WorldModel(std::ifstream&amp; instream)"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "CE Character Lab/C2WorldModel.cpp"
-            timestampString = "574890993.317781"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "130"
-            endingLineNumber = "130"
-            landmarkName = "C2WorldModel::C2WorldModel(std::ifstream&amp; instream)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>

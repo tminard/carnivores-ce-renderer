@@ -85,6 +85,24 @@ float C2MapFile::getObjectHeightAt(int xy)
   return (scaled_height);
 }
 
+/*
+ * find the best/lowest height for a given location
+ * Lifted from old source - not yet working properly
+*/
+int C2MapFile::getObjectHeightForRadius(int x, int y, int R)
+{
+    x = (x<<8) + 128;
+    y = (y<<8) + 128;
+    float hr,h;
+    hr = getHeightAt((y*getWidth())+(x));
+    
+    h = getHeightAt( ((y)*getWidth()) + (x+R) ); if (h < hr && h != 0) hr = h;
+    h = getHeightAt( ((y)*getWidth()) + (x-R) ); if (h < hr && h != 0) hr = h;
+    h = getHeightAt( ((y+R)*getWidth()) + (x) ); if (h < hr && h != 0) hr = h;
+    h = getHeightAt( ((y-R)*getWidth()) + (x) ); if (h < hr && h != 0) hr = h;
+    return (int)hr;
+}
+
 void C2MapFile::load(const std::string &file_name)
 {
   std::ifstream infile;

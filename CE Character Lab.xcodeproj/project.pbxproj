@@ -28,6 +28,7 @@
 		D657B8951B851D3A0051BCC7 /* IndexedMeshLoader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D657B8931B851D3A0051BCC7 /* IndexedMeshLoader.cpp */; };
 		D67F82A32243EC5000AC81B7 /* CESimpleGeometry.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D67F82A12243EC5000AC81B7 /* CESimpleGeometry.cpp */; };
 		D6C77D9C22451A7F00105733 /* resources in CopyFiles */ = {isa = PBXBuildFile; fileRef = D6C77D9B22451A6A00105733 /* resources */; };
+		D6C77D9F224583CD00105733 /* CEWaterEntity.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6C77D9D224583CD00105733 /* CEWaterEntity.cpp */; };
 		D6D3CD7320CADD3500E3ABAC /* CEObservable.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6D3CD7120CADD3500E3ABAC /* CEObservable.cpp */; };
 		D6D3CD7620CAE07000E3ABAC /* CEPlayer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6D3CD7420CAE07000E3ABAC /* CEPlayer.cpp */; };
 		D6D3CD7920CAE6A100E3ABAC /* LocalInputManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6D3CD7720CAE6A100E3ABAC /* LocalInputManager.cpp */; };
@@ -104,6 +105,8 @@
 		D67F82A12243EC5000AC81B7 /* CESimpleGeometry.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CESimpleGeometry.cpp; sourceTree = "<group>"; };
 		D67F82A22243EC5000AC81B7 /* CESimpleGeometry.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CESimpleGeometry.h; sourceTree = "<group>"; };
 		D6C77D9B22451A6A00105733 /* resources */ = {isa = PBXFileReference; lastKnownFileType = folder; name = resources; path = "CE Character Lab/resources"; sourceTree = "<group>"; };
+		D6C77D9D224583CD00105733 /* CEWaterEntity.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CEWaterEntity.cpp; sourceTree = "<group>"; };
+		D6C77D9E224583CD00105733 /* CEWaterEntity.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CEWaterEntity.h; sourceTree = "<group>"; };
 		D6D3CD7120CADD3500E3ABAC /* CEObservable.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CEObservable.cpp; sourceTree = "<group>"; };
 		D6D3CD7220CADD3500E3ABAC /* CEObservable.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CEObservable.hpp; sourceTree = "<group>"; };
 		D6D3CD7420CAE07000E3ABAC /* CEPlayer.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CEPlayer.cpp; sourceTree = "<group>"; };
@@ -246,6 +249,8 @@
 				D6D3CD8520CF123400E3ABAC /* CEShaderProgram.hpp */,
 				D67F82A12243EC5000AC81B7 /* CESimpleGeometry.cpp */,
 				D67F82A22243EC5000AC81B7 /* CESimpleGeometry.h */,
+				D6C77D9D224583CD00105733 /* CEWaterEntity.cpp */,
+				D6C77D9E224583CD00105733 /* CEWaterEntity.h */,
 			);
 			name = Engine;
 			sourceTree = "<group>";
@@ -396,6 +401,7 @@
 				D6247C171B88F30F00088EB2 /* TerrainRenderer.cpp in Sources */,
 				D655522D1B73DA2000CC5309 /* main.cpp in Sources */,
 				D64585421B7A818B00D6327E /* carnivores_mock_functions.cpp in Sources */,
+				D6C77D9F224583CD00105733 /* CEWaterEntity.cpp in Sources */,
 				D65552A41B797DC200CC5309 /* AI_Allosaurus.cpp in Sources */,
 				D6D3CD7320CADD3500E3ABAC /* CEObservable.cpp in Sources */,
 				D61CCC0F1B7E7BF5004BD900 /* C2WorldModel.cpp in Sources */,

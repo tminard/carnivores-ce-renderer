@@ -61,6 +61,7 @@ private:
   void preloadObjectMap();
   void loadShader();
   void loadIntoHardwareMemory();
+  void loadWaterIntoHardwareMemory();
   glm::vec2 calcAtlasUV(int texID, glm::vec2 uv);
   glm::vec2 scaleAtlasUV(glm::vec2 atlas_uv, int texture_id);
   glm::vec3 calcWorldVertex(int tile_x, int tile_y);

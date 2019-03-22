@@ -23,6 +23,7 @@ TerrainRenderer::TerrainRenderer(C2MapFile* c_map_weak, C2MapRscFile* c_rsc_weak
 : m_cmap_data_weak(c_map_weak), m_crsc_data_weak(c_rsc_weak)
 {
   this->loadIntoHardwareMemory();
+  this->loadWaterIntoHardwareMemory();
   this->loadShader();
   this->preloadObjectMap();
 }
@@ -32,6 +33,15 @@ TerrainRenderer::~TerrainRenderer()
   glDeleteBuffers(1, &this->m_vertex_array_buffer);
   glDeleteBuffers(1, &this->m_indices_array_buffer);
   glDeleteVertexArrays(1, &this->m_vertex_array_object);
+}
+
+void TerrainRenderer::loadWaterIntoHardwareMemory()
+{
+  /*
+   * Look at each entity on the water map and identify separate bodies of water
+   * generate a plane spaning the far reaches of each body of water
+   * subdivide to produce correct vertices
+   */
 }
 
 /*

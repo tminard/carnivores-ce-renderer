@@ -2,6 +2,6 @@
 <Workspace
    version = "1.0">
    <FileRef
-      location = "self:CE Character Lab.xcodeproj">
+      location = "self:../CE Character Lab">
    </FileRef>
 </Workspace>

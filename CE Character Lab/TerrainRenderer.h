@@ -31,34 +31,35 @@ class Camera;
 class TerrainRenderer
 {
 private:
-    std::vector < Vertex > m_vertices;
-    std::vector < unsigned int > m_indices;
-    int m_num_indices;
-    
-    GLuint m_vertex_array_object;
-    
-    GLuint m_vertex_array_buffer;
-    GLuint m_indices_array_buffer;
-    
-    std::unique_ptr<NewShader> m_shader;
-    
-    C2MapFile* m_cmap_data_weak;
-    C2MapRscFile* m_crsc_data_weak;
-    
-    void loadShader();
-    void loadIntoHardwareMemory();
-    glm::vec2 calcAtlasUV(int texID, glm::vec2 uv);
-    glm::vec3 calcWorldVertex(int tile_x, int tile_y);
-    std::array<glm::vec2, 4> calcUVMapForQuad(int x, int y, bool quad_reversed, int rotation_code);
+  std::vector < Vertex > m_vertices;
+  std::vector < unsigned int > m_indices;
+  int m_num_indices;
+  
+  GLuint m_vertex_array_object;
+  
+  GLuint m_vertex_array_buffer;
+  GLuint m_indices_array_buffer;
+  
+  std::unique_ptr<NewShader> m_shader;
+  
+  C2MapFile* m_cmap_data_weak;
+  C2MapRscFile* m_crsc_data_weak;
+  
+  void loadShader();
+  void loadIntoHardwareMemory();
+  glm::vec2 calcAtlasUV(int texID, glm::vec2 uv);
+  glm::vec2 scaleAtlasUV(glm::vec2 atlas_uv, int texture_id);
+  glm::vec3 calcWorldVertex(int tile_x, int tile_y);
+  std::array<glm::vec2, 4> calcUVMapForQuad(int x, int y, bool quad_reversed, int rotation_code);
 public:
-    constexpr static const float TCMAX = 255.5f;
-    constexpr static const float TCMIN = 0.5f;
-    constexpr static const float _ZSCALE = (16.f*65534.f); // MAX_UNSIGNED_SHORT*16 - original engine used this for scaling heights
-    TerrainRenderer(C2MapFile* cMapWeak, C2MapRscFile* cRscWeak);
-    ~TerrainRenderer();
-    
-    void Render();
-    void Update(const Transform& transform, const Camera& camera);
+  constexpr static const float TCMAX = 255.5f;
+  constexpr static const float TCMIN = 0.5f;
+  constexpr static const float _ZSCALE = (16.f*65534.f); // MAX_UNSIGNED_SHORT*16 - original engine used this for scaling heights
+  TerrainRenderer(C2MapFile* cMapWeak, C2MapRscFile* cRscWeak);
+  ~TerrainRenderer();
+  
+  void Render();
+  void Update(const Transform& transform, const Camera& camera);
 };
 
 #endif /* defined(__CE_Character_Lab__TerrainRenderer__) */

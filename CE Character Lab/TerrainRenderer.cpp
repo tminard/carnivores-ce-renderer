@@ -51,7 +51,6 @@ void TerrainRenderer::Update(const Transform& transform, const Camera& camera)
     glm::mat4 MVP = transform.GetMVP(camera);
 
     this->m_shader->use();
-    this->m_shader->setInt("texSquareSize", this->m_crsc_data_weak->getTextureAtlasWidth());
     this->m_shader->setMat4("MVP", MVP);
 }
 
@@ -169,6 +168,19 @@ std::array<glm::vec2, 4> TerrainRenderer::calcUVMapForQuad(int x, int y, bool qu
     return vertex_uv_mapping;
 }
 
+glm::vec2 TerrainRenderer::scaleAtlasUV(glm::vec2 atlas_uv, int texture_id)
+{
+  // TODO: Move this to an atlas helper class; most can be pre-calculated
+  float atlas_square_size = (float)this->m_crsc_data_weak->getTextureAtlasWidth();
+  int texture_y = int(floor(float(texture_id) / atlas_square_size));
+  float tile_scale = (1.f / atlas_square_size); // maps 0-1 UV coords to 1/square portion of atlas
+  
+  return glm::vec2(
+                   (texture_id * tile_scale) + (atlas_uv.x * tile_scale),
+                   (texture_y * tile_scale) + (atlas_uv.y * tile_scale)
+  );
+}
+
 
 // From http://www.learnopengles.com/android-lesson-eight-an-introduction-to-index-buffer-objects-ibos/
 // using http://stackoverflow.com/questions/10114577/a-method-for-indexing-triangles-from-a-loaded-heightmap
@@ -201,10 +213,10 @@ void TerrainRenderer::loadIntoHardwareMemory()
             
             std::array<glm::vec2, 4> vertex_uv_mapping = this->calcUVMapForQuad(x, y, quad_reverse, texture_direction);
             
-            Vertex v1(vpositionUL, vertex_uv_mapping[0], glm::vec3(0,0,0), false, texID);
-            Vertex v2(vpositionUR, vertex_uv_mapping[1], glm::vec3(0,0,0), false, texID);
-            Vertex v3(vpositionLL, vertex_uv_mapping[2], glm::vec3(0,0,0), false, texID);
-            Vertex v4(vpositionLR, vertex_uv_mapping[3], glm::vec3(0,0,0), false, texID);
+            Vertex v1(vpositionUL, this->scaleAtlasUV(vertex_uv_mapping[0], texID), glm::vec3(0,0,0), false, texID);
+            Vertex v2(vpositionUR, this->scaleAtlasUV(vertex_uv_mapping[1], texID), glm::vec3(0,0,0), false, texID);
+            Vertex v3(vpositionLL, this->scaleAtlasUV(vertex_uv_mapping[2], texID), glm::vec3(0,0,0), false, texID);
+            Vertex v4(vpositionLR, this->scaleAtlasUV(vertex_uv_mapping[3], texID), glm::vec3(0,0,0), false, texID);
             
             m_vertices.push_back(v1);
             m_vertices.push_back(v2);

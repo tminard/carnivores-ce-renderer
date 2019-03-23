@@ -13,13 +13,13 @@
 
 // see https://stackoverflow.com/questions/8691697/why-are-there-multiple-ways-to-pass-vaos-to-a-glsl-program
 
-class NewShader
+class ShaderProgram
 {
 public:
     unsigned int ID;
     // constructor generates the shader on the fly
     // ------------------------------------------------------------------------
-    NewShader(const char* vertexPath, const char* fragmentPath, const char* geometryPath = nullptr)
+    ShaderProgram(const char* vertexPath, const char* fragmentPath, const char* geometryPath = nullptr)
     {
         // 1. retrieve the vertex/fragment source code from filePath
         std::string vertexCode;
@@ -165,7 +165,7 @@ public:
         glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, &mat[0][0]);
     }
     
-    virtual ~NewShader()
+    virtual ~ShaderProgram()
     {
         glDeleteProgram(ID);
     }

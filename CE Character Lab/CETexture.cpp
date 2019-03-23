@@ -6,9 +6,6 @@
 
 #include "bitmap.h"
 
-#include "shader.h"
-
-
 // These helpers and forward declares are only needed to support old code. Remove when able.
 struct LimitTo
 {

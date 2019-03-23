@@ -14,7 +14,6 @@
 
 #include "transform.h"
 #include "camera.h"
-#include "shader.h"
 
 C2WorldModel::C2WorldModel(std::ifstream& instream)
 {
@@ -99,11 +98,6 @@ C2WorldModel::C2WorldModel(std::ifstream& instream)
   m_far_vertices[5].x = mxx;
   m_far_vertices[5].y = mxy;
   m_far_vertices[5].z = 1; // UR
-  
-  // process flags
-  if (m_old_object_info->flags & objectNOLIGHT) {
-    m_geometry->DEP_hint_ignoreLighting();
-  }
   
   IndexedMeshLoader* m_loader = new IndexedMeshLoader(file_vertex_data, face_data);
   
@@ -248,6 +242,7 @@ void C2WorldModel::renderFar(Transform& transform, Camera& camera)
   m_far_geometry->Update(transform, camera);
   m_far_geometry->Draw();
 }
+
 void C2WorldModel::render(Transform& transform, Camera& camera)
 {
   m_geometry->Update(transform, camera);

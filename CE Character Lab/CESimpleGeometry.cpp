@@ -8,7 +8,7 @@
 
 #include "CESimpleGeometry.h"
 #include "CETexture.h"
-#include "new_shader.h"
+#include "shader_program.h"
 #include "vertex.h"
 #include "camera.h"
 #include "transform.h"
@@ -25,14 +25,14 @@ CESimpleGeometry::~CESimpleGeometry()
   glDeleteVertexArrays(1, &this->m_vertex_array_object);
 }
 
-NewShader* CESimpleGeometry::getShader()
+ShaderProgram* CESimpleGeometry::getShader()
 {
   return this->m_shader.get();
 }
 
 void CESimpleGeometry::loadObjectIntoMemoryBuffer()
 {
-  this->m_shader = std::unique_ptr<NewShader>(new NewShader("resources/simple_geo.vs", "resources/simple_geo.fs"));
+  this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram("resources/shaders/simple_geo.vs", "resources/shaders/simple_geo.fs"));
   
   glGenBuffers(1, &this->m_vertex_array_buffer);
   glBindBuffer(GL_ARRAY_BUFFER, this->m_vertex_array_buffer);
@@ -41,8 +41,7 @@ void CESimpleGeometry::loadObjectIntoMemoryBuffer()
   glGenVertexArrays(1, &this->m_vertex_array_object);
   glBindVertexArray(this->m_vertex_array_object);
   glBindBuffer(GL_ARRAY_BUFFER, this->m_vertex_array_buffer);
-  
-  // configure shader locations
+
   glEnableVertexAttribArray(0); // position
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
   glEnableVertexAttribArray(1); // uv
@@ -53,12 +52,14 @@ void CESimpleGeometry::loadObjectIntoMemoryBuffer()
   glBindVertexArray(0);
 }
 
+// TODO: switch to glDrawElementsInstanced for billboards and https://learnopengl.com/Advanced-OpenGL/Instancing
+// https://www.reddit.com/r/opengl/comments/55m1zg/help_with_figuring_out_gldrawelementsinstanced/
 void CESimpleGeometry::Draw()
 {
   this->m_shader->use();
   this->m_texture->use();
   glBindVertexArray(this->m_vertex_array_object);
-  
+
   glDrawArrays(GL_TRIANGLES, 0, (int)this->m_vertices.size());
   
   glBindVertexArray(0);
@@ -66,7 +67,7 @@ void CESimpleGeometry::Draw()
 
 void CESimpleGeometry::Update(Transform& transform, Camera& camera)
 {
-  glm::mat4 MVP = transform.GetMVP(camera);
+  glm::mat4 MVP = transform.GetStaticModelVP(camera);
   
   this->m_shader->use();
   this->m_shader->setMat4("MVP", MVP);

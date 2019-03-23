@@ -28,7 +28,8 @@
 class Vertex;
 class C2MapFile;
 class C2MapRscFile;
-class NewShader;
+class C2WorldModel;
+class ShaderProgram;
 class Transform;
 class Camera;
 class Shader; // TODO: replace global object shader with per object pool
@@ -51,7 +52,9 @@ private:
   GLuint m_vertex_array_buffer;
   GLuint m_indices_array_buffer;
   
-  std::unique_ptr<NewShader> m_shader;
+  std::unique_ptr<ShaderProgram> m_shader;
+  
+  std::map<int, C2WorldModel*> m_visible_models;
   
   std::map<int, std::map<int, std::vector<_ObjLoc>>> m_objects_by_quad;
   

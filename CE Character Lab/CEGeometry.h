@@ -18,7 +18,7 @@
 
 class Vertex;
 class CETexture;
-class NewShader;
+class ShaderProgram;
 class Camera;
 class Transform;
 
@@ -42,14 +42,13 @@ private:
   std::vector < Vertex > m_vertices;
   std::vector < unsigned int > m_indices;
   std::unique_ptr<CETexture> m_texture;
-  std::unique_ptr<NewShader> m_shader;
+  std::unique_ptr<ShaderProgram> m_shader;
 
 public:
   CEGeometry(std::vector < Vertex > vertices, std::vector < unsigned int > indices, std::unique_ptr<CETexture> texture);
   ~CEGeometry();
   
-  void loadObjectIntoMemoryBuffer(); // loads the object into OpenGL's memory
-  void DEP_hint_ignoreLighting(); // instruct the geom to ignore lighting. Depreciated. Used with old C2 models.
+  void loadObjectIntoMemoryBuffer();
   
   CETexture* getTexture();
 

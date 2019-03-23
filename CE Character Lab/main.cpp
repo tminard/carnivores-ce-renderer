@@ -33,8 +33,6 @@
 
 #include "C2WorldModel.h"
 
-#include "shader.h"
-
 #include "TerrainRenderer.h"
 
 #include "LocalInputManager.hpp"
@@ -64,8 +62,8 @@ int main(int argc, const char * argv[])
   CreateFadeTab();
   std::unique_ptr<C2CarFilePreloader> cFileLoad(new C2CarFilePreloader);
   std::unique_ptr<LocalVideoManager> video_manager(new LocalVideoManager());
-  std::shared_ptr<C2MapFile> cMap(new C2MapFile("resources/c2/area1.map"));
-  std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile("resources/c2/area1.rsc"));
+  std::shared_ptr<C2MapFile> cMap(new C2MapFile("resources/game/c2/area1.map"));
+  std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile("resources/game/c2/area1.rsc"));
   std::shared_ptr<CEPlayer> m_player(new CEPlayer(cMap));
   std::unique_ptr<TerrainRenderer> terrain(new TerrainRenderer(cMap.get(), cMapRsc.get()));
   
@@ -85,6 +83,8 @@ int main(int argc, const char * argv[])
   double preTime, curTime, deltaTime;
   preTime = glfwGetTime();
   
+  glfwSwapInterval(1);
+  
   while (!glfwWindowShouldClose(window))
   {
     glfwMakeContextCurrent(window);
@@ -102,8 +102,7 @@ int main(int argc, const char * argv[])
     curTime = glfwGetTime();
     deltaTime = curTime - preTime;
     preTime = curTime;
-    
-    /* Render here */
+
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
     glViewport(0, 0, width, height);
@@ -114,36 +113,17 @@ int main(int argc, const char * argv[])
     cMapRsc->getDaySky()->Render(window, *camera);
     glEnable(GL_DEPTH_TEST);
 
-    ////            if (isFar) {
-    ////              //continue;
-    ////              //m_objects.push_back(ObjLoc {w_obj, mTrans_c, true});
-    ////              //glDepthFunc(GL_LEQUAL);
-    ////              //w_obj->renderFar(mTrans_c, *camera);
-    ////            } else {
-    ////              //rendered_objects++;
-    ////              //m_objects.push_back(ObjLoc {w_obj, mTrans_c, false});
-    ////
-    ////                                          //glDepthFunc(GL_LEQUAL);
-    ////                                          //shader.Bind();
-    ////                                          //shader.Update(mTrans_c, *camera);
-    ////                                          //w_obj->render();
-
     terrain->RenderObjects(*camera);
 
     cMapRsc->getTexture(0)->use();
     terrain->Update(mTrans_land, *camera);
     glDepthFunc(GL_LESS);
     terrain->Render();
-    
-    /* User Input */
-    input_manager->ProcessLocalInput(window, deltaTime);
-    
-    /* Swap front and back buffers */
+
     glfwSwapBuffers(window);
-    glFinish();
-    //m_objects_by_id.clear();
     
-    /* Poll for and process events */
+    input_manager->ProcessLocalInput(window, deltaTime);
+  
     glfwPollEvents();
   }
   

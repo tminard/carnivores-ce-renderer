@@ -12,8 +12,7 @@
 #include "C2MapFile.h"
 #include "C2MapRscFile.h"
 #include "C2WorldModel.h"
-#include "new_shader.h"
-#include "shader.h" // for global rendering of objects
+#include "shader_program.h"
 #include "camera.h"
 #include "transform.h"
 
@@ -111,7 +110,7 @@ void TerrainRenderer::preloadObjectMap()
 
 void TerrainRenderer::loadShader()
 {
-  this->m_shader = std::unique_ptr<NewShader>(new NewShader("resources/terrain.vs", "resources/terrain.fs"));
+  this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram("resources/shaders/terrain.vs", "resources/shaders/terrain.fs"));
 }
 
 //      /*
@@ -153,10 +152,9 @@ void TerrainRenderer::renderObjectsAtQuad(Camera& camera, int quad_x, int quad_y
 
 void TerrainRenderer::RenderObjects(Camera& camera)
 {
-  // TODO: use view ranges
-  float maxd = 256.f * 70.f;
-  float lowrd = 256.f * 50.f;
-  
+  float maxd = this->m_cmap_data_weak->getTileLength() * 50.f;
+  float lowrd = this->m_cmap_data_weak->getTileLength() * 40.f;
+
   glm::vec3 current_pos = camera.GetCurrentPos();
   glm::vec2 pos = camera.GetWorldPosition();
   int quad_x = (int)pos.x >> 6;

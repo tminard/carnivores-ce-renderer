@@ -53,30 +53,32 @@ class Shader;
 class C2WorldModel
 {
 private:
-    std::unique_ptr<CEAnimation> m_animation; // apparently, world models only support 1 animation. TODO: allow unlimited animations
-    std::unique_ptr<CEGeometry> m_geometry;
-    
-    std::string m_model_name;
-    
-    std::array<Vector3d, 6> m_far_vertices;
-    std::array<TBound, 8> m_bounding_box;
-    //std::unique_ptr<CETexture> m_far_texture; // used to render object as a 2d bitmap at a distance
-    std::unique_ptr<CESimpleGeometry> m_far_geometry;
-    
-    TObjInfo* m_old_object_info; // Easier to use old object for now
-    
-    void _generateBoundingBox(std::vector<Vertex>& vertex_data); // old method for bounding box. Move to geo when able
-    
+  std::unique_ptr<CEAnimation> m_animation; // apparently, world models only support 1 animation. TODO: allow unlimited animations
+  std::unique_ptr<CEGeometry> m_geometry;
+  
+  std::string m_model_name;
+  
+  std::array<Vector3d, 6> m_far_vertices;
+  std::array<TBound, 8> m_bounding_box;
+  //std::unique_ptr<CETexture> m_far_texture; // used to render object as a 2d bitmap at a distance
+  std::unique_ptr<CESimpleGeometry> m_far_geometry;
+  
+  TObjInfo* m_old_object_info; // Easier to use old object for now
+  
+  void _generateBoundingBox(std::vector<Vertex>& vertex_data); // old method for bounding box. Move to geo when able
+  
 public:
-    C2WorldModel(std::ifstream& instream); // construct object using file data
-    ~C2WorldModel();
-    
-    void render(Transform& transform, Camera& camera);
-    void renderFar(Transform& transform, Camera& camera);
-    
-    CEGeometry* getGeometry();
-    CESimpleGeometry* getFarGeometry();
-    TObjInfo* getObjectInfo(); // TODO: Make this unnecessary
+  C2WorldModel(std::ifstream& instream); // construct object using file data
+  ~C2WorldModel();
+  
+  void render(Transform& transform, Camera& camera);
+  void renderFar(Transform& transform, Camera& camera);
+  
+  void renderQueue(Camera& camera);
+  
+  CEGeometry* getGeometry();
+  CESimpleGeometry* getFarGeometry();
+  TObjInfo* getObjectInfo(); // TODO: Make this unnecessary
 };
 
 #endif /* defined(__CE_Character_Lab__C2WorldModel__) */

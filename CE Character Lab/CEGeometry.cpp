@@ -3,20 +3,10 @@
 #include "CEGeometry.h"
 #include "CETexture.h"
 #include "vertex.h"
-#include "new_shader.h"
+#include "shader_program.h"
 
 #include "camera.h"
 #include "transform.h"
-
-/*
- * The old C2 model format supported ignoring lighting.
- * We carry this over as a hint, which may be ignored
- * in the modern renderer.
- */
-void CEGeometry::DEP_hint_ignoreLighting()
-{
-  // Yeah, ignore this for now
-}
 
 CEGeometry::CEGeometry(std::vector < Vertex > vertices, std::vector < uint32_t > indices, std::unique_ptr<CETexture> texture)
 : m_vertices(vertices), m_indices(indices), m_texture(std::move(texture))
@@ -42,7 +32,7 @@ void CEGeometry::saveTextureAsBMP(const std::string &file_name)
 
 void CEGeometry::loadObjectIntoMemoryBuffer()
 {
-  this->m_shader = std::unique_ptr<NewShader>(new NewShader("resources/basicShader.vs", "resources/basicShader.fs"));
+  this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram("resources/shaders/basic_shader.vs", "resources/shaders/basic_shader.fs"));
 
   glGenVertexArrays(1, &this->m_vertexArrayObject);
   glBindVertexArray(this->m_vertexArrayObject);

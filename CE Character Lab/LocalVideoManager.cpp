@@ -40,7 +40,7 @@ void LocalVideoManager::initGLFW()
     glfwWindowHint( GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE );
     glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );
     
-    this->m_main_window = glfwCreateWindow(1280, 1024, "Carnivores Renderer", NULL, NULL);
+    this->m_main_window = glfwCreateWindow(1024, 768, "Carnivores Renderer", NULL, NULL);
     
     if (!this->m_main_window) {
         throw;
@@ -58,8 +58,6 @@ void LocalVideoManager::initGL()
     glDepthFunc(GL_LESS);
     
     glDisable(GL_CULL_FACE);
-//    glCullFace(GL_BACK);
-//    glFrontFace(GL_CCW);
     
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

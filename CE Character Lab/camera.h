@@ -115,8 +115,8 @@ private:
   
   inline void updateViewProjection()
   {
-    world_position = glm::vec2(int(floorf(pos.x / 256.f)), int(floorf(pos.z / 256.f))); // TODO: Improve this
-    view_projection = projection * glm::lookAt(pos, pos + forward, up);
+    this->world_position = glm::vec2(int(floorf(pos.x / 256.f)), int(floorf(pos.z / 256.f))); // TODO: Improve this
+    this->view_projection = projection * glm::lookAt(pos, pos + forward, up);
   }
 };
 

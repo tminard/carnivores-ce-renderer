@@ -64,8 +64,8 @@ int main(int argc, const char * argv[])
   CreateFadeTab();
   std::unique_ptr<C2CarFilePreloader> cFileLoad(new C2CarFilePreloader);
   std::unique_ptr<LocalVideoManager> video_manager(new LocalVideoManager());
-  std::shared_ptr<C2MapFile> cMap(new C2MapFile("resources/AREA3.MAP"));
-  std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile("resources/AREA3.RSC"));
+  std::shared_ptr<C2MapFile> cMap(new C2MapFile("resources/c2/area1.map"));
+  std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile("resources/c2/area1.rsc"));
   std::shared_ptr<CEPlayer> m_player(new CEPlayer(cMap));
   std::unique_ptr<TerrainRenderer> terrain(new TerrainRenderer(cMap.get(), cMapRsc.get()));
   

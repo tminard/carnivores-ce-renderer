@@ -62,8 +62,8 @@ int main(int argc, const char * argv[])
   CreateFadeTab();
   std::unique_ptr<C2CarFilePreloader> cFileLoad(new C2CarFilePreloader);
   std::unique_ptr<LocalVideoManager> video_manager(new LocalVideoManager());
-  std::shared_ptr<C2MapFile> cMap(new C2MapFile("resources/game/c2/area5.map"));
-  std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile("resources/game/c2/area5.rsc"));
+  std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile("resources/game/c2/area1.rsc"));
+  std::shared_ptr<C2MapFile> cMap(new C2MapFile("resources/game/c2/area1.map", cMapRsc.get()));
   std::shared_ptr<CEPlayer> m_player(new CEPlayer(cMap));
   std::unique_ptr<TerrainRenderer> terrain(new TerrainRenderer(cMap.get(), cMapRsc.get()));
   
@@ -119,6 +119,7 @@ int main(int argc, const char * argv[])
     terrain->Update(mTrans_land, *camera);
     glDepthFunc(GL_LESS);
     terrain->Render();
+    terrain->RenderWater();
 
     glfwSwapBuffers(window);
     
@@ -164,32 +165,4 @@ int main(int argc, const char * argv[])
  tree_plant->render();
  
  */
-
-// loop through visible objects
-//    float cur_x = current_pos.x;
-//    float cur_y = current_pos.z;
-//    int current_row = static_cast<int>(cur_y / cMap->getTileLength());
-//    int current_col = static_cast<int>(cur_x / cMap->getTileLength());
-//    int view_distance_squares = (VIEW_R / cMap->getTileLength()) / 2;
-
-
-// For each row/col, decide whether or not to draw
-//    for (int view_row = current_row + view_distance_squares; view_row > (current_row - view_distance_squares); view_row--) {
-//      for (int view_col = current_col - view_distance_squares; view_col < current_col + view_distance_squares; view_col++) {
-//        int obj_id = cMap->getObjectAt(((view_row)*cMap->getWidth())+view_col);
-//
-//        if (obj_id != 255 && obj_id != 254) {
-//          C2WorldModel* w_obj = cMapRsc->getWorldModel(obj_id);
-//          float obj_height = cMap->getHeightAt((view_row*cMap->getWidth()) + view_col);
-//
-//          if (obj_height == 0.0f) {
-//            obj_height = cMap->getObjectHeightAt((view_row*cMap->getWidth()) + view_col);
-//          }
-//
-//          Transform mTrans_c(glm::vec3(view_col*cMap->getTileLength(),obj_height,view_row*cMap->getTileLength()), glm::vec3(0,0,0), glm::vec3(2.f, 2.f, 2.f));
-//          shader.Update(mTrans_c, cam);
-//          w_obj->render();
-//        }
-//      }
-//    }
 

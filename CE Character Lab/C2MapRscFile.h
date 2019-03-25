@@ -16,11 +16,16 @@
 #include <memory>
 #include <array>
 
+#include "deps/libAF/af2-sound.h"
+
 #include "g_shared.h"
+
+using libAF2::Sound;
 
 class CETexture;
 class CEWorldModel;
 class C2Sky;
+class CEWaterEntity;
 
 class C2MapRscFile
 {
@@ -45,10 +50,10 @@ private:
   int m_texture_count;
   
   int m_random_sounds_count, m_ambient_sounds_count;
-  std::array<TSFX, 255> m_random_sounds;
-  std::array<TSFX, 255> m_ambient_sounds;
+  std::vector<Sound> m_random_sounds;
   
   int m_num_waters;
+  std::vector<CEWaterEntity> m_waters;
   
   std::unique_ptr<C2Sky> m_dawn_sky;
   std::unique_ptr<C2Sky> m_day_sky;
@@ -65,7 +70,9 @@ public:
   
     int getTextureAtlasWidth();
     int getWorldModelCount();
-  
+  int getWaterCount();
+
+  const CEWaterEntity& getWater(int i) const;
   CEWorldModel* getWorldModel(int i);
   CETexture* getTexture(int i);
   C2Sky* getDaySky();

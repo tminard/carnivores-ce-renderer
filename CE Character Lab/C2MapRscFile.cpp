@@ -13,6 +13,7 @@
 #include "CETexture.h"
 #include "CEWorldModel.h"
 #include "C2Sky.h"
+#include "CEWaterEntity.h"
 
 template <typename T, typename... Args>
 auto make_unique(Args&&... args) -> std::unique_ptr<T>
@@ -235,27 +236,58 @@ void C2MapRscFile::load(const std::string &file_name)
     infile.read(reinterpret_cast<char *>(&fd), sizeof(FogData)*fog_count);
 
     // Load rnd sounds
-//    infile.read(reinterpret_cast<char *>(&this->m_random_sounds_count), 4);
-//    for (int sfx = 0; sfx < this->m_random_sounds_count; sfx++) {
-//      infile.read(reinterpret_cast<char *>(&this->m_random_sounds[sfx].length), 4);
-//      this->m_random_sounds[sfx].lpData = new short int[this->m_random_sounds[sfx].length];
-//      infile.read(reinterpret_cast<char *>(this->m_random_sounds[sfx].lpData), this->m_random_sounds[sfx].length);
-//    }
-//
-//    // load ambient
-//    infile.read(reinterpret_cast<char *>(&this->m_ambient_sounds_count), 4);
-//    for (int afx = 0; afx < this->m_ambient_sounds_count; afx++) {
-//      infile.read(reinterpret_cast<char *>(&this->m_ambient_sounds[afx].length), 4);
-//      this->m_ambient_sounds[afx].lpData = new short int[this->m_ambient_sounds[afx].length];
-//      infile.read(reinterpret_cast<char *>(this->m_ambient_sounds[afx].lpData), this->m_ambient_sounds[afx].length);
-//    }
-//
-    // load water data
-    //infile.read(reinterpret_cast<char *>(&this->m_num_waters), 4);
+    infile.read(reinterpret_cast<char *>(&this->m_random_sounds_count), 4);
+    for (int i = 0; i < this->m_random_sounds_count; i++)
+    {
+      Sound snd;
+      uint32_t length = 0;
+      int8_t* snd_data = nullptr;
+
+      infile.read((char*)&length, sizeof(uint32_t));
+      snd_data = new int8_t [ length ];
+      infile.read((char*)snd_data, length);
+
+      snd.setName("RndAudio");
+      snd.setWaveData(16, 1, length, 22050, snd_data);
+
+      delete [] snd_data;
+
+      this->m_random_sounds.push_back(snd);
+    }
+
+    // Skip for now
+    infile.read(reinterpret_cast<char *>(&this->m_ambient_sounds_count), 4);
+    for (int i = 0; i < this->m_ambient_sounds_count; i++)
+    {
+      uint32_t length = 0;
+      infile.read((char*)&length, sizeof(uint32_t));
+      infile.seekg(length + (16*16) + 8, std::ios_base::cur);
+    }
+
+    infile.read(reinterpret_cast<char *>(&this->m_num_waters), 4);
+    for (int i = 0; i < this->m_num_waters; i++)
+    {
+      CEWaterEntity wd;
+
+      infile.read((char*)&wd, sizeof(CEWaterEntity));
+
+      this->m_waters.push_back(wd);
+    }
+
     
     infile.close();
   } catch (std::ifstream::failure e) {
     Console_PrintLogString("Failed to load " + file_name + ": " + strerror(errno));
     std::cerr << "Exception opening/reading/closing file\n";
   }
+}
+
+int C2MapRscFile::getWaterCount()
+{
+  return (int)this->m_waters.size();
+}
+
+const CEWaterEntity& C2MapRscFile::getWater(int i) const
+{
+  return this->m_waters.at(i);
 }

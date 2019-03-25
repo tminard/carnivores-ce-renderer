@@ -37,16 +37,20 @@ class Shader; // TODO: replace global object shader with per object pool
 class TerrainRenderer
 {
 private:
-//  struct _Water {
-//    GLuint m_vbo;
-//    GLuint m_vab, m_iab;
-//    int m_water_id;
-//    int m_texture_id;
-//    int m_height;
-//    std::vector < Vertex > m_vertices;
-//    std::vector < unsigned int > m_indices;
-//    int m_indices_count;
-//  };
+  struct _Water {
+    GLuint m_vao;
+    GLuint m_vab, m_iab;
+    int m_water_id;
+    int m_texture_id;
+    float m_height;
+    float m_transparency;
+    int m_height_unscaled;
+    std::vector < Vertex > m_vertices;
+    std::vector < unsigned int > m_indices;
+    int m_indices_count;
+  };
+
+  std::vector <_Water> m_waters;
 
   std::vector < Vertex > m_vertices;
   std::vector < unsigned int > m_indices;
@@ -65,10 +69,11 @@ private:
   void preloadObjectMap();
   void loadShader();
   void loadIntoHardwareMemory();
+  void loadWaterIntoMemory();
 
   glm::vec2 calcAtlasUV(int texID, glm::vec2 uv);
   glm::vec2 scaleAtlasUV(glm::vec2 atlas_uv, int texture_id);
-  glm::vec3 calcWorldVertex(int tile_x, int tile_y);
+  glm::vec3 calcWorldVertex(int tile_x, int tile_y, bool water, float water_height_scaled);
   std::array<glm::vec2, 4> calcUVMapForQuad(int x, int y, bool quad_reversed, int rotation_code);
   
   void renderObjectsAtQuad(Camera& camera, int quad_x, int quad_y, float maxd, float lowrd, glm::vec3 cur_pos);
@@ -82,6 +87,9 @@ public:
   void RenderObjects(Camera& camera);
   void Render();
   void Update(Transform& transform, Camera& camera);
+  void RenderWater();
+
+  void loadWaterAt(int x, int y);
 };
 
 #endif /* defined(__CE_Character_Lab__TerrainRenderer__) */

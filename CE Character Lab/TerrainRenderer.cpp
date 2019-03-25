@@ -18,6 +18,8 @@
 #include "camera.h"
 #include "transform.h"
 
+#include "CEWaterEntity.h"
+
 #include <cstdint>
 
 TerrainRenderer::TerrainRenderer(C2MapFile* c_map_weak, C2MapRscFile* c_rsc_weak)
@@ -33,6 +35,12 @@ TerrainRenderer::~TerrainRenderer()
   glDeleteBuffers(1, &this->m_vertex_array_buffer);
   glDeleteBuffers(1, &this->m_indices_array_buffer);
   glDeleteVertexArrays(1, &this->m_vertex_array_object);
+
+  for (int w = 0; w < this->m_waters.size(); w++) {
+    glDeleteBuffers(1, &this->m_waters[w].m_vab);
+    glDeleteBuffers(1, &this->m_waters[w].m_iab);
+    glDeleteVertexArrays(1, &this->m_waters[w].m_vao);
+  }
 }
 
 /*
@@ -129,7 +137,7 @@ void TerrainRenderer::RenderObjects(Camera& camera)
   }
 }
 
-glm::vec3 TerrainRenderer::calcWorldVertex(int tile_x, int tile_y)
+glm::vec3 TerrainRenderer::calcWorldVertex(int tile_x, int tile_y, bool water, float water_height_scaled)
 {
   int width = this->m_cmap_data_weak->getWidth(), height = this->m_cmap_data_weak->getHeight();
   float tile_size = this->m_cmap_data_weak->getTileLength();
@@ -138,8 +146,16 @@ glm::vec3 TerrainRenderer::calcWorldVertex(int tile_x, int tile_y)
   if (tile_x > width || tile_y > height) {
     throw 1;
   }
-  
-  float tile_height = this->m_cmap_data_weak->getHeightAt((tile_y * width) + tile_x);
+
+  float tile_height;
+
+  if (water)
+  {
+    tile_height = water_height_scaled;
+  } else {
+    tile_height = this->m_cmap_data_weak->getHeightAt((tile_y * width) + tile_x);
+  }
+
   float vx = (tile_x*tile_size) + (tile_size/2.f);
   float vy = (tile_y*tile_size) + (tile_size/2.f);
   
@@ -255,34 +271,160 @@ glm::vec2 TerrainRenderer::scaleAtlasUV(glm::vec2 atlas_uv, int texture_id)
                    );
 }
 
+/*
+ * add to water VBO at given location
+ */
+void TerrainRenderer::loadWaterAt(int x, int y)
+{
+  int width = this->m_cmap_data_weak->getWidth();
+  int xy = (y*width) + x;
+
+  int water_index = this->m_cmap_data_weak->getWaterAt(xy);
+  uint16_t flags = this->m_cmap_data_weak->getFlagsAt(xy);
+
+  CEWaterEntity water_data = this->m_crsc_data_weak->getWater(water_index);
+  _Water* water_object = &this->m_waters[water_index];
+
+  glm::vec3 vpositionUL = this->calcWorldVertex(x, y, true, water_object->m_height);
+  glm::vec3 vpositionUR = this->calcWorldVertex(x + 1, y, true, water_object->m_height);
+  glm::vec3 vpositionLL = this->calcWorldVertex(x, y + 1, true, water_object->m_height);
+  glm::vec3 vpositionLR = this->calcWorldVertex(x + 1, y + 1, true, water_object->m_height);
+
+    bool quad_reverse = (flags & 0x0010);
+
+  std::array<glm::vec2, 4> vertex_uv_mapping = this->calcUVMapForQuad(x, y, quad_reverse, 0);
+
+  Vertex v1(vpositionUL, this->scaleAtlasUV(vertex_uv_mapping[0], water_data.texture_id), glm::vec3(0,0,0), false, water_data.texture_id, 0);
+  Vertex v2(vpositionUR, this->scaleAtlasUV(vertex_uv_mapping[1], water_data.texture_id), glm::vec3(0,0,0), false, water_data.texture_id, 0);
+  Vertex v3(vpositionLL, this->scaleAtlasUV(vertex_uv_mapping[2], water_data.texture_id), glm::vec3(0,0,0), false, water_data.texture_id, 0);
+  Vertex v4(vpositionLR, this->scaleAtlasUV(vertex_uv_mapping[3], water_data.texture_id), glm::vec3(0,0,0), false, water_data.texture_id, 0);
+
+  // This is broken because it assumes every tile will have a triangle; with water, the ground breaks up continuous strips
+  water_object->m_vertices.push_back(v1);
+  water_object->m_vertices.push_back(v2);
+  water_object->m_vertices.push_back(v3);
+
+  water_object->m_vertices.push_back(v3);
+  water_object->m_vertices.push_back(v2);
+  water_object->m_vertices.push_back(v4);
+
+  unsigned int upper_left = (y * width * 4) + (x*4);
+  unsigned int upper_right = upper_left + 1;
+  unsigned int lower_left = upper_right + 1;
+  unsigned int lower_right = lower_left + 1;
+
+  if (quad_reverse) {
+    water_object->m_indices.push_back(upper_left);
+    water_object->m_indices.push_back(upper_right);
+    water_object->m_indices.push_back(lower_left);
+
+    water_object->m_indices.push_back(lower_left);
+    water_object->m_indices.push_back(upper_right);
+    water_object->m_indices.push_back(lower_right);
+  } else {
+    water_object->m_indices.push_back(lower_left);
+    water_object->m_indices.push_back(upper_right);
+    water_object->m_indices.push_back(lower_right);
+
+    water_object->m_indices.push_back(upper_left);
+    water_object->m_indices.push_back(upper_right);
+    water_object->m_indices.push_back(lower_left);
+  }
+
+  /*
+  water_object->m_indices.push_back(lower_left);
+  water_object->m_indices.push_back(upper_right);
+  water_object->m_indices.push_back(lower_right);
+
+  water_object->m_indices.push_back(upper_left);
+  water_object->m_indices.push_back(upper_right);
+  water_object->m_indices.push_back(lower_left);
+   */
+}
+
+void TerrainRenderer::loadWaterIntoMemory()
+{
+  for (int w = 0; w < this->m_crsc_data_weak->getWaterCount(); w++)
+  {
+    _Water* water_object = &this->m_waters[w];
+    water_object->m_indices_count = (int)water_object->m_indices.size();
+
+    glBindVertexArray(water_object->m_vao);
+
+    glBindBuffer(GL_ARRAY_BUFFER, water_object->m_vab);
+    glBufferData(GL_ARRAY_BUFFER, (int)water_object->m_vertices.size()*sizeof(Vertex), water_object->m_vertices.data(), GL_STATIC_DRAW);
+
+      // describe vertex details
+    glEnableVertexAttribArray(0); // position
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
+    glEnableVertexAttribArray(1); // uv
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)sizeof(glm::vec3));
+    glEnableVertexAttribArray(2); // normal
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(glm::vec3)+sizeof(glm::vec2)));
+    glEnableVertexAttribArray(3); // texid
+    glVertexAttribIPointer(3, 1, GL_UNSIGNED_INT, sizeof(Vertex), (void*)(sizeof(glm::vec3)+sizeof(glm::vec2)+(sizeof(glm::vec3))));
+
+      // indices
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, water_object->m_iab);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, (int)water_object->m_indices.size()*sizeof(unsigned int), water_object->m_indices.data(), GL_STATIC_DRAW);
+
+    glBindVertexArray(0);
+  }
+}
+
 
 // From http://www.learnopengles.com/android-lesson-eight-an-introduction-to-index-buffer-objects-ibos/
 // using http://stackoverflow.com/questions/10114577/a-method-for-indexing-triangles-from-a-loaded-heightmap
 void TerrainRenderer::loadIntoHardwareMemory()
 {
   int width = this->m_cmap_data_weak->getWidth(), height = this->m_cmap_data_weak->getHeight();
+
+  // build water base objects
+  this->m_waters.clear();
+  for (int w = 0; w < this->m_crsc_data_weak->getWaterCount(); w++)
+  {
+    _Water wd;
+    const CEWaterEntity& we = this->m_crsc_data_weak->getWater(w);
+
+    wd.m_height_unscaled = we.water_level;
+    wd.m_height = we.water_level * this->m_cmap_data_weak->getHeightmapScale();
+    wd.m_texture_id = we.texture_id;
+    wd.m_transparency = we.transparency;
+
+    glGenVertexArrays(1, &wd.m_vao);
+    glBindVertexArray(wd.m_vao);
+    
+    glGenBuffers(1, &wd.m_vab);
+    glGenBuffers(1, &wd.m_iab);
+
+    glBindVertexArray(0);
+
+    this->m_waters.push_back(wd);
+  }
   
   // vertices and indices
-  for (int y=0; y < height; y++) {
-    for (int x=0; x < width; x++) {
+  for (int y=0; y < width; y++) {
+    for (int x=0; x < height; x++) {
       unsigned int base_index = (y * width) + x;
       
       int texID = this->m_cmap_data_weak->getTextureIDAt(base_index);
-      uint16_t flags = this->m_cmap_data_weak->getFlagsAt(base_index);
+      uint16_t flags = this->m_cmap_data_weak->getFlagsAt(x, y);
+
+      if (flags & 0x0080 || flags & 0x8000) {
+        loadWaterAt(x, y);
+      }
       
-      bool final_y_row = (y + 1 > height);
-      bool final_x_column = (x + 1 > width);
+      bool final_y_row = (y + 1 > width);
+      bool final_x_column = (x + 1 > height);
       
       if (final_y_row || final_x_column) {
         continue;
       }
       
-      //if (flags & 0x0080) loadWaterAt(x, y);
-      
-      glm::vec3 vpositionUL = this->calcWorldVertex(x, y);
-      glm::vec3 vpositionUR = this->calcWorldVertex(x + 1, y);
-      glm::vec3 vpositionLL = this->calcWorldVertex(x, y + 1);
-      glm::vec3 vpositionLR = this->calcWorldVertex(x + 1, y + 1);
+      glm::vec3 vpositionUL = this->calcWorldVertex(x, y, false, 0.f);
+      glm::vec3 vpositionUR = this->calcWorldVertex(x + 1, y, false, 0.f);
+      glm::vec3 vpositionLL = this->calcWorldVertex(x, y + 1, false, 0.f);
+      glm::vec3 vpositionLR = this->calcWorldVertex(x + 1, y + 1, false, 0.f);
       
       bool quad_reverse = (flags & 0x0010);
       int texture_direction = (flags & 3);
@@ -298,7 +440,7 @@ void TerrainRenderer::loadIntoHardwareMemory()
       m_vertices.push_back(v2);
       m_vertices.push_back(v3);
       m_vertices.push_back(v4);
-      
+
       unsigned int upper_left = (y * width * 4) + (x*4);
       unsigned int upper_right = upper_left + 1;
       unsigned int lower_left = upper_right + 1;
@@ -350,6 +492,8 @@ void TerrainRenderer::loadIntoHardwareMemory()
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, (int)m_indices.size()*sizeof(unsigned int), m_indices.data(), GL_STATIC_DRAW);
   
   glBindVertexArray(0);
+
+  this->loadWaterIntoMemory();
 }
 
 // Calculate the real UV coords using the atlas
@@ -373,5 +517,18 @@ void TerrainRenderer::Render()
   
   glDrawElementsBaseVertex(GL_TRIANGLES, m_num_indices, GL_UNSIGNED_INT, 0, 0);
   
+  glBindVertexArray(0);
+}
+
+void TerrainRenderer::RenderWater()
+{
+  this->m_shader->use();
+
+  for (int w = 0; w < this->m_waters.size(); w++) {
+    glBindVertexArray(this->m_waters[w].m_vao);
+
+    glDrawArrays(GL_TRIANGLES, 0, this->m_waters[w].m_indices_count);
+  }
+
   glBindVertexArray(0);
 }

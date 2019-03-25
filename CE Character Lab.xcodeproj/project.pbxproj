@@ -32,6 +32,7 @@
 		D6C77DA2224905BC00105733 /* CEScene.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6C77DA0224905BC00105733 /* CEScene.cpp */; };
 		D6C77DA52249084500105733 /* CEWorld.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6C77DA32249084500105733 /* CEWorld.cpp */; };
 		D6C77DA922490DF700105733 /* CEWorldObject.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6C77DA722490DF700105733 /* CEWorldObject.cpp */; };
+		D6C77DAC22493E2600105733 /* sound.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6C77DAB22493E2500105733 /* sound.cpp */; };
 		D6D3CD7320CADD3500E3ABAC /* CEObservable.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6D3CD7120CADD3500E3ABAC /* CEObservable.cpp */; };
 		D6D3CD7620CAE07000E3ABAC /* CEPlayer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6D3CD7420CAE07000E3ABAC /* CEPlayer.cpp */; };
 		D6D3CD7920CAE6A100E3ABAC /* LocalInputManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6D3CD7720CAE6A100E3ABAC /* LocalInputManager.cpp */; };
@@ -115,6 +116,8 @@
 		D6C77DA42249084500105733 /* CEWorld.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CEWorld.hpp; sourceTree = "<group>"; };
 		D6C77DA722490DF700105733 /* CEWorldObject.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CEWorldObject.cpp; sourceTree = "<group>"; };
 		D6C77DA822490DF700105733 /* CEWorldObject.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CEWorldObject.hpp; sourceTree = "<group>"; };
+		D6C77DAA22493A6300105733 /* deps */ = {isa = PBXFileReference; lastKnownFileType = folder; name = deps; path = "CE Character Lab/deps"; sourceTree = SOURCE_ROOT; };
+		D6C77DAB22493E2500105733 /* sound.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = sound.cpp; sourceTree = "<group>"; };
 		D6D3CD7120CADD3500E3ABAC /* CEObservable.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CEObservable.cpp; sourceTree = "<group>"; };
 		D6D3CD7220CADD3500E3ABAC /* CEObservable.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CEObservable.hpp; sourceTree = "<group>"; };
 		D6D3CD7420CAE07000E3ABAC /* CEPlayer.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CEPlayer.cpp; sourceTree = "<group>"; };
@@ -171,6 +174,7 @@
 		D65552201B73DA2000CC5309 = {
 			isa = PBXGroup;
 			children = (
+				D6C77DAB22493E2500105733 /* sound.cpp */,
 				73A667C822468FCA0026D63A /* Info.plist */,
 				D6F2F87A1B8389330018DBF0 /* QuartzCore.framework */,
 				D6F2F8781B8386870018DBF0 /* libglfw3.a */,
@@ -292,6 +296,7 @@
 		D65552551B73E34A00CC5309 /* Source */ = {
 			isa = PBXGroup;
 			children = (
+				D6C77DAA22493A6300105733 /* deps */,
 				D65552561B73E3DB00CC5309 /* Utilities */,
 				D655524E1B73DD9300CC5309 /* Characters */,
 				D65552501B73DDC900CC5309 /* Engine */,
@@ -421,6 +426,7 @@
 				D6D3CD7320CADD3500E3ABAC /* CEObservable.cpp in Sources */,
 				D61CCC0F1B7E7BF5004BD900 /* CEWorldModel.cpp in Sources */,
 				D6C77DA2224905BC00105733 /* CEScene.cpp in Sources */,
+				D6C77DAC22493E2600105733 /* sound.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -533,6 +539,9 @@
 					"$(inherited)",
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					/usr/local/include,
+					CE,
+					Character,
+					"Lab/deps/libAF/**",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/Info.plist";
 				LIBRARY_SEARCH_PATHS = (
@@ -552,6 +561,9 @@
 					"$(inherited)",
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					/usr/local/include,
+					CE,
+					Character,
+					"Lab/deps/libAF/**",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/Info.plist";
 				LIBRARY_SEARCH_PATHS = (

@@ -17,6 +17,8 @@
 #include <cstdint>
 #include <array>
 
+class C2MapRscFile;
+
 class C2MapFile
 {
 private:
@@ -36,26 +38,27 @@ private:
     constexpr static const float SIZE = 1024.f;
     constexpr static const float HEIGHT_SCALE = 64.f;
   
-  void postProcess();
+  void postProcess(const C2MapRscFile* crsc_weak);
     
 public:
-    C2MapFile(const std::string& map_file_name);
+    C2MapFile(const std::string& map_file_name, const C2MapRscFile* crsc_weak);
     ~C2MapFile();
-    
+
+  int getWaterAt(int xy);
     float getHeightAt(int xy);
     float getObjectHeightAt(int xy);
     int getObjectHeightForRadius(int x, int y, int R);
     int getObjectAt(int xy);
     int getTextureIDAt(int xy);
     uint16_t getFlagsAt(int xy);
-  uint16_t getFlagsAt(int x, int y);
+    uint16_t getFlagsAt(int x, int y);
     
     float getHeight();
     float getWidth();
     float getTileLength();
     float getHeightmapScale();
     
-    void load(const std::string& file_name);
+    void load(const std::string& file_name, const C2MapRscFile* crsc_weak);
 };
 
 #endif /* defined(__CE_Character_Lab__C2MapFile__) */

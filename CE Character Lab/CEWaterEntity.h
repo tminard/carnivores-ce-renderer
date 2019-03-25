@@ -8,13 +8,9 @@
 
 #pragma once
 
-struct CEWaterEntityData {
+struct CEWaterEntity {
   int texture_id;
   int water_level;
   float transparency;
-};
-
-class CEWaterEntity {
-  
-public:
+  int fogRGB;
 };

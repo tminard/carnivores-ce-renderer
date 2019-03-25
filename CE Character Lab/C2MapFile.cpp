@@ -42,6 +42,13 @@ int C2MapFile::getTextureIDAt(int xy)
   return int(this->m_texture_A_index_data.at(xy));
 }
 
+uint16_t C2MapFile::getFlagsAt(int x, int y)
+{
+  int xy = (y * this->getWidth()) + x;
+  
+  return this->getFlagsAt(xy);
+}
+
 uint16_t C2MapFile::getFlagsAt(int xy)
 {
   return this->m_flags_data.at(xy);
@@ -103,6 +110,34 @@ int C2MapFile::getObjectHeightForRadius(int x, int y, int R)
     return (int)hr;
 }
 
+/*
+ * fix flags, etc
+ */
+void C2MapFile::postProcess()
+{
+  int w = (int)this->getWidth();
+  int h = (int)this->getHeight();
+  
+  for (int y = 1; y < w-1; y++)
+    for (int x = 1; x < h-1; x++) {
+      int xy = (y * w) + x;
+      if (!(this->getFlagsAt(xy) & 0x0080)) {
+        
+        if (this->getFlagsAt(x+1, y) & 0x0080) { this->m_flags_data.at((y*w) + x + 1) |= 0x8000; this->m_watermap_data.at(xy) = this->m_watermap_data.at((y*w) + x + 1); }
+        if (this->getFlagsAt(x, y+1) & 0x0080) { this->m_flags_data.at(((y+1)*w) + x) |= 0x8000; this->m_watermap_data.at(xy) = this->m_watermap_data.at(((y+1)*w) + x); }
+        if (this->getFlagsAt(x-1, y) & 0x0080) { this->m_flags_data.at((y*w) + x - 1) |= 0x8000; this->m_watermap_data.at(xy) = this->m_watermap_data.at((y*w) + x - 1); }
+        if (this->getFlagsAt(x, y-1) & 0x0080) { this->m_flags_data.at(((y-1)*w) + x) |= 0x8000; this->m_watermap_data.at(xy) = this->m_watermap_data.at(((y-1)*w) + x); }
+        
+        if (this->getFlagsAt(x-1, y-1) & 0x0080) { this->m_flags_data.at(((y-1)*w) + x - 1) |= 0x8000; this->m_watermap_data.at(xy) = this->m_watermap_data.at(((y-1)*w) + x - 1); }
+        if (this->getFlagsAt(x+1, y-1) & 0x0080) { this->m_flags_data.at(((y-1)*w) + x + 1) |= 0x8000; this->m_watermap_data.at(xy) = this->m_watermap_data.at(((y-1)*w) + x + 1); }
+        if (this->getFlagsAt(x-1, y+1) & 0x0080) { this->m_flags_data.at(((y+1)*w) + x - 1) |= 0x8000; this->m_watermap_data.at(xy) = this->m_watermap_data.at(((y+1)*w) + x - 1); }
+        if (this->getFlagsAt(x+1, y+1) & 0x0080) { this->m_flags_data.at(((y+1)*w) + x + 1) |= 0x8000; this->m_watermap_data.at(xy) = this->m_watermap_data.at(((y+1)*w) + x + 1); }
+        
+        // TODO: Line 243 in resources.cpp
+      }
+    }
+}
+
 void C2MapFile::load(const std::string &file_name)
 {
   std::ifstream infile;
@@ -127,6 +162,8 @@ void C2MapFile::load(const std::string &file_name)
     infile.read(reinterpret_cast<char *>(this->m_soundfx_data.data()), 512*512);
 
     infile.close();
+    
+    this->postProcess();
   } catch (std::ifstream::failure e) {
     Console_PrintLogString("Failed to load " + file_name + ": " + strerror(errno));
     std::cerr << "Exception opening/reading/closing file\n";

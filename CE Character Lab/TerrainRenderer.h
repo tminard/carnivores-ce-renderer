@@ -22,13 +22,14 @@
 #include <glm/glm.hpp>
 #include <vector>
 #include <map>
+#include <unordered_map>
 
 #include "transform.h"
 
 class Vertex;
 class C2MapFile;
 class C2MapRscFile;
-class C2WorldModel;
+class CEWorldModel;
 class ShaderProgram;
 class Transform;
 class Camera;
@@ -36,12 +37,16 @@ class Shader; // TODO: replace global object shader with per object pool
 class TerrainRenderer
 {
 private:
-  struct _ObjLoc {
-    int m_obj_id;
-    glm::vec2 m_map_position; // in tiles
-    glm::vec3 m_world_position;
-    Transform m_transform;
-  };
+//  struct _Water {
+//    GLuint m_vbo;
+//    GLuint m_vab, m_iab;
+//    int m_water_id;
+//    int m_texture_id;
+//    int m_height;
+//    std::vector < Vertex > m_vertices;
+//    std::vector < unsigned int > m_indices;
+//    int m_indices_count;
+//  };
 
   std::vector < Vertex > m_vertices;
   std::vector < unsigned int > m_indices;
@@ -54,17 +59,13 @@ private:
   
   std::unique_ptr<ShaderProgram> m_shader;
   
-  std::map<int, C2WorldModel*> m_visible_models;
-  
-  std::map<int, std::map<int, std::vector<_ObjLoc>>> m_objects_by_quad;
-  
   C2MapFile* m_cmap_data_weak;
   C2MapRscFile* m_crsc_data_weak;
   
   void preloadObjectMap();
   void loadShader();
   void loadIntoHardwareMemory();
-  void loadWaterIntoHardwareMemory();
+
   glm::vec2 calcAtlasUV(int texID, glm::vec2 uv);
   glm::vec2 scaleAtlasUV(glm::vec2 atlas_uv, int texture_id);
   glm::vec3 calcWorldVertex(int tile_x, int tile_y);

@@ -8,7 +8,7 @@
 
 #define GLFW_INCLUDE_GLCOREARB
 #include <GLFW/glfw3.h>
-#include <glm/vec3.hpp>
+#include <glm/glm.hpp>
 
 #include <memory>
 #include <vector>
@@ -36,6 +36,9 @@ private:
     NUM_BUFFERS=2
   };
 
+  GLuint m_instanced_vab;
+  GLuint m_num_instances;
+
   GLuint m_vertexArrayObject;
   GLuint m_vertexArrayBuffers[NUM_BUFFERS];
 
@@ -55,5 +58,9 @@ public:
   void saveTextureAsBMP(const std::string& file_name );
   void Update(Transform& transform, Camera& camera);
   void Draw();
+
+  void Update(Camera& camera);
+  void UpdateInstances(std::vector<glm::mat4> transforms);
+  void DrawInstances();
 };
 

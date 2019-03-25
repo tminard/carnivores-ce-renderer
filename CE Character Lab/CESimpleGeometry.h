@@ -27,7 +27,10 @@ class CESimpleGeometry {
 private:
   GLuint m_vertex_array_object;
   GLuint m_vertex_array_buffer;
-  
+
+  GLuint m_instanced_vab;
+  GLuint m_num_instances;
+
   std::vector<Vertex> m_vertices;
   std::unique_ptr<CETexture> m_texture;
   
@@ -40,8 +43,11 @@ public:
   
   CETexture* getTexture();
   ShaderProgram* getShader();
-  
+
+  void Update(Camera& camera);
+  void UpdateInstances(std::vector<glm::mat4> transforms);
   void Update(Transform& transform, Camera& camera);
+
   void Draw();
   void DrawInstances();
 };

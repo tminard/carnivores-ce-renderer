@@ -14,51 +14,61 @@
 
 #include <vector>
 #include <memory>
+#include <array>
+
+#include "g_shared.h"
 
 class CETexture;
-class C2WorldModel;
+class CEWorldModel;
 class C2Sky;
 
 class C2MapRscFile
 {
 private:
-    enum _PadTypeColor { // rgba5551
-        Red = 0b111110000000000,
-        Yellow = 0b111111111000000,
-        Green = 0b1111100000,
-        Blue = 0b11111
-    };
-    enum _AtlasPadType {
-        Below = _PadTypeColor::Red,
-        Above = _PadTypeColor::Yellow,
-        Left = _PadTypeColor::Green,
-        Right = _PadTypeColor::Blue
-    };
-    int m_fade_rgb[3][3]; // calculated sky RGB base values
-    int m_trans_rgb[3][3]; // calculated sky transparency values
-    
-    std::vector< std::unique_ptr<CETexture> > m_textures; // control access to the textures
-    int m_texture_atlas_width;
-    int m_texture_count;
-    
-    std::unique_ptr<C2Sky> m_dawn_sky;
-    std::unique_ptr<C2Sky> m_day_sky;
-    std::unique_ptr<C2Sky> m_night_sky;
-    
-    std::vector<uint8_t> m_shadow_map;
-    
-    void load(const std::string& file_name);
-public:
-  std::vector< std::unique_ptr<C2WorldModel> > m_models;
+  enum _PadTypeColor { // rgba5551
+    Red = 0b111110000000000,
+    Yellow = 0b111111111000000,
+    Green = 0b1111100000,
+    Blue = 0b11111
+  };
+  enum _AtlasPadType {
+    Below = _PadTypeColor::Red,
+    Above = _PadTypeColor::Yellow,
+    Left = _PadTypeColor::Green,
+    Right = _PadTypeColor::Blue
+  };
+  int m_fade_rgb[3][3]; // calculated sky RGB base values
+  int m_trans_rgb[3][3]; // calculated sky transparency values
   
-    C2MapRscFile(const std::string& file_name);
-    ~C2MapRscFile();
-    
+  std::vector< std::unique_ptr<CETexture> > m_textures; // control access to the textures
+  int m_texture_atlas_width;
+  int m_texture_count;
+  
+  int m_random_sounds_count, m_ambient_sounds_count;
+  std::array<TSFX, 255> m_random_sounds;
+  std::array<TSFX, 255> m_ambient_sounds;
+  
+  int m_num_waters;
+  
+  std::unique_ptr<C2Sky> m_dawn_sky;
+  std::unique_ptr<C2Sky> m_day_sky;
+  std::unique_ptr<C2Sky> m_night_sky;
+  
+  std::vector<uint8_t> m_shadow_map;
+  
+  void load(const std::string& file_name);
+public:
+  std::vector< std::unique_ptr<CEWorldModel> > m_models;
+  
+  C2MapRscFile(const std::string& file_name);
+  ~C2MapRscFile();
+  
     int getTextureAtlasWidth();
-    
-    C2WorldModel* getWorldModel(int i);
-    CETexture* getTexture(int i);
-    C2Sky* getDaySky();
+    int getWorldModelCount();
+  
+  CEWorldModel* getWorldModel(int i);
+  CETexture* getTexture(int i);
+  C2Sky* getDaySky();
 };
 
 #endif /* defined(__CE_Character_Lab__C2MapRscFile__) */

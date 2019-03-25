@@ -1,4 +1,4 @@
-#include "C2WorldModel.h"
+#include "CEWorldModel.h"
 
 #include "CETexture.h"
 #include "CEGeometry.h"
@@ -15,7 +15,7 @@
 #include "transform.h"
 #include "camera.h"
 
-C2WorldModel::C2WorldModel(std::ifstream& instream)
+CEWorldModel::CEWorldModel(std::ifstream& instream)
 {
   this->m_old_object_info = new TObjInfo();
   
@@ -43,7 +43,7 @@ C2WorldModel::C2WorldModel(std::ifstream& instream)
   texture_data.resize(_tsize);
   face_data.resize(_fcount);
   file_vertex_data.resize(_vcount);
-  _obj_buffer.resize(_object_count*48); // just throw these details away for now
+  _obj_buffer.resize(_object_count*48); // just throw these details away for now (see above note)
   
   instream.read(reinterpret_cast<char *>(face_data.data()), _fcount<<6);
   instream.read(reinterpret_cast<char *>(file_vertex_data.data()), _vcount<<4);
@@ -168,17 +168,17 @@ C2WorldModel::C2WorldModel(std::ifstream& instream)
   delete m_loader;
 }
 
-CEGeometry* C2WorldModel::getGeometry()
+CEGeometry* CEWorldModel::getGeometry()
 {
   return this->m_geometry.get();
 }
 
-CESimpleGeometry* C2WorldModel::getFarGeometry()
+CESimpleGeometry* CEWorldModel::getFarGeometry()
 {
   return this->m_far_geometry.get();
 }
 
-void C2WorldModel::_generateBoundingBox(std::vector<Vertex>& vertex_data)
+void CEWorldModel::_generateBoundingBox(std::vector<Vertex>& vertex_data)
 {
   float x1 = 0.0, x2=0.0, y1=0.0, y2=0.0, z1=0.0, z2=0.0;
   bool first;
@@ -227,24 +227,56 @@ void C2WorldModel::_generateBoundingBox(std::vector<Vertex>& vertex_data)
   }
 }
 
-C2WorldModel::~C2WorldModel()
+CEWorldModel::~CEWorldModel()
 {
   delete this->m_old_object_info;
 }
 
-TObjInfo* C2WorldModel::getObjectInfo()
+TObjInfo* CEWorldModel::getObjectInfo()
 {
   return this->m_old_object_info;
 }
 
-void C2WorldModel::renderFar(Transform& transform, Camera& camera)
+void CEWorldModel::renderFar(Transform& transform, Camera& camera)
 {
   m_far_geometry->Update(transform, camera);
   m_far_geometry->Draw();
 }
 
-void C2WorldModel::render(Transform& transform, Camera& camera)
+void CEWorldModel::render(Transform& transform, Camera& camera)
 {
   m_geometry->Update(transform, camera);
   m_geometry->Draw();
+}
+
+void CEWorldModel::addFar(Transform& transform)
+{
+  this->m_far_instances.push_back(transform.GetStaticModel());
+}
+
+void CEWorldModel::updateFarInstances()
+{
+  m_far_geometry->UpdateInstances(this->m_far_instances);
+  this->m_far_instances.clear();
+}
+
+void CEWorldModel::renderFarInstances()
+{
+  m_far_geometry->DrawInstances();
+}
+
+void CEWorldModel::addNear(Transform& transform)
+{
+  this->m_near_instances.push_back(transform.GetStaticModel());
+}
+
+void CEWorldModel::updateNearInstances()
+{
+  m_geometry->UpdateInstances(this->m_near_instances);
+  this->m_near_instances.clear();
+}
+
+void CEWorldModel::renderNearInstances()
+{
+  m_geometry->DrawInstances();
 }

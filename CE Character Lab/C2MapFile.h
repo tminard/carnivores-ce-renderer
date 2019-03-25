@@ -35,6 +35,8 @@ private:
     
     constexpr static const float SIZE = 1024.f;
     constexpr static const float HEIGHT_SCALE = 64.f;
+  
+  void postProcess();
     
 public:
     C2MapFile(const std::string& map_file_name);
@@ -46,6 +48,7 @@ public:
     int getObjectAt(int xy);
     int getTextureIDAt(int xy);
     uint16_t getFlagsAt(int xy);
+  uint16_t getFlagsAt(int x, int y);
     
     float getHeight();
     float getWidth();

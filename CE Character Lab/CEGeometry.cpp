@@ -54,6 +54,28 @@ void CEGeometry::loadObjectIntoMemoryBuffer()
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_vertexArrayBuffers[INDEX_VB]);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, (int)this->m_indices.size()*sizeof(unsigned int), this->m_indices.data(), GL_STATIC_DRAW);
 
+    // instanced vab
+  GLsizei vec4Size = sizeof(glm::vec4);
+  this->m_num_instances = 0;
+  std::vector<glm::mat4> instances;
+  glGenBuffers(1, &this->m_instanced_vab);
+  glBindBuffer(GL_ARRAY_BUFFER, this->m_instanced_vab);
+  glBufferData(GL_ARRAY_BUFFER, m_num_instances*sizeof(glm::mat4), instances.data(), GL_STATIC_DRAW);
+
+  glEnableVertexAttribArray(4);
+  glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)0);
+  glEnableVertexAttribArray(5);
+  glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(vec4Size));
+  glEnableVertexAttribArray(6);
+  glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(2 * vec4Size));
+  glEnableVertexAttribArray(7);
+  glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(3 * vec4Size));
+
+  glVertexAttribDivisor(4, 1);
+  glVertexAttribDivisor(5, 1);
+  glVertexAttribDivisor(6, 1);
+  glVertexAttribDivisor(7, 1);
+
   glBindVertexArray(0);
 }
 
@@ -75,4 +97,29 @@ void CEGeometry::Update(Transform &transform, Camera &camera)
 
   this->m_shader->setMat4("MVP", MVP);
   this->m_shader->setBool("enable_transparency", true);
+}
+
+void CEGeometry::Update(Camera &camera)
+{
+  this->m_shader->use();
+  this->m_shader->setMat4("projection_view", camera.GetViewProjection());
+  this->m_shader->setBool("enable_transparency", true);
+}
+
+void CEGeometry::DrawInstances()
+{
+  this->m_shader->use();
+  this->m_texture->use();
+  glBindVertexArray(this->m_vertexArrayObject);
+
+  glDrawElementsInstancedBaseVertex(GL_TRIANGLES, (int)this->m_indices.size(), GL_UNSIGNED_INT, 0, this->m_num_instances, 0);
+
+  glBindVertexArray(0);
+}
+
+void CEGeometry::UpdateInstances(std::vector<glm::mat4> transforms)
+{
+  this->m_num_instances = (int)transforms.size();
+  glBindBuffer(GL_ARRAY_BUFFER, this->m_instanced_vab);
+  glBufferData(GL_ARRAY_BUFFER, this->m_num_instances*sizeof(glm::mat4), transforms.data(), GL_STATIC_DRAW);
 }

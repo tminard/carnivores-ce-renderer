@@ -11,7 +11,9 @@
 
 #include "C2MapFile.h"
 #include "C2MapRscFile.h"
-#include "C2WorldModel.h"
+#include "CEWorldModel.h"
+#include "CESimpleGeometry.h"
+#include "CEGeometry.h"
 #include "shader_program.h"
 #include "camera.h"
 #include "transform.h"
@@ -22,7 +24,6 @@ TerrainRenderer::TerrainRenderer(C2MapFile* c_map_weak, C2MapRscFile* c_rsc_weak
 : m_cmap_data_weak(c_map_weak), m_crsc_data_weak(c_rsc_weak)
 {
   this->loadIntoHardwareMemory();
-  this->loadWaterIntoHardwareMemory();
   this->loadShader();
   this->preloadObjectMap();
 }
@@ -34,21 +35,11 @@ TerrainRenderer::~TerrainRenderer()
   glDeleteVertexArrays(1, &this->m_vertex_array_object);
 }
 
-void TerrainRenderer::loadWaterIntoHardwareMemory()
-{
-  /*
-   * Look at each entity on the water map and identify separate bodies of water
-   * generate a plane spaning the far reaches of each body of water
-   * subdivide to produce correct vertices
-   */
-}
-
 /*
  * precalculate transforms for all map objects
  */
 void TerrainRenderer::preloadObjectMap()
 {
-  this->m_objects_by_quad.clear();
   int map_square_size = this->m_cmap_data_weak->getHeight();
   float map_tile_length = this->m_cmap_data_weak->getTileLength();
   
@@ -61,7 +52,7 @@ void TerrainRenderer::preloadObjectMap()
       
       
       float object_height;
-      C2WorldModel* w_obj = this->m_crsc_data_weak->getWorldModel(obj_id);
+      CEWorldModel* w_obj = this->m_crsc_data_weak->getWorldModel(obj_id);
       
       if (w_obj->getObjectInfo()->flags & objectPLACEGROUND) {
         // TODO: original implementation gets the lowest height of a quad and uses that.
@@ -96,15 +87,14 @@ void TerrainRenderer::preloadObjectMap()
                                   glm::vec3(1.f, 1.f, 1.f)
                                   );
 
-      _ObjLoc oj = _ObjLoc {
-        obj_id, glm::vec2(x, y), world_position, transform_initial
-      };
-      
-      int quad_x, quad_y;
-      quad_x = x >> 6;
-      quad_y = y >> 6;
-      this->m_objects_by_quad[quad_x][quad_y].push_back(oj);
+      w_obj->addFar(transform_initial);
+      w_obj->addNear(transform_initial);
     }
+  }
+
+  for (int m = 0; m < this->m_crsc_data_weak->getWorldModelCount(); m++) {
+    this->m_crsc_data_weak->getWorldModel(m)->updateFarInstances();
+    this->m_crsc_data_weak->getWorldModel(m)->updateNearInstances();
   }
 }
 
@@ -131,47 +121,12 @@ void TerrainRenderer::Update(Transform& transform, Camera& camera)
   this->m_shader->setMat4("MVP", MVP);
 }
 
-void TerrainRenderer::renderObjectsAtQuad(Camera& camera, int quad_x, int quad_y, float maxd, float lowrd, glm::vec3 cur_pos)
-{
-  std::vector<_ObjLoc> obj = this->m_objects_by_quad[quad_x][quad_y];
-  for (int o = 0; o < obj.size(); o++) {
-    _ObjLoc oj = obj[o];
-    
-    float distance = glm::distance(cur_pos, oj.m_world_position);
-    if (distance > maxd) continue;
-    
-    C2WorldModel* w_obj = this->m_crsc_data_weak->m_models[oj.m_obj_id].get();
-    
-    if (distance > lowrd) {
-      w_obj->renderFar(oj.m_transform, camera);
-    } else {
-      w_obj->render(oj.m_transform, camera);
-    }
-  }
-}
-
 void TerrainRenderer::RenderObjects(Camera& camera)
 {
-  float maxd = this->m_cmap_data_weak->getTileLength() * 50.f;
-  float lowrd = this->m_cmap_data_weak->getTileLength() * 40.f;
-
-  glm::vec3 current_pos = camera.GetCurrentPos();
-  glm::vec2 pos = camera.GetWorldPosition();
-  int quad_x = (int)pos.x >> 6;
-  int quad_y = (int)pos.y >> 6;
-
-  renderObjectsAtQuad(camera, quad_x-1, quad_y, maxd, lowrd, current_pos);
-  renderObjectsAtQuad(camera, quad_x-1, quad_y-1, maxd, lowrd, current_pos);
-  renderObjectsAtQuad(camera, quad_x, quad_y-1, maxd, lowrd, current_pos);
-  
-  renderObjectsAtQuad(camera, quad_x, quad_y+1, maxd, lowrd, current_pos);
-  renderObjectsAtQuad(camera, quad_x+1, quad_y+1, maxd, lowrd, current_pos);
-  renderObjectsAtQuad(camera, quad_x+1, quad_y, maxd, lowrd, current_pos);
-  
-  renderObjectsAtQuad(camera, quad_x-1, quad_y+1, maxd, lowrd, current_pos);
-  renderObjectsAtQuad(camera, quad_x+1, quad_y-1, maxd, lowrd, current_pos);
-  
-  renderObjectsAtQuad(camera, quad_x, quad_y, maxd, lowrd, current_pos);
+  for (int m = 0; m < this->m_crsc_data_weak->getWorldModelCount(); m++) {
+    this->m_crsc_data_weak->getWorldModel(m)->getGeometry()->Update(camera);
+    this->m_crsc_data_weak->getWorldModel(m)->getGeometry()->DrawInstances();
+  }
 }
 
 glm::vec3 TerrainRenderer::calcWorldVertex(int tile_x, int tile_y)
@@ -321,6 +276,8 @@ void TerrainRenderer::loadIntoHardwareMemory()
       if (final_y_row || final_x_column) {
         continue;
       }
+      
+      //if (flags & 0x0080) loadWaterAt(x, y);
       
       glm::vec3 vpositionUL = this->calcWorldVertex(x, y);
       glm::vec3 vpositionUR = this->calcWorldVertex(x + 1, y);

@@ -27,7 +27,7 @@ private:
   bool m_hide = false;
 
 public:
-  Vertex(const glm::vec3& position, const glm::vec2& texture_coord, const glm::vec3& normal, bool hidden, uint32_t owner, uint32_t flags);
+  Vertex(const glm::vec3& position, const glm::vec2& texture_coord, const glm::vec3& normal, bool hidden, float alpha, uint32_t owner, uint32_t flags);
   
   friend bool operator== (Vertex &v1, Vertex &v2);
   friend bool operator!= (Vertex &v1, Vertex &v2);

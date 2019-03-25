@@ -15,7 +15,7 @@ void main()
     float alpha = 1.0;
     float trans = 0.095;
     
-    if (faceAlpha0 < 0.5 && enable_transparency && sC.r <= trans && sC.g <= trans && sC.b <= trans) {
+    if (faceAlpha0 == 0.0 && enable_transparency && sC.r <= trans && sC.g <= trans && sC.b <= trans) {
         discard;
     }
 

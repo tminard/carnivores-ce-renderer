@@ -38,7 +38,6 @@ TerrainRenderer::~TerrainRenderer()
 
   for (int w = 0; w < this->m_waters.size(); w++) {
     glDeleteBuffers(1, &this->m_waters[w].m_vab);
-    glDeleteBuffers(1, &this->m_waters[w].m_iab);
     glDeleteVertexArrays(1, &this->m_waters[w].m_vao);
   }
 }
@@ -290,56 +289,33 @@ void TerrainRenderer::loadWaterAt(int x, int y)
   glm::vec3 vpositionLL = this->calcWorldVertex(x, y + 1, true, water_object->m_height);
   glm::vec3 vpositionLR = this->calcWorldVertex(x + 1, y + 1, true, water_object->m_height);
 
-    bool quad_reverse = (flags & 0x0010);
+  bool quad_reverse = (flags & 0x0010);
+  int texture_direction = (flags & 3);
 
-  std::array<glm::vec2, 4> vertex_uv_mapping = this->calcUVMapForQuad(x, y, quad_reverse, 0);
+  std::array<glm::vec2, 4> vertex_uv_mapping = this->calcUVMapForQuad(x, y, quad_reverse, texture_direction);
 
-  Vertex v1(vpositionUL, this->scaleAtlasUV(vertex_uv_mapping[0], water_data.texture_id), glm::vec3(0,0,0), false, water_data.texture_id, 0);
-  Vertex v2(vpositionUR, this->scaleAtlasUV(vertex_uv_mapping[1], water_data.texture_id), glm::vec3(0,0,0), false, water_data.texture_id, 0);
-  Vertex v3(vpositionLL, this->scaleAtlasUV(vertex_uv_mapping[2], water_data.texture_id), glm::vec3(0,0,0), false, water_data.texture_id, 0);
-  Vertex v4(vpositionLR, this->scaleAtlasUV(vertex_uv_mapping[3], water_data.texture_id), glm::vec3(0,0,0), false, water_data.texture_id, 0);
-
-  // This is broken because it assumes every tile will have a triangle; with water, the ground breaks up continuous strips
-  water_object->m_vertices.push_back(v1);
-  water_object->m_vertices.push_back(v2);
-  water_object->m_vertices.push_back(v3);
-
-  water_object->m_vertices.push_back(v3);
-  water_object->m_vertices.push_back(v2);
-  water_object->m_vertices.push_back(v4);
-
-  unsigned int upper_left = (y * width * 4) + (x*4);
-  unsigned int upper_right = upper_left + 1;
-  unsigned int lower_left = upper_right + 1;
-  unsigned int lower_right = lower_left + 1;
+  Vertex v1(vpositionUL, this->scaleAtlasUV(vertex_uv_mapping[0], water_data.texture_id), glm::vec3(0,0,0), false, 1.4f - water_data.transparency, water_data.texture_id, 0);
+  Vertex v2(vpositionUR, this->scaleAtlasUV(vertex_uv_mapping[1], water_data.texture_id), glm::vec3(0,0,0), false, 1.4f - water_data.transparency, water_data.texture_id, 0);
+  Vertex v3(vpositionLL, this->scaleAtlasUV(vertex_uv_mapping[2], water_data.texture_id), glm::vec3(0,0,0), false, 1.4f - water_data.transparency, water_data.texture_id, 0);
+  Vertex v4(vpositionLR, this->scaleAtlasUV(vertex_uv_mapping[3], water_data.texture_id), glm::vec3(0,0,0), false, 1.4f - water_data.transparency, water_data.texture_id, 0);
 
   if (quad_reverse) {
-    water_object->m_indices.push_back(upper_left);
-    water_object->m_indices.push_back(upper_right);
-    water_object->m_indices.push_back(lower_left);
+    water_object->m_vertices.push_back(v1);
+    water_object->m_vertices.push_back(v2);
+    water_object->m_vertices.push_back(v3);
 
-    water_object->m_indices.push_back(lower_left);
-    water_object->m_indices.push_back(upper_right);
-    water_object->m_indices.push_back(lower_right);
+    water_object->m_vertices.push_back(v3);
+    water_object->m_vertices.push_back(v2);
+    water_object->m_vertices.push_back(v4);
   } else {
-    water_object->m_indices.push_back(lower_left);
-    water_object->m_indices.push_back(upper_right);
-    water_object->m_indices.push_back(lower_right);
+    water_object->m_vertices.push_back(v3);
+    water_object->m_vertices.push_back(v2);
+    water_object->m_vertices.push_back(v4);
 
-    water_object->m_indices.push_back(upper_left);
-    water_object->m_indices.push_back(upper_right);
-    water_object->m_indices.push_back(lower_left);
+    water_object->m_vertices.push_back(v1);
+    water_object->m_vertices.push_back(v2);
+    water_object->m_vertices.push_back(v3);
   }
-
-  /*
-  water_object->m_indices.push_back(lower_left);
-  water_object->m_indices.push_back(upper_right);
-  water_object->m_indices.push_back(lower_right);
-
-  water_object->m_indices.push_back(upper_left);
-  water_object->m_indices.push_back(upper_right);
-  water_object->m_indices.push_back(lower_left);
-   */
 }
 
 void TerrainRenderer::loadWaterIntoMemory()
@@ -347,7 +323,7 @@ void TerrainRenderer::loadWaterIntoMemory()
   for (int w = 0; w < this->m_crsc_data_weak->getWaterCount(); w++)
   {
     _Water* water_object = &this->m_waters[w];
-    water_object->m_indices_count = (int)water_object->m_indices.size();
+    water_object->m_vertex_count = (int)water_object->m_vertices.size();
 
     glBindVertexArray(water_object->m_vao);
 
@@ -361,12 +337,8 @@ void TerrainRenderer::loadWaterIntoMemory()
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)sizeof(glm::vec3));
     glEnableVertexAttribArray(2); // normal
     glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(glm::vec3)+sizeof(glm::vec2)));
-    glEnableVertexAttribArray(3); // texid
-    glVertexAttribIPointer(3, 1, GL_UNSIGNED_INT, sizeof(Vertex), (void*)(sizeof(glm::vec3)+sizeof(glm::vec2)+(sizeof(glm::vec3))));
-
-      // indices
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, water_object->m_iab);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, (int)water_object->m_indices.size()*sizeof(unsigned int), water_object->m_indices.data(), GL_STATIC_DRAW);
+    glEnableVertexAttribArray(3); // alpha
+    glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(glm::vec3)+sizeof(glm::vec2)+(sizeof(glm::vec3))));
 
     glBindVertexArray(0);
   }
@@ -395,7 +367,6 @@ void TerrainRenderer::loadIntoHardwareMemory()
     glBindVertexArray(wd.m_vao);
     
     glGenBuffers(1, &wd.m_vab);
-    glGenBuffers(1, &wd.m_iab);
 
     glBindVertexArray(0);
 
@@ -431,10 +402,10 @@ void TerrainRenderer::loadIntoHardwareMemory()
       
       std::array<glm::vec2, 4> vertex_uv_mapping = this->calcUVMapForQuad(x, y, quad_reverse, texture_direction);
       
-      Vertex v1(vpositionUL, this->scaleAtlasUV(vertex_uv_mapping[0], texID), glm::vec3(0,0,0), false, texID, 0);
-      Vertex v2(vpositionUR, this->scaleAtlasUV(vertex_uv_mapping[1], texID), glm::vec3(0,0,0), false, texID, 0);
-      Vertex v3(vpositionLL, this->scaleAtlasUV(vertex_uv_mapping[2], texID), glm::vec3(0,0,0), false, texID, 0);
-      Vertex v4(vpositionLR, this->scaleAtlasUV(vertex_uv_mapping[3], texID), glm::vec3(0,0,0), false, texID, 0);
+      Vertex v1(vpositionUL, this->scaleAtlasUV(vertex_uv_mapping[0], texID), glm::vec3(0,0,0), false, 1.f, texID, 0);
+      Vertex v2(vpositionUR, this->scaleAtlasUV(vertex_uv_mapping[1], texID), glm::vec3(0,0,0), false, 1.f, texID, 0);
+      Vertex v3(vpositionLL, this->scaleAtlasUV(vertex_uv_mapping[2], texID), glm::vec3(0,0,0), false, 1.f, texID, 0);
+      Vertex v4(vpositionLR, this->scaleAtlasUV(vertex_uv_mapping[3], texID), glm::vec3(0,0,0), false, 1.f, texID, 0);
       
       m_vertices.push_back(v1);
       m_vertices.push_back(v2);
@@ -527,7 +498,7 @@ void TerrainRenderer::RenderWater()
   for (int w = 0; w < this->m_waters.size(); w++) {
     glBindVertexArray(this->m_waters[w].m_vao);
 
-    glDrawArrays(GL_TRIANGLES, 0, this->m_waters[w].m_indices_count);
+    glDrawArrays(GL_TRIANGLES, 0, this->m_waters[w].m_vertex_count);
   }
 
   glBindVertexArray(0);

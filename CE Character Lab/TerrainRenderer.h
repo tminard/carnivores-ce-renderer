@@ -39,15 +39,14 @@ class TerrainRenderer
 private:
   struct _Water {
     GLuint m_vao;
-    GLuint m_vab, m_iab;
+    GLuint m_vab;
     int m_water_id;
     int m_texture_id;
     float m_height;
-    float m_transparency;
+    float m_transparency; // 1.f = fully transparent on RGB color. 0.f = not transparent. 0.5 = half transparency
     int m_height_unscaled;
     std::vector < Vertex > m_vertices;
-    std::vector < unsigned int > m_indices;
-    int m_indices_count;
+    int m_vertex_count;
   };
 
   std::vector <_Water> m_waters;

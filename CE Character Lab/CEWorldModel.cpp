@@ -130,6 +130,7 @@ CEWorldModel::CEWorldModel(std::ifstream& instream)
               uv,
               glm::vec3(1.f,1.f,1.f), // TODO: build normals?
               false,
+              1.f,
               0,
               faceHasOpacity
               );

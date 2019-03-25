@@ -8,7 +8,7 @@
 
 #include "CEObservable.hpp"
 
-CEObservable::CEObservable() : m_camera(glm::vec3(165098.718750f,6119.780762f,72035.828125f), 45.f, (4.f/3.f), 1.f, VIEW_R)
+CEObservable::CEObservable() : m_camera(glm::vec3(165098.718750f,6119.780762f,72035.828125f), 45.f, (21.f/9.f), 1.f, VIEW_R)
 {
 }
 

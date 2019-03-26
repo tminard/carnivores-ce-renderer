@@ -51,9 +51,10 @@ void CETexture::loadTextureIntoHardwareMemory()
   glBindTexture(GL_TEXTURE_2D, m_texture_id);
   
   glEnable(GL_TEXTURE_2D);
-  
+
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB5_A1, m_width, m_height, 0, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, m_raw_data.data());
-  
+
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 7);
   glGenerateMipmap(GL_TEXTURE_2D);
   
   // NOTE: because we're using a texture atlas for terrain, and using GL_LINEAR, we need to add a 1px border around all textures
@@ -62,7 +63,7 @@ void CETexture::loadTextureIntoHardwareMemory()
   glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
   
   glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+  glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
   
   glBindTexture(GL_TEXTURE_2D, 0);
 }

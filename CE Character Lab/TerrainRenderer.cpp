@@ -170,43 +170,46 @@ std::array<glm::vec2, 4> TerrainRenderer::calcUVMapForQuad(int x, int y, bool qu
 {
   std::array<glm::vec2, 4> vertex_uv_mapping;
   x = 0; y = 0;
-  
+
+  // This is called "half pixel correction" - a niave implementation. See https://gamedev.stackexchange.com/questions/46963/how-to-avoid-texture-bleeding-in-a-texture-atlas for something better. Note this doesn't solve mipmaps issue
+  // For solution, see answer here: https://gamedev.stackexchange.com/questions/46963/how-to-avoid-texture-bleeding-in-a-texture-atlas
+  float max_tc = 0.990f;
   float tu, tv;
-  float i = 0.80f;
-  tu = 0.10f; tv = 0.10f;
+  float i = 1.f;
+  tu = 0.003f; tv = 0.003f;
   
   if (!quad_reversed) {
     switch (rotation_code) {
       case 0:
         vertex_uv_mapping = {
           glm::vec2(tu, tv),
-          glm::vec2(tu + i, tv),
-          glm::vec2(tu, tv + i),
-          glm::vec2(tu + i, tv + i)
+          glm::vec2(fminf(max_tc, tu + i), tv),
+          glm::vec2(tu, fminf(max_tc, tv + i)),
+          glm::vec2(fminf(max_tc, tu + i), fminf(max_tc, tv + i))
         };
         break;
       case 1:
         vertex_uv_mapping = {
-          glm::vec2(tu, tv + i),
+          glm::vec2(tu, fminf(max_tc, tv + i)),
           glm::vec2(tu, tv),
-          glm::vec2(tu + i, tv + i),
-          glm::vec2(tu + i, tv)
+          glm::vec2(fminf(max_tc, tu + i), fminf(max_tc, tv + i)),
+          glm::vec2(fminf(max_tc, tu + i), tv)
         };
         break;
       case 2:
         vertex_uv_mapping = {
-          glm::vec2(tu + i, tv + i),
+          glm::vec2(fminf(max_tc, tu + i), fminf(max_tc, tv + i)),
           glm::vec2(tu, tv + i),
-          glm::vec2(tu + i, tv),
+          glm::vec2(fminf(max_tc, tu + i), tv),
           glm::vec2(tu, tv)
         };
         break;
       case 3:
         vertex_uv_mapping = {
-          glm::vec2(tu + i, tv),
-          glm::vec2(tu + i, tv + i),
+          glm::vec2(fminf(max_tc, tu + i), tv),
+          glm::vec2(fminf(max_tc, tu + i), fminf(max_tc, tv + i)),
           glm::vec2(tu, tv),
-          glm::vec2(tu, tv + i)
+          glm::vec2(tu, fminf(max_tc, tv + i))
         };
         break;
         
@@ -218,33 +221,33 @@ std::array<glm::vec2, 4> TerrainRenderer::calcUVMapForQuad(int x, int y, bool qu
       case 0:
         vertex_uv_mapping = {
           glm::vec2(tu, tv),
-          glm::vec2(tu + i, tv),
-          glm::vec2(tu, tv + i),
-          glm::vec2(tu + i, tv + i)
+          glm::vec2(fminf(max_tc, tu + i), tv),
+          glm::vec2(tu, fminf(max_tc, tv + i)),
+          glm::vec2(fminf(max_tc, tu + i), fminf(max_tc, tv + i))
         };
         break;
       case 1:
         vertex_uv_mapping = {
-          glm::vec2(tu, tv + i),
+          glm::vec2(tu, fminf(max_tc, tv + i)),
           glm::vec2(tu, tv),
-          glm::vec2(tu + i, tv + i),
-          glm::vec2(tu + i, tv)
+          glm::vec2(fminf(max_tc, tu + i), fminf(max_tc, tv + i)),
+          glm::vec2(fminf(max_tc, tu + i), tv)
         };
         break;
       case 2:
         vertex_uv_mapping = {
-          glm::vec2(tu + i, tv + i),
-          glm::vec2(tu, tv + i),
-          glm::vec2(tu + i, tv),
+          glm::vec2(fminf(max_tc, tu + i), fminf(max_tc, tv + i)),
+          glm::vec2(tu, fminf(max_tc, tv + i)),
+          glm::vec2(fminf(max_tc, tu + i), tv),
           glm::vec2(tu, tv)
         };
         break;
       case 3:
         vertex_uv_mapping = {
-          glm::vec2(tu + i, tv),
-          glm::vec2(tu + i, tv + i),
+          glm::vec2(fminf(max_tc, tu + i), tv),
+          glm::vec2(fminf(max_tc, tu + i), fminf(max_tc, tv + i)),
           glm::vec2(tu, tv),
-          glm::vec2(tu, tv + i)
+          glm::vec2(tu, fminf(max_tc, tv + i))
         };
         break;
         
@@ -258,7 +261,6 @@ std::array<glm::vec2, 4> TerrainRenderer::calcUVMapForQuad(int x, int y, bool qu
 
 glm::vec2 TerrainRenderer::scaleAtlasUV(glm::vec2 atlas_uv, int texture_id)
 {
-  // TODO: Move this to an atlas helper class; most can be pre-calculated
   float atlas_square_size = (float)this->m_crsc_data_weak->getTextureAtlasWidth();
   int texture_y = int(floor(float(texture_id) / atlas_square_size));
   float tile_scale = (1.f / atlas_square_size); // maps 0-1 UV coords to 1/square portion of atlas

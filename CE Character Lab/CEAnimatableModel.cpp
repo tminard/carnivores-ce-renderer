@@ -3,6 +3,7 @@
 
 #include "CEGeometry.h"
 #include "CEAnimation.h"
+#include "transform.h"
 
 #include <cmath>
 #include <iostream>
@@ -151,6 +152,16 @@ void CEAnimatableModel::setAnimation(std::string animation_name)
   //ActivateCharacterFx(cptr);
 }
 
+void CEAnimatableModel::Update(Camera& camera)
+{
+    // TODO: convert old data types to glm
+  glm::vec3 pos(this->getCurrentPosition().x, this->getCurrentPosition().z, this->getCurrentPosition().y);
+  Transform t(pos, glm::vec3(0, 0, 0), glm::vec3(2, 2, 2));
+  CEGeometry* geo = this->getCurrentModelForRender();
+
+  geo->Update(t, camera);
+}
+
 /*
  *
  */
@@ -159,6 +170,8 @@ void CEAnimatableModel::render()
   // update matrix
   // update textures and shader if needed (pass in current shader so we know?)
   // call draw
+  CEGeometry* geo = this->getCurrentModelForRender();
+  geo->Draw();
 }
 
 CEGeometry* CEAnimatableModel::getCurrentModelForRender()

@@ -222,11 +222,24 @@ void C2MapRscFile::load(const std::string &file_name)
     }
     
     // Load sky bitmap and map overlay (dawn, day, night)
-    if (m_type == C2) this->m_dawn_sky = std::unique_ptr<C2Sky>(new C2Sky(infile));
+    if (m_type == C2) {
+      this->m_dawn_sky = std::unique_ptr<C2Sky>(new C2Sky(infile));
+      //grBufferClear( 0xFF000000+ (SkyB<<16) + (SkyG<<8) + SkyR,0,0);
+      this->m_dawn_sky->setRGBA(glm::vec4(m_fade_rgb[0][0], m_fade_rgb[0][1], m_fade_rgb[0][2], 1.f));
+    }
 
     this->m_day_sky = std::unique_ptr<C2Sky>(new C2Sky(infile));
 
-    if (m_type == C2) this->m_night_sky = std::unique_ptr<C2Sky>(new C2Sky(infile));
+    if (m_type == C2) {
+      this->m_day_sky->setRGBA(glm::vec4(m_fade_rgb[1][0], m_fade_rgb[1][1], m_fade_rgb[1][2], 1.f));
+    } else {
+      this->m_day_sky->setRGBA(glm::vec4(m_fade_rgb[0][0], m_fade_rgb[0][1], m_fade_rgb[0][2], 1.f));
+    }
+
+    if (m_type == C2) {
+      this->m_night_sky = std::unique_ptr<C2Sky>(new C2Sky(infile));
+      this->m_night_sky->setRGBA(glm::vec4(m_fade_rgb[2][0], m_fade_rgb[2][1], m_fade_rgb[2][2], 1.f));
+    }
     
     this->m_shadow_map.resize(128*128);
     infile.read(reinterpret_cast<char *>(this->m_shadow_map.data()), 128*128);

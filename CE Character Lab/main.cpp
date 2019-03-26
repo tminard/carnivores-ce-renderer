@@ -59,16 +59,12 @@ void cursorPosCallback(GLFWwindow* window, double xpos, double ypos)
 
 int main(int argc, const char * argv[])
 {
-  CreateFadeTab();
   std::unique_ptr<C2CarFilePreloader> cFileLoad(new C2CarFilePreloader);
   std::unique_ptr<LocalVideoManager> video_manager(new LocalVideoManager());
-  //std::unique_ptr<C2MapFile> c1Map(new C2MapFile(CEMapType::C1, "resources/game/c1/area1.map"));
-  std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile(CEMapType::C1, "resources/game/c1/area6.rsc"));
-  std::shared_ptr<C2MapFile> cMap(new C2MapFile(CEMapType::C1, "resources/game/c1/area6.map", cMapRsc.get()));
+  std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile(CEMapType::C1, "resources/game/c1/area4.rsc"));
+  std::shared_ptr<C2MapFile> cMap(new C2MapFile(CEMapType::C1, "resources/game/c1/area4.map", cMapRsc.get()));
   std::shared_ptr<CEPlayer> m_player(new CEPlayer(cMap));
   std::unique_ptr<TerrainRenderer> terrain(new TerrainRenderer(cMap.get(), cMapRsc.get()));
-  
-  std::cout << "Map texture atlas width: " << cMapRsc->getTextureAtlasWidth();
   
   Transform mTrans_land(glm::vec3(0,0,0), glm::vec3(0,0,0), glm::vec3(1.f, 1.f, 1.f));
   Camera* camera = m_player->getCamera();
@@ -79,11 +75,6 @@ int main(int argc, const char * argv[])
   input_manager->Bind(m_player);
   glfwSetCursorPosCallback(window, &cursorPosCallback);
   
-  int RealTime, PrevTime, TimeDt;
-  PrevTime = timeGetTime();
-  double preTime, curTime, deltaTime;
-  preTime = glfwGetTime();
-  
   glfwSwapInterval(1);
 
   bool render_water, render_sky, render_objects, render_terrain;
@@ -92,29 +83,29 @@ int main(int argc, const char * argv[])
   render_water = true;
   render_objects = true;
   render_terrain = true;
-  
+
+  glfwMakeContextCurrent(window);
+  int width, height;
+  glfwGetFramebufferSize(window, &width, &height);
+
+  double lastTime = glfwGetTime();
+  int nbFrames = 0;
+
+  glViewport(0, 0, width, height);
+
   while (!glfwWindowShouldClose(window))
   {
     glfwMakeContextCurrent(window);
-    
-    /* Game loop */
-    RealTime = timeGetTime();
-    srand( (unsigned)RealTime );
-    TimeDt = RealTime - PrevTime;
-    if (TimeDt<0) TimeDt = 10;
-    if (TimeDt>10000) TimeDt = 10;
-    if (TimeDt>1000) TimeDt = 1000;
-    
-    PrevTime = RealTime;
-    
-    curTime = glfwGetTime();
-    deltaTime = curTime - preTime;
-    preTime = curTime;
 
-    int width, height;
-    glfwGetFramebufferSize(window, &width, &height);
-    glViewport(0, 0, width, height);
-    
+    double currentTime = glfwGetTime();
+    double timeDelta = currentTime - lastTime;
+    nbFrames++;
+    if ( timeDelta >= 1.0 ) {
+      printf("%f ms/frame\n", 1000.0/double(nbFrames));
+      nbFrames = 0;
+      lastTime += 1.0;
+    }
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     if (render_sky) {
@@ -136,7 +127,7 @@ int main(int argc, const char * argv[])
 
     glfwSwapBuffers(window);
     
-    input_manager->ProcessLocalInput(window, deltaTime);
+    input_manager->ProcessLocalInput(window, timeDelta);
   
     glfwPollEvents();
   }

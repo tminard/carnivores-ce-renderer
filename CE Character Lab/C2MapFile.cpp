@@ -273,7 +273,7 @@ void C2MapFile::load(const std::string &file_name, C2MapRscFile* crsc_weak)
     infile.read(reinterpret_cast<char *>(this->m_texture_A_index_data.data()), 1024*1024*2);
     infile.read(reinterpret_cast<char *>(this->m_texture_B_index_data.data()), 1024*1024*2);
     infile.read(reinterpret_cast<char *>(this->m_object_index_data.data()), 1024*1024);
-    infile.read(reinterpret_cast<char *>(this->m_c1_flags_data.data()), 1024*1024*2);
+    infile.read(reinterpret_cast<char *>(this->m_flags_data.data()), 1024*1024*2);
 
     infile.read(reinterpret_cast<char *>(this->m_dawn_brightness_data.data()), 1024*1024);
     infile.read(reinterpret_cast<char *>(this->m_day_brightness_data.data()), 1024*1024);

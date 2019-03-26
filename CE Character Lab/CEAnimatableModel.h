@@ -17,6 +17,7 @@
 
 class CEGeometry;
 
+class Camera;
 class C2CarFile;
 
 class CEAnimatableModel {
@@ -43,6 +44,7 @@ public:
   ~CEAnimatableModel();
   
   /* Positioning details */
+  void Update(Camera& camera);
   Vector3d getCurrentPosition();
   void setPosition(float x, float z, float y);
   void moveTo(float x, float z, bool blocked_by_water, bool blocked_by_models);

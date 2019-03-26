@@ -12,6 +12,8 @@
 #define csONWATER          0x00010000
 #define HiColor(R,G,B) ( ((R)<<10) + ((G)<<5) + (B) )
 
+enum CEMapType { C2, C1 };
+
 typedef unsigned short WORD;
 
 typedef struct TagVector3d {

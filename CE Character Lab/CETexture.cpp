@@ -96,7 +96,7 @@ void CETexture::saveToBMPFile(std::string file_name)
     std::make_move_iterator(std::end(raw_texture_data_flipped)) };
   
   if (cBit->SetBits(v.data(), this->m_width, this->m_height, RedMask, GreenMask, BlueMask, AlphaMask)) {
-    if (!cBit->Save(file_name.c_str())) {
+    if (!cBit->Save(file_name.c_str(), 16)) {
       std::cout << "Failed to save bitmap!";
     }
   } else {

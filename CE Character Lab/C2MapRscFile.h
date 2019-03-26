@@ -1,10 +1,10 @@
-//
-//  C2MapRscFile.h
-//  CE Character Lab
-//
-//  Created by Tyler Minard on 8/14/15.
-//  Copyright (c) 2015 Tyler Minard. All rights reserved.
-//
+  //
+  //  C2MapRscFile.h
+  //  CE Character Lab
+  //
+  //  Created by Tyler Minard on 8/14/15.
+  //  Copyright (c) 2015 Tyler Minard. All rights reserved.
+  //
 
 #ifndef __CE_Character_Lab__C2MapRscFile__
 #define __CE_Character_Lab__C2MapRscFile__
@@ -42,6 +42,7 @@ private:
     Left = _PadTypeColor::Green,
     Right = _PadTypeColor::Blue
   };
+  CEMapType m_type;
   int m_fade_rgb[3][3]; // calculated sky RGB base values
   int m_trans_rgb[3][3]; // calculated sky transparency values
   
@@ -62,14 +63,15 @@ private:
   std::vector<uint8_t> m_shadow_map;
   
   void load(const std::string& file_name);
+  void load_c1(const std::string& file_name);
 public:
   std::vector< std::unique_ptr<CEWorldModel> > m_models;
-  
-  C2MapRscFile(const std::string& file_name);
+
+  C2MapRscFile(const CEMapType type, const std::string& file_name);
   ~C2MapRscFile();
   
-    int getTextureAtlasWidth();
-    int getWorldModelCount();
+  int getTextureAtlasWidth();
+  int getWorldModelCount();
   int getWaterCount();
 
   const CEWaterEntity& getWater(int i) const;

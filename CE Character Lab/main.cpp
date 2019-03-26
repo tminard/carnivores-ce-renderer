@@ -62,8 +62,9 @@ int main(int argc, const char * argv[])
   CreateFadeTab();
   std::unique_ptr<C2CarFilePreloader> cFileLoad(new C2CarFilePreloader);
   std::unique_ptr<LocalVideoManager> video_manager(new LocalVideoManager());
-  std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile("resources/game/ice/area2.rsc"));
-  std::shared_ptr<C2MapFile> cMap(new C2MapFile("resources/game/ice/area2.map", cMapRsc.get()));
+  //std::unique_ptr<C2MapFile> c1Map(new C2MapFile(CEMapType::C1, "resources/game/c1/area1.map"));
+  std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile(CEMapType::C1, "resources/game/c1/area1.rsc"));
+  std::shared_ptr<C2MapFile> cMap(new C2MapFile(CEMapType::C1, "resources/game/c1/area1.map", cMapRsc.get()));
   std::shared_ptr<CEPlayer> m_player(new CEPlayer(cMap));
   std::unique_ptr<TerrainRenderer> terrain(new TerrainRenderer(cMap.get(), cMapRsc.get()));
   
@@ -84,6 +85,13 @@ int main(int argc, const char * argv[])
   preTime = glfwGetTime();
   
   glfwSwapInterval(1);
+
+  bool render_water, render_sky, render_objects, render_terrain;
+
+  render_sky = true;
+  render_water = false;
+  render_objects = true;
+  render_terrain = true;
   
   while (!glfwWindowShouldClose(window))
   {
@@ -108,18 +116,23 @@ int main(int argc, const char * argv[])
     glViewport(0, 0, width, height);
     
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    
-    glDisable(GL_DEPTH_TEST);
-    cMapRsc->getDaySky()->Render(window, *camera);
-    glEnable(GL_DEPTH_TEST);
 
-    terrain->RenderObjects(*camera);
+    if (render_sky) {
+      glDisable(GL_DEPTH_TEST);
+      cMapRsc->getDaySky()->Render(window, *camera);
+      glEnable(GL_DEPTH_TEST);
+    }
 
-    cMapRsc->getTexture(0)->use();
-    terrain->Update(mTrans_land, *camera);
-    glDepthFunc(GL_LESS);
-    terrain->Render();
-    terrain->RenderWater();
+    if (render_objects) terrain->RenderObjects(*camera);
+
+    if (render_terrain) {
+      cMapRsc->getTexture(0)->use();
+      terrain->Update(mTrans_land, *camera);
+      glDepthFunc(GL_LESS);
+      terrain->Render();
+    }
+
+    if (render_water) terrain->RenderWater();
 
     glfwSwapBuffers(window);
     

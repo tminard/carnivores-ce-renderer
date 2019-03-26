@@ -15,7 +15,7 @@
 #include "transform.h"
 #include "camera.h"
 
-CEWorldModel::CEWorldModel(std::ifstream& instream)
+CEWorldModel::CEWorldModel(const CEMapType type, std::ifstream& instream)
 {
   this->m_old_object_info = new TObjInfo();
   
@@ -37,6 +37,7 @@ CEWorldModel::CEWorldModel(std::ifstream& instream)
   instream.read(reinterpret_cast<char *>(&_fcount), 4);
   instream.read(reinterpret_cast<char *>(&_object_count), 4);
   instream.read(reinterpret_cast<char *>(&_tsize), 4);
+
   texture_height = 256; // All c2 stock objects bitmaps are 256 px height
   
   spirit_texture_data.resize(128*128);
@@ -55,8 +56,8 @@ CEWorldModel::CEWorldModel(std::ifstream& instream)
     file_vertex_data[v].y *= 2.0f;
     file_vertex_data[v].z *= -2.0f; // Original models need to be inverted across z axis
   }
-  
-  instream.read(reinterpret_cast<char *>(spirit_texture_data.data()), 128*128*2);
+
+  if (type == C2) instream.read(reinterpret_cast<char *>(spirit_texture_data.data()), 128*128*2);
   
   // load bmp model
   float mxx = file_vertex_data.at(0).x+0.5f;
@@ -102,7 +103,9 @@ CEWorldModel::CEWorldModel(std::ifstream& instream)
   IndexedMeshLoader* m_loader = new IndexedMeshLoader(file_vertex_data, face_data);
   
   // load the geo
-  std::unique_ptr<CETexture> cTexture = std::unique_ptr<CETexture>(new CETexture(spirit_texture_data, 128*128*2, 128, 128));
+  std::unique_ptr<CETexture> cTexture;
+  if (type == C2) cTexture = std::unique_ptr<CETexture>(new CETexture(spirit_texture_data, 128*128*2, 128, 128));
+
   std::unique_ptr<CETexture> mTexture = std::unique_ptr<CETexture>(new CETexture(texture_data, 256*256*2, 256, 256));
   
   std::unique_ptr<CEGeometry> mGeo = std::unique_ptr<CEGeometry>(new CEGeometry(m_loader->getVertices(), m_loader->getIndices(), std::move(mTexture)));
@@ -137,12 +140,14 @@ CEWorldModel::CEWorldModel(std::ifstream& instream)
     cVertices.push_back(vt);
   }
   
-  std::unique_ptr<CESimpleGeometry> cGeo = std::unique_ptr<CESimpleGeometry>(new CESimpleGeometry(cVertices, std::move(cTexture)));
-  
   this->m_geometry = std::move(mGeo);
-  this->m_far_geometry = std::move(cGeo);
+
+  if (type == C2) {
+    std::unique_ptr<CESimpleGeometry> cGeo = std::unique_ptr<CESimpleGeometry>(new CESimpleGeometry(cVertices, std::move(cTexture)));
+    this->m_far_geometry = std::move(cGeo);
+  }
   
-  if (m_old_object_info->flags & objectANIMATED) {
+  if (m_old_object_info->flags & objectANIMATED && type == C2) {
     std::vector<short int> raw_animation_data;
     int ani_vcount;
     int kps, total_frames, total_ani_ms;

@@ -22,7 +22,7 @@ auto make_unique(Args&&... args) -> std::unique_ptr<T>
 }
 void Console_PrintLogString(std::string log_msg);
 
-C2MapRscFile::C2MapRscFile(const std::string& file_name)
+C2MapRscFile::C2MapRscFile(const CEMapType type, const std::string& file_name) : m_type(type)
 {
   this->load(file_name);
 }
@@ -75,9 +75,14 @@ void C2MapRscFile::load(const std::string &file_name)
     
     infile.read(reinterpret_cast<char *>(&texture_count), 4);
     infile.read(reinterpret_cast<char *>(&model_count), 4);
-    
-    infile.read(reinterpret_cast<char *>(this->m_fade_rgb), 4*3*3);
-    infile.read(reinterpret_cast<char *>(this->m_trans_rgb), 4*3*3);
+
+    if (m_type == C2) {
+      infile.read(reinterpret_cast<char *>(this->m_fade_rgb), 4*3*3);
+      infile.read(reinterpret_cast<char *>(this->m_trans_rgb), 4*3*3);
+    } else {
+      infile.read(reinterpret_cast<char *>(this->m_fade_rgb), 4*3);
+      infile.read(reinterpret_cast<char *>(this->m_trans_rgb), 4*3);
+    }
     
     std::vector<uint16_t> raw_texture_data; //rgba5551
     raw_texture_data.resize(SOURCE_SQUARE_SIZE*SOURCE_SQUARE_SIZE*texture_count);
@@ -198,19 +203,22 @@ void C2MapRscFile::load(const std::string &file_name)
     std::unique_ptr<CETexture> cTexture = std::unique_ptr<CETexture>(new CETexture(final_texture_data, squared_texture_rows*TEXTURE_SQUARE_SIZE*squared_texture_rows*TEXTURE_SQUARE_SIZE, squared_texture_rows*TEXTURE_SQUARE_SIZE, squared_texture_rows*TEXTURE_SQUARE_SIZE));
     this->m_texture_atlas_width = squared_texture_rows;
     this->m_texture_count = texture_count;
+    cTexture->saveToBMPFile("/Users/tminard/c1tst.bmp");
     this->m_textures.push_back(std::move(cTexture));
     
     
     // Load 3d models
     for (int m=0; m < model_count; m++) {
-      std::unique_ptr<CEWorldModel> cModel = std::unique_ptr<CEWorldModel>(new CEWorldModel(infile));
+      std::unique_ptr<CEWorldModel> cModel = std::unique_ptr<CEWorldModel>(new CEWorldModel(m_type, infile));
       this->m_models.push_back(std::move(cModel));
     }
     
     // Load sky bitmap and map overlay (dawn, day, night)
-    this->m_dawn_sky = std::unique_ptr<C2Sky>(new C2Sky(infile));
+    if (m_type == C2) this->m_dawn_sky = std::unique_ptr<C2Sky>(new C2Sky(infile));
+
     this->m_day_sky = std::unique_ptr<C2Sky>(new C2Sky(infile));
-    this->m_night_sky = std::unique_ptr<C2Sky>(new C2Sky(infile));
+
+    if (m_type == C2) this->m_night_sky = std::unique_ptr<C2Sky>(new C2Sky(infile));
     
     this->m_shadow_map.resize(128*128);
     infile.read(reinterpret_cast<char *>(this->m_shadow_map.data()), 128*128);

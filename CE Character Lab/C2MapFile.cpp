@@ -16,9 +16,25 @@
 
 void Console_PrintLogString(std::string log_msg);
 
-C2MapFile::C2MapFile(const std::string& map_file_name, const C2MapRscFile* crsc_weak)
+C2MapFile::C2MapFile(const CEMapType type, const std::string& map_file_name, const C2MapRscFile* crsc_weak) : m_type(type)
 {
-  this->load(map_file_name, crsc_weak);
+  switch (m_type) {
+    case C2:
+      this->load(map_file_name, crsc_weak);
+      break;
+    case C1:
+      this->load_c1(map_file_name);
+  }
+
+}
+
+C2MapFile::C2MapFile(const CEMapType type, const std::string& map_file_name) : m_type(type)
+{
+  if (type != CEMapType::C1) {
+    throw 1;
+  }
+
+  this->load_c1(map_file_name);
 }
 
 C2MapFile::~C2MapFile()
@@ -28,12 +44,20 @@ C2MapFile::~C2MapFile()
 
 float C2MapFile::getWidth()
 {
-  return SIZE;
+  if (m_type == CEMapType::C2) {
+    return SIZE;
+  } else {
+    return SIZE_C1;
+  }
 }
 
 float C2MapFile::getHeight()
 {
-  return SIZE;
+  if (m_type == CEMapType::C2) {
+    return SIZE;
+  } else {
+    return SIZE_C1;
+  }
 }
 
 float C2MapFile::getTileLength()
@@ -43,23 +67,31 @@ float C2MapFile::getTileLength()
 
 int C2MapFile::getTextureIDAt(int xy)
 {
-  return int(this->m_texture_A_index_data.at(xy));
+  if (m_type == CEMapType::C2) {
+    return int(this->m_texture_A_index_data.at(xy));
+  } else {
+    return int(this->m_texturec1_A_index_data.at(xy));
+  }
 }
 
 uint16_t C2MapFile::getFlagsAt(int x, int y)
 {
-  int xy = (y * (SIZE)) + x;
-  
+  int xy = (y * (this->getWidth())) + x;
+
   return this->getFlagsAt(xy);
 }
 
 uint16_t C2MapFile::getFlagsAt(int xy)
 {
-  if (xy <0 || xy >= this->m_flags_data.size()) {
-    return 0;
-  }
+  if (m_type == CEMapType::C2) {
+    if (xy <0 || xy >= this->m_flags_data.size()) {
+      return 0;
+    }
 
-  return this->m_flags_data.at(xy);
+    return this->m_flags_data.at(xy);
+  } else {
+    return this->m_c1_flags_data.at(xy);
+  }
 }
 
 float C2MapFile::getHeightAt(int xy)
@@ -68,7 +100,7 @@ float C2MapFile::getHeightAt(int xy)
     return 0;
   }
 
-  float scaled_height = this->m_heightmap_data.at(xy) * HEIGHT_SCALE;
+  float scaled_height = this->m_heightmap_data.at(xy) * this->getHeightmapScale();
 
   return (scaled_height);
 }
@@ -84,7 +116,23 @@ int C2MapFile::getObjectAt(int xy)
 
 float C2MapFile::getHeightmapScale()
 {
-  return HEIGHT_SCALE;
+  if (m_type == CEMapType::C2) {
+    return HEIGHT_SCALE;
+  } else {
+    return HEIGHT_SCALE_C1;
+  }
+}
+
+bool C2MapFile::hasWaterAt(int xy)
+{
+  if (m_type == CEMapType::C2) {
+    uint16_t flags = this->getFlagsAt(xy);
+    if (flags & 0x0080 || flags & 0x8000) return true;
+
+    return false;
+  } else {
+    return false;
+  }
 }
 
 int C2MapFile::getWaterAt(int xy)
@@ -155,6 +203,34 @@ void C2MapFile::postProcess(const C2MapRscFile* crsc_weak)
     }
 }
 
+void C2MapFile::load_c1(const std::string &file_name)
+{
+  std::ifstream infile;
+  infile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+
+  try {
+    infile.open(file_name.c_str(), std::ios::binary | std::ios::in);
+
+    infile.read(reinterpret_cast<char *>(this->m_heightmap_data.data()), 512*512);
+    infile.read(reinterpret_cast<char *>(this->m_texturec1_A_index_data.data()), 512*512);
+    infile.read(reinterpret_cast<char *>(this->m_texturec1_B_index_data.data()), 512*512);
+    infile.read(reinterpret_cast<char *>(this->m_object_index_data.data()), 512*512);
+    infile.read(reinterpret_cast<char *>(this->m_flags_data.data()), 512*512);
+
+    infile.read(reinterpret_cast<char *>(this->m_day_brightness_data.data()), 512*512);
+
+    infile.read(reinterpret_cast<char *>(this->m_watermap_data.data()), 512*512); // C1 has only 1 water - these are the heights of the underwater surface
+    infile.read(reinterpret_cast<char *>(this->m_object_heightmap_data.data()), 512*512);
+    infile.read(reinterpret_cast<char *>(this->m_fog_data.data()), 256*256);
+    infile.read(reinterpret_cast<char *>(this->m_soundfx_data.data()), 256*256);
+
+    infile.close();
+  } catch (std::ifstream::failure e) {
+    Console_PrintLogString("Failed to load C1 " + file_name + ": " + strerror(errno));
+    std::cerr << "Exception opening/reading/closing file\n";
+  }
+}
+
 void C2MapFile::load(const std::string &file_name, const C2MapRscFile* crsc_weak)
 {
   std::ifstream infile;
@@ -167,7 +243,7 @@ void C2MapFile::load(const std::string &file_name, const C2MapRscFile* crsc_weak
     infile.read(reinterpret_cast<char *>(this->m_texture_A_index_data.data()), 1024*1024*2);
     infile.read(reinterpret_cast<char *>(this->m_texture_B_index_data.data()), 1024*1024*2);
     infile.read(reinterpret_cast<char *>(this->m_object_index_data.data()), 1024*1024);
-    infile.read(reinterpret_cast<char *>(this->m_flags_data.data()), 1024*1024*2);
+    infile.read(reinterpret_cast<char *>(this->m_c1_flags_data.data()), 1024*1024*2);
 
     infile.read(reinterpret_cast<char *>(this->m_dawn_brightness_data.data()), 1024*1024);
     infile.read(reinterpret_cast<char *>(this->m_day_brightness_data.data()), 1024*1024);

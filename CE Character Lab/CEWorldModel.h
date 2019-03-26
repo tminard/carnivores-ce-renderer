@@ -71,7 +71,7 @@ private:
   void _generateBoundingBox(std::vector<Vertex>& vertex_data); // old method for bounding box. Move to geo when able
   
 public:
-  CEWorldModel(std::ifstream& instream);
+  CEWorldModel(const CEMapType type, std::ifstream& instream);
   ~CEWorldModel();
 
   void addFar(Transform& transform);

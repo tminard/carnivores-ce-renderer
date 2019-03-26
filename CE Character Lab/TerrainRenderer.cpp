@@ -100,7 +100,6 @@ void TerrainRenderer::preloadObjectMap()
   }
 
   for (int m = 0; m < this->m_crsc_data_weak->getWorldModelCount(); m++) {
-    this->m_crsc_data_weak->getWorldModel(m)->updateFarInstances();
     this->m_crsc_data_weak->getWorldModel(m)->updateNearInstances();
   }
 }
@@ -381,9 +380,7 @@ void TerrainRenderer::loadIntoHardwareMemory()
       int texID = this->m_cmap_data_weak->getTextureIDAt(base_index);
       uint16_t flags = this->m_cmap_data_weak->getFlagsAt(x, y);
 
-      if (flags & 0x0080 || flags & 0x8000) {
-        loadWaterAt(x, y);
-      }
+      if (this->m_cmap_data_weak->hasWaterAt(base_index)) loadWaterAt(x, y);
       
       bool final_y_row = (y + 1 > width);
       bool final_x_column = (x + 1 > height);

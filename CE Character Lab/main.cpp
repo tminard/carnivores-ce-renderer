@@ -63,8 +63,8 @@ int main(int argc, const char * argv[])
   std::unique_ptr<C2CarFilePreloader> cFileLoad(new C2CarFilePreloader);
   std::unique_ptr<LocalVideoManager> video_manager(new LocalVideoManager());
   //std::unique_ptr<C2MapFile> c1Map(new C2MapFile(CEMapType::C1, "resources/game/c1/area1.map"));
-  std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile(CEMapType::C1, "resources/game/c1/area1.rsc"));
-  std::shared_ptr<C2MapFile> cMap(new C2MapFile(CEMapType::C1, "resources/game/c1/area1.map", cMapRsc.get()));
+  std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile(CEMapType::C1, "resources/game/c1/area6.rsc"));
+  std::shared_ptr<C2MapFile> cMap(new C2MapFile(CEMapType::C1, "resources/game/c1/area6.map", cMapRsc.get()));
   std::shared_ptr<CEPlayer> m_player(new CEPlayer(cMap));
   std::unique_ptr<TerrainRenderer> terrain(new TerrainRenderer(cMap.get(), cMapRsc.get()));
   
@@ -89,7 +89,7 @@ int main(int argc, const char * argv[])
   bool render_water, render_sky, render_objects, render_terrain;
 
   render_sky = true;
-  render_water = false;
+  render_water = true;
   render_objects = true;
   render_terrain = true;
   

@@ -61,6 +61,14 @@ C2Sky* C2MapRscFile::getDaySky()
   return this->m_day_sky.get();
 }
 
+void C2MapRscFile::setWaterHeight(int i, int h_unscaled)
+{
+  CEWaterEntity wd = this->m_waters.at(i);
+  wd.water_level = h_unscaled;
+
+  this->m_waters.at(i) = wd;
+}
+
 void C2MapRscFile::load(const std::string &file_name)
 {
   std::ifstream infile;
@@ -270,6 +278,16 @@ void C2MapRscFile::load(const std::string &file_name)
       uint32_t length = 0;
       infile.read((char*)&length, sizeof(uint32_t));
       infile.seekg(length + (16*16) + 8, std::ios_base::cur);
+    }
+
+    if (m_type == C1) {
+      CEWaterEntity wd;
+      wd.texture_id = 0;
+      //wd.water_level = 0; // actually height map height - use magic number to calc on the fly
+      wd.transparency = 0.f;
+
+      this->m_waters.push_back(wd);
+      return;
     }
 
     infile.read(reinterpret_cast<char *>(&this->m_num_waters), 4);

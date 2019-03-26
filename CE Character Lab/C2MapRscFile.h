@@ -74,6 +74,8 @@ public:
   int getWorldModelCount();
   int getWaterCount();
 
+  void setWaterHeight(int i, int h_unscaled);
+
   const CEWaterEntity& getWater(int i) const;
   CEWorldModel* getWorldModel(int i);
   CETexture* getTexture(int i);

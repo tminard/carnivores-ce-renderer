@@ -16,25 +16,16 @@
 
 void Console_PrintLogString(std::string log_msg);
 
-C2MapFile::C2MapFile(const CEMapType type, const std::string& map_file_name, const C2MapRscFile* crsc_weak) : m_type(type)
+C2MapFile::C2MapFile(const CEMapType type, const std::string& map_file_name, C2MapRscFile* crsc_weak) : m_type(type)
 {
   switch (m_type) {
     case C2:
       this->load(map_file_name, crsc_weak);
       break;
     case C1:
-      this->load_c1(map_file_name);
+      this->load_c1(map_file_name, crsc_weak);
   }
 
-}
-
-C2MapFile::C2MapFile(const CEMapType type, const std::string& map_file_name) : m_type(type)
-{
-  if (type != CEMapType::C1) {
-    throw 1;
-  }
-
-  this->load_c1(map_file_name);
 }
 
 C2MapFile::~C2MapFile()
@@ -65,12 +56,17 @@ float C2MapFile::getTileLength()
   return 256.f;
 }
 
+  // TODO: handle split textures
 int C2MapFile::getTextureIDAt(int xy)
 {
   if (m_type == CEMapType::C2) {
     return int(this->m_texture_A_index_data.at(xy));
   } else {
-    return int(this->m_texturec1_A_index_data.at(xy));
+    if (this->hasWaterAt(xy)) {
+      return 1;
+    } else {
+      return int(this->m_texturec1_A_index_data.at(xy));
+    }
   }
 }
 
@@ -94,13 +90,34 @@ uint16_t C2MapFile::getFlagsAt(int xy)
   }
 }
 
+float C2MapFile::getWaterHeightAt(int xy)
+{
+  if (xy <0 || xy >= this->m_heightmap_data.size() || m_type == C2) {
+    return 0;
+  }
+
+  float scaled_height = this->m_heightmap_data.at(xy) * this->getHeightmapScale();
+
+  return (scaled_height);
+}
+
 float C2MapFile::getHeightAt(int xy)
 {
   if (xy <0 || xy >= this->m_heightmap_data.size()) {
     return 0;
   }
 
-  float scaled_height = this->m_heightmap_data.at(xy) * this->getHeightmapScale();
+  float scaled_height;
+
+  if (m_type == C2) {
+    scaled_height = this->m_heightmap_data.at(xy) * this->getHeightmapScale();
+  } else {
+    if (this->hasWaterAt(xy)) {
+      scaled_height = (this->m_watermap_data.at(xy) - 48) * this->getHeightmapScale();
+    } else {
+      scaled_height = this->m_heightmap_data.at(xy) * this->getHeightmapScale();
+    }
+  }
 
   return (scaled_height);
 }
@@ -131,13 +148,19 @@ bool C2MapFile::hasWaterAt(int xy)
 
     return false;
   } else {
+    if (abs(this->m_watermap_data.at(xy) - this->m_heightmap_data.at(xy)) != 48) return true;
+
     return false;
   }
 }
 
 int C2MapFile::getWaterAt(int xy)
 {
-  return this->m_watermap_data.at(xy);
+  if (m_type == C2) {
+    return this->m_watermap_data.at(xy);
+  } else {
+    return 0; // Only 1 water type in C1
+  }
 }
 
 float C2MapFile::getObjectHeightAt(int xy)
@@ -174,8 +197,14 @@ int C2MapFile::getObjectHeightForRadius(int x, int y, int R)
 /*
  * fix flags, etc
  */
-void C2MapFile::postProcess(const C2MapRscFile* crsc_weak)
+void C2MapFile::postProcess(C2MapRscFile* crsc_weak)
 {
+  if (m_type == C1) {
+    crsc_weak->setWaterHeight(0, -1); // magiccccc
+
+    return;
+  }
+
   int w = (int)this->getWidth();
   int h = (int)this->getHeight();
   
@@ -203,7 +232,7 @@ void C2MapFile::postProcess(const C2MapRscFile* crsc_weak)
     }
 }
 
-void C2MapFile::load_c1(const std::string &file_name)
+void C2MapFile::load_c1(const std::string &file_name, C2MapRscFile* crsc_weak)
 {
   std::ifstream infile;
   infile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
@@ -215,7 +244,7 @@ void C2MapFile::load_c1(const std::string &file_name)
     infile.read(reinterpret_cast<char *>(this->m_texturec1_A_index_data.data()), 512*512);
     infile.read(reinterpret_cast<char *>(this->m_texturec1_B_index_data.data()), 512*512);
     infile.read(reinterpret_cast<char *>(this->m_object_index_data.data()), 512*512);
-    infile.read(reinterpret_cast<char *>(this->m_flags_data.data()), 512*512);
+    infile.read(reinterpret_cast<char *>(this->m_c1_flags_data.data()), 512*512);
 
     infile.read(reinterpret_cast<char *>(this->m_day_brightness_data.data()), 512*512);
 
@@ -225,13 +254,14 @@ void C2MapFile::load_c1(const std::string &file_name)
     infile.read(reinterpret_cast<char *>(this->m_soundfx_data.data()), 256*256);
 
     infile.close();
+    this->postProcess(crsc_weak);
   } catch (std::ifstream::failure e) {
     Console_PrintLogString("Failed to load C1 " + file_name + ": " + strerror(errno));
     std::cerr << "Exception opening/reading/closing file\n";
   }
 }
 
-void C2MapFile::load(const std::string &file_name, const C2MapRscFile* crsc_weak)
+void C2MapFile::load(const std::string &file_name, C2MapRscFile* crsc_weak)
 {
   std::ifstream infile;
   infile.exceptions(std::ifstream::failbit | std::ifstream::badbit);

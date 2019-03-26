@@ -283,10 +283,18 @@ void TerrainRenderer::loadWaterAt(int x, int y)
   CEWaterEntity water_data = this->m_crsc_data_weak->getWater(water_index);
   _Water* water_object = &this->m_waters[water_index];
 
-  glm::vec3 vpositionUL = this->calcWorldVertex(x, y, true, water_object->m_height);
-  glm::vec3 vpositionUR = this->calcWorldVertex(x + 1, y, true, water_object->m_height);
-  glm::vec3 vpositionLL = this->calcWorldVertex(x, y + 1, true, water_object->m_height);
-  glm::vec3 vpositionLR = this->calcWorldVertex(x + 1, y + 1, true, water_object->m_height);
+  float wheight;
+  if (water_object->m_height <= 0) {
+    wheight = this->m_cmap_data_weak->getWaterHeightAt(xy);
+  } else {
+    wheight = water_object->m_height;
+  }
+
+
+  glm::vec3 vpositionUL = this->calcWorldVertex(x, y, true, wheight);
+  glm::vec3 vpositionUR = this->calcWorldVertex(x + 1, y, true, wheight);
+  glm::vec3 vpositionLL = this->calcWorldVertex(x, y + 1, true, wheight);
+  glm::vec3 vpositionLR = this->calcWorldVertex(x + 1, y + 1, true, wheight);
 
   bool quad_reverse = (flags & 0x0010);
   int texture_direction = (flags & 3);

@@ -46,16 +46,16 @@ private:
   constexpr static const float HEIGHT_SCALE = 64.f;
   constexpr static const float HEIGHT_SCALE_C1 = 32.f;
   
-  void postProcess(const C2MapRscFile* crsc_weak);
+  void postProcess(C2MapRscFile* crsc_weak);
 
 public:
-  C2MapFile(const CEMapType map_type, const std::string& map_file_name, const C2MapRscFile* crsc_weak);
-  C2MapFile(const CEMapType map_type, const std::string& map_file_name);
+  C2MapFile(const CEMapType map_type, const std::string& map_file_name, C2MapRscFile* crsc_weak);
   ~C2MapFile();
 
   int getWaterAt(int xy);
   float getHeightAt(int xy);
   float getObjectHeightAt(int xy);
+  float getWaterHeightAt(int xy); // Used by C1
   int getObjectHeightForRadius(int x, int y, int R);
   int getObjectAt(int xy);
   int getTextureIDAt(int xy);
@@ -69,8 +69,8 @@ public:
 
   bool hasWaterAt(int xy);
 
-  void load(const std::string& file_name, const C2MapRscFile* crsc_weak);
-  void load_c1(const std::string& file_name);
+  void load(const std::string& file_name, C2MapRscFile* crsc_weak);
+  void load_c1(const std::string& file_name, C2MapRscFile* crsc_weak);
 };
 
 #endif /* defined(__CE_Character_Lab__C2MapFile__) */

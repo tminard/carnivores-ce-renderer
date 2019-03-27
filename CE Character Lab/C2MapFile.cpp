@@ -56,16 +56,29 @@ float C2MapFile::getTileLength()
   return 256.f;
 }
 
+int C2MapFile::getWaterTextureIDAt(int xy, int water_texture_id)
+{
+  if (m_type == C2) {
+    return water_texture_id;
+  } else {
+    return int(this->m_texturec1_A_index_data.at(xy));
+  }
+}
+
   // TODO: handle split textures
 int C2MapFile::getTextureIDAt(int xy)
 {
   if (m_type == CEMapType::C2) {
     return int(this->m_texture_A_index_data.at(xy));
   } else {
+    int id = int(this->m_texturec1_A_index_data.at(xy));
     if (this->hasWaterAt(xy)) {
-      return 1;
+      if (!id) {
+        return 1;
+      }
+      return id;
     } else {
-      return int(this->m_texturec1_A_index_data.at(xy));
+      return id;
     }
   }
 }
@@ -83,9 +96,11 @@ uint16_t C2MapFile::getFlagsAt(int xy)
     if (xy <0 || xy >= this->m_flags_data.size()) {
       return 0;
     }
-
     return this->m_flags_data.at(xy);
   } else {
+    if (xy <0 || xy >= this->m_c1_flags_data.size()) {
+      return 0;
+    }
     return this->m_c1_flags_data.at(xy);
   }
 }
@@ -96,7 +111,7 @@ float C2MapFile::getWaterHeightAt(int xy)
     return 0;
   }
 
-  float scaled_height = this->m_heightmap_data.at(xy) * this->getHeightmapScale();
+  float scaled_height = (this->m_heightmap_data.at(xy) + 48) * this->getHeightmapScale();
 
   return (scaled_height);
 }
@@ -113,9 +128,9 @@ float C2MapFile::getHeightAt(int xy)
     scaled_height = this->m_heightmap_data.at(xy) * this->getHeightmapScale();
   } else {
     if (this->hasWaterAt(xy)) {
-      scaled_height = (this->m_watermap_data.at(xy) - 48) * this->getHeightmapScale();
+      scaled_height = (this->m_watermap_data.at(xy)) * this->getHeightmapScale();
     } else {
-      scaled_height = this->m_heightmap_data.at(xy) * this->getHeightmapScale();
+      scaled_height = this->m_watermap_data.at(xy) * this->getHeightmapScale();
     }
   }
 
@@ -148,9 +163,92 @@ bool C2MapFile::hasWaterAt(int xy)
 
     return false;
   } else {
+    uint8_t flags = this->getFlagsAt(xy);
+    if (flags & 0x0080 || flags & 0x8000) return true;
     if (abs(this->m_watermap_data.at(xy) - this->m_heightmap_data.at(xy)) != 48) return true;
 
+    // Weird issue in C1 map data
+    int id = int(this->m_texturec1_A_index_data.at(xy));
+    if (!id) {
+      // Has a water texture, but not set to water?
+      return true;
+    }
+
     return false;
+  }
+}
+
+bool C2MapFile::hasWaterAt(int x, int y)
+{
+  int xy = (y * this->getWidth()) + x;
+
+  return this->hasWaterAt(xy);
+}
+
+// true if the tile has water as specified in the original file flags
+bool C2MapFile::hasOriginalWaterAt(int xy)
+{
+  if (m_type == CEMapType::C2) {
+    uint16_t flags = this->getFlagsAt(xy);
+    if (flags & 0x0080) return true;
+
+    return false;
+  } else {
+    uint8_t flags = this->getFlagsAt(xy);
+    bool has_water = this->hasWaterAt(xy);
+    if (!(flags & 0x8000) && has_water) return true; // If we haven't added it, but it is there, then assume it was original
+
+    return false;
+  }
+}
+
+bool C2MapFile::hasOriginalWaterAt(int x, int y)
+{
+  int xy = (y * this->getWidth()) + x;
+  return this->hasOriginalWaterAt(xy);
+}
+
+// true if the tile has water but it was marked by the engine
+bool C2MapFile::hasDynamicWaterAt(int xy)
+{
+  if (m_type == CEMapType::C2) {
+    uint16_t flags = this->getFlagsAt(xy);
+    if (flags & 0x8000) return true;
+
+    return false;
+  } else {
+    uint8_t flags = this->getFlagsAt(xy);
+    if (flags & 0x8000) return true;
+
+    return false;
+  }
+}
+bool C2MapFile::hasDynamicWaterAt(int x, int y)
+{
+  int xy = (y * this->getWidth()) + x;
+  return this->hasDynamicWaterAt(xy);
+}
+
+void C2MapFile::setWaterAt(int x, int y)
+{
+  if (m_type == C2) {
+    this->setWaterAt(x, y, -1);
+  } else {
+    throw 1; // Only C2 uses flags for water data
+  }
+}
+
+void C2MapFile::setWaterAt(int x, int y, int water_height)
+{
+  int xy = (y * this->getWidth()) + x;
+
+  if (m_type == C2) {
+    this->m_flags_data.at(xy) |= 0x8000;
+  } else {
+    // meh?
+    this->m_c1_flags_data[xy] |= 0x8000;
+    //this->m_heightmap_data[xy] = water_height;
+    this->m_watermap_data[xy] = this->m_heightmap_data.at(xy) + 48;
   }
 }
 
@@ -159,7 +257,7 @@ int C2MapFile::getWaterAt(int xy)
   if (m_type == C2) {
     return this->m_watermap_data.at(xy);
   } else {
-    return 0; // Only 1 water type in C1
+    return 0; // Only 1 water type in C1 - todo: not true!
   }
 }
 
@@ -194,6 +292,28 @@ int C2MapFile::getObjectHeightForRadius(int x, int y, int R)
     return (int)hr;
 }
 
+void C2MapFile::fillWater(int x, int y, int source_x, int source_y)
+{
+  if (m_type == C1) {
+    int srcxy = (source_y * this->getWidth()) + source_x;
+    int h = this->m_heightmap_data.at(srcxy);
+    this->setWaterAt(x, y, h);
+  } else {
+    this->setWaterAt(x, y);
+    this->copyWaterMap(x, y, source_x, source_y);
+  }
+}
+
+void C2MapFile::copyWaterMap(int x, int y, int src_x, int src_y)
+{
+  int xy = (y * this->getWidth()) + x;
+  int srcxy = (src_y * this->getWidth()) + src_x;
+
+  if (m_type == C2) {
+    this->m_watermap_data.at(xy) = this->m_watermap_data.at(srcxy);
+  }
+}
+
 /*
  * fix flags, etc
  */
@@ -201,8 +321,6 @@ void C2MapFile::postProcess(C2MapRscFile* crsc_weak)
 {
   if (m_type == C1) {
     crsc_weak->setWaterHeight(0, -1); // magiccccc
-
-    return;
   }
 
   int w = (int)this->getWidth();
@@ -211,19 +329,18 @@ void C2MapFile::postProcess(C2MapRscFile* crsc_weak)
   for (int y = 1; y < w-1; y++)
     for (int x = 1; x < h-1; x++) {
       int xy = (y * w) + x;
-      if (!(this->getFlagsAt(xy) & 0x0080)) {
-        
-        if (this->getFlagsAt(x+1, y) & 0x0080) { this->m_flags_data.at((y*w) + x + 1) |= 0x8000; this->m_watermap_data.at(xy) = this->m_watermap_data.at((y*w) + x + 1); }
-        if (this->getFlagsAt(x, y+1) & 0x0080) { this->m_flags_data.at(((y+1)*w) + x) |= 0x8000; this->m_watermap_data.at(xy) = this->m_watermap_data.at(((y+1)*w) + x); }
-        if (this->getFlagsAt(x-1, y) & 0x0080) { this->m_flags_data.at((y*w) + x - 1) |= 0x8000; this->m_watermap_data.at(xy) = this->m_watermap_data.at((y*w) + x - 1); }
-        if (this->getFlagsAt(x, y-1) & 0x0080) { this->m_flags_data.at(((y-1)*w) + x) |= 0x8000; this->m_watermap_data.at(xy) = this->m_watermap_data.at(((y-1)*w) + x); }
-        
-        if (this->getFlagsAt(x-1, y-1) & 0x0080) { this->m_flags_data.at(((y-1)*w) + x - 1) |= 0x8000; this->m_watermap_data.at(xy) = this->m_watermap_data.at(((y-1)*w) + x - 1); }
-        if (this->getFlagsAt(x+1, y-1) & 0x0080) { this->m_flags_data.at(((y-1)*w) + x + 1) |= 0x8000; this->m_watermap_data.at(xy) = this->m_watermap_data.at(((y-1)*w) + x + 1); }
-        if (this->getFlagsAt(x-1, y+1) & 0x0080) { this->m_flags_data.at(((y+1)*w) + x - 1) |= 0x8000; this->m_watermap_data.at(xy) = this->m_watermap_data.at(((y+1)*w) + x - 1); }
-        if (this->getFlagsAt(x+1, y+1) & 0x0080) { this->m_flags_data.at(((y+1)*w) + x + 1) |= 0x8000; this->m_watermap_data.at(xy) = this->m_watermap_data.at(((y+1)*w) + x + 1); }
-        
-        if (this->getFlagsAt(xy) & 0x8000) {
+      if (!this->hasOriginalWaterAt(xy)) {
+
+        if (this->hasOriginalWaterAt(x+1, y)) this->fillWater(x, y, x+1, y);
+        if (this->hasOriginalWaterAt(x, y+1)) this->fillWater(x, y, x, y+1);
+        if (this->hasOriginalWaterAt(x-1, y)) this->fillWater(x, y, x-1, y);
+        if (this->hasOriginalWaterAt(x, y-1)) this->fillWater(x, y, x, y-1);
+        if (this->hasOriginalWaterAt(x-1, y-1)) this->fillWater(x, y, x-1, y-1);
+        if (this->hasOriginalWaterAt(x+1, y-1)) this->fillWater(x, y, x+1, y-1);
+        if (this->hasOriginalWaterAt(x-1, y+1)) this->fillWater(x, y, x-1, y+1);
+        if (this->hasOriginalWaterAt(x+1, y+1)) this->fillWater(x, y, x+1, y+1);
+
+        if (this->hasDynamicWaterAt(xy) && m_type == C2) {
           if (this->m_heightmap_data.at(xy) == crsc_weak->getWater(this->m_watermap_data.at(xy)).water_level) {
             this->m_heightmap_data.at(xy) += 1;
           }

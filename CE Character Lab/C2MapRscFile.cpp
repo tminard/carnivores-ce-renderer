@@ -211,7 +211,6 @@ void C2MapRscFile::load(const std::string &file_name)
     std::unique_ptr<CETexture> cTexture = std::unique_ptr<CETexture>(new CETexture(final_texture_data, squared_texture_rows*TEXTURE_SQUARE_SIZE*squared_texture_rows*TEXTURE_SQUARE_SIZE, squared_texture_rows*TEXTURE_SQUARE_SIZE, squared_texture_rows*TEXTURE_SQUARE_SIZE));
     this->m_texture_atlas_width = squared_texture_rows;
     this->m_texture_count = texture_count;
-    cTexture->saveToBMPFile("/Users/tminard/c1tst.bmp");
     this->m_textures.push_back(std::move(cTexture));
     
     
@@ -297,7 +296,7 @@ void C2MapRscFile::load(const std::string &file_name)
       CEWaterEntity wd;
       wd.texture_id = 0;
       //wd.water_level = 0; // actually height map height - use magic number to calc on the fly
-      wd.transparency = 0.f;
+      wd.transparency = 0.8f;
 
       this->m_waters.push_back(wd);
       return;

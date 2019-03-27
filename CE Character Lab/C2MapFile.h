@@ -20,6 +20,7 @@
 #include "g_shared.h"
 
 class C2MapRscFile;
+struct _Water;
 
 class C2MapFile
 {
@@ -47,6 +48,8 @@ private:
   constexpr static const float HEIGHT_SCALE_C1 = 32.f;
   
   void postProcess(C2MapRscFile* crsc_weak);
+  void fillWater(int x, int y, int src_x, int src_y);
+  void copyWaterMap(int x, int y, int src_x, int src_y);
 
 public:
   C2MapFile(const CEMapType map_type, const std::string& map_file_name, C2MapRscFile* crsc_weak);
@@ -59,6 +62,8 @@ public:
   int getObjectHeightForRadius(int x, int y, int R);
   int getObjectAt(int xy);
   int getTextureIDAt(int xy);
+  int getWaterTextureIDAt(int xy, int water_texture_id);
+
   uint16_t getFlagsAt(int xy);
   uint16_t getFlagsAt(int x, int y);
 
@@ -68,6 +73,15 @@ public:
   float getHeightmapScale();
 
   bool hasWaterAt(int xy);
+  bool hasWaterAt(int x, int y);
+
+  bool hasOriginalWaterAt(int xy);
+  bool hasOriginalWaterAt(int x, int y);
+  bool hasDynamicWaterAt(int xy);
+  bool hasDynamicWaterAt(int x, int y);
+
+  void setWaterAt(int x, int y); // for C2
+  void setWaterAt(int x, int y, int water_height);// c1
 
   void load(const std::string& file_name, C2MapRscFile* crsc_weak);
   void load_c1(const std::string& file_name, C2MapRscFile* crsc_weak);

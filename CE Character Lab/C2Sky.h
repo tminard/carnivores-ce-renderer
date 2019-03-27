@@ -30,8 +30,8 @@ class Tga;
 class C2Sky
 {
 private:
-  const float SKY_DISTANCE = 12800.f;
-  const float SKY_HEIGHT = 600.f;
+  const float SKY_DISTANCE = 6000.f;
+  const float SKY_HEIGHT = 300.f;
 
   std::unique_ptr<ShaderProgram> m_shader;
 

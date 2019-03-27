@@ -280,6 +280,7 @@ void TerrainRenderer::loadWaterAt(int x, int y)
   int xy = (y*width) + x;
 
   int water_index = this->m_cmap_data_weak->getWaterAt(xy);
+
   uint16_t flags = this->m_cmap_data_weak->getFlagsAt(xy);
 
   CEWaterEntity water_data = this->m_crsc_data_weak->getWater(water_index);
@@ -292,7 +293,6 @@ void TerrainRenderer::loadWaterAt(int x, int y)
     wheight = water_object->m_height;
   }
 
-
   glm::vec3 vpositionUL = this->calcWorldVertex(x, y, true, wheight);
   glm::vec3 vpositionUR = this->calcWorldVertex(x + 1, y, true, wheight);
   glm::vec3 vpositionLL = this->calcWorldVertex(x, y + 1, true, wheight);
@@ -300,13 +300,14 @@ void TerrainRenderer::loadWaterAt(int x, int y)
 
   bool quad_reverse = (flags & 0x0010);
   int texture_direction = (flags & 3);
+  int texture_id = this->m_cmap_data_weak->getWaterTextureIDAt(xy, water_data.texture_id);
 
   std::array<glm::vec2, 4> vertex_uv_mapping = this->calcUVMapForQuad(x, y, quad_reverse, texture_direction);
 
-  Vertex v1(vpositionUL, this->scaleAtlasUV(vertex_uv_mapping[0], water_data.texture_id), glm::vec3(0,0,0), false, 1.4f - water_data.transparency, water_data.texture_id, 0);
-  Vertex v2(vpositionUR, this->scaleAtlasUV(vertex_uv_mapping[1], water_data.texture_id), glm::vec3(0,0,0), false, 1.4f - water_data.transparency, water_data.texture_id, 0);
-  Vertex v3(vpositionLL, this->scaleAtlasUV(vertex_uv_mapping[2], water_data.texture_id), glm::vec3(0,0,0), false, 1.4f - water_data.transparency, water_data.texture_id, 0);
-  Vertex v4(vpositionLR, this->scaleAtlasUV(vertex_uv_mapping[3], water_data.texture_id), glm::vec3(0,0,0), false, 1.4f - water_data.transparency, water_data.texture_id, 0);
+  Vertex v1(vpositionUL, this->scaleAtlasUV(vertex_uv_mapping[0], texture_id), glm::vec3(0,0,0), false, 1.4f - water_data.transparency, texture_id, 0);
+  Vertex v2(vpositionUR, this->scaleAtlasUV(vertex_uv_mapping[1], texture_id), glm::vec3(0,0,0), false, 1.4f - water_data.transparency, texture_id, 0);
+  Vertex v3(vpositionLL, this->scaleAtlasUV(vertex_uv_mapping[2], texture_id), glm::vec3(0,0,0), false, 1.4f - water_data.transparency, texture_id, 0);
+  Vertex v4(vpositionLR, this->scaleAtlasUV(vertex_uv_mapping[3], texture_id), glm::vec3(0,0,0), false, 1.4f - water_data.transparency, texture_id, 0);
 
   if (quad_reverse) {
     water_object->m_vertices.push_back(v1);
@@ -389,8 +390,6 @@ void TerrainRenderer::loadIntoHardwareMemory()
       
       int texID = this->m_cmap_data_weak->getTextureIDAt(base_index);
       uint16_t flags = this->m_cmap_data_weak->getFlagsAt(x, y);
-
-      if (this->m_cmap_data_weak->hasWaterAt(base_index)) loadWaterAt(x, y);
       
       bool final_y_row = (y + 1 > width);
       bool final_x_column = (x + 1 > height);
@@ -398,6 +397,8 @@ void TerrainRenderer::loadIntoHardwareMemory()
       if (final_y_row || final_x_column) {
         continue;
       }
+
+      if (this->m_cmap_data_weak->hasWaterAt(base_index)) loadWaterAt(x, y);
       
       glm::vec3 vpositionUL = this->calcWorldVertex(x, y, false, 0.f);
       glm::vec3 vpositionUR = this->calcWorldVertex(x + 1, y, false, 0.f);

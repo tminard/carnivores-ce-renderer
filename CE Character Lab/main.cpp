@@ -61,8 +61,8 @@ int main(int argc, const char * argv[])
 {
   std::unique_ptr<C2CarFilePreloader> cFileLoad(new C2CarFilePreloader);
   std::unique_ptr<LocalVideoManager> video_manager(new LocalVideoManager());
-  std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile(CEMapType::C1, "resources/game/c1/area4.rsc"));
-  std::shared_ptr<C2MapFile> cMap(new C2MapFile(CEMapType::C1, "resources/game/c1/area4.map", cMapRsc.get()));
+  std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile(CEMapType::C2, "resources/game/migration/area7.rsc"));
+  std::shared_ptr<C2MapFile> cMap(new C2MapFile(CEMapType::C2, "resources/game/migration/area7.map", cMapRsc.get()));
   std::shared_ptr<CEPlayer> m_player(new CEPlayer(cMap));
   std::unique_ptr<TerrainRenderer> terrain(new TerrainRenderer(cMap.get(), cMapRsc.get()));
   
@@ -123,7 +123,10 @@ int main(int argc, const char * argv[])
       terrain->Render();
     }
 
-    if (render_water) terrain->RenderWater();
+    if (render_water) {
+      glDepthFunc(GL_LEQUAL);
+      terrain->RenderWater();
+    }
 
     glfwSwapBuffers(window);
     

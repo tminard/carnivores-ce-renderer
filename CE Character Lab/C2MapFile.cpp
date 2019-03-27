@@ -127,11 +127,7 @@ float C2MapFile::getHeightAt(int xy)
   if (m_type == C2) {
     scaled_height = this->m_heightmap_data.at(xy) * this->getHeightmapScale();
   } else {
-    if (this->hasWaterAt(xy)) {
-      scaled_height = (this->m_watermap_data.at(xy)) * this->getHeightmapScale();
-    } else {
-      scaled_height = this->m_watermap_data.at(xy) * this->getHeightmapScale();
-    }
+    scaled_height = this->m_watermap_data.at(xy) * this->getHeightmapScale();
   }
 
   return (scaled_height);

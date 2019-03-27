@@ -32,10 +32,10 @@ Sound::Sound( const Sound& sound )
 
 Sound::~Sound()
 {
-	if ( this->m_data != nullptr )
-	{
-		delete [] this->m_data;
-	}
+  if ( this->m_data != nullptr )
+  {
+    delete [] this->m_data;
+  }
 }
 
 Sound& Sound::operator=(const Sound& sound)
@@ -51,7 +51,6 @@ Sound& Sound::operator=(const Sound& sound)
 
 	return (*this);
 }
-
 
 std::string Sound::getName() const
 {
@@ -96,12 +95,12 @@ uint32_t Sound::getFrequency() const
 	return this->m_frequency;
 }
 
-
 void Sound::setWaveData( uint16_t bitdepth, uint16_t channels, uint32_t length, uint32_t frequency, const int8_t* bits  )
 {
 	if ( bitdepth == 0 || channels == 0 || length == 0 || frequency == 0 || bits == nullptr )
 	{
 		//TODO: Throw an exception
+    printf("Invalid audio!");
 		return;
 	}
 

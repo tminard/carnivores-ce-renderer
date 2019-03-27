@@ -15,6 +15,13 @@
 #include "C2Sky.h"
 #include "CEWaterEntity.h"
 
+#include "deps/libAF/af2-sound.h"
+#include "CEAudioSource.hpp"
+
+#include <stdlib.h>
+
+using libAF2::Sound;
+
 template <typename T, typename... Args>
 auto make_unique(Args&&... args) -> std::unique_ptr<T>
 {
@@ -67,6 +74,21 @@ void C2MapRscFile::setWaterHeight(int i, int h_unscaled)
   wd.water_level = h_unscaled;
 
   this->m_waters.at(i) = wd;
+}
+
+void C2MapRscFile::playRandomAudio(int x, int y, int z)
+{
+  // play random audio at this point
+  int rnd = rand() % (this->m_random_audio_sources.size()-1);
+  CEAudioSource* src = this->m_random_audio_sources.at(rnd).get();
+  src->setPosition(glm::vec3(x, y, z));
+  src->play();
+}
+
+void C2MapRscFile::playAmbientAudio(int i)
+{
+  CEAudioSource* src = this->m_ambient_audio_sources.at(i).get();
+  src->play();
 }
 
 void C2MapRscFile::load(const std::string &file_name)
@@ -267,7 +289,7 @@ void C2MapRscFile::load(const std::string &file_name)
     infile.read(reinterpret_cast<char *>(&this->m_random_sounds_count), 4);
     for (int i = 0; i < this->m_random_sounds_count; i++)
     {
-      Sound snd;
+      Sound* snd = new Sound();
       uint32_t length = 0;
       int8_t* snd_data = nullptr;
 
@@ -275,21 +297,53 @@ void C2MapRscFile::load(const std::string &file_name)
       snd_data = new int8_t [ length ];
       infile.read((char*)snd_data, length);
 
-      snd.setName("RndAudio");
-      snd.setWaveData(16, 1, length, 22050, snd_data);
+      snd->setName("RndAudio");
+      snd->setWaveData(16, 1, length, 22050, snd_data);
 
       delete [] snd_data;
 
       this->m_random_sounds.push_back(snd);
+
+      std::unique_ptr<CEAudioSource> src(new CEAudioSource(snd));
+
+      src->setClampDistance((256*2));
+      src->setMaxDistance((256*200));
+
+      this->m_random_audio_sources.push_back(std::move(src));
     }
 
-    // Skip for now
+    // Skip table for now
     infile.read(reinterpret_cast<char *>(&this->m_ambient_sounds_count), 4);
     for (int i = 0; i < this->m_ambient_sounds_count; i++)
     {
+      Sound* snd = new Sound();
+
+      int8_t* snd_data = nullptr;
       uint32_t length = 0;
       infile.read((char*)&length, sizeof(uint32_t));
-      infile.seekg(length + (16*16) + 8, std::ios_base::cur);
+      snd_data = new int8_t [ length ];
+      infile.read((char*)snd_data, length);
+
+      snd->setName("AmbientAudio");
+      snd->setWaveData(16, 1, length, 22050, snd_data);
+
+      delete [] snd_data;
+
+      this->m_ambient_sounds.push_back(snd);
+      std::unique_ptr<CEAudioSource> src(new CEAudioSource(snd));
+
+      src->setClampDistance((256*1));
+      src->setMaxDistance((256*2));
+      src->setLooped(true);
+      src->setNoDistance(0.5);
+
+      this->m_ambient_audio_sources.push_back(std::move(src));
+
+      // TODO
+      infile.seekg((16*16) + 8, std::ios_base::cur);
+
+      // read data first, then a 16x16 table
+      // For each of these ambient sounds, read a table 16 entries long that maps to the random sounds, and describes which random sounds play in the ambient area and how frequent, etc
     }
 
     if (m_type == C1) {

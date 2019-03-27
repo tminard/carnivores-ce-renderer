@@ -23,6 +23,11 @@ public:
   {
     return this->pos;
   }
+
+  inline glm::vec3 GetUp() const
+  {
+    return this->up;
+  }
   
   inline glm::mat4 GetVM() const
   {

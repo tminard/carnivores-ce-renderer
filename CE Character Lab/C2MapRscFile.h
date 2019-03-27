@@ -16,9 +16,8 @@
 #include <memory>
 #include <array>
 
-#include "deps/libAF/af2-sound.h"
-
 #include "g_shared.h"
+#include "deps/libAF/af2-sound.h"
 
 using libAF2::Sound;
 
@@ -26,6 +25,7 @@ class CETexture;
 class CEWorldModel;
 class C2Sky;
 class CEWaterEntity;
+class CEAudioSource;
 
 class C2MapRscFile
 {
@@ -51,8 +51,11 @@ private:
   int m_texture_count;
   
   int m_random_sounds_count, m_ambient_sounds_count;
-  std::vector<Sound> m_random_sounds;
-  
+  std::vector<Sound*> m_random_sounds;
+  std::vector<std::unique_ptr<CEAudioSource>> m_random_audio_sources;
+  std::vector<Sound*> m_ambient_sounds;
+  std::vector<std::unique_ptr<CEAudioSource>> m_ambient_audio_sources;
+
   int m_num_waters;
   std::vector<CEWaterEntity> m_waters;
   
@@ -80,6 +83,9 @@ public:
   CEWorldModel* getWorldModel(int i);
   CETexture* getTexture(int i);
   C2Sky* getDaySky();
+
+  void playRandomAudio(int x, int y, int z);
+  void playAmbientAudio(int i);
 };
 
 #endif /* defined(__CE_Character_Lab__C2MapRscFile__) */

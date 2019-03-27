@@ -40,6 +40,9 @@
 
 #include "C2Sky.h"
 
+#import <OpenAL/al.h>
+#import <OpenAL/alc.h>
+
 void CreateFadeTab();
 unsigned int timeGetTime();
 WORD  FadeTab[65][0x8000];
@@ -57,12 +60,76 @@ void cursorPosCallback(GLFWwindow* window, double xpos, double ypos)
   input_manager->cursorPosCallback(window, xpos, ypos);
 }
 
+static void list_audio_devices(const ALCchar *devices)
+{
+  const ALCchar *device = devices, *next = devices + 1;
+  size_t len = 0;
+
+  fprintf(stdout, "Devices list:\n");
+  fprintf(stdout, "----------\n");
+  while (device && *device != '\0' && next && *next != '\0') {
+    fprintf(stdout, "%s\n", device);
+    len = strlen(device);
+    device += (len + 1);
+    next += (len + 2);
+  }
+  fprintf(stdout, "----------\n");
+}
+
+void destroy_audio(ALCcontext* context)
+{
+  ALCdevice* device = alcGetContextsDevice(context);
+  alcMakeContextCurrent(NULL);
+  alcDestroyContext(context);
+  alcCloseDevice(device);
+}
+
+void update_camera_audio(Camera& camera)
+{
+  glm::vec3 pos = camera.GetCurrentPos();
+  glm::vec3 forward = camera.GetForward();
+  glm::vec3 up = camera.GetUp();
+  ALfloat listenerOri[] = { forward.x, forward.y, forward.z, up.x, up.y, up.z }; // forward and up
+
+  alListener3f(AL_POSITION, pos.x, pos.y, pos.z);
+  alListener3f(AL_VELOCITY, 0, 0, 0);
+  alListenerfv(AL_ORIENTATION, listenerOri);
+}
+
 int main(int argc, const char * argv[])
 {
+  // https://ffainelli.github.io/openal-example/
+  ALCdevice* m_audio_device = alcOpenDevice(NULL);
+  if (!m_audio_device) {
+    printf("Failed to create audio device. FATAL.\n");
+    return -1;
+  }
+  ALboolean enumeration;
+  enumeration = alcIsExtensionPresent(NULL, "ALC_ENUMERATION_EXT");
+  if (enumeration == AL_FALSE) {
+    printf("Audio: enumeration not supported. FATAL.\n");
+    return -1;
+  } else {
+    printf("Audio: enumeration supported. OK.\n");
+    list_audio_devices(alcGetString(NULL, ALC_DEVICE_SPECIFIER));
+  }
+
+  ALCcontext *context;
+  alGetError();
+
+  context = alcCreateContext(m_audio_device, NULL);
+  if (!alcMakeContextCurrent(context)) {
+    printf("Failed to create/activate audio context. FATAL\n");
+
+    return -1;
+  }
+
+  alDistanceModel(AL_LINEAR_DISTANCE);
+
   std::unique_ptr<C2CarFilePreloader> cFileLoad(new C2CarFilePreloader);
   std::unique_ptr<LocalVideoManager> video_manager(new LocalVideoManager());
-  std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile(CEMapType::C2, "resources/game/migration/area7.rsc"));
-  std::shared_ptr<C2MapFile> cMap(new C2MapFile(CEMapType::C2, "resources/game/migration/area7.map", cMapRsc.get()));
+  std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile(CEMapType::C1, "resources/game/c1/area4.rsc"));
+  std::shared_ptr<C2MapFile> cMap(new C2MapFile(CEMapType::C1, "resources/game/c1/area4.map", cMapRsc.get()));
   std::shared_ptr<CEPlayer> m_player(new CEPlayer(cMap));
   std::unique_ptr<TerrainRenderer> terrain(new TerrainRenderer(cMap.get(), cMapRsc.get()));
   
@@ -89,9 +156,14 @@ int main(int argc, const char * argv[])
   glfwGetFramebufferSize(window, &width, &height);
 
   double lastTime = glfwGetTime();
+  double lastRndAudioTime = glfwGetTime();
   int nbFrames = 0;
 
   glViewport(0, 0, width, height);
+
+  update_camera_audio(*camera);
+
+  cMapRsc->playAmbientAudio(3);
 
   while (!glfwWindowShouldClose(window))
   {
@@ -106,7 +178,14 @@ int main(int argc, const char * argv[])
       lastTime += 1.0;
     }
 
+    double rnTimeDelta = currentTime - lastRndAudioTime;
+    if (rnTimeDelta >= 3.0) {
+      cMapRsc->playRandomAudio(camera->GetCurrentPos().x - 256.f, camera->GetCurrentPos().y, camera->GetCurrentPos().z);
+      lastRndAudioTime = currentTime;
+    }
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    update_camera_audio(*camera);
 
     if (render_sky) {
       glDisable(GL_DEPTH_TEST);
@@ -134,7 +213,9 @@ int main(int argc, const char * argv[])
   
     glfwPollEvents();
   }
-  
+
+  destroy_audio(context);
+
   return 0;
 }
 

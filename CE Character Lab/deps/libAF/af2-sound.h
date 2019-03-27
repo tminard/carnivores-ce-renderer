@@ -13,7 +13,6 @@
 #include <string>
 #include <vector>
 
-
 namespace libAF2 {
 
 
@@ -27,11 +26,11 @@ public:
 
 	Sound& operator= (const Sound& sound);
 
-
 	const uint32_t	getVersion() const { return this->version; }
 
 	std::string	getName() const;
 	void		setName( const std::string& name );
+    void play();
 
 	/***************************************************************************
 		@fn getWaveDataCopy()

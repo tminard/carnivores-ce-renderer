@@ -27,12 +27,14 @@
 		D65552A71B7A325C00CC5309 /* CE_AIUtilities.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D65552A51B7A325C00CC5309 /* CE_AIUtilities.cpp */; };
 		D657B8951B851D3A0051BCC7 /* IndexedMeshLoader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D657B8931B851D3A0051BCC7 /* IndexedMeshLoader.cpp */; };
 		D67F82A32243EC5000AC81B7 /* CESimpleGeometry.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D67F82A12243EC5000AC81B7 /* CESimpleGeometry.cpp */; };
+		D6B3EDC0224BA6C500DD8E9F /* OpenAL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D6B3EDBF224BA6C500DD8E9F /* OpenAL.framework */; };
+		D6B3EDC5224BE9FD00DD8E9F /* CEAudioSource.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6B3EDC3224BE9FD00DD8E9F /* CEAudioSource.cpp */; };
+		D6B3EDC8224BEFE400DD8E9F /* sound.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6B3EDC7224BEFE400DD8E9F /* sound.cpp */; };
 		D6C77D9C22451A7F00105733 /* resources in CopyFiles */ = {isa = PBXBuildFile; fileRef = D6C77D9B22451A6A00105733 /* resources */; };
 		D6C77D9F224583CD00105733 /* CEWaterEntity.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6C77D9D224583CD00105733 /* CEWaterEntity.cpp */; };
 		D6C77DA2224905BC00105733 /* CEScene.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6C77DA0224905BC00105733 /* CEScene.cpp */; };
 		D6C77DA52249084500105733 /* CEWorld.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6C77DA32249084500105733 /* CEWorld.cpp */; };
 		D6C77DA922490DF700105733 /* CEWorldObject.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6C77DA722490DF700105733 /* CEWorldObject.cpp */; };
-		D6C77DAC22493E2600105733 /* sound.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6C77DAB22493E2500105733 /* sound.cpp */; };
 		D6D3CD7320CADD3500E3ABAC /* CEObservable.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6D3CD7120CADD3500E3ABAC /* CEObservable.cpp */; };
 		D6D3CD7620CAE07000E3ABAC /* CEPlayer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6D3CD7420CAE07000E3ABAC /* CEPlayer.cpp */; };
 		D6D3CD7920CAE6A100E3ABAC /* LocalInputManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6D3CD7720CAE6A100E3ABAC /* LocalInputManager.cpp */; };
@@ -107,6 +109,10 @@
 		D67F828B2243199800AC81B7 /* tga.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = tga.h; sourceTree = "<group>"; };
 		D67F82A12243EC5000AC81B7 /* CESimpleGeometry.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CESimpleGeometry.cpp; sourceTree = "<group>"; };
 		D67F82A22243EC5000AC81B7 /* CESimpleGeometry.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CESimpleGeometry.h; sourceTree = "<group>"; };
+		D6B3EDBF224BA6C500DD8E9F /* OpenAL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenAL.framework; path = System/Library/Frameworks/OpenAL.framework; sourceTree = SDKROOT; };
+		D6B3EDC3224BE9FD00DD8E9F /* CEAudioSource.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CEAudioSource.cpp; sourceTree = "<group>"; };
+		D6B3EDC4224BE9FD00DD8E9F /* CEAudioSource.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CEAudioSource.hpp; sourceTree = "<group>"; };
+		D6B3EDC7224BEFE400DD8E9F /* sound.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = sound.cpp; path = ../sound.cpp; sourceTree = "<group>"; };
 		D6C77D9B22451A6A00105733 /* resources */ = {isa = PBXFileReference; lastKnownFileType = folder; name = resources; path = "CE Character Lab/resources"; sourceTree = "<group>"; };
 		D6C77D9D224583CD00105733 /* CEWaterEntity.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CEWaterEntity.cpp; sourceTree = "<group>"; };
 		D6C77D9E224583CD00105733 /* CEWaterEntity.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CEWaterEntity.h; sourceTree = "<group>"; };
@@ -117,7 +123,6 @@
 		D6C77DA722490DF700105733 /* CEWorldObject.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CEWorldObject.cpp; sourceTree = "<group>"; };
 		D6C77DA822490DF700105733 /* CEWorldObject.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CEWorldObject.hpp; sourceTree = "<group>"; };
 		D6C77DAA22493A6300105733 /* deps */ = {isa = PBXFileReference; lastKnownFileType = folder; name = deps; path = "CE Character Lab/deps"; sourceTree = SOURCE_ROOT; };
-		D6C77DAB22493E2500105733 /* sound.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = sound.cpp; sourceTree = "<group>"; };
 		D6D3CD7120CADD3500E3ABAC /* CEObservable.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CEObservable.cpp; sourceTree = "<group>"; };
 		D6D3CD7220CADD3500E3ABAC /* CEObservable.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CEObservable.hpp; sourceTree = "<group>"; };
 		D6D3CD7420CAE07000E3ABAC /* CEPlayer.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CEPlayer.cpp; sourceTree = "<group>"; };
@@ -146,6 +151,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D6B3EDC0224BA6C500DD8E9F /* OpenAL.framework in Frameworks */,
 				D6E7B8241FAB9ADF00D1C100 /* libglfw.3.2.dylib in Frameworks */,
 				D6F2F87B1B8389330018DBF0 /* QuartzCore.framework in Frameworks */,
 				D6F2F8771B8385600018DBF0 /* Cocoa.framework in Frameworks */,
@@ -174,7 +180,6 @@
 		D65552201B73DA2000CC5309 = {
 			isa = PBXGroup;
 			children = (
-				D6C77DAB22493E2500105733 /* sound.cpp */,
 				73A667C822468FCA0026D63A /* Info.plist */,
 				D6F2F87A1B8389330018DBF0 /* QuartzCore.framework */,
 				D6F2F8781B8386870018DBF0 /* libglfw3.a */,
@@ -244,7 +249,6 @@
 			isa = PBXGroup;
 			children = (
 				D6C77DA622490A8600105733 /* API */,
-				D64C5F211E50F22E00958C8E /* Support */,
 				D61CCC0D1B7E7BF5004BD900 /* CEWorldModel.cpp */,
 				D61CCC0E1B7E7BF5004BD900 /* CEWorldModel.h */,
 				D655523E1B73DA7000CC5309 /* CEGeometry.h */,
@@ -261,6 +265,8 @@
 				D67F82A22243EC5000AC81B7 /* CESimpleGeometry.h */,
 				D6C77D9D224583CD00105733 /* CEWaterEntity.cpp */,
 				D6C77D9E224583CD00105733 /* CEWaterEntity.h */,
+				D6B3EDC3224BE9FD00DD8E9F /* CEAudioSource.cpp */,
+				D6B3EDC4224BE9FD00DD8E9F /* CEAudioSource.hpp */,
 			);
 			name = Engine;
 			sourceTree = "<group>";
@@ -296,7 +302,7 @@
 		D65552551B73E34A00CC5309 /* Source */ = {
 			isa = PBXGroup;
 			children = (
-				D6C77DAA22493A6300105733 /* deps */,
+				D6B3EDC9224BEFF200DD8E9F /* Dependencies */,
 				D65552561B73E3DB00CC5309 /* Utilities */,
 				D655524E1B73DD9300CC5309 /* Characters */,
 				D65552501B73DDC900CC5309 /* Engine */,
@@ -318,9 +324,19 @@
 			name = Utilities;
 			sourceTree = "<group>";
 		};
+		D6B3EDC9224BEFF200DD8E9F /* Dependencies */ = {
+			isa = PBXGroup;
+			children = (
+				D6B3EDC7224BEFE400DD8E9F /* sound.cpp */,
+				D6C77DAA22493A6300105733 /* deps */,
+			);
+			name = Dependencies;
+			sourceTree = "<group>";
+		};
 		D6C77DA622490A8600105733 /* API */ = {
 			isa = PBXGroup;
 			children = (
+				D64C5F211E50F22E00958C8E /* Support */,
 				D6C77DA0224905BC00105733 /* CEScene.cpp */,
 				D6C77DA1224905BC00105733 /* CEScene.hpp */,
 				D6C77DA32249084500105733 /* CEWorld.cpp */,
@@ -334,6 +350,7 @@
 		D6E7B8221FAB9ADF00D1C100 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				D6B3EDBF224BA6C500DD8E9F /* OpenAL.framework */,
 				D6E7B8231FAB9ADF00D1C100 /* libglfw.3.2.dylib */,
 			);
 			name = Frameworks;
@@ -415,6 +432,7 @@
 				D6F2F86A1B836F3A0018DBF0 /* C2Sky.cpp in Sources */,
 				D65552471B73DA7000CC5309 /* CEGeometry.cpp in Sources */,
 				D61CCC0C1B7E68D0004BD900 /* CETexture.cpp in Sources */,
+				D6B3EDC5224BE9FD00DD8E9F /* CEAudioSource.cpp in Sources */,
 				D65552481B73DA7000CC5309 /* C2HuntableCharacter.cpp in Sources */,
 				D655525F1B74315900CC5309 /* CEAnimation.cpp in Sources */,
 				D65552391B73DA4900CC5309 /* CEAnimatableModel.cpp in Sources */,
@@ -425,8 +443,8 @@
 				D65552A41B797DC200CC5309 /* AI_Allosaurus.cpp in Sources */,
 				D6D3CD7320CADD3500E3ABAC /* CEObservable.cpp in Sources */,
 				D61CCC0F1B7E7BF5004BD900 /* CEWorldModel.cpp in Sources */,
+				D6B3EDC8224BEFE400DD8E9F /* sound.cpp in Sources */,
 				D6C77DA2224905BC00105733 /* CEScene.cpp in Sources */,
-				D6C77DAC22493E2600105733 /* sound.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

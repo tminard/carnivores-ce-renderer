@@ -1,6 +1,6 @@
 #include "CEAudioSource.hpp"
 
-CEAudioSource::CEAudioSource(Sound* sfx) : m_original_audio(sfx)
+CEAudioSource::CEAudioSource(std::shared_ptr<Sound> sfx) : m_original_audio(sfx)
 {
     this->upload();
 }

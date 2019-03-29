@@ -123,11 +123,11 @@ void CEAnimatableModel::animate(const int dtime)
     return;
   }
   this->m_frame_time += dtime;
-  CEAnimation* animation = this->m_car_file->getAnimationByName(this->m_current_animation_name);
+  std::weak_ptr<CEAnimation> animation = this->m_car_file->getAnimationByName(this->m_current_animation_name);
 
-  if (this->m_frame_time >= animation->m_total_time)
+  if (this->m_frame_time >= (animation.lock())->m_total_time)
   {
-    this->m_frame_time %= animation->m_total_time;
+    this->m_frame_time %= (animation.lock())->m_total_time;
     this->m_did_animation_finish = true;
 //#warning Incomplete integration: notify something that the animation did finish, and play the audio again
   }
@@ -157,9 +157,9 @@ void CEAnimatableModel::Update(Camera& camera)
     // TODO: convert old data types to glm
   glm::vec3 pos(this->getCurrentPosition().x, this->getCurrentPosition().z, this->getCurrentPosition().y);
   Transform t(pos, glm::vec3(0, 0, 0), glm::vec3(2, 2, 2));
-  CEGeometry* geo = this->getCurrentModelForRender();
+  std::weak_ptr<CEGeometry> geo = this->getCurrentModelForRender();
 
-  geo->Update(t, camera);
+  geo.lock()->Update(t, camera);
 }
 
 /*
@@ -170,14 +170,15 @@ void CEAnimatableModel::render()
   // update matrix
   // update textures and shader if needed (pass in current shader so we know?)
   // call draw
-  CEGeometry* geo = this->getCurrentModelForRender();
-  geo->Draw();
+  std::weak_ptr<CEGeometry> geo = this->getCurrentModelForRender();
+  geo.lock()->Draw();
 }
 
-CEGeometry* CEAnimatableModel::getCurrentModelForRender()
+std::weak_ptr<CEGeometry> CEAnimatableModel::getCurrentModelForRender()
 {
+  std::weak_ptr<CEGeometry> m = this->m_car_file->getGeometry();
   if (this->m_current_animation_name == "") {
-	  return this->m_car_file->getGeometry();
+    return m;
   }
 
   if (this->m_previous_animation_name != this->m_current_animation_name && this->m_previous_animation_name != "") {
@@ -188,10 +189,10 @@ CEGeometry* CEAnimatableModel::getCurrentModelForRender()
   }
 }
 
-CEGeometry* CEAnimatableModel::getMorphedModel(std::string animation_name, int at_time, float scale)
+std::weak_ptr<CEGeometry> CEAnimatableModel::getMorphedModel(std::string animation_name, int at_time, float scale)
 {
 //  #warning TODO: This modifies the original shared model. Fix this. Also check for nulls
-  CEGeometry* sharedGeo = this->m_car_file->getGeometry();
+  std::weak_ptr<CEGeometry> sharedGeo = this->m_car_file->getGeometry();
   //CEAnimation* animation = this->m_car_file->getAnimationByName(animation_name);
 
   /*int currentFrame = ((animation->m_number_of_frames-1) * at_time * 256) / animation->m_total_time;
@@ -218,10 +219,10 @@ CEGeometry* CEAnimatableModel::getMorphedModel(std::string animation_name, int a
   return sharedGeo;
 }
 
-CEGeometry* CEAnimatableModel::getBetweenMorphedModel(std::string animation_previous_name, std::string animation_target_name, int at_time_previous, int at_time_target, int current_morph_time, float scale, float character_beta, float character_gamma, float character_bend)
+std::weak_ptr<CEGeometry> CEAnimatableModel::getBetweenMorphedModel(std::string animation_previous_name, std::string animation_target_name, int at_time_previous, int at_time_target, int current_morph_time, float scale, float character_beta, float character_gamma, float character_bend)
 {
 
-  CEGeometry* sharedGeo = this->m_car_file->getGeometry();
+  std::weak_ptr<CEGeometry> sharedGeo = this->m_car_file->getGeometry();
 /*
   CEAnimation* previous_animation = m_car_file->getAnimationByName(animation_previous_name);
   CEAnimation* target_animation = m_car_file->getAnimationByName(animation_target_name);

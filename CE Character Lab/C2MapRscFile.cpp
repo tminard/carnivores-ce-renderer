@@ -289,7 +289,7 @@ void C2MapRscFile::load(const std::string &file_name)
     infile.read(reinterpret_cast<char *>(&this->m_random_sounds_count), 4);
     for (int i = 0; i < this->m_random_sounds_count; i++)
     {
-      Sound* snd = new Sound();
+      std::shared_ptr<Sound> snd(new Sound());
       uint32_t length = 0;
       int8_t* snd_data = nullptr;
 
@@ -316,7 +316,7 @@ void C2MapRscFile::load(const std::string &file_name)
     infile.read(reinterpret_cast<char *>(&this->m_ambient_sounds_count), 4);
     for (int i = 0; i < this->m_ambient_sounds_count; i++)
     {
-      Sound* snd = new Sound();
+      std::shared_ptr<Sound> snd(new Sound());
 
       int8_t* snd_data = nullptr;
       uint32_t length = 0;

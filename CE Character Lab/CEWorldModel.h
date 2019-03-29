@@ -66,7 +66,7 @@ private:
   std::vector<glm::mat4> m_far_instances;
   std::vector<glm::mat4> m_near_instances;
   
-  TObjInfo* m_old_object_info; // Easier to use old object for now
+  std::unique_ptr<TObjInfo> m_old_object_info; // Easier to use old object for now
   
   void _generateBoundingBox(std::vector<Vertex>& vertex_data); // old method for bounding box. Move to geo when able
   

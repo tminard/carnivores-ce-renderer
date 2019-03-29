@@ -17,9 +17,9 @@
 
 CEWorldModel::CEWorldModel(const CEMapType type, std::ifstream& instream)
 {
-  this->m_old_object_info = new TObjInfo();
+  this->m_old_object_info = std::unique_ptr<TObjInfo>(new TObjInfo());
   
-  instream.read(reinterpret_cast<char *>(this->m_old_object_info), 64);
+  instream.read(reinterpret_cast<char *>(this->m_old_object_info.get()), 64);
   this->m_old_object_info->Radius *= 2;
   this->m_old_object_info->YLo *= 2;
   this->m_old_object_info->YHi *= 2;
@@ -98,7 +98,7 @@ CEWorldModel::CEWorldModel(const CEMapType type, std::ifstream& instream)
   m_far_vertices[5].y = mxy;
   m_far_vertices[5].z = 1; // UR
   
-  IndexedMeshLoader* m_loader = new IndexedMeshLoader(file_vertex_data, face_data);
+  std::unique_ptr<IndexedMeshLoader> m_loader(new IndexedMeshLoader(file_vertex_data, face_data));
   
   // load the geo
   std::unique_ptr<CETexture> cTexture;
@@ -168,8 +168,6 @@ CEWorldModel::CEWorldModel(const CEMapType type, std::ifstream& instream)
     std::vector<Vertex> vData = m_loader->getVertices();
     this->_generateBoundingBox(vData);
   }
-  
-  delete m_loader;
 }
 
 CEGeometry* CEWorldModel::getGeometry()
@@ -231,14 +229,11 @@ void CEWorldModel::_generateBoundingBox(std::vector<Vertex>& vertex_data)
   }
 }
 
-CEWorldModel::~CEWorldModel()
-{
-  delete this->m_old_object_info;
-}
+CEWorldModel::~CEWorldModel() {}
 
 TObjInfo* CEWorldModel::getObjectInfo()
 {
-  return this->m_old_object_info;
+  return this->m_old_object_info.get();
 }
 
 void CEWorldModel::renderFar(Transform& transform, Camera& camera)

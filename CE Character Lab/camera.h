@@ -102,11 +102,6 @@ public:
     return this->forward;
   }
   
-  inline glm::vec2 GetWorldPosition() const
-  {
-    return this->world_position;
-  }
-  
 protected:
 private:
   float m_view_distance;
@@ -120,7 +115,6 @@ private:
   
   inline void updateViewProjection()
   {
-    this->world_position = glm::vec2(int(floorf(pos.x / 256.f)), int(floorf(pos.z / 256.f))); // TODO: Improve this
     this->view_projection = projection * glm::lookAt(pos, pos + forward, up);
   }
 };

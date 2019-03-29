@@ -51,7 +51,6 @@ void CESimpleGeometry::loadObjectIntoMemoryBuffer()
   glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(glm::vec3)+sizeof(glm::vec2)));
 
   // instanced vab
-  GLsizei vec4Size = sizeof(glm::vec4);
   this->m_num_instances = 0;
   std::vector<glm::mat4> instances;
   glGenBuffers(1, &this->m_instanced_vab);
@@ -59,13 +58,13 @@ void CESimpleGeometry::loadObjectIntoMemoryBuffer()
   glBufferData(GL_ARRAY_BUFFER, m_num_instances*sizeof(glm::mat4), instances.data(), GL_STATIC_DRAW);
 
   glEnableVertexAttribArray(3);
-  glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)0);
+  glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(glm::vec4), (void*)0);
   glEnableVertexAttribArray(4);
-  glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(vec4Size));
+  glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(glm::vec4), (void*)(sizeof(glm::vec4)));
   glEnableVertexAttribArray(5);
-  glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(2 * vec4Size));
+  glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(glm::vec4), (void*)(2 * sizeof(glm::vec4)));
   glEnableVertexAttribArray(6);
-  glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(3 * vec4Size));
+  glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(glm::vec4), (void*)(3 * sizeof(glm::vec4)));
 
   glVertexAttribDivisor(3, 1);
   glVertexAttribDivisor(4, 1);

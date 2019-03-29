@@ -72,7 +72,7 @@ void CETexture::loadTextureIntoHardwareMemory()
 // Saves the CETexture as a bitmap (32 bit).
 void CETexture::saveToBMPFile(std::string file_name)
 {
-  CBitmap* cBit = new CBitmap();
+  std::unique_ptr<CBitmap> cBit(new CBitmap());
   uint32_t RedMask = 0;
   uint32_t GreenMask = 0;
   uint32_t BlueMask = 0;
@@ -104,8 +104,6 @@ void CETexture::saveToBMPFile(std::string file_name)
   } else {
     std::cout << "Failed to save bitmap! set bits failed";
   }
-  
-  delete cBit;
 }
 
 std::vector<uint16_t>* CETexture::getRawData()

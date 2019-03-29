@@ -14,7 +14,7 @@ using libAF2::Sound;
 class CEAudioSource
 {
 public:
-  CEAudioSource(Sound* sfx);
+  CEAudioSource(std::shared_ptr<Sound> sfx);
   CEAudioSource(const CEAudioSource& source);
 
   ~CEAudioSource();
@@ -47,7 +47,7 @@ public:
 
 private:
   ALuint m_audio_buffer, m_audio_source;
-  Sound* m_original_audio;
+  std::shared_ptr<Sound> m_original_audio;
 
   void upload();
 };

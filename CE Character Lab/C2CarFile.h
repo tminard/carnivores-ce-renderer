@@ -35,13 +35,13 @@ public:
   ~C2CarFile();
   void load_file(std::string file_name);
 
-  CEGeometry* getGeometry();
-  CEAnimation* getAnimationByName(std::string animation_name);
+  std::weak_ptr<CEGeometry> getGeometry();
+  std::weak_ptr<CEAnimation> getAnimationByName(std::string animation_name);
 
 private:
   
-  std::unique_ptr<CEGeometry> m_geometry;
-  std::map<std::string, std::unique_ptr<CEAnimation>> m_animations;
+  std::shared_ptr<CEGeometry> m_geometry;
+  std::map<std::string, std::shared_ptr<CEAnimation>> m_animations;
 };
 
 #endif

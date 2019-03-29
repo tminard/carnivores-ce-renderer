@@ -182,7 +182,8 @@ void C2MapRscFile::load(const std::string &file_name)
       std::vector<uint16_t> tx_filler(missing_bits);
       combined_texture_data.insert(combined_texture_data.end(), tx_filler.begin(), tx_filler.end());
     }
-    
+
+      // TODO: we can use a frame buffer instead of this nastiness
     std::vector<uint16_t> final_texture_data; // Now replace colors with correct entries
     for (int i=0; i < 2; i++) {
       for (int row = 0; row < (TEXTURE_SQUARE_SIZE*squared_texture_rows); row++) {
@@ -245,7 +246,6 @@ void C2MapRscFile::load(const std::string &file_name)
     // Load sky bitmap and map overlay (dawn, day, night)
     if (m_type == C2) {
       this->m_dawn_sky = std::unique_ptr<C2Sky>(new C2Sky(infile));
-      //grBufferClear( 0xFF000000+ (SkyB<<16) + (SkyG<<8) + SkyR,0,0);
       this->m_dawn_sky->setRGBA(glm::vec4(m_fade_rgb[0][0], m_fade_rgb[0][1], m_fade_rgb[0][2], 1.f));
     }
 
@@ -334,8 +334,8 @@ void C2MapRscFile::load(const std::string &file_name)
 
       src->setClampDistance((256*1));
       src->setMaxDistance((256*2));
+      src->setNoDistance(0.25);
       src->setLooped(true);
-      src->setNoDistance(0.5);
 
       this->m_ambient_audio_sources.push_back(std::move(src));
 

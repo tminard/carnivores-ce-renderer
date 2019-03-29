@@ -40,13 +40,20 @@ void LocalVideoManager::initGLFW()
   glfwWindowHint( GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE );
   glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );
 
-  this->m_main_window = glfwCreateWindow(3440, 1440, "Carnivores Renderer", glfwGetPrimaryMonitor(), NULL);
+  GLFWmonitor* primary_monitor = glfwGetPrimaryMonitor();
+  const GLFWvidmode* v_mode = glfwGetVideoMode(primary_monitor);
+
+  std::cout << "== Primary Monitor detected == " << std::endl;
+  std::cout << "\t[Video Mode] width: " << v_mode->width << "; height: " << v_mode->height << std::endl;
+
+  this->m_main_window = glfwCreateWindow(v_mode->width, v_mode->height, "Carnivores Renderer", NULL, NULL);
 
   if (!this->m_main_window) {
     throw;
   }
 
   glfwMakeContextCurrent(this->m_main_window);
+  
   glfwSwapInterval(1);
 
   this->initGL();

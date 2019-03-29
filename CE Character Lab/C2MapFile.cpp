@@ -53,7 +53,7 @@ float C2MapFile::getHeight()
 
 float C2MapFile::getTileLength()
 {
-  return 256.f;
+  return 128.f;
 }
 
 int C2MapFile::getWaterTextureIDAt(int xy, int water_texture_id)
@@ -81,6 +81,12 @@ int C2MapFile::getTextureIDAt(int xy)
       return id;
     }
   }
+}
+
+float C2MapFile::getBrightnessAt(int xy)
+{
+  int brightness = this->m_day_brightness_data.at(xy); // uint8 (max 255)
+  return (float)brightness;
 }
 
 uint16_t C2MapFile::getFlagsAt(int x, int y)
@@ -359,6 +365,7 @@ void C2MapFile::load_c1(const std::string &file_name, C2MapRscFile* crsc_weak)
     infile.read(reinterpret_cast<char *>(this->m_object_index_data.data()), 512*512);
     infile.read(reinterpret_cast<char *>(this->m_c1_flags_data.data()), 512*512);
 
+    // This is used in the original engine to calculate object "darkness" on a given tile - we don't really need it anymore
     infile.read(reinterpret_cast<char *>(this->m_day_brightness_data.data()), 512*512);
 
     infile.read(reinterpret_cast<char *>(this->m_watermap_data.data()), 512*512); // C1 has only 1 water - these are the heights of the underwater surface

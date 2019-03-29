@@ -409,11 +409,13 @@ void TerrainRenderer::loadIntoHardwareMemory()
       int texture_direction = (flags & 3);
       
       std::array<glm::vec2, 4> vertex_uv_mapping = this->calcUVMapForQuad(x, y, quad_reverse, texture_direction);
+
+      float brightness_factor = this->m_cmap_data_weak->getBrightnessAt(base_index);
       
-      Vertex v1(vpositionUL, this->scaleAtlasUV(vertex_uv_mapping[0], texID), glm::vec3(0,0,0), false, 1.f, texID, 0);
-      Vertex v2(vpositionUR, this->scaleAtlasUV(vertex_uv_mapping[1], texID), glm::vec3(0,0,0), false, 1.f, texID, 0);
-      Vertex v3(vpositionLL, this->scaleAtlasUV(vertex_uv_mapping[2], texID), glm::vec3(0,0,0), false, 1.f, texID, 0);
-      Vertex v4(vpositionLR, this->scaleAtlasUV(vertex_uv_mapping[3], texID), glm::vec3(0,0,0), false, 1.f, texID, 0);
+      Vertex v1(vpositionUL, this->scaleAtlasUV(vertex_uv_mapping[0], texID), glm::vec3(0,0,0), false, brightness_factor, texID, 0);
+      Vertex v2(vpositionUR, this->scaleAtlasUV(vertex_uv_mapping[1], texID), glm::vec3(0,0,0), false, brightness_factor, texID, 0);
+      Vertex v3(vpositionLL, this->scaleAtlasUV(vertex_uv_mapping[2], texID), glm::vec3(0,0,0), false, brightness_factor, texID, 0);
+      Vertex v4(vpositionLR, this->scaleAtlasUV(vertex_uv_mapping[3], texID), glm::vec3(0,0,0), false, brightness_factor, texID, 0);
       
       m_vertices.push_back(v1);
       m_vertices.push_back(v2);

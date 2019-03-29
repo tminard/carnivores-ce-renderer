@@ -43,6 +43,8 @@
 #import <OpenAL/al.h>
 #import <OpenAL/alc.h>
 
+#include <mutex>
+
 void CreateFadeTab();
 unsigned int timeGetTime();
 WORD  FadeTab[65][0x8000];
@@ -76,8 +78,14 @@ static void list_audio_devices(const ALCchar *devices)
   fprintf(stdout, "----------\n");
 }
 
+std::mutex g_audio_device_mutex;
+int g_current_ambient_index;
+int g_next_ambient_index;
+std::mutex g_audio_ambient_index_mutex;
+
 void destroy_audio(ALCcontext* context)
 {
+  std::lock_guard<std::mutex> guard(g_audio_device_mutex);
   ALCdevice* device = alcGetContextsDevice(context);
   alcMakeContextCurrent(NULL);
   alcDestroyContext(context);
@@ -94,6 +102,28 @@ void update_camera_audio(Camera& camera)
   alListener3f(AL_POSITION, pos.x, pos.y, pos.z);
   alListener3f(AL_VELOCITY, 0, 0, 0);
   alListenerfv(AL_ORIENTATION, listenerOri);
+
+//  std::lock_guard<std::mutex> guard(g_audio_ambient_index_mutex);
+//  if (next_index != g_current_ambient_index) g_next_ambient_index = next_index;
+}
+
+void thread_ambient_audio_manager()
+{
+  std::unique_lock<std::mutex> guard(g_audio_ambient_index_mutex);
+  int next = g_next_ambient_index;
+  guard.unlock();
+
+  while (next != -1) {
+
+    // play
+
+    guard.lock();
+    next = g_next_ambient_index;
+    guard.unlock();
+  }
+// play current ambient sound
+  // if next ambient sound is not current, then determine and handle transition
+  // if next ambient sound is nothing, then break loop
 }
 
 int main(int argc, const char * argv[])
@@ -128,8 +158,8 @@ int main(int argc, const char * argv[])
 
   std::unique_ptr<C2CarFilePreloader> cFileLoad(new C2CarFilePreloader);
   std::unique_ptr<LocalVideoManager> video_manager(new LocalVideoManager());
-  std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile(CEMapType::C1, "resources/game/c1/area4.rsc"));
-  std::shared_ptr<C2MapFile> cMap(new C2MapFile(CEMapType::C1, "resources/game/c1/area4.map", cMapRsc.get()));
+  std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile(CEMapType::C1, "resources/game/c1/area6.rsc"));
+  std::shared_ptr<C2MapFile> cMap(new C2MapFile(CEMapType::C1, "resources/game/c1/area6.map", cMapRsc.get()));
   std::shared_ptr<CEPlayer> m_player(new CEPlayer(cMap));
   std::unique_ptr<TerrainRenderer> terrain(new TerrainRenderer(cMap.get(), cMapRsc.get()));
   
@@ -140,9 +170,8 @@ int main(int argc, const char * argv[])
   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
   
   input_manager->Bind(m_player);
+
   glfwSetCursorPosCallback(window, &cursorPosCallback);
-  
-  glfwSwapInterval(1);
 
   bool render_water, render_sky, render_objects, render_terrain;
 
@@ -163,7 +192,7 @@ int main(int argc, const char * argv[])
 
   update_camera_audio(*camera);
 
-  cMapRsc->playAmbientAudio(3);
+  cMapRsc->playAmbientAudio(0);
 
   while (!glfwWindowShouldClose(window))
   {
@@ -179,8 +208,8 @@ int main(int argc, const char * argv[])
     }
 
     double rnTimeDelta = currentTime - lastRndAudioTime;
-    if (rnTimeDelta >= 3.0) {
-      cMapRsc->playRandomAudio(camera->GetCurrentPos().x - 256.f, camera->GetCurrentPos().y, camera->GetCurrentPos().z);
+    if (rnTimeDelta >= 10.0) {
+      cMapRsc->playRandomAudio(camera->GetCurrentPos().x, camera->GetCurrentPos().y, camera->GetCurrentPos().z - 256.f);
       lastRndAudioTime = currentTime;
     }
 

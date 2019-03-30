@@ -37,6 +37,7 @@
 
 #include "LocalInputManager.hpp"
 #include "LocalVideoManager.hpp"
+#include "LocalAudioManager.hpp"
 
 #include "C2Sky.h"
 
@@ -62,102 +63,15 @@ void cursorPosCallback(GLFWwindow* window, double xpos, double ypos)
   input_manager->cursorPosCallback(window, xpos, ypos);
 }
 
-static void list_audio_devices(const ALCchar *devices)
-{
-  const ALCchar *device = devices, *next = devices + 1;
-  size_t len = 0;
-
-  fprintf(stdout, "Devices list:\n");
-  fprintf(stdout, "----------\n");
-  while (device && *device != '\0' && next && *next != '\0') {
-    fprintf(stdout, "%s\n", device);
-    len = strlen(device);
-    device += (len + 1);
-    next += (len + 2);
-  }
-  fprintf(stdout, "----------\n");
-}
-
-std::mutex g_audio_device_mutex;
-int g_current_ambient_index;
-int g_next_ambient_index;
-std::mutex g_audio_ambient_index_mutex;
-
-void destroy_audio(ALCcontext* context)
-{
-  std::lock_guard<std::mutex> guard(g_audio_device_mutex);
-  ALCdevice* device = alcGetContextsDevice(context);
-  alcMakeContextCurrent(NULL);
-  alcDestroyContext(context);
-  alcCloseDevice(device);
-}
-
-void update_camera_audio(Camera& camera)
-{
-  glm::vec3 pos = camera.GetCurrentPos();
-  glm::vec3 forward = camera.GetForward();
-  glm::vec3 up = camera.GetUp();
-  ALfloat listenerOri[] = { forward.x, forward.y, forward.z, up.x, up.y, up.z }; // forward and up
-
-  alListener3f(AL_POSITION, pos.x, pos.y, pos.z);
-  alListener3f(AL_VELOCITY, 0, 0, 0);
-  alListenerfv(AL_ORIENTATION, listenerOri);
-
-//  std::lock_guard<std::mutex> guard(g_audio_ambient_index_mutex);
-//  if (next_index != g_current_ambient_index) g_next_ambient_index = next_index;
-}
-
-void thread_ambient_audio_manager()
-{
-  std::unique_lock<std::mutex> guard(g_audio_ambient_index_mutex);
-  int next = g_next_ambient_index;
-  guard.unlock();
-
-  while (next != -1) {
-
-    // play
-
-    guard.lock();
-    next = g_next_ambient_index;
-    guard.unlock();
-  }
-// play current ambient sound
-  // if next ambient sound is not current, then determine and handle transition
-  // if next ambient sound is nothing, then break loop
-}
-
 int main(int argc, const char * argv[])
 {
-  // https://ffainelli.github.io/openal-example/
-  ALCdevice* m_audio_device = alcOpenDevice(NULL);
-  if (!m_audio_device) {
-    printf("Failed to create audio device. FATAL.\n");
-    return -1;
-  }
-  ALboolean enumeration;
-  enumeration = alcIsExtensionPresent(NULL, "ALC_ENUMERATION_EXT");
-  if (enumeration == AL_FALSE) {
-    printf("Audio: enumeration not supported. FATAL.\n");
-    return -1;
-  } else {
-    printf("Audio: enumeration supported. OK.\n");
-    list_audio_devices(alcGetString(NULL, ALC_DEVICE_SPECIFIER));
-  }
-
-  ALCcontext *context;
-  alGetError();
-
-  context = alcCreateContext(m_audio_device, NULL);
-  if (!alcMakeContextCurrent(context)) {
-    printf("Failed to create/activate audio context. FATAL\n");
-
-    return -1;
-  }
-
   alDistanceModel(AL_LINEAR_DISTANCE);
 
   std::unique_ptr<C2CarFilePreloader> cFileLoad(new C2CarFilePreloader);
+
   std::unique_ptr<LocalVideoManager> video_manager(new LocalVideoManager());
+  std::unique_ptr<LocalAudioManager> g_audio_manager(new LocalAudioManager());
+
   std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile(CEMapType::C1, "resources/game/c1/area6.rsc"));
   std::shared_ptr<C2MapFile> cMap(new C2MapFile(CEMapType::C1, "resources/game/c1/area6.map", cMapRsc.get()));
   std::shared_ptr<CEPlayer> m_player(new CEPlayer(cMap));
@@ -190,7 +104,7 @@ int main(int argc, const char * argv[])
 
   glViewport(0, 0, width, height);
 
-  update_camera_audio(*camera);
+  g_audio_manager->update(*camera);
 
   cMapRsc->playAmbientAudio(0);
 
@@ -214,7 +128,8 @@ int main(int argc, const char * argv[])
     }
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    update_camera_audio(*camera);
+
+    g_audio_manager->update(*camera);
 
     if (render_sky) {
       glDisable(GL_DEPTH_TEST);
@@ -242,8 +157,6 @@ int main(int argc, const char * argv[])
   
     glfwPollEvents();
   }
-
-  destroy_audio(context);
 
   return 0;
 }

@@ -55,7 +55,7 @@ public:
     updateViewProjection();
   }
   
-  const glm::vec3& GetCurrentPos()
+  const glm::vec3& GetCurrentPos() const
   {
     return this->pos;
   }

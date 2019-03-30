@@ -18,7 +18,7 @@ private:
     bool m_wireframe = false; // TODO: move this to a LocalVideoManager
     double lastTime;
 public:
-    void Bind(std::shared_ptr<CEPlayer> &player);
+    void Bind(std::shared_ptr<CEPlayer> player);
     void ProcessLocalInput(GLFWwindow* window, float time_delta);
     void cursorPosCallback(GLFWwindow* window, double x, double y);
 };

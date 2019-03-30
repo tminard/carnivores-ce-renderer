@@ -45,6 +45,18 @@ void CEAudioSource::upload()
     alSourcei(m_audio_source, AL_BUFFER, m_audio_buffer);
 }
 
+const bool CEAudioSource::isPlaying() const
+{
+  ALint source_state;
+  alGetSourcei(m_audio_source, AL_SOURCE_STATE, &source_state);
+
+  if (source_state == AL_PLAYING) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 void CEAudioSource::setLooped(bool looped)
 {
     if (looped) {

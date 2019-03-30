@@ -22,6 +22,7 @@ public:
   CEAudioSource& operator= (const CEAudioSource& source);
 
   void play();
+  const bool isPlaying() const;
 
   void setLooped(bool looped);
 

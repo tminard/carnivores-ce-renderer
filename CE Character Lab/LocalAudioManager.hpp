@@ -6,6 +6,7 @@
 #include <memory>
 #include <thread>
 #include <mutex>
+#include <chrono>
 
 #include <stdexcept>
 
@@ -19,9 +20,12 @@ fprintf(stderr, _msg "\n");  \
 throw std::runtime_error(_msg);   \
 }
 
+class CEPlayer;
+
 class LocalAudioManager
 {
 private:
+  std::shared_ptr<CEPlayer> m_player;
 
   /*
    * Collection of active audio sources for "one off" tracks
@@ -35,21 +39,25 @@ private:
    */
   ALCcontext* m_alc_context;
   ALCdevice* m_alc_device;
+  bool m_ready;
 
   std::mutex m_audio_device_mutex;
+  std::thread m_update_thread;
 
   void setupDevice();
   void destroyDevice();
   void listDevices(const ALCchar *devices);
 
+  void startUpdateLoop();
+  void update();
+
 public:
   LocalAudioManager();
   ~LocalAudioManager();
 
-  /*
-   * Loop through current audio and perform crossovers as needed; prune current pool.
-   */
-  void update(const Camera& camera);
+  void bind(std::shared_ptr<CEPlayer> player);
+  
+  void shutdown();
 
   /*
    * Play the given audio source as a one off.

@@ -2,9 +2,9 @@
 #include "camera.h"
 #include "CEPlayer.hpp"
 
-void LocalInputManager::Bind(std::shared_ptr<CEPlayer> &player)
+void LocalInputManager::Bind(std::shared_ptr<CEPlayer> player)
 {
-  this->m_player.swap(player);
+  this->m_player = player;
   this->lastTime = glfwGetTime();
 }
 

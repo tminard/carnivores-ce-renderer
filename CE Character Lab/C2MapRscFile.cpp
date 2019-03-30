@@ -76,6 +76,15 @@ void C2MapRscFile::setWaterHeight(int i, int h_unscaled)
   this->m_waters.at(i) = wd;
 }
 
+std::shared_ptr<CEAudioSource> C2MapRscFile::getRandomAudio(int x, int y, int z)
+{
+  int rnd = rand() % (this->m_random_audio_sources.size()-1);
+  std::shared_ptr<CEAudioSource> src = this->m_random_audio_sources.at(rnd);
+  src->setPosition(glm::vec3(x, y, z));
+
+  return src;
+}
+
 void C2MapRscFile::playRandomAudio(int x, int y, int z)
 {
   // play random audio at this point
@@ -83,6 +92,11 @@ void C2MapRscFile::playRandomAudio(int x, int y, int z)
   CEAudioSource* src = this->m_random_audio_sources.at(rnd).get();
   src->setPosition(glm::vec3(x, y, z));
   src->play();
+}
+
+std::shared_ptr<CEAudioSource> C2MapRscFile::getAmbientAudio(int i)
+{
+  return this->m_ambient_audio_sources.at(i);
 }
 
 void C2MapRscFile::playAmbientAudio(int i)

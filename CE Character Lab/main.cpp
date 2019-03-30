@@ -82,7 +82,8 @@ int main(int argc, const char * argv[])
   GLFWwindow* window = video_manager->GetWindow();
   
   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-  
+
+  g_audio_manager->bind(m_player);
   input_manager->Bind(m_player);
 
   glfwSetCursorPosCallback(window, &cursorPosCallback);
@@ -103,10 +104,13 @@ int main(int argc, const char * argv[])
   int nbFrames = 0;
 
   glViewport(0, 0, width, height);
+  std::shared_ptr<CEAudioSource> m_ambient;
+  std::shared_ptr<CEAudioSource> m_random_ambient;
 
-  g_audio_manager->update(*camera);
+  m_ambient = cMapRsc->getAmbientAudio(0);
+  g_audio_manager->play(m_ambient);
 
-  cMapRsc->playAmbientAudio(0);
+  m_ambient.reset();
 
   while (!glfwWindowShouldClose(window))
   {
@@ -123,13 +127,15 @@ int main(int argc, const char * argv[])
 
     double rnTimeDelta = currentTime - lastRndAudioTime;
     if (rnTimeDelta >= 10.0) {
-      cMapRsc->playRandomAudio(camera->GetCurrentPos().x, camera->GetCurrentPos().y, camera->GetCurrentPos().z - 256.f);
+      m_random_ambient = cMapRsc->getRandomAudio(camera->GetCurrentPos().x, camera->GetCurrentPos().y, camera->GetCurrentPos().z - 256.f);
+
+      g_audio_manager->play(m_random_ambient);
+
+      m_random_ambient.reset();
       lastRndAudioTime = currentTime;
     }
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    g_audio_manager->update(*camera);
 
     if (render_sky) {
       glDisable(GL_DEPTH_TEST);

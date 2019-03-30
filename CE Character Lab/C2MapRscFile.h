@@ -52,9 +52,9 @@ private:
   
   int m_random_sounds_count, m_ambient_sounds_count;
   std::vector<std::shared_ptr<Sound>> m_random_sounds;
-  std::vector<std::unique_ptr<CEAudioSource>> m_random_audio_sources;
+  std::vector<std::shared_ptr<CEAudioSource>> m_random_audio_sources;
   std::vector<std::shared_ptr<Sound>> m_ambient_sounds;
-  std::vector<std::unique_ptr<CEAudioSource>> m_ambient_audio_sources;
+  std::vector<std::shared_ptr<CEAudioSource>> m_ambient_audio_sources;
 
   int m_num_waters;
   std::vector<CEWaterEntity> m_waters;
@@ -83,6 +83,9 @@ public:
   CEWorldModel* getWorldModel(int i);
   CETexture* getTexture(int i);
   C2Sky* getDaySky();
+
+  std::shared_ptr<CEAudioSource> getAmbientAudio(int i);
+  std::shared_ptr<CEAudioSource> getRandomAudio(int x, int y, int z);
 
   void playRandomAudio(int x, int y, int z);
   void playAmbientAudio(int i);

@@ -25,6 +25,8 @@ class CEPlayer;
 class LocalAudioManager
 {
 private:
+  const float MAX_AMBIENT_GAIN = 0.5f;
+
   std::shared_ptr<CEPlayer> m_player;
 
   /*
@@ -32,6 +34,9 @@ private:
    */
   std::vector<std::shared_ptr<CEAudioSource>> m_current_audio_sources;
   std::mutex m_mutate_audio_sources;
+
+  std::vector<std::shared_ptr<CEAudioSource>> m_ambient_queue;
+  std::mutex m_mutate_ambient_queue;
 
   /*
    * NOTE: we do not need to manage these objects; openAL internally handles
@@ -67,4 +72,11 @@ public:
    * Initiation of audio will occur in a separate thread.
    */
   void play(std::shared_ptr<CEAudioSource> source);
+
+  /*
+   * Manage audio as main ambient track.
+   *
+   * If another ambient track is active, will fade transition immediately.
+   */
+  void playAmbient(std::shared_ptr<CEAudioSource> source);
 };

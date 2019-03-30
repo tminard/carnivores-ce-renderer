@@ -47,7 +47,34 @@ void LocalAudioManager::play(std::shared_ptr<CEAudioSource> source)
   std::lock_guard<std::mutex> guard(m_mutate_audio_sources);
   m_current_audio_sources.push_back(source);
 
+  source->setLooped(false);
   source->play();
+}
+
+void LocalAudioManager::playAmbient(std::shared_ptr<CEAudioSource> source)
+{
+  std::unique_lock<std::mutex> lock_device(this->m_audio_device_mutex);
+  if (!m_ready) return;
+
+  lock_device.unlock();
+
+  std::lock_guard<std::mutex> guard(m_mutate_ambient_queue);
+  std::shared_ptr<CEAudioSource> current = nullptr;
+
+  if (!m_ambient_queue.empty()) {
+    current = m_ambient_queue.back();
+
+    if (current == source) return; // No-op
+
+    current->setLooped(false);
+  }
+
+  m_ambient_queue.push_back(source);
+
+  source->setLooped(true);
+  source->setNoDistance(MAX_AMBIENT_GAIN);
+
+  if (current == nullptr) source->play();
 }
 
 // See https://ffainelli.github.io/openal-example/
@@ -134,6 +161,12 @@ void LocalAudioManager::update()
   }
 
   m_current_audio_sources = playing;
+
+  // Handle ambient
+
+  // prune ambient vector to remove non-playing sources
+  // If vector size > 1, then be sure to interpolate gain between current playing vs next.
+  // if size > 1, and end() is not playing, then start end() with 0 gain
 }
 
 void LocalAudioManager::destroyDevice()

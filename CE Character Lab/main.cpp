@@ -108,7 +108,7 @@ int main(int argc, const char * argv[])
   std::shared_ptr<CEAudioSource> m_random_ambient;
 
   m_ambient = cMapRsc->getAmbientAudio(0);
-  g_audio_manager->play(m_ambient);
+  g_audio_manager->playAmbient(m_ambient);
 
   m_ambient.reset();
 
@@ -126,12 +126,17 @@ int main(int argc, const char * argv[])
     }
 
     double rnTimeDelta = currentTime - lastRndAudioTime;
-    if (rnTimeDelta >= 10.0) {
+    if (rnTimeDelta >= 2.0) {
       m_random_ambient = cMapRsc->getRandomAudio(camera->GetCurrentPos().x, camera->GetCurrentPos().y, camera->GetCurrentPos().z - 256.f);
 
-      g_audio_manager->play(m_random_ambient);
+      //g_audio_manager->play(m_random_ambient);
 
       m_random_ambient.reset();
+
+      m_ambient = cMapRsc->getAmbientAudio(1);
+      g_audio_manager->playAmbient(m_ambient);
+      m_ambient.reset();
+
       lastRndAudioTime = currentTime;
     }
 

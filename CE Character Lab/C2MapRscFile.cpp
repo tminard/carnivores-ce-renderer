@@ -320,8 +320,10 @@ void C2MapRscFile::load(const std::string &file_name)
 
       std::unique_ptr<CEAudioSource> src(new CEAudioSource(snd));
 
-      src->setClampDistance((256*2));
-      src->setMaxDistance((256*200));
+      // TODO: use tile length
+      src->setClampDistance((128*2));
+      src->setMaxDistance((128*200));
+      src->setLooped(false);
 
       this->m_random_audio_sources.push_back(std::move(src));
     }
@@ -346,10 +348,8 @@ void C2MapRscFile::load(const std::string &file_name)
       this->m_ambient_sounds.push_back(snd);
       std::unique_ptr<CEAudioSource> src(new CEAudioSource(snd));
 
-      src->setClampDistance((256*1));
-      src->setMaxDistance((256*2));
-      src->setNoDistance(0.25);
-      src->setLooped(true);
+      src->setNoDistance(1.f);
+      src->setLooped(false);
 
       this->m_ambient_audio_sources.push_back(std::move(src));
 
@@ -357,13 +357,13 @@ void C2MapRscFile::load(const std::string &file_name)
       infile.seekg((16*16) + 8, std::ios_base::cur);
 
       // read data first, then a 16x16 table
-      // For each of these ambient sounds, read a table 16 entries long that maps to the random sounds, and describes which random sounds play in the ambient area and how frequent, etc
+      // For each of these ambient sounds, read a table 16 entries long that maps to the random sounds, and describes which random sounds play in the ambient area and how frequent, time of day, etc
     }
 
     if (m_type == C1) {
       CEWaterEntity wd;
       wd.texture_id = 0;
-      //wd.water_level = 0; // actually height map height - use magic number to calc on the fly
+      wd.water_level = -1; // actually height map height - use magic number to calc on the fly
       wd.transparency = 0.8f;
 
       this->m_waters.push_back(wd);

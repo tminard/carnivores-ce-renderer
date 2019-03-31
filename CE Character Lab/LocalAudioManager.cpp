@@ -31,11 +31,10 @@ void LocalAudioManager::startUpdateLoop()
   while (ready) {
 
     this->update();
-    std::this_thread::sleep_for (std::chrono::seconds(1));
+    std::this_thread::sleep_for (std::chrono::milliseconds(100));
 
     lock_device.lock();
     ready = m_ready;
-    printf("Audio Look Update\n");
     lock_device.unlock();
   }
 }
@@ -154,6 +153,7 @@ void LocalAudioManager::update()
   /* == Handle ambient == */
 
   // prune ambient vector to remove non-playing sources
+  // TODO: generalize this?
   {
     std::lock_guard<std::mutex> guard(m_mutate_ambient_queue);
     std::vector<std::shared_ptr<CEAudioSource>> playing;
@@ -180,8 +180,6 @@ void LocalAudioManager::update()
       k2 = fminf((float(second_duration_sec*1000.f) / AMBIENT_FADE_IN_TIME_MS), 1.f);
       k1 = 1.f - k2;
 
-      printf("Interpolating between active tracks with k1: %f, k2: %f\n", k1, k2);
-
       m_ambient_queue[0]->setNoDistance(k1 * MAX_AMBIENT_GAIN);
       m_ambient_queue[1]->setNoDistance(k2 * MAX_AMBIENT_GAIN);
     }
@@ -190,33 +188,31 @@ void LocalAudioManager::update()
 
 void LocalAudioManager::ingestNextAmbient()
 {
-  printf("Ingesting next\n");
-
   std::lock_guard<std::mutex> guard_queue(this->m_mutate_ambient_queue);
-  if (m_ambient_queue.size() >= 2) { printf("Queue max; NOOP\n"); return; }
+  if (m_ambient_queue.size() >= 2) return;
 
   std::lock_guard<std::mutex> guard(this->m_mutate_next_ambient);
-  if (m_next_ambient == nullptr) { printf("Nothing staged; NOOP\n"); return; }
+  if (m_next_ambient == nullptr) return;
 
   std::shared_ptr<CEAudioSource> current = nullptr;
 
   if (!m_ambient_queue.empty()) {
-    printf("Queue is not empty - checking\n");
     current = m_ambient_queue.back();
 
-    if (current == m_next_ambient) { printf("Next is current; NOOP\n"); m_next_ambient = nullptr; return; }
+    if (current == m_next_ambient) {
+      m_next_ambient = nullptr;
 
-    printf("Setting current looped to `false`\n");
+      return;
+    }
+
     current->setLooped(false);
   }
 
   m_next_ambient->setLooped(true);
 
   if (current == nullptr) {
-    printf("Current is not active; setting max gain\n");
     m_next_ambient->setNoDistance(MAX_AMBIENT_GAIN);
   } else {
-    printf("Current is active; setting gain to 0\n");
     m_next_ambient->setNoDistance(0);
   }
 
@@ -225,8 +221,6 @@ void LocalAudioManager::ingestNextAmbient()
 
   m_ambient_queue.push_back(m_next_ambient);
   m_next_ambient = nullptr;
-
-  printf("Cleared staged ambient\n");
 }
 
 void LocalAudioManager::destroyDevice()

@@ -14,6 +14,8 @@
 #include "C2MapRscFile.h"
 #include "CEWaterEntity.h"
 
+#include <math.h>
+
 void Console_PrintLogString(std::string log_msg);
 
 C2MapFile::C2MapFile(const CEMapType type, const std::string& map_file_name, C2MapRscFile* crsc_weak) : m_type(type)
@@ -31,6 +33,17 @@ C2MapFile::C2MapFile(const CEMapType type, const std::string& map_file_name, C2M
 C2MapFile::~C2MapFile()
 {
 
+}
+
+int C2MapFile::getAmbientAudioIDAt(int x, int y)
+{
+  x = x>>1;
+  y = y>>1;
+  int w = (int)getWidth()>>1;
+  
+  int xy = (y * w) + x;
+
+  return this->m_soundfx_data.at(xy);
 }
 
 float C2MapFile::getWidth()

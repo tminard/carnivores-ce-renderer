@@ -63,6 +63,7 @@ public:
   int getObjectAt(int xy);
   int getTextureIDAt(int xy);
   int getWaterTextureIDAt(int xy, int water_texture_id);
+  int getAmbientAudioIDAt(int x, int y);
 
   uint16_t getFlagsAt(int xy);
   uint16_t getFlagsAt(int x, int y);

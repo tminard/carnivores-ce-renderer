@@ -19,6 +19,8 @@
 
 #include "g_shared.h"
 
+#include <glm/glm.hpp>
+
 class C2MapRscFile;
 struct _Water;
 
@@ -67,6 +69,8 @@ public:
 
   uint16_t getFlagsAt(int xy);
   uint16_t getFlagsAt(int x, int y);
+
+  glm::vec2 getXYAtWorldPosition(glm::vec2 pos);
 
   float getHeight();
   float getWidth();

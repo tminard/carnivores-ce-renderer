@@ -15,7 +15,6 @@ bool first = true;
 void LocalInputManager::cursorPosCallback(GLFWwindow* window, double xpos, double ypos)
 {
   if (this->m_player) {
-    Camera* m_following = m_player->getCamera();
     float mouseSpeed = 3.0f;
     float deltaTime = glfwGetTime() - this->lastTime;
     
@@ -44,7 +43,7 @@ void LocalInputManager::cursorPosCallback(GLFWwindow* window, double xpos, doubl
                         cos(verticalAngle) * cos(horizontalAngle)
                         );
     
-    m_following->SetLookAt(direction);
+    m_player->setLookAt(direction);
     glfwSetCursorPos(window, winw/2, winh/2);
   }
 }
@@ -59,11 +58,15 @@ void LocalInputManager::ProcessLocalInput(GLFWwindow* window, float deltaTime)
     // Keyboard
     
     if (glfwGetKey(window, GLFW_KEY_UP ) == GLFW_PRESS) {
-      m_following->MoveForward(FLY_SPEED);
+      m_player->moveForward();
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_SPACE ) == GLFW_PRESS) {
+      m_player->setVelocity(glm::vec3(0.f, 600.f, 0.f));
     }
     
     if (glfwGetKey(window, GLFW_KEY_DOWN ) == GLFW_PRESS) {
-      m_following->MoveForward(-(FLY_SPEED));
+      m_player->moveBackward();
     }
     
     if (glfwGetKey(window, GLFW_KEY_RIGHT ) == GLFW_PRESS) {

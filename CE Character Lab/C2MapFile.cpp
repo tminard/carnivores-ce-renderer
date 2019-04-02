@@ -329,6 +329,13 @@ void C2MapFile::copyWaterMap(int x, int y, int src_x, int src_y)
   }
 }
 
+glm::vec2 C2MapFile::getXYAtWorldPosition(glm::vec2 pos)
+{
+  glm::vec2 xy(floorf(pos.x / this->getTileLength()), floorf(pos.y / this->getTileLength()));
+
+  return xy;
+}
+
 /*
  * fix flags, etc
  */

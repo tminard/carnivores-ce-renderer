@@ -62,7 +62,8 @@ public:
   
   void MoveForward(float amt)
   {
-    pos += forward * amt;
+    float incline = 0.f;
+    pos += ((forward * glm::vec3(1.f, 0, 1.f)) * amt) + (glm::vec3(0, incline, 0));
     updateViewProjection();
   }
   
@@ -83,7 +84,7 @@ public:
   }
   
   void SetLookAt(glm::vec3 fw) {
-    this->forward = fw;
+    this->forward = fw; // TODO: should this be normalized?
     updateViewProjection();
   }
   

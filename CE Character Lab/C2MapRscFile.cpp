@@ -395,5 +395,10 @@ int C2MapRscFile::getWaterCount()
 
 const CEWaterEntity& C2MapRscFile::getWater(int i) const
 {
+  if (i > this->m_waters.size()) {
+    printf("ERROR! Attempted to access water index %i, which is invalid\n", i);
+
+    i = 0;
+  }
   return this->m_waters.at(i);
 }

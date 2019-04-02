@@ -33,7 +33,7 @@ class CEWorldModel;
 class ShaderProgram;
 class Transform;
 class Camera;
-class Shader; // TODO: replace global object shader with per object pool
+
 class TerrainRenderer
 {
 private:
@@ -61,6 +61,7 @@ private:
   GLuint m_indices_array_buffer;
   
   std::unique_ptr<ShaderProgram> m_shader;
+  std::unique_ptr<ShaderProgram> m_water_shader;
   
   C2MapFile* m_cmap_data_weak;
   C2MapRscFile* m_crsc_data_weak;
@@ -68,14 +69,14 @@ private:
   void preloadObjectMap();
   void loadShader();
   void loadIntoHardwareMemory();
+  
   void loadWaterIntoMemory();
+  void loadWaterAt(int x, int y);
 
   glm::vec2 calcAtlasUV(int texID, glm::vec2 uv);
   glm::vec2 scaleAtlasUV(glm::vec2 atlas_uv, int texture_id);
   glm::vec3 calcWorldVertex(int tile_x, int tile_y, bool water, float water_height_scaled);
   std::array<glm::vec2, 4> calcUVMapForQuad(int x, int y, bool quad_reversed, int rotation_code);
-  
-  void renderObjectsAtQuad(Camera& camera, int quad_x, int quad_y, float maxd, float lowrd, glm::vec3 cur_pos);
 public:
   constexpr static const float TCMAX = 255.5f;
   constexpr static const float TCMIN = 0.5f;
@@ -87,8 +88,6 @@ public:
   void Render();
   void Update(Transform& transform, Camera& camera);
   void RenderWater();
-
-  void loadWaterAt(int x, int y);
 };
 
 #endif /* defined(__CE_Character_Lab__TerrainRenderer__) */

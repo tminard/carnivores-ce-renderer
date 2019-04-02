@@ -72,8 +72,8 @@ int main(int argc, const char * argv[])
   std::unique_ptr<LocalVideoManager> video_manager(new LocalVideoManager());
   std::unique_ptr<LocalAudioManager> g_audio_manager(new LocalAudioManager());
 
-  std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile(CEMapType::C2, "resources/game/c2/area4.rsc"));
-  std::shared_ptr<C2MapFile> cMap(new C2MapFile(CEMapType::C2, "resources/game/c2/area4.map", cMapRsc.get()));
+  std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile(CEMapType::C1, "resources/game/c1/area5.rsc"));
+  std::shared_ptr<C2MapFile> cMap(new C2MapFile(CEMapType::C1, "resources/game/c1/area5.map", cMapRsc.get()));
   std::shared_ptr<CEPlayer> m_player(new CEPlayer(cMap));
   std::unique_ptr<TerrainRenderer> terrain(new TerrainRenderer(cMap.get(), cMapRsc.get()));
   
@@ -111,6 +111,7 @@ int main(int argc, const char * argv[])
   g_audio_manager->playAmbient(m_ambient);
 
   m_ambient.reset();
+  m_player->setWorldPosition(312, 336);
 
   glm::vec2 current_world_pos = m_player->getWorldPosition();
   int current_ambient_id = 0;
@@ -130,9 +131,9 @@ int main(int argc, const char * argv[])
 
     double rnTimeDelta = currentTime - lastRndAudioTime;
     if (rnTimeDelta >= 10.0) {
-      //m_random_ambient = cMapRsc->getRandomAudio(camera->GetCurrentPos().x, camera->GetCurrentPos().y, camera->GetCurrentPos().z - 256.f);
+      m_random_ambient = cMapRsc->getRandomAudio(camera->GetCurrentPos().x, camera->GetCurrentPos().y, camera->GetCurrentPos().z - 256.f);
 
-      //g_audio_manager->play(std::move(m_random_ambient));
+      g_audio_manager->play(std::move(m_random_ambient));
 
       lastRndAudioTime = currentTime;
     }
@@ -176,6 +177,7 @@ int main(int argc, const char * argv[])
     glfwSwapBuffers(window);
     
     input_manager->ProcessLocalInput(window, timeDelta);
+    m_player->update();
   
     glfwPollEvents();
   }

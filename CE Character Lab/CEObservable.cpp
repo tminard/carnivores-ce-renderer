@@ -8,13 +8,13 @@
 
 #include "CEObservable.hpp"
 
-CEObservable::CEObservable() : m_camera(glm::vec3(82279.875000f,2638.347168f,33472.246094f), 45.f, (4.f/3.f), 1.f, VIEW_R)
+CEObservable::CEObservable() : m_camera(glm::vec3(0.f), 45.f, (21.f/9.f), 1.f, MAX_VIEW_R)
 {
 }
 
-float CEObservable::getViewRange()
+float CEObservable::getMaxViewRange()
 {
-    return VIEW_R;
+    return MAX_VIEW_R;
 }
 
 glm::vec3 CEObservable::getPosition()

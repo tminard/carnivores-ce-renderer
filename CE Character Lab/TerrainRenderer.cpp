@@ -107,6 +107,10 @@ void TerrainRenderer::preloadObjectMap()
 void TerrainRenderer::loadShader()
 {
   this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram("resources/shaders/terrain.vs", "resources/shaders/terrain.fs"));
+  this->m_water_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram("resources/shaders/water_surface.vs", "resources/shaders/water_surface.fs"));
+
+  this->m_shader->use();
+  this->m_shader->setFloat("view_distance", (128.f*100.f));
 }
 
 //      /*
@@ -125,6 +129,8 @@ void TerrainRenderer::Update(Transform& transform, Camera& camera)
   
   this->m_shader->use();
   this->m_shader->setMat4("MVP", MVP);
+  this->m_water_shader->use();
+  this->m_water_shader->setMat4("MVP", MVP);
 }
 
 void TerrainRenderer::RenderObjects(Camera& camera)
@@ -284,6 +290,10 @@ void TerrainRenderer::loadWaterAt(int x, int y)
   uint16_t flags = this->m_cmap_data_weak->getFlagsAt(xy);
 
   CEWaterEntity water_data = this->m_crsc_data_weak->getWater(water_index);
+  if (water_index > this->m_waters.size()) {
+    printf("Attempted to access water_index `%i` at x: %i, y: %i, which is out of bounds\n", water_index, x, y);
+    water_index = 0;
+  }
   _Water* water_object = &this->m_waters[water_index];
 
   float wheight;
@@ -303,11 +313,18 @@ void TerrainRenderer::loadWaterAt(int x, int y)
   int texture_id = this->m_cmap_data_weak->getWaterTextureIDAt(xy, water_data.texture_id);
 
   std::array<glm::vec2, 4> vertex_uv_mapping = this->calcUVMapForQuad(x, y, quad_reverse, texture_direction);
+  float h_delta = wheight - this->m_cmap_data_weak->getHeightAt(xy);
+  float max_delta = this->m_cmap_data_weak->getTileLength()*2.f;
 
-  Vertex v1(vpositionUL, this->scaleAtlasUV(vertex_uv_mapping[0], texture_id), glm::vec3(0,0,0), false, 1.4f - water_data.transparency, texture_id, 0);
-  Vertex v2(vpositionUR, this->scaleAtlasUV(vertex_uv_mapping[1], texture_id), glm::vec3(0,0,0), false, 1.4f - water_data.transparency, texture_id, 0);
-  Vertex v3(vpositionLL, this->scaleAtlasUV(vertex_uv_mapping[2], texture_id), glm::vec3(0,0,0), false, 1.4f - water_data.transparency, texture_id, 0);
-  Vertex v4(vpositionLR, this->scaleAtlasUV(vertex_uv_mapping[3], texture_id), glm::vec3(0,0,0), false, 1.4f - water_data.transparency, texture_id, 0);
+  h_delta = fminf(h_delta, max_delta);
+  float trans = 0.9f * (h_delta / max_delta); // 0 = close, max .9
+
+    // TODO: interpret `water_data.transparency` water data transparency as density
+
+  Vertex v1(vpositionUL, this->scaleAtlasUV(vertex_uv_mapping[0], texture_id), glm::vec3(0,0,0), false, trans, texture_id, 0);
+  Vertex v2(vpositionUR, this->scaleAtlasUV(vertex_uv_mapping[1], texture_id), glm::vec3(0,0,0), false, trans, texture_id, 0);
+  Vertex v3(vpositionLL, this->scaleAtlasUV(vertex_uv_mapping[2], texture_id), glm::vec3(0,0,0), false, trans, texture_id, 0);
+  Vertex v4(vpositionLR, this->scaleAtlasUV(vertex_uv_mapping[3], texture_id), glm::vec3(0,0,0), false, trans, texture_id, 0);
 
   if (quad_reverse) {
     water_object->m_vertices.push_back(v1);
@@ -503,7 +520,7 @@ void TerrainRenderer::Render()
 
 void TerrainRenderer::RenderWater()
 {
-  this->m_shader->use();
+  this->m_water_shader->use();
 
   for (int w = 0; w < this->m_waters.size(); w++) {
     glBindVertexArray(this->m_waters[w].m_vao);

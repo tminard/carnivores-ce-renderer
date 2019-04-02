@@ -86,7 +86,7 @@ void C2Sky::updateClouds()
   double time = glfwGetTime();
   double time_delta = this->last_cloud_time - time;
 
-  float max_uv = ((SKY_DISTANCE*2.f) / 256.f);
+  float max_uv = (SKY_DISTANCE / 256.f);
 
   float unit_sec = (max_uv / (240.f * 10.f));
   float start = last_cloud_start + (unit_sec * (float)time_delta);
@@ -112,7 +112,7 @@ void C2Sky::updateClouds()
 void C2Sky::loadIntoHardwareMemory()
 {
   float start = (float)glfwGetTime();
-  float r_f = ((SKY_DISTANCE*2.f) / 256.f / 4.f) + start;
+  float r_f = (SKY_DISTANCE / 256.f / 4.f) + start;
   float cloudUV[] = {
     start, start,
     r_f, start,

@@ -180,6 +180,8 @@ void LocalAudioManager::update()
       k2 = fminf((float(second_duration_sec*1000.f) / AMBIENT_FADE_IN_TIME_MS), 1.f);
       k1 = 1.f - k2;
 
+      if (k1 <= 0.25) m_ambient_queue[0]->setLooped(false);
+
       m_ambient_queue[0]->setNoDistance(k1 * MAX_AMBIENT_GAIN);
       m_ambient_queue[1]->setNoDistance(k2 * MAX_AMBIENT_GAIN);
     }
@@ -204,8 +206,6 @@ void LocalAudioManager::ingestNextAmbient()
 
       return;
     }
-
-    current->setLooped(false);
   }
 
   m_next_ambient->setLooped(true);

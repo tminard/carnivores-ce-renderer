@@ -42,6 +42,7 @@ private:
   std::array<uint8_t, 1024*1024> m_object_heightmap_data;
   std::array<uint8_t, 512*512> m_fog_data;
   std::array<uint8_t, 512*512> m_soundfx_data;
+  std::vector<glm::vec2> m_landings;
 
   const CEMapType m_type;
   constexpr static const float SIZE = 1024.f;
@@ -71,6 +72,8 @@ public:
   uint16_t getFlagsAt(int x, int y);
 
   glm::vec2 getXYAtWorldPosition(glm::vec2 pos);
+  glm::vec2 getRandomLanding();
+  float getAngleBetweenPoints(glm::vec3 a, glm::vec3 b);
 
   float getHeight();
   float getWidth();

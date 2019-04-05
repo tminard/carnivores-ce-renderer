@@ -62,7 +62,9 @@ void LocalInputManager::ProcessLocalInput(GLFWwindow* window, float deltaTime)
     }
 
     if (glfwGetKey(window, GLFW_KEY_SPACE ) == GLFW_PRESS) {
-      m_player->setVelocity(glm::vec3(0.f, 600.f, 0.f));
+      if (m_player->canJump()) {
+        m_player->setVelocity(glm::vec3(0.f, 320.f, 0.f));
+      }
     }
     
     if (glfwGetKey(window, GLFW_KEY_DOWN ) == GLFW_PRESS) {
@@ -70,27 +72,32 @@ void LocalInputManager::ProcessLocalInput(GLFWwindow* window, float deltaTime)
     }
     
     if (glfwGetKey(window, GLFW_KEY_RIGHT ) == GLFW_PRESS) {
-      m_following->MoveRight(-(FLY_SPEED));
+      m_player->strafeRight();
     }
     
     if (glfwGetKey(window, GLFW_KEY_LEFT ) == GLFW_PRESS) {
-      m_following->MoveRight(FLY_SPEED);
+      //m_following->MoveRight(FLY_SPEED);
+      m_player->strafeLeft();
     }
     
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-      m_following->RotateY(0.025f);
+      //m_following->RotateY(0.025f);
+      m_player->strafeLeft();
     }
     
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-      m_following->RotateY(-0.025f);
+      //m_following->RotateY(-0.025f);
+      m_player->strafeRight();
     }
     
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-      m_following->MoveUp(FLY_SPEED);
+      //m_following->MoveUp(FLY_SPEED);
+      m_player->moveForward();
     }
     
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-      m_following->MoveUp(-FLY_SPEED);
+      //m_following->MoveUp(-FLY_SPEED);
+      m_player->moveBackward();
     }
     
     if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS && this->m_last_key_state[GLFW_KEY_O] != GLFW_PRESS) {

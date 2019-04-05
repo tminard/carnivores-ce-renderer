@@ -15,6 +15,7 @@ public:
     this->pos = pos;
     this->forward = glm::vec3(0.0f, 0.0f, 1.0f);
     this->up = glm::vec3(0.0f, 1.0f, 0.0f);
+    this->right = glm::vec3(1.f, 0.f, 0.f); // left handed
     this->projection = glm::perspective(fov, aspect, zNear, zFar);
     updateViewProjection();
   }
@@ -22,6 +23,11 @@ public:
   inline glm::vec3 GetPosition() const
   {
     return this->pos;
+  }
+
+  inline glm::vec3 GetRight() const
+  {
+    return this->right;
   }
 
   inline glm::vec3 GetUp() const
@@ -62,8 +68,7 @@ public:
   
   void MoveForward(float amt)
   {
-    float incline = 0.f;
-    pos += ((forward * glm::vec3(1.f, 0, 1.f)) * amt) + (glm::vec3(0, incline, 0));
+    pos += ((forward * glm::vec3(1.f, 0, 1.f)) * amt);
     updateViewProjection();
   }
   
@@ -110,6 +115,7 @@ private:
   glm::vec3 pos;
   glm::vec3 forward;
   glm::vec3 up;
+  glm::vec3 right;
   glm::mat4 view_projection;
   
   glm::vec2 world_position;

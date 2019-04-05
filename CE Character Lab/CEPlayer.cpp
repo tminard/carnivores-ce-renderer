@@ -38,7 +38,6 @@ void CEPlayer::applyVelocity(double time_delta)
   this->m_camera.SetPos(offset);
 }
 
-  // TODO: Record and apply velocity
 void CEPlayer::update()
 {
   double current_time = glfwGetTime();
@@ -63,7 +62,7 @@ void CEPlayer::update()
       }
     } else if (current_height < m_target_height) {
         // over time adjust ("standup")
-      m_direction_sec_velocity.y += 256.f;
+      m_direction_sec_velocity.y = fminf(m_direction_sec_velocity.y + 45.f, 255.f);
 
       this->applyVelocity(time_delta_sec);
 
@@ -78,6 +77,28 @@ void CEPlayer::update()
   }
 
   this->m_last_update_seconds = current_time;
+}
+
+bool CEPlayer::canMoveSide(float amount)
+{
+    // TODO: Make this and forward the same; include slope checks
+  glm::vec3 pos = m_camera.GetCurrentPos();
+  glm::vec3 right = m_camera.GetRight();
+
+    // TODO: Choose a diff approach
+  glm::vec3 new_pos = pos + ((right * glm::vec3(1.f, 0, 1.f)) * amount); // todo: get slope delta angles
+  glm::vec2 world_pos = this->m_map->getXYAtWorldPosition(glm::vec2(new_pos.x, new_pos.z));
+  int nxy = (world_pos.y * this->m_map->getWidth()) + world_pos.x;
+  float new_height = this->m_map->getHeightAt(nxy) + HEIGHT;
+  new_pos = glm::vec3(new_pos.x, new_height, new_pos.z);
+
+  float l = glm::distance(new_pos, pos);
+  float hd = new_height - pos.y;
+
+  if (l > 80.f && hd > 0) return false; // gravity is 1024.0 world units/second
+                                        // TODO: slope
+
+  return true;
 }
 
 bool CEPlayer::canMoveForward(float amount)
@@ -95,15 +116,15 @@ bool CEPlayer::canMoveForward(float amount)
   float l = glm::distance(new_pos, pos);
   float hd = new_height - pos.y;
 
-  if (l > 100.f && hd > 0) return false; // gravity is 1024.0 world units/second
-  
+    // TODO: slope
+  if (l > 80.f && hd > 0) return false; // gravity is 1024.0 world units/second
+
   return true;
 }
 
 void CEPlayer::moveBackward()
 {
-    // TODO: scale this based on time dt
-  float amt = (RUN_SPEED * -0.8f);
+  float amt = RUN_SPEED * -0.8f;
 
   if (canMoveForward(amt)) {
     this->m_camera.MoveForward(amt);
@@ -111,9 +132,55 @@ void CEPlayer::moveBackward()
     glm::vec3 pos = m_camera.GetCurrentPos();
     glm::vec2 world_pos = this->m_map->getXYAtWorldPosition(glm::vec2(pos.x, pos.z));
     int nxy = (world_pos.y * this->m_map->getWidth()) + world_pos.x;
-    float new_height = this->m_map->getHeightAt(nxy);
-    this->m_camera.SetHeight(new_height + HEIGHT);
+    float new_height = this->m_map->getHeightAt(nxy) + HEIGHT;
+
+      // TODO: use physics engine for this? If target height is below our height, then let "gravity" pull us down
+      // Otherwise, "step up" to the height (move into new position preserving existing height, then "adjust" up to new height over a smooth time period.
+    m_target_height = new_height;
   }
+}
+
+void CEPlayer::strafeRight()
+{
+  float amt = (RUN_SPEED * 0.8f) * -1.f;
+
+  if (canMoveSide(amt)) {
+    this->m_camera.MoveRight(amt);
+
+    glm::vec3 pos = m_camera.GetCurrentPos();
+    glm::vec2 world_pos = this->m_map->getXYAtWorldPosition(glm::vec2(pos.x, pos.z));
+    int nxy = (world_pos.y * this->m_map->getWidth()) + world_pos.x;
+    float new_height = this->m_map->getHeightAt(nxy) + HEIGHT;
+
+      // TODO: use physics engine for this? If target height is below our height, then let "gravity" pull us down
+      // Otherwise, "step up" to the height (move into new position preserving existing height, then "adjust" up to new height over a smooth time period.
+    m_target_height = new_height;
+  }
+}
+
+void CEPlayer::strafeLeft()
+{
+  float amt = RUN_SPEED * 0.8f;
+
+  if (canMoveSide(amt)) {
+    this->m_camera.MoveRight(amt);
+
+    glm::vec3 pos = m_camera.GetCurrentPos();
+    glm::vec2 world_pos = this->m_map->getXYAtWorldPosition(glm::vec2(pos.x, pos.z));
+    int nxy = (world_pos.y * this->m_map->getWidth()) + world_pos.x;
+    float new_height = this->m_map->getHeightAt(nxy) + HEIGHT;
+
+      // TODO: use physics engine for this? If target height is below our height, then let "gravity" pull us down
+      // Otherwise, "step up" to the height (move into new position preserving existing height, then "adjust" up to new height over a smooth time period.
+    m_target_height = new_height;
+  }
+}
+
+bool CEPlayer::canJump()
+{
+  if (m_direction_sec_velocity.y == 0) return true;
+
+  return false;
 }
 
 void CEPlayer::moveForward()
@@ -121,8 +188,7 @@ void CEPlayer::moveForward()
   float amt = RUN_SPEED;
 
   if (canMoveForward(amt)) {
-    //this->m_camera.MoveForward(amt);
-    m_direction_sec_velocity += (this->m_camera.GetForward() * amt);
+    this->m_camera.MoveForward(amt);
 
     glm::vec3 pos = m_camera.GetCurrentPos();
     glm::vec2 world_pos = this->m_map->getXYAtWorldPosition(glm::vec2(pos.x, pos.z));

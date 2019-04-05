@@ -336,6 +336,25 @@ glm::vec2 C2MapFile::getXYAtWorldPosition(glm::vec2 pos)
   return xy;
 }
 
+float C2MapFile::getAngleBetweenPoints(glm::vec3 a, glm::vec3 b)
+{
+  glm::vec3 da=glm::normalize(a);
+  glm::vec3 db=glm::normalize(b);
+  return glm::acos(glm::dot(da, db));
+}
+
+glm::vec2 C2MapFile::getRandomLanding()
+{
+  int num_landings = (int)m_landings.size();
+
+  if (num_landings > 0) {
+    int r_landing = rand() % num_landings;
+    return m_landings.at(r_landing);
+  } else {
+    return glm::vec2((int)getWidth() / 2, (int)getHeight() / 2);
+  }
+}
+
 /*
  * fix flags, etc
  */
@@ -351,6 +370,11 @@ void C2MapFile::postProcess(C2MapRscFile* crsc_weak)
   for (int y = 1; y < w-1; y++)
     for (int x = 1; x < h-1; x++) {
       int xy = (y * w) + x;
+
+      if (this->getObjectAt(xy) == 254) {
+        m_landings.push_back(glm::vec2(x, y));
+      }
+
       if (!this->hasOriginalWaterAt(xy)) {
 
         if (this->hasOriginalWaterAt(x+1, y)) this->fillWater(x, y, x+1, y);

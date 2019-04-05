@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D60FF9AB22554F390017F021 /* PerlinNoise.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D60FF9A922554F390017F021 /* PerlinNoise.cpp */; };
 		D61CCC031B7E5CC8004BD900 /* C2MapFile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D61CCC011B7E5CC8004BD900 /* C2MapFile.cpp */; };
 		D61CCC091B7E653E004BD900 /* C2MapRscFile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D61CCC071B7E653E004BD900 /* C2MapRscFile.cpp */; };
 		D61CCC0C1B7E68D0004BD900 /* CETexture.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D61CCC0A1B7E68D0004BD900 /* CETexture.cpp */; };
@@ -65,6 +66,8 @@
 
 /* Begin PBXFileReference section */
 		73A667C822468FCA0026D63A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		D60FF9A922554F390017F021 /* PerlinNoise.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = PerlinNoise.cpp; sourceTree = "<group>"; };
+		D60FF9AA22554F390017F021 /* PerlinNoise.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = PerlinNoise.hpp; sourceTree = "<group>"; };
 		D61CCBFB1B7E200E004BD900 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 		D61CCC011B7E5CC8004BD900 /* C2MapFile.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = C2MapFile.cpp; sourceTree = "<group>"; };
 		D61CCC021B7E5CC8004BD900 /* C2MapFile.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = C2MapFile.h; sourceTree = "<group>"; };
@@ -176,6 +179,8 @@
 				D6F2F88A1B83E5AF0018DBF0 /* camera.h */,
 				D6212D202242B93300DAC1DD /* shader_program.h */,
 				D67F828B2243199800AC81B7 /* tga.h */,
+				D60FF9A922554F390017F021 /* PerlinNoise.cpp */,
+				D60FF9AA22554F390017F021 /* PerlinNoise.hpp */,
 			);
 			name = Support;
 			sourceTree = "<group>";
@@ -420,6 +425,7 @@
 				D6CE814C224E45DF00066CC8 /* LocalAudioManager.cpp in Sources */,
 				D6C77DA922490DF700105733 /* CEWorldObject.cpp in Sources */,
 				D6D3CD7920CAE6A100E3ABAC /* LocalInputManager.cpp in Sources */,
+				D60FF9AB22554F390017F021 /* PerlinNoise.cpp in Sources */,
 				D655524A1B73DA7000CC5309 /* CE_ArtificialIntelligence.cpp in Sources */,
 				D61CCC031B7E5CC8004BD900 /* C2MapFile.cpp in Sources */,
 				D6D3CD8620CF123400E3ABAC /* CEShaderProgram.cpp in Sources */,

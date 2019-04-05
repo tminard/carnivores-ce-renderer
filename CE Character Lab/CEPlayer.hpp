@@ -15,7 +15,7 @@ private:
   const float WALK_SPEED = 8.f;
   const float RUN_SPEED = 16.f;
   const float NOCLIP_SPEED = 150.f;
-  const float HEIGHT = 120.f;
+  const float HEIGHT = 64.f;
   const float TERM_VELOCITY_Y = -2048.f;
 
   double m_last_update_seconds;
@@ -25,6 +25,7 @@ private:
 
   std::shared_ptr<C2MapFile> m_map;
   bool canMoveForward(float amount);
+  bool canMoveSide(float amount);
   void applyVelocity(double time_delta);
 public:
   CEPlayer(std::shared_ptr<C2MapFile> map);
@@ -38,8 +39,12 @@ public:
    */
   void setVelocity(glm::vec3 velocity);
 
+  bool canJump();
+
   void moveForward();
   void moveBackward();
+  void strafeRight();
+  void strafeLeft();
 
   void update();
 };

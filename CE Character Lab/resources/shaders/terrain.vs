@@ -5,7 +5,7 @@ layout(location = 1) in vec2 texCoord;
 layout(location = 3) in float brightness; // 0 = max bright; 55 = max dark
 
 out vec2 texCoord0;
-out float brightness0;
+smooth out float brightness0;
 
 uniform mat4 MVP;
 

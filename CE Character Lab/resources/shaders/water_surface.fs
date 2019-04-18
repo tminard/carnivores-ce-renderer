@@ -1,7 +1,7 @@
 #version 330
 
 in vec2 texCoord0;
-in float alpha0;
+smooth in float alpha0;
 
 out vec4 outputColor;
 

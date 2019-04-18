@@ -80,6 +80,7 @@ public:
   float getTileLength();
   float getHeightmapScale();
   float getBrightnessAt(int xy);
+  float getBrightnessAt(int x, int y);
 
   bool hasWaterAt(int xy);
   bool hasWaterAt(int x, int y);

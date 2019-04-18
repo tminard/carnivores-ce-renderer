@@ -15,7 +15,7 @@ private:
   const float WALK_SPEED = 8.f;
   const float RUN_SPEED = 16.f;
   const float NOCLIP_SPEED = 150.f;
-  const float HEIGHT = 64.f;
+  const float HEIGHT = 128.f;
   const float TERM_VELOCITY_Y = -2048.f;
 
   double m_last_update_seconds;

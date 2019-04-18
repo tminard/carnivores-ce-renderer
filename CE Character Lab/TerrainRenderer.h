@@ -76,6 +76,8 @@ private:
   glm::vec2 calcAtlasUV(int texID, glm::vec2 uv);
   glm::vec2 scaleAtlasUV(glm::vec2 atlas_uv, int texture_id);
   glm::vec3 calcWorldVertex(int tile_x, int tile_y, bool water, float water_height_scaled);
+  float calcWaterAlpha(int tile_x, int tile_y, float water_height_scaled);
+
   std::array<glm::vec2, 4> calcUVMapForQuad(int x, int y, bool quad_reversed, int rotation_code);
 public:
   constexpr static const float TCMAX = 255.5f;

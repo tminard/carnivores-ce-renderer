@@ -5,7 +5,7 @@ layout(location = 1) in vec2 texCoord;
 layout(location = 3) in float alpha;
 
 out vec2 texCoord0;
-out float alpha0;
+smooth out float alpha0;
 
 uniform mat4 MVP;
 

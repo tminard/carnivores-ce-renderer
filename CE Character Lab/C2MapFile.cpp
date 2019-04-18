@@ -96,6 +96,13 @@ int C2MapFile::getTextureIDAt(int xy)
   }
 }
 
+float C2MapFile::getBrightnessAt(int x, int y)
+{
+  int xy = (y*this->getWidth()) + x;
+
+  return getBrightnessAt(xy);
+}
+
 float C2MapFile::getBrightnessAt(int xy)
 {
   int brightness = this->m_day_brightness_data.at(xy); // uint8 (max 255)

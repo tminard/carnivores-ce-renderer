@@ -106,6 +106,12 @@ float C2MapFile::getBrightnessAt(int x, int y)
 float C2MapFile::getBrightnessAt(int xy)
 {
   int brightness = this->m_day_brightness_data.at(xy); // uint8 (max 255)
+
+  if (m_type == C1) {
+    float p = float(55.f - brightness) / 55.f;
+    brightness = 255.f * p;
+  }
+
   return (float)brightness;
 }
 
@@ -144,10 +150,6 @@ float C2MapFile::getWaterHeightAt(int xy)
 
 float C2MapFile::getHeightAt(int xy)
 {
-  if (xy <0 || xy >= this->m_heightmap_data.size()) {
-    return 0;
-  }
-
   float scaled_height;
 
   if (m_type == C2) {

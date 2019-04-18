@@ -277,6 +277,7 @@ glm::vec2 TerrainRenderer::scaleAtlasUV(glm::vec2 atlas_uv, int texture_id)
                    );
 }
 
+  // TODO: alpha should be dependent on the angle of viewer. This calculation is based on a precalculated 90 degree view
 float TerrainRenderer::calcWaterAlpha(int tile_x, int tile_y, float water_height_scaled)
 {
   int width = this->m_cmap_data_weak->getWidth();
@@ -296,6 +297,7 @@ float TerrainRenderer::calcWaterAlpha(int tile_x, int tile_y, float water_height
 void TerrainRenderer::loadWaterAt(int x, int y)
 {
   int width = this->m_cmap_data_weak->getWidth();
+  int height = this->m_cmap_data_weak->getHeight();
   int xy = (y*width) + x;
 
   int water_index = this->m_cmap_data_weak->getWaterAt(xy);
@@ -317,9 +319,9 @@ void TerrainRenderer::loadWaterAt(int x, int y)
   }
 
   glm::vec3 vpositionUL = this->calcWorldVertex(x, y, true, wheight);
-  glm::vec3 vpositionUR = this->calcWorldVertex(x + 1, y, true, wheight);
-  glm::vec3 vpositionLL = this->calcWorldVertex(x, y + 1, true, wheight);
-  glm::vec3 vpositionLR = this->calcWorldVertex(x + 1, y + 1, true, wheight);
+  glm::vec3 vpositionUR = this->calcWorldVertex(fmin(x+1, height-1), y, true, wheight);
+  glm::vec3 vpositionLL = this->calcWorldVertex(x, fmin(y+1, width-1), true, wheight);
+  glm::vec3 vpositionLR = this->calcWorldVertex(fmin(x+1, height-1), fmin(y+1, width-1), true, wheight);
 
   bool quad_reverse = (flags & 0x0010);
   int texture_direction = (flags & 3);
@@ -330,9 +332,9 @@ void TerrainRenderer::loadWaterAt(int x, int y)
     // TODO: interpret `water_data.transparency` water data transparency as density
 
   Vertex v1(vpositionUL, this->scaleAtlasUV(vertex_uv_mapping[0], texture_id), glm::vec3(0,0,0), false, calcWaterAlpha(x, y, wheight), texture_id, 0);
-  Vertex v2(vpositionUR, this->scaleAtlasUV(vertex_uv_mapping[1], texture_id), glm::vec3(0,0,0), false, calcWaterAlpha(x+1, y, wheight), texture_id, 0);
-  Vertex v3(vpositionLL, this->scaleAtlasUV(vertex_uv_mapping[2], texture_id), glm::vec3(0,0,0), false, calcWaterAlpha(x, y+1, wheight), texture_id, 0);
-  Vertex v4(vpositionLR, this->scaleAtlasUV(vertex_uv_mapping[3], texture_id), glm::vec3(0,0,0), false, calcWaterAlpha(x+1, y+1, wheight), texture_id, 0);
+  Vertex v2(vpositionUR, this->scaleAtlasUV(vertex_uv_mapping[1], texture_id), glm::vec3(0,0,0), false, calcWaterAlpha(fmin(x+1, height-1), y, wheight), texture_id, 0);
+  Vertex v3(vpositionLL, this->scaleAtlasUV(vertex_uv_mapping[2], texture_id), glm::vec3(0,0,0), false, calcWaterAlpha(x, fmin(y+1, width-1), wheight), texture_id, 0);
+  Vertex v4(vpositionLR, this->scaleAtlasUV(vertex_uv_mapping[3], texture_id), glm::vec3(0,0,0), false, calcWaterAlpha(fmin(x+1, height-1), fmin(y+1, width-1), wheight), texture_id, 0);
 
   if (quad_reverse) {
     water_object->m_vertices.push_back(v1);
@@ -415,20 +417,13 @@ void TerrainRenderer::loadIntoHardwareMemory()
       
       int texID = this->m_cmap_data_weak->getTextureIDAt(base_index);
       uint16_t flags = this->m_cmap_data_weak->getFlagsAt(x, y);
-      
-      bool final_y_row = (y + 1 > width);
-      bool final_x_column = (x + 1 > height);
-      
-      if (final_y_row || final_x_column) {
-        continue;
-      }
 
       if (this->m_cmap_data_weak->hasWaterAt(base_index)) loadWaterAt(x, y);
       
       glm::vec3 vpositionUL = this->calcWorldVertex(x, y, false, 0.f);
-      glm::vec3 vpositionUR = this->calcWorldVertex(x + 1, y, false, 0.f);
-      glm::vec3 vpositionLL = this->calcWorldVertex(x, y + 1, false, 0.f);
-      glm::vec3 vpositionLR = this->calcWorldVertex(x + 1, y + 1, false, 0.f);
+      glm::vec3 vpositionUR = this->calcWorldVertex(fmin(x + 1, height - 1), y, false, 0.f);
+      glm::vec3 vpositionLL = this->calcWorldVertex(x, fmin(y + 1, width - 1), false, 0.f);
+      glm::vec3 vpositionLR = this->calcWorldVertex(fmin(x + 1, height - 1), fmin(y + 1, width - 1), false, 0.f);
       
       bool quad_reverse = (flags & 0x0010);
       int texture_direction = (flags & 3);
@@ -436,9 +431,9 @@ void TerrainRenderer::loadIntoHardwareMemory()
       std::array<glm::vec2, 4> vertex_uv_mapping = this->calcUVMapForQuad(x, y, quad_reverse, texture_direction);
       
       Vertex v1(vpositionUL, this->scaleAtlasUV(vertex_uv_mapping[0], texID), glm::vec3(0,0,0), false, this->m_cmap_data_weak->getBrightnessAt(x, y), texID, 0);
-      Vertex v2(vpositionUR, this->scaleAtlasUV(vertex_uv_mapping[1], texID), glm::vec3(0,0,0), false, this->m_cmap_data_weak->getBrightnessAt(x + 1, y), texID, 0);
-      Vertex v3(vpositionLL, this->scaleAtlasUV(vertex_uv_mapping[2], texID), glm::vec3(0,0,0), false, this->m_cmap_data_weak->getBrightnessAt(x, y + 1), texID, 0);
-      Vertex v4(vpositionLR, this->scaleAtlasUV(vertex_uv_mapping[3], texID), glm::vec3(0,0,0), false, this->m_cmap_data_weak->getBrightnessAt(x + 1, y + 1), texID, 0);
+      Vertex v2(vpositionUR, this->scaleAtlasUV(vertex_uv_mapping[1], texID), glm::vec3(0,0,0), false, this->m_cmap_data_weak->getBrightnessAt(fmin(x + 1, height - 1), y), texID, 0);
+      Vertex v3(vpositionLL, this->scaleAtlasUV(vertex_uv_mapping[2], texID), glm::vec3(0,0,0), false, this->m_cmap_data_weak->getBrightnessAt(x, fmin(y + 1, width - 1)), texID, 0);
+      Vertex v4(vpositionLR, this->scaleAtlasUV(vertex_uv_mapping[3], texID), glm::vec3(0,0,0), false, this->m_cmap_data_weak->getBrightnessAt(fmin(x + 1, height - 1), fmin(y + 1, width - 1)), texID, 0);
       
       m_vertices.push_back(v1);
       m_vertices.push_back(v2);

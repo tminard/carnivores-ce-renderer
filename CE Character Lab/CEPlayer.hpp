@@ -18,10 +18,13 @@ private:
   const float HEIGHT = 128.f;
   const float TERM_VELOCITY_Y = -2048.f;
 
+  bool m_is_grounded;
+
   double m_last_update_seconds;
 
   float m_target_height;
   glm::vec3 m_direction_sec_velocity;
+  glm::vec3 m_acceleration_per_sec;
 
   std::shared_ptr<C2MapFile> m_map;
   bool canMoveForward(float amount);
@@ -38,6 +41,9 @@ public:
    * pass in direction; speed is implied as /sec
    */
   void setVelocity(glm::vec3 velocity);
+
+    // Set acceleration; note that this "adds" the given velocity and acceleration to the current state
+  void setVelocity(glm::vec3 velocity, glm::vec3 acceleration_per_sec);
 
   bool canJump();
 

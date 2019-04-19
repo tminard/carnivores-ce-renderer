@@ -15,6 +15,7 @@ CEPlayer::CEPlayer(std::shared_ptr<C2MapFile> map) : m_map(map)
 {
   this->m_last_update_seconds = glfwGetTime();
   this->m_direction_sec_velocity = glm::vec3(0.f);
+  this->m_acceleration_per_sec = glm::vec3(1.f);
 }
 
 void CEPlayer::setLookAt(glm::vec3 direction)
@@ -25,11 +26,19 @@ void CEPlayer::setLookAt(glm::vec3 direction)
 void CEPlayer::setVelocity(glm::vec3 velocity)
 {
   m_direction_sec_velocity += velocity;
-  m_direction_sec_velocity.y = fmaxf(m_direction_sec_velocity.y, TERM_VELOCITY_Y);
+  m_direction_sec_velocity.y = fmaxf(m_direction_sec_velocity.y, TERM_VELOCITY_Y); // TODO: allow exceeding terminal - velocity
+}
+
+void CEPlayer::setVelocity(glm::vec3 velocity, glm::vec3 acceleration_per_sec)
+{
+  this->setVelocity(velocity);
+  this->m_acceleration_per_sec = glm::clamp(m_acceleration_per_sec + acceleration_per_sec, -1.f, 1.f); // TODO:: accumulate this with a cap?
 }
 
 void CEPlayer::applyVelocity(double time_delta)
 {
+  m_direction_sec_velocity = m_direction_sec_velocity * m_acceleration_per_sec;
+
   if (m_direction_sec_velocity == glm::vec3(0.f)) return;
   glm::vec3 current_position = m_camera.GetCurrentPos();
 
@@ -50,15 +59,21 @@ void CEPlayer::update()
 
   if (current_height != m_target_height && m_direction_sec_velocity.y >= TERM_VELOCITY_Y) {
     if (current_height > m_target_height) {
-      gravity = m_direction_sec_velocity + glm::vec3(0, -(1024.f * (float)time_delta_sec), 0);
-      m_direction_sec_velocity.y = fmaxf(gravity.y, TERM_VELOCITY_Y);
 
-      this->applyVelocity(time_delta_sec);
-
-      current_height = m_camera.GetCurrentPos().y;
-      if (current_height < m_target_height) {
-        m_direction_sec_velocity.y = 0;
+      float delta = current_height - m_target_height;
+      if (delta <= this->m_map->getTileLength() * 0.5f) {
         m_camera.SetHeight(m_target_height);
+      } else {
+        gravity = m_direction_sec_velocity + glm::vec3(0, -(1024.f * (float)time_delta_sec), 0);
+        m_direction_sec_velocity.y = fmaxf(gravity.y, TERM_VELOCITY_Y);
+
+        this->applyVelocity(time_delta_sec);
+
+        current_height = m_camera.GetCurrentPos().y;
+        if (current_height < m_target_height) {
+          m_direction_sec_velocity.y = 0;
+          m_camera.SetHeight(m_target_height);
+        }
       }
     } else if (current_height < m_target_height) {
         // over time adjust ("standup")
@@ -76,11 +91,14 @@ void CEPlayer::update()
     this->applyVelocity(time_delta_sec);
   }
 
+  m_is_grounded = (m_direction_sec_velocity.y == 0);
+
   this->m_last_update_seconds = current_time;
 }
 
 bool CEPlayer::canMoveSide(float amount)
 {
+  if (!m_is_grounded) return false;
     // TODO: Make this and forward the same; include slope checks
   glm::vec3 pos = m_camera.GetCurrentPos();
   glm::vec3 right = m_camera.GetRight();
@@ -103,6 +121,8 @@ bool CEPlayer::canMoveSide(float amount)
 
 bool CEPlayer::canMoveForward(float amount)
 {
+  if (!m_is_grounded) return false;
+
   glm::vec3 pos = m_camera.GetCurrentPos();
   glm::vec3 forward = m_camera.GetForward();
 
@@ -117,7 +137,7 @@ bool CEPlayer::canMoveForward(float amount)
   float hd = new_height - pos.y;
 
     // TODO: slope
-  if (l > 80.f && hd > 0) return false; // gravity is 1024.0 world units/second
+  if (l > 90.f && hd > 0) return false; // gravity is 1024.0 world units/second
 
   return true;
 }
@@ -189,6 +209,9 @@ void CEPlayer::moveForward()
 
   if (canMoveForward(amt)) {
     this->m_camera.MoveForward(amt);
+//    glm::vec3 fw = this->m_camera.GetForward();
+//    //this->setVelocity(glm::vec3 velocity, glm::vec3 acceleration_per_sec);
+//    this->setVelocity(fw+amt, fw*-1.f);
 
     glm::vec3 pos = m_camera.GetCurrentPos();
     glm::vec2 world_pos = this->m_map->getXYAtWorldPosition(glm::vec2(pos.x, pos.z));

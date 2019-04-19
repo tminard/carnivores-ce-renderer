@@ -285,12 +285,33 @@ int C2MapFile::getWaterAt(int xy)
   }
 }
 
-float C2MapFile::getObjectHeightAt(int xy)
+float C2MapFile::getLowestHeight(int x, int y)
 {
-  if (xy < 0 || xy >= this->m_heightmap_data.size()) {
-    return 0;
+  int width = (int)this->getWidth();
+  int height = (int)this->getHeight();
+
+  std::array<int, 7> quad_locations = {
+    (y * width) + x,
+    (int)fmin(((y + 1)*width), width - 1) + x,
+    (y * width) + (int)fmin((x+1), height - 1),
+    (int)fmin(((y + 1)*width), width-1) + (int)fmin((x+1), height - 1),
+    (int)fmax(((y - 1)*width), 0) + x,
+    (y * width) + (int)fmax((x-1), 0),
+    (int)fmax(((y - 1)*width), 0) + (int)fmax((x-1), 0)
+  };
+
+  float lowest = this->getHeightAt(quad_locations[0]);
+
+  for (int e=1; e < 7; e++) {
+    float h = this->getHeightAt(quad_locations[e]);
+    if (h < lowest && h > 0) lowest = h;
   }
 
+  return lowest;
+}
+
+float C2MapFile::getObjectHeightAt(int xy)
+{
   float object_height = this->m_object_heightmap_data.at(xy);
 
   float scaled_height = object_height * HEIGHT_SCALE;

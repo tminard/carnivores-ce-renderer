@@ -60,6 +60,7 @@ public:
 
   int getWaterAt(int xy);
   float getHeightAt(int xy);
+  float getLowestHeight(int x, int y);
   float getObjectHeightAt(int xy);
   float getWaterHeightAt(int xy); // Used by C1
   int getObjectHeightForRadius(int x, int y, int R);

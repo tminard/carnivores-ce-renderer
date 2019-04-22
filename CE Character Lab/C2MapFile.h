@@ -73,7 +73,9 @@ public:
   uint16_t getFlagsAt(int x, int y);
 
   glm::vec2 getXYAtWorldPosition(glm::vec2 pos);
-  glm::vec2 getRandomLanding();
+  
+  glm::vec3 getRandomLanding();
+
   float getAngleBetweenPoints(glm::vec3 a, glm::vec3 b);
 
   float getHeight();

@@ -1,21 +1,21 @@
 #include "LocalInputManager.hpp"
 #include "camera.h"
-#include "CEPlayer.hpp"
+#include "CELocalPlayerController.hpp"
 
-void LocalInputManager::Bind(std::shared_ptr<CEPlayer> player)
+void LocalInputManager::Bind(std::shared_ptr<CELocalPlayerController> player_controller)
 {
-  this->m_player = player;
+  this->m_player_controller = player_controller;
   this->lastTime = glfwGetTime();
 }
 
-float horizontalAngle = 3.14f;
+float horizontalAngle = glm::radians(3.14f);
 float verticalAngle = 0.0f;
 bool first = true;
 
 void LocalInputManager::cursorPosCallback(GLFWwindow* window, double xpos, double ypos)
 {
-  if (this->m_player) {
-    float mouseSpeed = 3.0f;
+  if (this->m_player_controller) {
+    float mouseSpeed = 50.0f;
     float deltaTime = glfwGetTime() - this->lastTime;
     
     // Mouse
@@ -34,90 +34,52 @@ void LocalInputManager::cursorPosCallback(GLFWwindow* window, double xpos, doubl
       start_x = winw / 2;
       start_y = winh / 2;
     }
-    
-    horizontalAngle += mouseSpeed * deltaTime * float( start_x - xpos ); // Yaw
-    verticalAngle   += mouseSpeed * deltaTime * float( start_y - ypos ); // Pitch
+
+    horizontalAngle += (mouseSpeed * deltaTime * float( start_x - xpos )); // Yaw
+    verticalAngle += (mouseSpeed * deltaTime * float( start_y - ypos )); // Pitch
+
+    if (verticalAngle > 87.f) verticalAngle = 87.f;
+    if (verticalAngle < -85.f) verticalAngle = -85.f;
+
     glm::vec3 direction(
-                        cos(verticalAngle) * sin(horizontalAngle),
-                        sin(verticalAngle),
-                        cos(verticalAngle) * cos(horizontalAngle)
+                        cos(glm::radians(verticalAngle)) * sin(glm::radians(horizontalAngle)),
+                        sin(glm::radians(verticalAngle)),
+                        cos(glm::radians(verticalAngle)) * cos(glm::radians(horizontalAngle))
                         );
     
-    m_player->setLookAt(direction);
+    m_player_controller->lookAt(direction);
     glfwSetCursorPos(window, winw/2, winh/2);
   }
 }
 
 void LocalInputManager::ProcessLocalInput(GLFWwindow* window, float deltaTime)
 {
-  if (this->m_player) {
+  if (this->m_player_controller) {
     this->lastTime = glfwGetTime();
-    Camera* m_following = m_player->getCamera();
-    float FLY_SPEED = 150.f;
-    
-    // Keyboard
-    
-    if (glfwGetKey(window, GLFW_KEY_UP ) == GLFW_PRESS) {
-      m_player->moveForward();
-    }
 
-    if (glfwGetKey(window, GLFW_KEY_SPACE ) == GLFW_PRESS) {
-      if (m_player->canJump()) {
-        m_player->setVelocity(glm::vec3(0.f, 320.f, 0.f));
-      }
+    if (glfwGetKey(window, GLFW_KEY_UP ) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+      m_player_controller->moveForward();
     }
     
-    if (glfwGetKey(window, GLFW_KEY_DOWN ) == GLFW_PRESS) {
-      m_player->moveBackward();
+    if (glfwGetKey(window, GLFW_KEY_DOWN ) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+      m_player_controller->moveBackward();
     }
     
-    if (glfwGetKey(window, GLFW_KEY_RIGHT ) == GLFW_PRESS) {
-      m_player->strafeRight();
+    if (glfwGetKey(window, GLFW_KEY_RIGHT ) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+      m_player_controller->strafeRight();
     }
     
-    if (glfwGetKey(window, GLFW_KEY_LEFT ) == GLFW_PRESS) {
-      //m_following->MoveRight(FLY_SPEED);
-      m_player->strafeLeft();
-    }
-    
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-      //m_following->RotateY(0.025f);
-      m_player->strafeLeft();
-    }
-    
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-      //m_following->RotateY(-0.025f);
-      m_player->strafeRight();
-    }
-    
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-      //m_following->MoveUp(FLY_SPEED);
-      m_player->moveForward();
-    }
-    
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-      //m_following->MoveUp(-FLY_SPEED);
-      m_player->moveBackward();
+    if (glfwGetKey(window, GLFW_KEY_LEFT ) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+      m_player_controller->strafeLeft();
     }
     
     if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS && this->m_last_key_state[GLFW_KEY_O] != GLFW_PRESS) {
       this->m_last_key_state[GLFW_KEY_O] = GLFW_PRESS;
-      glm::vec3 cur_pos = m_following->GetCurrentPos();
-      glm::vec2 cur_world_pos = m_player->getWorldPosition();
-      
-      std::cout << '\n' << "===> CURRENT POSITION IN SPACE <===" <<
-      '\n' << "X: " << std::to_string(cur_pos.x) <<
-      '\n' << "Y: " << std::to_string(cur_pos.y) <<
-      '\n' << "Z: " << std::to_string(cur_pos.z);
-      
-      std::cout << '\n' << "===> CURRENT WORLD POSITION <===" <<
-      '\n' << "X: " << std::to_string(cur_world_pos.x) <<
-      '\n' << "Y: " << std::to_string(cur_world_pos.y);
-      
+      m_player_controller->DBG_printLocationInformation();
     } else if (glfwGetKey(window, GLFW_KEY_O) == GLFW_RELEASE) {
       this->m_last_key_state[GLFW_KEY_O] = GLFW_RELEASE;
     }
-    
+
     if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS && this->m_last_key_state[GLFW_KEY_P] != GLFW_PRESS) {
       this->m_last_key_state[GLFW_KEY_P] = GLFW_PRESS;
       

@@ -1,0 +1,68 @@
+carnivores_character
+
+[general]
+title = "Coelophysis"
+model = "coelophysis_model.3dn"
+
+[animations]
+count = 11
+
+animation_id 0
+	file = "coelophisis_animation_0"
+    	sound_index = 0
+animation_id 1
+	file = "coelophisis_animation_1"
+	sound_index = 1
+animation_id 2
+	file = "coelophisis_animation_2"
+	sound_index = 2
+animation_id 3
+	file = "coelophisis_animation_3"
+	sound_index = 3
+animation_id 4
+	file = "coelophisis_animation_4"
+	sound_index = 4
+animation_id 5
+	file = "coelophisis_animation_5"
+	sound_index = 5
+animation_id 6
+	file = "coelophisis_animation_6"
+	sound_index = 6
+animation_id 7
+	file = "coelophisis_animation_7"
+	sound_index = 7
+animation_id 8
+	file = "coelophisis_animation_8"
+	sound_index = 8
+animation_id 9
+	file = "coelophisis_animation_9"
+	sound_index = 9
+animation_id 10
+	file = "coelophisis_animation_10"
+    	sound_index = 10
+
+[sounds]
+count = 11
+
+sound_id 0
+	file = "coelophisis_sound_0"
+sound_id 1
+	file = "coelophisis_sound_1"
+sound_id 2
+	file = "coelophisis_sound_2"
+sound_id 3
+	file = "coelophisis_sound_3"
+sound_id 4
+	file = "coelophisis_sound_4"
+sound_id 5
+	file = "coelophisis_sound_5"
+sound_id 6
+	file = "coelophisis_sound_6"
+sound_id 7
+	file = "coelophisis_sound_7"
+sound_id 8
+	file = "coelophisis_sound_8"
+sound_id 9
+	file = "coelophisis_sound_9"
+sound_id 10
+	file = "coelophisis_sound_10"

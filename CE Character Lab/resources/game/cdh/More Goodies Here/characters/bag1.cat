@@ -1,0 +1,19 @@
+carnivores_character
+
+[general]
+title = "Bag1"
+model = "bag1.3dn"
+
+[animations]
+count = 1
+
+animation_id 0
+	file = "bag1_animation_0"
+
+[sounds]
+count = 2
+
+sound_id 0
+	file = "bag1_sound_0"
+sound_id 1
+	file = "bag1_sound_1"

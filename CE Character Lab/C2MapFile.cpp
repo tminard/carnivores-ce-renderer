@@ -302,6 +302,8 @@ float C2MapFile::getLowestHeight(int x, int y)
 
   float lowest = this->getHeightAt(quad_locations[0]);
 
+  if (m_type == C2) return lowest;
+
   for (int e=1; e < 7; e++) {
     float h = this->getHeightAt(quad_locations[e]);
     if (h < lowest && h > 0) lowest = h;
@@ -373,16 +375,24 @@ float C2MapFile::getAngleBetweenPoints(glm::vec3 a, glm::vec3 b)
   return glm::acos(glm::dot(da, db));
 }
 
-glm::vec2 C2MapFile::getRandomLanding()
+glm::vec3 C2MapFile::getRandomLanding()
 {
   int num_landings = (int)m_landings.size();
+  glm::vec2 landing;
 
   if (num_landings > 0) {
     int r_landing = rand() % num_landings;
-    return m_landings.at(r_landing);
+    landing = m_landings.at(r_landing);
   } else {
-    return glm::vec2((int)getWidth() / 2, (int)getHeight() / 2);
+    landing = glm::vec2((int)getWidth() / 2, (int)getHeight() / 2);
   }
+
+  int xy = (landing.y * getHeight()) + landing.x;
+  return glm::vec3(
+    (landing.x * getTileLength()) + (getTileLength() / 2),
+    getHeightAt(xy) + 1024.f,
+    (landing.y * getTileLength()) + (getTileLength() / 2)
+  );
 }
 
 /*

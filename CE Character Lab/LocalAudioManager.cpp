@@ -1,6 +1,6 @@
 #include "LocalAudioManager.hpp"
 
-#include "CEPlayer.hpp"
+#include "CELocalPlayerController.hpp"
 
 #include <GLFW/glfw3.h>
 
@@ -95,13 +95,13 @@ void LocalAudioManager::setupDevice()
   TEST_OPENAL_ERROR("make default context");
 }
 
-void LocalAudioManager::bind(std::shared_ptr<CEPlayer> player)
+void LocalAudioManager::bind(std::shared_ptr<CELocalPlayerController> player)
 {
-  if (this->m_player || m_ready) {
+  if (this->m_player_controller || m_ready) {
     throw std::runtime_error("Cannot bind audio manager; manager already bound to player. Unbind first.");
   }
 
-  this->m_player = player;
+  this->m_player_controller = player;
   this->update();
 
   m_ready = true;
@@ -124,7 +124,7 @@ void LocalAudioManager::shutdown()
 
 void LocalAudioManager::update()
 {
-  Camera* camera = m_player->getCamera();
+  const Camera* camera = m_player_controller->getCamera();
 
   glm::vec3 pos = camera->GetCurrentPos();
   glm::vec3 forward = camera->GetForward();

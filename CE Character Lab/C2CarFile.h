@@ -35,7 +35,7 @@ public:
   ~C2CarFile();
   void load_file(std::string file_name);
 
-  std::weak_ptr<CEGeometry> getGeometry();
+  std::shared_ptr<CEGeometry> getGeometry();
   std::weak_ptr<CEAnimation> getAnimationByName(std::string animation_name);
 
 private:

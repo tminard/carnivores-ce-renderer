@@ -20,7 +20,7 @@ fprintf(stderr, _msg "\n");  \
 throw std::runtime_error(_msg);   \
 }
 
-class CEPlayer;
+class CELocalPlayerController;
 
 class LocalAudioManager
 {
@@ -28,7 +28,7 @@ private:
   const float MAX_AMBIENT_GAIN = 0.5f;
   const float AMBIENT_FADE_IN_TIME_MS = 2000;
 
-  std::shared_ptr<CEPlayer> m_player;
+  std::shared_ptr<CELocalPlayerController> m_player_controller;
 
   /*
    * Collection of active audio sources for "one off" tracks
@@ -65,7 +65,7 @@ public:
   LocalAudioManager();
   ~LocalAudioManager();
 
-  void bind(std::shared_ptr<CEPlayer> player);
+  void bind(std::shared_ptr<CELocalPlayerController> player_controller);
   
   void shutdown();
 

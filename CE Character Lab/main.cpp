@@ -12,7 +12,6 @@
 
 #include <iostream>
 
-#include "CE_Allosaurus.h"
 #include "C2CarFile.h"
 #include "C2CarFilePreloader.h"
 
@@ -38,6 +37,8 @@
 #include "LocalInputManager.hpp"
 #include "LocalVideoManager.hpp"
 #include "LocalAudioManager.hpp"
+
+#include "CELocalPlayerController.hpp"
 
 #include "C2Sky.h"
 
@@ -72,22 +73,21 @@ int main(int argc, const char * argv[])
   std::unique_ptr<LocalVideoManager> video_manager(new LocalVideoManager());
   std::unique_ptr<LocalAudioManager> g_audio_manager(new LocalAudioManager());
 
-  std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile(CEMapType::C1, "resources/game/c1/area5.rsc"));
-  std::shared_ptr<C2MapFile> cMap(new C2MapFile(CEMapType::C1, "resources/game/c1/area5.map", cMapRsc.get()));
-  std::shared_ptr<CEPlayer> m_player(new CEPlayer(cMap));
+  std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile(CEMapType::C2, "resources/game/ice/area2.rsc"));
+  std::shared_ptr<C2MapFile> cMap(new C2MapFile(CEMapType::C2, "resources/game/ice/area2.map", cMapRsc.get()));
   std::unique_ptr<TerrainRenderer> terrain(new TerrainRenderer(cMap.get(), cMapRsc.get()));
-  
-  Transform mTrans_land(glm::vec3(0,0,0), glm::vec3(0,0,0), glm::vec3(1.f, 1.f, 1.f));
-  Camera* camera = m_player->getCamera();
+
   GLFWwindow* window = video_manager->GetWindow();
-  
   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-  g_audio_manager->bind(m_player);
-  input_manager->Bind(m_player);
+  std::shared_ptr<CEPlayer> g_player_state(new CEPlayer());
+  std::shared_ptr<CELocalPlayerController> g_player_controller(new CELocalPlayerController(std::move(g_player_state), cMap->getWidth(), cMap->getHeight(), cMap->getTileLength()));
+  g_audio_manager->bind(g_player_controller);
+  input_manager->Bind(g_player_controller);
 
   glfwSetCursorPosCallback(window, &cursorPosCallback);
 
+  Transform g_terrain_transform(glm::vec3(0,0,0), glm::vec3(0,0,0), glm::vec3(1.f, 1.f, 1.f));
   bool render_water, render_sky, render_objects, render_terrain;
 
   render_sky = true;
@@ -112,18 +112,20 @@ int main(int argc, const char * argv[])
 
   m_ambient.reset();
 
-  glm::vec2 landing = cMap->getRandomLanding();
-  m_player->setWorldPosition(landing.x, landing.y);
+  glm::vec3 landing = cMap->getRandomLanding();
+  g_player_controller->setPosition(landing);
 
-  glm::vec2 current_world_pos = m_player->getWorldPosition();
+  glm::vec2 current_world_pos = g_player_controller->getWorldPosition();
   int current_ambient_id = 0;
 
   while (!glfwWindowShouldClose(window))
   {
     glfwMakeContextCurrent(window);
 
+    glm::vec3 currentPosition = g_player_controller->getPosition();
     double currentTime = glfwGetTime();
     double timeDelta = currentTime - lastTime;
+
     nbFrames++;
     if ( timeDelta >= 1.0 ) {
       printf("%f ms/frame\n", 1000.0/double(nbFrames));
@@ -132,15 +134,15 @@ int main(int argc, const char * argv[])
     }
 
     double rnTimeDelta = currentTime - lastRndAudioTime;
-    if (rnTimeDelta >= 10.0) {
-      m_random_ambient = cMapRsc->getRandomAudio(camera->GetCurrentPos().x, camera->GetCurrentPos().y, camera->GetCurrentPos().z - 256.f);
 
+    if (rnTimeDelta >= 10.0) {
+      m_random_ambient = cMapRsc->getRandomAudio(currentPosition.x, currentPosition.y, currentPosition.z - 256.f);
       g_audio_manager->play(std::move(m_random_ambient));
 
       lastRndAudioTime = currentTime;
     }
 
-    glm::vec2 next_world_pos = m_player->getWorldPosition();
+    glm::vec2 next_world_pos = g_player_controller->getWorldPosition();
     if (next_world_pos != current_world_pos) {
       int next_ambient_id = cMap->getAmbientAudioIDAt((int)next_world_pos.x, (int)next_world_pos.y);
 
@@ -155,6 +157,7 @@ int main(int argc, const char * argv[])
     }
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    Camera* camera = g_player_controller->getCamera();
 
     if (render_sky) {
       glDisable(GL_DEPTH_TEST);
@@ -166,7 +169,7 @@ int main(int argc, const char * argv[])
 
     if (render_terrain) {
       cMapRsc->getTexture(0)->use();
-      terrain->Update(mTrans_land, *camera);
+      terrain->Update(g_terrain_transform, *camera);
       glDepthFunc(GL_LESS);
       terrain->Render();
     }
@@ -176,10 +179,11 @@ int main(int argc, const char * argv[])
       terrain->RenderWater();
     }
 
+    g_player_controller->update();
+
     glfwSwapBuffers(window);
-    
+
     input_manager->ProcessLocalInput(window, timeDelta);
-    m_player->update();
   
     glfwPollEvents();
   }

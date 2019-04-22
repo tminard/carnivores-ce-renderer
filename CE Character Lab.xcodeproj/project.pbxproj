@@ -8,6 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		D60FF9AB22554F390017F021 /* PerlinNoise.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D60FF9A922554F390017F021 /* PerlinNoise.cpp */; };
+		D60FF9C0226A6D0A0017F021 /* libBullet3Dynamics_xcode4_x64_debug.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D60FF9BF226A6D0A0017F021 /* libBullet3Dynamics_xcode4_x64_debug.a */; };
+		D60FF9C1226A6D6E0017F021 /* libBullet3Common_xcode4_x64_debug.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D60FF9BB226A6B360017F021 /* libBullet3Common_xcode4_x64_debug.a */; };
+		D60FF9C4226E1DB00017F021 /* CELocalPlayerController.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D60FF9C2226E1DB00017F021 /* CELocalPlayerController.cpp */; };
 		D61CCC031B7E5CC8004BD900 /* C2MapFile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D61CCC011B7E5CC8004BD900 /* C2MapFile.cpp */; };
 		D61CCC091B7E653E004BD900 /* C2MapRscFile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D61CCC071B7E653E004BD900 /* C2MapRscFile.cpp */; };
 		D61CCC0C1B7E68D0004BD900 /* CETexture.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D61CCC0A1B7E68D0004BD900 /* CETexture.cpp */; };
@@ -68,6 +71,11 @@
 		73A667C822468FCA0026D63A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		D60FF9A922554F390017F021 /* PerlinNoise.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = PerlinNoise.cpp; sourceTree = "<group>"; };
 		D60FF9AA22554F390017F021 /* PerlinNoise.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = PerlinNoise.hpp; sourceTree = "<group>"; };
+		D60FF9BB226A6B360017F021 /* libBullet3Common_xcode4_x64_debug.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libBullet3Common_xcode4_x64_debug.a; path = ../bullet3/bin/libBullet3Common_xcode4_x64_debug.a; sourceTree = "<group>"; };
+		D60FF9BD226A6BF10017F021 /* bullet3 */ = {isa = PBXFileReference; lastKnownFileType = folder; name = bullet3; path = ../bullet3; sourceTree = "<group>"; };
+		D60FF9BF226A6D0A0017F021 /* libBullet3Dynamics_xcode4_x64_debug.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libBullet3Dynamics_xcode4_x64_debug.a; path = ../bullet3/bin/libBullet3Dynamics_xcode4_x64_debug.a; sourceTree = "<group>"; };
+		D60FF9C2226E1DB00017F021 /* CELocalPlayerController.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CELocalPlayerController.cpp; sourceTree = "<group>"; };
+		D60FF9C3226E1DB00017F021 /* CELocalPlayerController.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CELocalPlayerController.hpp; sourceTree = "<group>"; };
 		D61CCBFB1B7E200E004BD900 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 		D61CCC011B7E5CC8004BD900 /* C2MapFile.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = C2MapFile.cpp; sourceTree = "<group>"; };
 		D61CCC021B7E5CC8004BD900 /* C2MapFile.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = C2MapFile.h; sourceTree = "<group>"; };
@@ -157,6 +165,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D60FF9C1226A6D6E0017F021 /* libBullet3Common_xcode4_x64_debug.a in Frameworks */,
+				D60FF9C0226A6D0A0017F021 /* libBullet3Dynamics_xcode4_x64_debug.a in Frameworks */,
 				D6B3EDC0224BA6C500DD8E9F /* OpenAL.framework in Frameworks */,
 				D6E7B8241FAB9ADF00D1C100 /* libglfw.3.2.dylib in Frameworks */,
 				D6F2F87B1B8389330018DBF0 /* QuartzCore.framework in Frameworks */,
@@ -251,6 +261,8 @@
 				D6D3CD7B20CAEBBC00E3ABAC /* LocalVideoManager.hpp */,
 				D6CE814A224E45DF00066CC8 /* LocalAudioManager.cpp */,
 				D6CE814B224E45DF00066CC8 /* LocalAudioManager.hpp */,
+				D60FF9C2226E1DB00017F021 /* CELocalPlayerController.cpp */,
+				D60FF9C3226E1DB00017F021 /* CELocalPlayerController.hpp */,
 			);
 			name = Common;
 			sourceTree = "<group>";
@@ -360,6 +372,9 @@
 		D6E7B8221FAB9ADF00D1C100 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				D60FF9BF226A6D0A0017F021 /* libBullet3Dynamics_xcode4_x64_debug.a */,
+				D60FF9BD226A6BF10017F021 /* bullet3 */,
+				D60FF9BB226A6B360017F021 /* libBullet3Common_xcode4_x64_debug.a */,
 				D6B3EDBF224BA6C500DD8E9F /* OpenAL.framework */,
 				D6E7B8231FAB9ADF00D1C100 /* libglfw.3.2.dylib */,
 			);
@@ -426,6 +441,7 @@
 				D6C77DA922490DF700105733 /* CEWorldObject.cpp in Sources */,
 				D6D3CD7920CAE6A100E3ABAC /* LocalInputManager.cpp in Sources */,
 				D60FF9AB22554F390017F021 /* PerlinNoise.cpp in Sources */,
+				D60FF9C4226E1DB00017F021 /* CELocalPlayerController.cpp in Sources */,
 				D655524A1B73DA7000CC5309 /* CE_ArtificialIntelligence.cpp in Sources */,
 				D61CCC031B7E5CC8004BD900 /* C2MapFile.cpp in Sources */,
 				D6D3CD8620CF123400E3ABAC /* CEShaderProgram.cpp in Sources */,
@@ -572,11 +588,13 @@
 					CE,
 					Character,
 					"Lab/deps/libAF/**",
+					"/Users/tminard/Source/bullet3/src/**",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/Info.plist";
 				LIBRARY_SEARCH_PATHS = (
 					/usr/local/lib,
 					/usr/local/Cellar/glfw/3.2.1/lib,
+					/Users/tminard/Source/bullet3/bin,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.adelphospro.cce;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -594,11 +612,13 @@
 					CE,
 					Character,
 					"Lab/deps/libAF/**",
+					"/Users/tminard/Source/bullet3/src/**",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/Info.plist";
 				LIBRARY_SEARCH_PATHS = (
 					/usr/local/lib,
 					/usr/local/Cellar/glfw/3.2.1/lib,
+					/Users/tminard/Source/bullet3/bin,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.adelphospro.cce;
 				PRODUCT_NAME = "$(TARGET_NAME)";

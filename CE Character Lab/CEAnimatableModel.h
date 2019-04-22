@@ -13,6 +13,7 @@
 #include <map>
 
 //#warning Bad C integration: remove hunt.h references
+// TODO: implement keyframe animation using this approach instead of below: https://www.khronos.org/opengl/wiki/Keyframe_Animation
 #include "g_shared.h"
 
 class CEGeometry;

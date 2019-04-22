@@ -31,7 +31,7 @@ C2CarFile::~C2CarFile()
 {
 }
 
-std::weak_ptr<CEGeometry> C2CarFile::getGeometry()
+std::shared_ptr<CEGeometry> C2CarFile::getGeometry()
 {
   return this->m_geometry;
 }
@@ -115,9 +115,7 @@ void C2CarFile::load_file(std::string file_name)
 
     // data correction
   for (int v=0; v < _vcount; v++) {
-    _vertices[v].x *= 0.25f;
-    _vertices[v].y *= 0.25f;
-    _vertices[v].z *= -0.25f;
+    _vertices[v].z *= -1.0f; // Original models need to be inverted across z axis
   }
 
     // load instance

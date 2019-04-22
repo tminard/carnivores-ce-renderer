@@ -1,0 +1,28 @@
+{
+	"policies":
+	[
+		{
+			"name": "TermsOfUseAndPrivacy",
+			"version": "2018-05-29",
+			"documents":
+			[
+				{
+					"name": "TermsOfUse",
+					"resource": "TermsOfUse.txt"
+				},
+				{
+					"name": "PrivacyPolicy",
+					"resource": "PrivacyPolicy.txt"
+				}
+			] 
+		},
+		{
+			"name": "DataUsage",
+			"version": "2018-05-26"
+		},
+		{
+			"name": "UnderageStatus",
+			"version": "2018-05-26"
+		}
+	]
+}

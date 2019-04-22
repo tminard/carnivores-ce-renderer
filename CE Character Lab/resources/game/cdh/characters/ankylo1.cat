@@ -1,0 +1,42 @@
+carnivores_character
+
+[general]
+title = "Ankylo1"
+model = "ankylo1.3dn"
+
+[animations]
+count = 6
+
+animation_id 0
+	file = "ankylo1_animation_0"
+animation_id 1
+	file = "ankylo1_animation_1"
+	sound_index = 1
+animation_id 2
+	file = "ankylo1_animation_2"
+	sound_index = 2
+animation_id 3
+	file = "ankylo1_animation_3"
+	sound_index = 3
+animation_id 4
+	file = "ankylo1_animation_4"
+	sound_index = 4
+animation_id 5
+	file = "ankylo1_animation_5"
+	sound_index = 5
+
+[sounds]
+count = 6
+
+sound_id 0
+	file = "ankylo1_sound_0"
+sound_id 1
+	file = "ankylo1_sound_1"
+sound_id 2
+	file = "ankylo1_sound_2"
+sound_id 3
+	file = "ankylo1_sound_3"
+sound_id 4
+	file = "ankylo1_sound_4"
+sound_id 5
+	file = "ankylo1_sound_5"

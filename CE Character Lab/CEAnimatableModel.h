@@ -13,10 +13,12 @@
 #include <map>
 
 //#warning Bad C integration: remove hunt.h references
+// TODO: implement keyframe animation using this approach instead of below: https://www.khronos.org/opengl/wiki/Keyframe_Animation
 #include "g_shared.h"
 
 class CEGeometry;
 
+class Camera;
 class C2CarFile;
 
 class CEAnimatableModel {
@@ -25,7 +27,7 @@ private:
 
   Vector3d m_position;
   float m_scale;
-  float m_alpha; // "direction I am currently pointed"
+  float m_alpha; // "direction I am currently pointed": TODO: which axis??! Come on
   float m_beta;
   float m_gamma;
   
@@ -43,6 +45,7 @@ public:
   ~CEAnimatableModel();
   
   /* Positioning details */
+  void Update(Camera& camera);
   Vector3d getCurrentPosition();
   void setPosition(float x, float z, float y);
   void moveTo(float x, float z, bool blocked_by_water, bool blocked_by_models);
@@ -63,7 +66,7 @@ public:
   
   /* Animating */
   bool didAnimationFinish();
-  CEGeometry* getCurrentModelForRender();
+  std::weak_ptr<CEGeometry> getCurrentModelForRender();
   void setAnimation(std::string animation_name);
   void animate(int time_delta);
   
@@ -71,8 +74,8 @@ public:
   void render();
   
   // Creates a complex morphed representation for between animations.
-  CEGeometry* getBetweenMorphedModel(std::string animation_previous_name, std::string animation_target_name, int at_time_previous, int at_time_target, int current_morph_time, float scale, float character_beta, float character_gamma, float character_bend);
+  std::weak_ptr<CEGeometry> getBetweenMorphedModel(std::string animation_previous_name, std::string animation_target_name, int at_time_previous, int at_time_target, int current_morph_time, float scale, float character_beta, float character_gamma, float character_bend);
 
   // Creates a single morphed representation for a static animation.
-  CEGeometry* getMorphedModel(std::string animation_name, int at_time, float scale);
+  std::weak_ptr<CEGeometry> getMorphedModel(std::string animation_name, int at_time, float scale);
 };

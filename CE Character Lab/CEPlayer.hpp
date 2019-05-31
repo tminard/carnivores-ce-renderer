@@ -1,18 +1,21 @@
 #pragma once
 
-#include "CEObservable.hpp"
-#include <glm/glm.hpp>
+// A `CEPlayer` represents a human player state. This includes location, position, viewing angle, health, etc.
 
-#include <memory>
+#include <glm/vec3.hpp>
 
-class C2MapFile;
 
-class CEPlayer :
-    public CEObservable
+class CEPlayer
 {
 private:
-    std::shared_ptr<C2MapFile> m_map;
+//  const float WALK_SPEED = 8.f;
+//  const float RUN_SPEED = 16.f;
+//  const float NOCLIP_SPEED = 150.f;
+//  const float HEIGHT = 128.f;
+
+  glm::vec3 m_position;
+
 public:
-    CEPlayer(std::shared_ptr<C2MapFile> map);
-    glm::vec2 getWorldPosition();
+  glm::vec3 getPosition();
+  void setPosition(glm::vec3 position);
 };

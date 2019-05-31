@@ -8,10 +8,12 @@
 
 #include "vertex.h"
 
-Vertex::Vertex(const glm::vec3& position, const glm::vec2& texture_coord, const glm::vec3& normal, bool hidden, uint32_t owner)
-: m_position(position), m_uv_coord(texture_coord), m_normal(normal), m_hide(hidden), m_owner(owner)
+Vertex::Vertex(const glm::vec3& position, const glm::vec2& texture_coord, const glm::vec3& normal, bool hidden, float alpha, uint32_t owner, uint32_t flags)
+: m_position(position), m_uv_coord(texture_coord), m_normal(normal), m_hide(hidden), m_owner(owner), m_flags(flags), m_alpha(alpha)
 {
-  
+  if (m_flags & 4) {
+    this->m_alpha = 0.f;
+  }
 }
 
 std::string Vertex::getHash()

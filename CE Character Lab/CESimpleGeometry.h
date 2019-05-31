@@ -10,7 +10,7 @@
 
 #define GLFW_INCLUDE_GLCOREARB
 #include <GLFW/glfw3.h>
-#include <glm/vec3.hpp>
+#include <glm/glm.hpp>
 
 #include <memory>
 #include <vector>
@@ -19,28 +19,35 @@
 
 class Vertex;
 class CETexture;
-class NewShader;
+class ShaderProgram;
 class Camera;
 class Transform;
 
 class CESimpleGeometry {
 private:
-    GLuint m_vertex_array_object;
-    GLuint m_vertex_array_buffer;
-    
-    std::vector < Vertex > m_vertices;
-    std::unique_ptr<CETexture> m_texture;
-    
-    std::unique_ptr<NewShader> m_shader;
-public:
-    CESimpleGeometry(std::vector < Vertex > vertices, std::unique_ptr<CETexture> texture);
-    ~CESimpleGeometry();
-    
-    void loadObjectIntoMemoryBuffer();
-    
-    CETexture* getTexture();
-    NewShader* getShader();
+  GLuint m_vertex_array_object;
+  GLuint m_vertex_array_buffer;
 
-    void Update(const Transform& transform, const Camera& camera);
-    void Draw();
+  GLuint m_instanced_vab;
+  GLuint m_num_instances;
+
+  std::vector<Vertex> m_vertices;
+  std::unique_ptr<CETexture> m_texture;
+  
+  std::unique_ptr<ShaderProgram> m_shader;
+public:
+  CESimpleGeometry(std::vector < Vertex > vertices, std::unique_ptr<CETexture> texture);
+  ~CESimpleGeometry();
+  
+  void loadObjectIntoMemoryBuffer();
+  
+  CETexture* getTexture();
+  ShaderProgram* getShader();
+
+  void Update(Camera& camera);
+  void UpdateInstances(std::vector<glm::mat4> transforms);
+  void Update(Transform& transform, Camera& camera);
+
+  void Draw();
+  void DrawInstances();
 };

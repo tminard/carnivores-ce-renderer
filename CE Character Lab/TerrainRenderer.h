@@ -18,6 +18,7 @@
 
 #define GLFW_INCLUDE_GLCOREARB
 #include <GLFW/glfw3.h>
+#include <glm/vec4.hpp>
 #include <glm/vec3.hpp>
 #include <glm/glm.hpp>
 #include <vector>
@@ -26,6 +27,7 @@
 
 #include "transform.h"
 
+class CETerrainVertex;
 class Vertex;
 class C2MapFile;
 class C2MapRscFile;
@@ -51,7 +53,7 @@ private:
 
   std::vector <_Water> m_waters;
 
-  std::vector < Vertex > m_vertices;
+  std::vector < CETerrainVertex > m_vertices;
   std::vector < unsigned int > m_indices;
   int m_num_indices;
   
@@ -75,6 +77,8 @@ private:
 
   glm::vec2 calcAtlasUV(int texID, glm::vec2 uv);
   glm::vec2 scaleAtlasUV(glm::vec2 atlas_uv, int texture_id);
+  glm::vec4 getScaledAtlasUVQuad(glm::vec2 atlas_uv, bool quad_reversed, int texture_id_1, int texture_id_2);
+
   glm::vec3 calcWorldVertex(int tile_x, int tile_y, bool water, float water_height_scaled);
   float calcWaterAlpha(int tile_x, int tile_y, float water_height_scaled);
 

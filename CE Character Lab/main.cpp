@@ -73,8 +73,8 @@ int main(int argc, const char * argv[])
   std::unique_ptr<LocalVideoManager> video_manager(new LocalVideoManager());
   std::unique_ptr<LocalAudioManager> g_audio_manager(new LocalAudioManager());
 
-  std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile(CEMapType::C2, "resources/game/ice/area2.rsc"));
-  std::shared_ptr<C2MapFile> cMap(new C2MapFile(CEMapType::C2, "resources/game/ice/area2.map", cMapRsc.get()));
+  std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile(CEMapType::C1, "resources/game/c1/area4.rsc"));
+  std::shared_ptr<C2MapFile> cMap(new C2MapFile(CEMapType::C1, "resources/game/c1/area4.map", cMapRsc.get()));
   std::unique_ptr<TerrainRenderer> terrain(new TerrainRenderer(cMap.get(), cMapRsc.get()));
 
   GLFWwindow* window = video_manager->GetWindow();
@@ -102,6 +102,9 @@ int main(int argc, const char * argv[])
   double lastTime = glfwGetTime();
   double lastRndAudioTime = glfwGetTime();
   int nbFrames = 0;
+
+  glEnable(GL_CULL_FACE);
+  glEnable(GL_DEPTH_TEST);
 
   glViewport(0, 0, width, height);
   std::shared_ptr<CEAudioSource> m_ambient;
@@ -165,9 +168,14 @@ int main(int argc, const char * argv[])
       glEnable(GL_DEPTH_TEST);
     }
 
-    if (render_objects) terrain->RenderObjects(*camera);
+    if (render_objects) {
+      glDisable(GL_CULL_FACE);
+      terrain->RenderObjects(*camera);
+      glEnable(GL_CULL_FACE);
+    }
 
     if (render_terrain) {
+      glDisable(GL_CULL_FACE);
       cMapRsc->getTexture(0)->use();
       terrain->Update(g_terrain_transform, *camera);
       glDepthFunc(GL_LESS);

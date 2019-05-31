@@ -78,13 +78,31 @@ int C2MapFile::getWaterTextureIDAt(int xy, int water_texture_id)
   }
 }
 
-  // TODO: handle split textures
 int C2MapFile::getTextureIDAt(int xy)
 {
   if (m_type == CEMapType::C2) {
     return int(this->m_texture_A_index_data.at(xy));
   } else {
     int id = int(this->m_texturec1_A_index_data.at(xy));
+    if (this->hasWaterAt(xy)) {
+      if (!id) {
+        return 1;
+      }
+      return id;
+    } else {
+      return id;
+    }
+  }
+}
+
+int C2MapFile::getSecondaryTextureIDAt(int xy)
+{
+  if (m_type == CEMapType::C2) {
+    // C2 doesn't use secondary textures - texture map B is used for alternative purposes
+    // For now, just return the primary texture
+    return int(this->m_texture_A_index_data.at(xy));
+  } else {
+    int id = int(this->m_texturec1_B_index_data.at(xy));
     if (this->hasWaterAt(xy)) {
       if (!id) {
         return 1;
@@ -134,6 +152,15 @@ uint16_t C2MapFile::getFlagsAt(int xy)
       return 0;
     }
     return this->m_c1_flags_data.at(xy);
+  }
+}
+
+bool C2MapFile::isQuadRotatedAt(int xy)
+{
+  if (m_type == C2) {
+    return (getFlagsAt(xy) & 0x0010);
+  } else {
+    return (getFlagsAt(xy) & 0x40);
   }
 }
 
@@ -285,6 +312,7 @@ int C2MapFile::getWaterAt(int xy)
   }
 }
 
+// this is broken in c1
 float C2MapFile::getLowestHeight(int x, int y)
 {
   int width = (int)this->getWidth();
@@ -302,7 +330,8 @@ float C2MapFile::getLowestHeight(int x, int y)
 
   float lowest = this->getHeightAt(quad_locations[0]);
 
-  if (m_type == C2) return lowest;
+  //if (m_type == C2)
+    return lowest;
 
   for (int e=1; e < 7; e++) {
     float h = this->getHeightAt(quad_locations[e]);
@@ -316,7 +345,7 @@ float C2MapFile::getObjectHeightAt(int xy)
 {
   float object_height = this->m_object_heightmap_data.at(xy);
 
-  float scaled_height = object_height * HEIGHT_SCALE;
+  float scaled_height = object_height * this->getHeightmapScale();
 
   return (scaled_height);
 }

@@ -65,10 +65,14 @@ public:
   float getWaterHeightAt(int xy); // Used by C1
   int getObjectHeightForRadius(int x, int y, int R);
   int getObjectAt(int xy);
+
   int getTextureIDAt(int xy);
+  int getSecondaryTextureIDAt(int xy);
+
   int getWaterTextureIDAt(int xy, int water_texture_id);
   int getAmbientAudioIDAt(int x, int y);
 
+  bool isQuadRotatedAt(int xy);
   uint16_t getFlagsAt(int xy);
   uint16_t getFlagsAt(int x, int y);
 

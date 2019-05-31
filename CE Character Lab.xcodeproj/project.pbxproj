@@ -135,6 +135,7 @@
 		D6C77DA722490DF700105733 /* CEWorldObject.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CEWorldObject.cpp; sourceTree = "<group>"; };
 		D6C77DA822490DF700105733 /* CEWorldObject.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CEWorldObject.hpp; sourceTree = "<group>"; };
 		D6C77DAA22493A6300105733 /* deps */ = {isa = PBXFileReference; lastKnownFileType = folder; name = deps; path = "CE Character Lab/deps"; sourceTree = SOURCE_ROOT; };
+		D6CD13D92271531600A7D7FE /* CETerrainVertex.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CETerrainVertex.hpp; sourceTree = "<group>"; };
 		D6CE814A224E45DF00066CC8 /* LocalAudioManager.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LocalAudioManager.cpp; sourceTree = "<group>"; };
 		D6CE814B224E45DF00066CC8 /* LocalAudioManager.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LocalAudioManager.hpp; sourceTree = "<group>"; };
 		D6D3CD7120CADD3500E3ABAC /* CEObservable.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CEObservable.cpp; sourceTree = "<group>"; };
@@ -289,6 +290,7 @@
 				D6C77D9E224583CD00105733 /* CEWaterEntity.h */,
 				D6B3EDC3224BE9FD00DD8E9F /* CEAudioSource.cpp */,
 				D6B3EDC4224BE9FD00DD8E9F /* CEAudioSource.hpp */,
+				D6CD13D92271531600A7D7FE /* CETerrainVertex.hpp */,
 			);
 			name = Engine;
 			sourceTree = "<group>";

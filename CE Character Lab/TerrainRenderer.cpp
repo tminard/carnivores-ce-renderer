@@ -1,12 +1,5 @@
-//
-//  TerrainRenderer.cpp
-//  CE Character Lab
-//
-//  Created by Tyler Minard on 8/22/15.
-//  Copyright (c) 2015 Tyler Minard. All rights reserved.
-//
-
 #include "TerrainRenderer.h"
+#include "CETerrainVertex.hpp"
 #include "vertex.h"
 
 #include "C2MapFile.h"
@@ -56,8 +49,7 @@ void TerrainRenderer::preloadObjectMap()
       int obj_id = this->m_cmap_data_weak->getObjectAt(xy);
       
       if (obj_id == 255 || obj_id == 254) continue;
-      
-      
+
       float object_height;
       CEWorldModel* w_obj = this->m_crsc_data_weak->getWorldModel(obj_id);
       
@@ -277,6 +269,21 @@ glm::vec2 TerrainRenderer::scaleAtlasUV(glm::vec2 atlas_uv, int texture_id)
                    );
 }
 
+glm::vec4 TerrainRenderer::getScaledAtlasUVQuad(glm::vec2 atlas_uv, bool quad_reversed, int texture_id_1, int texture_id_2)
+{
+  if (quad_reversed) {
+    return glm::vec4(
+                     this->scaleAtlasUV(atlas_uv, texture_id_2),
+                     this->scaleAtlasUV(atlas_uv, texture_id_1)
+                     );
+  } else {
+    return glm::vec4(
+                     this->scaleAtlasUV(atlas_uv, texture_id_1),
+                     this->scaleAtlasUV(atlas_uv, texture_id_2)
+                     );
+  }
+}
+
   // TODO: alpha should be dependent on the angle of viewer. This calculation is based on a precalculated 90 degree view
 float TerrainRenderer::calcWaterAlpha(int tile_x, int tile_y, float water_height_scaled)
 {
@@ -323,7 +330,7 @@ void TerrainRenderer::loadWaterAt(int x, int y)
   glm::vec3 vpositionLL = this->calcWorldVertex(x, fmin(y+1, width-1), true, wheight);
   glm::vec3 vpositionLR = this->calcWorldVertex(fmin(x+1, height-1), fmin(y+1, width-1), true, wheight);
 
-  bool quad_reverse = (flags & 0x0010);
+  bool quad_reverse = this->m_cmap_data_weak->isQuadRotatedAt(xy);
   int texture_direction = (flags & 3);
   int texture_id = this->m_cmap_data_weak->getWaterTextureIDAt(xy, water_data.texture_id);
 
@@ -338,20 +345,20 @@ void TerrainRenderer::loadWaterAt(int x, int y)
 
   if (quad_reverse) {
     water_object->m_vertices.push_back(v1);
-    water_object->m_vertices.push_back(v2);
     water_object->m_vertices.push_back(v3);
+    water_object->m_vertices.push_back(v2);
 
     water_object->m_vertices.push_back(v3);
-    water_object->m_vertices.push_back(v2);
     water_object->m_vertices.push_back(v4);
+    water_object->m_vertices.push_back(v2);
   } else {
     water_object->m_vertices.push_back(v3);
-    water_object->m_vertices.push_back(v2);
     water_object->m_vertices.push_back(v4);
+    water_object->m_vertices.push_back(v2);
 
     water_object->m_vertices.push_back(v1);
-    water_object->m_vertices.push_back(v2);
     water_object->m_vertices.push_back(v3);
+    water_object->m_vertices.push_back(v2);
   }
 }
 
@@ -416,51 +423,60 @@ void TerrainRenderer::loadIntoHardwareMemory()
       unsigned int base_index = (y * width) + x;
       
       int texID = this->m_cmap_data_weak->getTextureIDAt(base_index);
+      int texID2 = this->m_cmap_data_weak->getSecondaryTextureIDAt(base_index);
       uint16_t flags = this->m_cmap_data_weak->getFlagsAt(x, y);
 
       if (this->m_cmap_data_weak->hasWaterAt(base_index)) loadWaterAt(x, y);
-      
+
       glm::vec3 vpositionUL = this->calcWorldVertex(x, y, false, 0.f);
       glm::vec3 vpositionUR = this->calcWorldVertex(fmin(x + 1, height - 1), y, false, 0.f);
       glm::vec3 vpositionLL = this->calcWorldVertex(x, fmin(y + 1, width - 1), false, 0.f);
       glm::vec3 vpositionLR = this->calcWorldVertex(fmin(x + 1, height - 1), fmin(y + 1, width - 1), false, 0.f);
       
-      bool quad_reverse = (flags & 0x0010);
+      bool quad_reverse = this->m_cmap_data_weak->isQuadRotatedAt(base_index);
       int texture_direction = (flags & 3);
       
       std::array<glm::vec2, 4> vertex_uv_mapping = this->calcUVMapForQuad(x, y, quad_reverse, texture_direction);
-      
-      Vertex v1(vpositionUL, this->scaleAtlasUV(vertex_uv_mapping[0], texID), glm::vec3(0,0,0), false, this->m_cmap_data_weak->getBrightnessAt(x, y), texID, 0);
-      Vertex v2(vpositionUR, this->scaleAtlasUV(vertex_uv_mapping[1], texID), glm::vec3(0,0,0), false, this->m_cmap_data_weak->getBrightnessAt(fmin(x + 1, height - 1), y), texID, 0);
-      Vertex v3(vpositionLL, this->scaleAtlasUV(vertex_uv_mapping[2], texID), glm::vec3(0,0,0), false, this->m_cmap_data_weak->getBrightnessAt(x, fmin(y + 1, width - 1)), texID, 0);
-      Vertex v4(vpositionLR, this->scaleAtlasUV(vertex_uv_mapping[3], texID), glm::vec3(0,0,0), false, this->m_cmap_data_weak->getBrightnessAt(fmin(x + 1, height - 1), fmin(y + 1, width - 1)), texID, 0);
+
+      CETerrainVertex v1(vpositionUL, this->getScaledAtlasUVQuad(vertex_uv_mapping[0], quad_reverse, texID, texID2), glm::vec3(0), this->m_cmap_data_weak->getBrightnessAt(x, y));
+      CETerrainVertex v2(vpositionUR, this->getScaledAtlasUVQuad(vertex_uv_mapping[1], quad_reverse, texID, texID2), glm::vec3(0), this->m_cmap_data_weak->getBrightnessAt(fmin(x + 1, height - 1), y));
+      CETerrainVertex v3(vpositionLL, this->getScaledAtlasUVQuad(vertex_uv_mapping[2], quad_reverse, texID, texID2), glm::vec3(0), this->m_cmap_data_weak->getBrightnessAt(x, fmin(y + 1, width - 1)));
+      CETerrainVertex v4(vpositionLR, this->getScaledAtlasUVQuad(vertex_uv_mapping[3], quad_reverse, texID, texID2), glm::vec3(0), this->m_cmap_data_weak->getBrightnessAt(fmin(x + 1, height - 1), fmin(y + 1, width - 1)));
       
       m_vertices.push_back(v1);
       m_vertices.push_back(v2);
       m_vertices.push_back(v3);
       m_vertices.push_back(v4);
 
+      unsigned int lower_left = (y * width * 4) + (x*4);
+      unsigned int lower_right = lower_left + 1;
+      unsigned int upper_left = lower_right + 1;
+      unsigned int upper_right = upper_left + 1;
+      /*
       unsigned int upper_left = (y * width * 4) + (x*4);
       unsigned int upper_right = upper_left + 1;
       unsigned int lower_left = upper_right + 1;
       unsigned int lower_right = lower_left + 1;
-      
+       */
+
+        // This isn't perfect yet; see trophy map. Missing correct triangle locations
+      // if quad reverse, anchor upper right (bottom left, upper right, lower right). Otherwise, anchor upper left (bottom left, upper left, lower right)
       if (quad_reverse) {
-        m_indices.push_back(upper_left);
-        m_indices.push_back(upper_right);
         m_indices.push_back(lower_left);
-        
-        m_indices.push_back(lower_left);
-        m_indices.push_back(upper_right);
         m_indices.push_back(lower_right);
+        m_indices.push_back(upper_left);
+
+        m_indices.push_back(lower_right);
+        m_indices.push_back(upper_right);
+        m_indices.push_back(upper_left);
       } else {
         m_indices.push_back(lower_left);
-        m_indices.push_back(upper_right);
         m_indices.push_back(lower_right);
-        
-        m_indices.push_back(upper_left);
         m_indices.push_back(upper_right);
+
         m_indices.push_back(lower_left);
+        m_indices.push_back(upper_right);
+        m_indices.push_back(upper_left);
       }
     }
   }
@@ -473,17 +489,20 @@ void TerrainRenderer::loadIntoHardwareMemory()
   
   glGenBuffers(1, &this->m_vertex_array_buffer);
   glBindBuffer(GL_ARRAY_BUFFER, this->m_vertex_array_buffer);
-  glBufferData(GL_ARRAY_BUFFER, (int)m_vertices.size()*sizeof(Vertex), m_vertices.data(), GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, (int)m_vertices.size()*sizeof(CETerrainVertex), m_vertices.data(), GL_STATIC_DRAW);
   
   // describe vertex details
   glEnableVertexAttribArray(0); // position
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
-  glEnableVertexAttribArray(1); // uv
-  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)sizeof(glm::vec3));
-  glEnableVertexAttribArray(2); // normal
-  glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(glm::vec3)+sizeof(glm::vec2)));
-  glEnableVertexAttribArray(3); // texid
-  glVertexAttribIPointer(3, 1, GL_UNSIGNED_INT, sizeof(Vertex), (void*)(sizeof(glm::vec3)+sizeof(glm::vec2)+(sizeof(glm::vec3))));
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(CETerrainVertex), 0);
+  
+  glEnableVertexAttribArray(1); // normal
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(CETerrainVertex), (void*)sizeof(glm::vec3));
+
+  glEnableVertexAttribArray(2); // txture coords
+  glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(CETerrainVertex), (void*)(sizeof(glm::vec3)+sizeof(glm::vec3)));
+
+  glEnableVertexAttribArray(3); // brightness
+  glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(CETerrainVertex), (void*)(sizeof(glm::vec3)+sizeof(glm::vec3)+(sizeof(glm::vec4))));
   
   // indices
   glGenBuffers(1, &this->m_indices_array_buffer);

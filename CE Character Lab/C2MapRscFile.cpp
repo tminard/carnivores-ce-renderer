@@ -363,7 +363,7 @@ void C2MapRscFile::load(const std::string &file_name)
     if (m_type == C1) {
       CEWaterEntity wd;
       wd.texture_id = 0;
-      wd.water_level = -1; // actually height map height - use magic number to calc on the fly
+      wd.water_level = -1; // TODO: actually height map height, do this cleaner - currently use magic number to trigger calc in line
       wd.transparency = 0.8f;
 
       this->m_waters.push_back(wd);

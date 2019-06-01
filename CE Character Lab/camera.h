@@ -68,7 +68,7 @@ public:
   
   void MoveForward(float amt)
   {
-    pos += ((forward * glm::vec3(1.f, 0, 1.f)) * amt);
+    pos += ((forward * glm::vec3(1.f, 1.f, 1.f)) * amt); // pos += ((forward * glm::vec3(1.f, 0, 1.f)) * amt); to lock y axis
     updateViewProjection();
   }
   

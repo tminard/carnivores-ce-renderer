@@ -74,7 +74,19 @@ int C2MapFile::getWaterTextureIDAt(int xy, int water_texture_id)
   if (m_type == C2) {
     return water_texture_id;
   } else {
-    return int(this->m_texturec1_A_index_data.at(xy));
+    int water_texture;
+
+    uint texture_a = this->m_texturec1_A_index_data.at(xy);
+    uint texture_b = this->m_texturec1_B_index_data.at(xy);
+
+    if (!texture_a || !texture_b) {
+      water_texture = 0;
+    } else {
+      // TODO: need to figure out which one is the correct liquid texture for split lava and pond tiles
+      water_texture = texture_a;
+    }
+
+    return water_texture;
   }
 }
 
@@ -164,13 +176,21 @@ bool C2MapFile::isQuadRotatedAt(int xy)
   }
 }
 
-float C2MapFile::getWaterHeightAt(int xy)
+/*
+ * Given that this location is a water tile, return the water's height for the whole quad.
+ * xy is the "anchor" vertex in the quad
+ */
+float C2MapFile::getWaterHeightAt(int x, int y)
 {
-  if (xy <0 || xy >= this->m_heightmap_data.size() || m_type == C2) {
+  int xy = (y * this->getWidth()) + x;
+  if (xy < 0 || xy >= this->m_heightmap_data.size() || m_type == C2) {
     return 0;
   }
 
-  float scaled_height = (this->m_heightmap_data.at(xy) + 48) * this->getHeightmapScale();
+  // In c1, half water tiles have anchor vertex (at xy) in the ground, and thus calculate a different height. Fix this here
+  int lowest_height = this->getLowestHeight(x, y);
+
+  float scaled_height = (lowest_height + 48) * this->getHeightmapScale();
 
   return (scaled_height);
 }
@@ -216,12 +236,12 @@ bool C2MapFile::hasWaterAt(int xy)
   } else {
     uint8_t flags = this->getFlagsAt(xy);
     if (flags & 0x0080 || flags & 0x8000) return true;
-    if (abs(this->m_watermap_data.at(xy) - this->m_heightmap_data.at(xy)) != 48) return true;
+    if (this->m_watermap_data.at(xy) != this->m_heightmap_data.at(xy) + 48) return true;
 
-    // Weird issue in C1 map data
     int id = int(this->m_texturec1_A_index_data.at(xy));
-    if (!id) {
-      // Has a water texture, but not set to water?
+    int id_second = int(this->m_texturec1_B_index_data.at(xy));
+    if (!id || !id_second) {
+      // Has a water texture, but not set to water in flag. Original engine did the same check.
       return true;
     }
 
@@ -245,11 +265,7 @@ bool C2MapFile::hasOriginalWaterAt(int xy)
 
     return false;
   } else {
-    uint8_t flags = this->getFlagsAt(xy);
-    bool has_water = this->hasWaterAt(xy);
-    if (!(flags & 0x8000) && has_water) return true; // If we haven't added it, but it is there, then assume it was original
-
-    return false;
+    throw 1; // Not supported
   }
 }
 
@@ -298,7 +314,6 @@ void C2MapFile::setWaterAt(int x, int y, int water_height)
   } else {
     // meh?
     this->m_c1_flags_data[xy] |= 0x8000;
-    //this->m_heightmap_data[xy] = water_height;
     this->m_watermap_data[xy] = this->m_heightmap_data.at(xy) + 48;
   }
 }
@@ -308,34 +323,27 @@ int C2MapFile::getWaterAt(int xy)
   if (m_type == C2) {
     return this->m_watermap_data.at(xy);
   } else {
-    return 0; // Only 1 water type in C1 - todo: not true!
+    return 0; // Only 1 core water type in C1 (but also need to handle lava and ponds)
   }
 }
 
-// this is broken in c1
 float C2MapFile::getLowestHeight(int x, int y)
 {
   int width = (int)this->getWidth();
-  int height = (int)this->getHeight();
 
-  std::array<int, 7> quad_locations = {
+  std::array<int, 4> quad_locations = {
     (y * width) + x,
-    (int)fmin(((y + 1)*width), width - 1) + x,
-    (y * width) + (int)fmin((x+1), height - 1),
-    (int)fmin(((y + 1)*width), width-1) + (int)fmin((x+1), height - 1),
-    (int)fmax(((y - 1)*width), 0) + x,
-    (y * width) + (int)fmax((x-1), 0),
-    (int)fmax(((y - 1)*width), 0) + (int)fmax((x-1), 0)
+    ((y+1) * width) + x,
+    (y * width) + (x + 1),
+    ((y+1) * width) + (x + 1),
   };
 
-  float lowest = this->getHeightAt(quad_locations[0]);
+  uint8_t lowest = this->m_heightmap_data.at(quad_locations[0]);
 
-  //if (m_type == C2)
-    return lowest;
+  for (int e=1; e < quad_locations.size(); e++) {
+    uint8_t h = this->m_heightmap_data.at(quad_locations[e]);
 
-  for (int e=1; e < 7; e++) {
-    float h = this->getHeightAt(quad_locations[e]);
-    if (h < lowest && h > 0) lowest = h;
+    if (h < lowest) lowest = h;
   }
 
   return lowest;
@@ -429,10 +437,6 @@ glm::vec3 C2MapFile::getRandomLanding()
  */
 void C2MapFile::postProcess(C2MapRscFile* crsc_weak)
 {
-  if (m_type == C1) {
-    crsc_weak->setWaterHeight(0, -1); // magiccccc
-  }
-
   int w = (int)this->getWidth();
   int h = (int)this->getHeight();
   
@@ -444,8 +448,9 @@ void C2MapFile::postProcess(C2MapRscFile* crsc_weak)
         m_landings.push_back(glm::vec2(x, y));
       }
 
-      if (!this->hasOriginalWaterAt(xy)) {
+      if (m_type == C1) continue;
 
+      if (!this->hasOriginalWaterAt(xy)) {
         if (this->hasOriginalWaterAt(x+1, y)) this->fillWater(x, y, x+1, y);
         if (this->hasOriginalWaterAt(x, y+1)) this->fillWater(x, y, x, y+1);
         if (this->hasOriginalWaterAt(x-1, y)) this->fillWater(x, y, x-1, y);
@@ -455,7 +460,7 @@ void C2MapFile::postProcess(C2MapRscFile* crsc_weak)
         if (this->hasOriginalWaterAt(x-1, y+1)) this->fillWater(x, y, x-1, y+1);
         if (this->hasOriginalWaterAt(x+1, y+1)) this->fillWater(x, y, x+1, y+1);
 
-        if (this->hasDynamicWaterAt(xy) && m_type == C2) {
+        if (this->hasDynamicWaterAt(xy)) {
           if (this->m_heightmap_data.at(xy) == crsc_weak->getWater(this->m_watermap_data.at(xy)).water_level) {
             this->m_heightmap_data.at(xy) += 1;
           }

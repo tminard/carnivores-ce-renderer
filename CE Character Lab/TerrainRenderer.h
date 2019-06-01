@@ -42,13 +42,16 @@ private:
   struct _Water {
     GLuint m_vao;
     GLuint m_vab;
+    GLuint m_iab;
     int m_water_id;
     int m_texture_id;
     float m_height;
     float m_transparency; // 1.f = fully transparent on RGB color. 0.f = not transparent. 0.5 = half transparency
     int m_height_unscaled;
     std::vector < Vertex > m_vertices;
+    std::vector < unsigned int > m_indices;
     int m_vertex_count;
+    int m_num_indices;
   };
 
   std::vector <_Water> m_waters;
@@ -56,6 +59,7 @@ private:
   std::vector < CETerrainVertex > m_vertices;
   std::vector < unsigned int > m_indices;
   int m_num_indices;
+  double m_last_update_time;
   
   GLuint m_vertex_array_object;
   
@@ -77,7 +81,7 @@ private:
 
   glm::vec2 calcAtlasUV(int texID, glm::vec2 uv);
   glm::vec2 scaleAtlasUV(glm::vec2 atlas_uv, int texture_id);
-  glm::vec4 getScaledAtlasUVQuad(glm::vec2 atlas_uv, bool quad_reversed, int texture_id_1, int texture_id_2);
+  glm::vec4 getScaledAtlasUVQuad(glm::vec2 atlas_uv, int texture_id_1, int texture_id_2);
 
   glm::vec3 calcWorldVertex(int tile_x, int tile_y, bool water, float water_height_scaled);
   float calcWaterAlpha(int tile_x, int tile_y, float water_height_scaled);

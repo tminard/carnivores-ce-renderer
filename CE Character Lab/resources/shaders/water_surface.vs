@@ -8,10 +8,12 @@ out vec2 texCoord0;
 smooth out float alpha0;
 
 uniform mat4 MVP;
+uniform float RealTime;
 
 void main()
 {
     vec4 v = vec4(position, 1);
+    
     gl_Position = MVP * v;
     texCoord0 = texCoord;
     alpha0 = alpha;

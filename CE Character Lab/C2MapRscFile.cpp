@@ -267,11 +267,25 @@ void C2MapRscFile::load(const std::string &file_name)
     }
     
     std::unique_ptr<CETexture> cTexture = std::unique_ptr<CETexture>(new CETexture(final_texture_data, squared_texture_rows*TEXTURE_SQUARE_SIZE*squared_texture_rows*TEXTURE_SQUARE_SIZE, squared_texture_rows*TEXTURE_SQUARE_SIZE, squared_texture_rows*TEXTURE_SQUARE_SIZE));
-    cTexture->saveToBMPFile("/tmp/atlas.bmp");
+    //cTexture->saveToBMPFile("/tmp/atlas.bmp");
 
     this->m_texture_atlas_width = squared_texture_rows;
     this->m_texture_count = texture_count;
     this->m_textures.push_back(std::move(cTexture));
+
+    for (int t=0; t < m_texture_count; t++) {
+      std::vector<uint16_t> texture_data;
+      std::vector<uint16_t>::const_iterator first = raw_texture_data.begin() + (t * SOURCE_SQUARE_SIZE * SOURCE_SQUARE_SIZE);
+      std::vector<uint16_t>::const_iterator last = first + SOURCE_SQUARE_SIZE*SOURCE_SQUARE_SIZE;
+      texture_data.insert(texture_data.end(), first, last);
+
+      std::unique_ptr<CETexture> c_texture = std::unique_ptr<CETexture>(new CETexture(texture_data, SOURCE_SQUARE_SIZE*SOURCE_SQUARE_SIZE, SOURCE_SQUARE_SIZE, SOURCE_SQUARE_SIZE));
+      //std::stringstream ss;
+      //ss << "/tmp/" << "map_texture_" << t << ".bmp";
+
+      //c_texture->saveToBMPFile(ss.str());
+      this->m_textures.push_back(std::move(c_texture));
+    }
     
     
     // Load 3d models

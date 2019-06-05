@@ -7,6 +7,7 @@
 #include "CEWorldModel.h"
 #include "CESimpleGeometry.h"
 #include "CEGeometry.h"
+#include "CETexture.h"
 #include "shader_program.h"
 #include "camera.h"
 #include "transform.h"
@@ -103,7 +104,7 @@ void TerrainRenderer::loadShader()
   this->m_water_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram("resources/shaders/water_surface.vs", "resources/shaders/water_surface.fs"));
 
   this->m_shader->use();
-  this->m_shader->setFloat("view_distance", (128.f*256.f));
+  this->m_shader->setFloat("view_distance", (128.f*1024.f));
 }
 
 //      /*
@@ -352,10 +353,10 @@ void TerrainRenderer::loadWaterAt(int x, int y)
 
   std::array<glm::vec2, 4> vertex_uv_mapping = this->calcUVMapForQuad(x, y, quad_reverse, 0);
 
-  Vertex v1(vpositionLL, this->scaleAtlasUV(vertex_uv_mapping[0], texture_id), glm::vec3(0,0,0), false, calcWaterAlpha(x, y, wheight), texture_id, 0);
-  Vertex v2(vpositionLR, this->scaleAtlasUV(vertex_uv_mapping[1], texture_id), glm::vec3(0,0,0), false, calcWaterAlpha(fmin(x+1, height-1), y, wheight), texture_id, 0);
-  Vertex v3(vpositionUL, this->scaleAtlasUV(vertex_uv_mapping[2], texture_id), glm::vec3(0,0,0), false, calcWaterAlpha(x, fmin(y+1, width-1), wheight), texture_id, 0);
-  Vertex v4(vpositionUR, this->scaleAtlasUV(vertex_uv_mapping[3], texture_id), glm::vec3(0,0,0), false, calcWaterAlpha(fmin(x+1, height-1), fmin(y+1, width-1), wheight), texture_id, 0);
+  Vertex v1(vpositionLL, vertex_uv_mapping[0], glm::vec3(0,0,0), false, calcWaterAlpha(x, y, wheight), texture_id, 0);
+  Vertex v2(vpositionLR, vertex_uv_mapping[1], glm::vec3(0,0,0), false, calcWaterAlpha(fmin(x+1, height-1), y, wheight), texture_id, 0);
+  Vertex v3(vpositionUL, vertex_uv_mapping[2], glm::vec3(0,0,0), false, calcWaterAlpha(x, fmin(y+1, width-1), wheight), texture_id, 0);
+  Vertex v4(vpositionUR, vertex_uv_mapping[3], glm::vec3(0,0,0), false, calcWaterAlpha(fmin(x+1, height-1), fmin(y+1, width-1), wheight), texture_id, 0);
 
   water_object->m_vertices.push_back(v1);
   water_object->m_vertices.push_back(v2);
@@ -565,6 +566,8 @@ void TerrainRenderer::RenderWater()
   this->m_water_shader->use();
 
   for (int w = 0; w < this->m_waters.size(); w++) {
+    this->m_crsc_data_weak->getTexture(this->m_waters[w].m_texture_id + 1)->use();
+
     glBindVertexArray(this->m_waters[w].m_vao);
 
     glDrawElementsBaseVertex(GL_TRIANGLES, this->m_waters[w].m_num_indices, GL_UNSIGNED_INT, 0, 0);

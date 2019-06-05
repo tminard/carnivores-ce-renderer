@@ -176,10 +176,10 @@ std::array<glm::vec2, 4> TerrainRenderer::calcUVMapForQuad(int x, int y, bool qu
 
   // This is called "half pixel correction" - a niave implementation. See https://gamedev.stackexchange.com/questions/46963/how-to-avoid-texture-bleeding-in-a-texture-atlas for something better. Note this doesn't solve mipmaps issue
   // For solution, see answer here: https://gamedev.stackexchange.com/questions/46963/how-to-avoid-texture-bleeding-in-a-texture-atlas
-  float max_tc = 0.990f;
+  float max_tc = 1.f;
   float tu, tv;
   float i = 1.f;
-  tu = 0.003f; tv = 0.003f;
+  tu = 0.f; tv = 0.f;
   
   if (!quad_reversed) {
     switch (rotation_code) {
@@ -265,12 +265,34 @@ std::array<glm::vec2, 4> TerrainRenderer::calcUVMapForQuad(int x, int y, bool qu
 glm::vec2 TerrainRenderer::scaleAtlasUV(glm::vec2 atlas_uv, int texture_id)
 {
   float atlas_square_size = (float)this->m_crsc_data_weak->getTextureAtlasWidth();
-  int texture_y = int(floor(float(texture_id) / atlas_square_size));
-  float tile_scale = (1.f / atlas_square_size); // maps 0-1 UV coords to 1/square portion of atlas
+  int texture_row = int(floor(float(texture_id) / atlas_square_size));
+  int padding = this->m_crsc_data_weak->getAtlasTilePadding();
+  int size = this->m_crsc_data_weak->getAtlasTileWidth();
+
+  float tile_scale = (1.f / atlas_square_size);
+
+  float u_scaled = atlas_uv.x;
+  float y_scaled = atlas_uv.y;
+
+  float padding_fraction = (float(padding) / float(size + (padding*2.f)));
+  float min_uv = padding_fraction * tile_scale;
+  float max_uv = (1.f - padding_fraction) * tile_scale;
+
+  if (u_scaled == 0) {
+    u_scaled = (texture_id * tile_scale) + min_uv;
+  } else {
+    u_scaled = (texture_id * tile_scale) + max_uv;
+  }
+
+  if (y_scaled == 0) {
+    y_scaled = (texture_row * tile_scale) + min_uv;
+  } else {
+    y_scaled = (texture_row * tile_scale) + max_uv;
+  }
   
   return glm::vec2(
-                   (texture_id * tile_scale) + (atlas_uv.x * tile_scale),
-                   (texture_y * tile_scale) + (atlas_uv.y * tile_scale)
+                   u_scaled,
+                   y_scaled
                    );
 }
 
@@ -304,8 +326,6 @@ void TerrainRenderer::loadWaterAt(int x, int y)
 
   int water_index = this->m_cmap_data_weak->getWaterAt(xy);
 
-  uint16_t flags = this->m_cmap_data_weak->getFlagsAt(xy);
-
   CEWaterEntity water_data = this->m_crsc_data_weak->getWater(water_index);
   if (water_index > this->m_waters.size()) {
     printf("Attempted to access water_index `%i` at x: %i, y: %i, which is out of bounds\n", water_index, x, y);
@@ -328,10 +348,9 @@ void TerrainRenderer::loadWaterAt(int x, int y)
   glm::vec3 vpositionUR = this->calcWorldVertex(fmin(x + 1, height - 1), fmin(y + 1, width - 1), true, wheight);
 
   bool quad_reverse = this->m_cmap_data_weak->isQuadRotatedAt(xy);
-  int texture_direction = (flags & 3);
   int texture_id = this->m_cmap_data_weak->getWaterTextureIDAt(xy, water_data.texture_id);
 
-  std::array<glm::vec2, 4> vertex_uv_mapping = this->calcUVMapForQuad(x, y, quad_reverse, texture_direction);
+  std::array<glm::vec2, 4> vertex_uv_mapping = this->calcUVMapForQuad(x, y, quad_reverse, 0);
 
   Vertex v1(vpositionLL, this->scaleAtlasUV(vertex_uv_mapping[0], texture_id), glm::vec3(0,0,0), false, calcWaterAlpha(x, y, wheight), texture_id, 0);
   Vertex v2(vpositionLR, this->scaleAtlasUV(vertex_uv_mapping[1], texture_id), glm::vec3(0,0,0), false, calcWaterAlpha(fmin(x+1, height-1), y, wheight), texture_id, 0);
@@ -344,10 +363,10 @@ void TerrainRenderer::loadWaterAt(int x, int y)
   water_object->m_vertices.push_back(v4);
 
     // TODO: clean this up
-  unsigned int lower_left = water_object->m_vertices.size() - 4;
-  unsigned int lower_right = water_object->m_vertices.size() - 3;
-  unsigned int upper_left = water_object->m_vertices.size() - 2;
-  unsigned int upper_right = water_object->m_vertices.size() - 1;
+  unsigned int lower_left = (unsigned int)water_object->m_vertices.size() - 4;
+  unsigned int lower_right = (unsigned int)water_object->m_vertices.size() - 3;
+  unsigned int upper_left = (unsigned int)water_object->m_vertices.size() - 2;
+  unsigned int upper_right = (unsigned int)water_object->m_vertices.size() - 1;
 
   if (quad_reverse) {
     water_object->m_indices.push_back(lower_left);
@@ -366,24 +385,6 @@ void TerrainRenderer::loadWaterAt(int x, int y)
     water_object->m_indices.push_back(upper_left);
     water_object->m_indices.push_back(upper_right);
   }
-  /*
-  if (quad_reverse) {
-    water_object->m_vertices.push_back(v1);
-    water_object->m_vertices.push_back(v3);
-    water_object->m_vertices.push_back(v2);
-
-    water_object->m_vertices.push_back(v2);
-    water_object->m_vertices.push_back(v3);
-    water_object->m_vertices.push_back(v4);
-  } else {
-    water_object->m_vertices.push_back(v1);
-    water_object->m_vertices.push_back(v4);
-    water_object->m_vertices.push_back(v2);
-
-    water_object->m_vertices.push_back(v1);
-    water_object->m_vertices.push_back(v3);
-    water_object->m_vertices.push_back(v4);
-  }*/
 }
 
 void TerrainRenderer::loadWaterIntoMemory()

@@ -105,6 +105,16 @@ void C2MapRscFile::playAmbientAudio(int i)
   src->play();
 }
 
+int C2MapRscFile::getAtlasTileWidth()
+{
+  return 128;
+}
+
+int C2MapRscFile::getAtlasTilePadding()
+{
+  return 32;
+}
+
 void C2MapRscFile::load(const std::string &file_name)
 {
   std::ifstream infile;
@@ -112,10 +122,13 @@ void C2MapRscFile::load(const std::string &file_name)
   
   try {
     infile.open(file_name.c_str(), std::ios::binary | std::ios::in);
-    
+
+    int tile_padding = getAtlasTilePadding();
+    int tile_width = getAtlasTileWidth();
+
     int texture_count, model_count;
-    int SOURCE_SQUARE_SIZE = 128; // each texture in C2 is 128x128
-    int TEXTURE_SQUARE_SIZE = 130; // we add 2 px to each side for clamping, for 130x130
+    int SOURCE_SQUARE_SIZE = tile_width; // each texture in C2 is 128x128
+    int TEXTURE_SQUARE_SIZE = SOURCE_SQUARE_SIZE + (tile_padding * 2); // we add padding to each side to prevent bleeding and mipmap artifacts
     
     infile.read(reinterpret_cast<char *>(&texture_count), 4);
     infile.read(reinterpret_cast<char *>(&model_count), 4);
@@ -146,11 +159,14 @@ void C2MapRscFile::load(const std::string &file_name)
       if (line % SOURCE_SQUARE_SIZE == 0) {
         pad_color = _PadTypeColor::Red;
         tx_filler.clear();
-        tx_filler.assign(TEXTURE_SQUARE_SIZE*squared_texture_rows, pad_color);
+        tx_filler.assign((TEXTURE_SQUARE_SIZE*squared_texture_rows*tile_padding), pad_color);
         
         for (int x=0; x < squared_texture_rows; x++) {
-          tx_filler.at(x*TEXTURE_SQUARE_SIZE) = _PadTypeColor::Blue;
-          tx_filler.at((x*TEXTURE_SQUARE_SIZE)+(TEXTURE_SQUARE_SIZE-1)) = _PadTypeColor::Green;
+          for (int p = 0; p < tile_padding; p++)
+            tx_filler.at(x*TEXTURE_SQUARE_SIZE + p) = _PadTypeColor::Blue;
+
+          for (int p = 1; p <= tile_padding; p++)
+            tx_filler.at((x*TEXTURE_SQUARE_SIZE)+(TEXTURE_SQUARE_SIZE-p)) = _PadTypeColor::Green;
         }
         combined_texture_data.insert(combined_texture_data.end(), tx_filler.begin(), tx_filler.end());
       }
@@ -161,7 +177,8 @@ void C2MapRscFile::load(const std::string &file_name)
         int tex_start = line % SOURCE_SQUARE_SIZE;
         
         pad_color = _PadTypeColor::Blue;
-        combined_texture_data.insert(combined_texture_data.end(), pad_color);
+        for (int p = 0; p < tile_padding; p++)
+          combined_texture_data.insert(combined_texture_data.end(), pad_color);
         
         if (tx_c >= texture_count) {
           std::vector<uint16_t> tx_filler(SOURCE_SQUARE_SIZE);
@@ -173,17 +190,21 @@ void C2MapRscFile::load(const std::string &file_name)
         }
         
         pad_color = _PadTypeColor::Green;
-        combined_texture_data.insert(combined_texture_data.end(), pad_color);
+        for (int p = 0; p < tile_padding; p++)
+          combined_texture_data.insert(combined_texture_data.end(), pad_color);
       }
       
       if ((line+1) % SOURCE_SQUARE_SIZE == 0) {
         pad_color = _PadTypeColor::Yellow;
         tx_filler.clear();
-        tx_filler.assign(TEXTURE_SQUARE_SIZE*squared_texture_rows, pad_color);
+        tx_filler.assign(TEXTURE_SQUARE_SIZE*squared_texture_rows*tile_padding, pad_color);
         
         for (int x=0; x < squared_texture_rows; x++) {
-          tx_filler.at(x*TEXTURE_SQUARE_SIZE) = _PadTypeColor::Blue;
-          tx_filler.at((x*TEXTURE_SQUARE_SIZE)+(TEXTURE_SQUARE_SIZE-1)) = _PadTypeColor::Green;
+          for (int p = 0; p < tile_padding; p++)
+            tx_filler.at(x*TEXTURE_SQUARE_SIZE+p) = _PadTypeColor::Blue;
+
+          for (int p = 1; p <= tile_padding; p++)
+            tx_filler.at((x*TEXTURE_SQUARE_SIZE)+(TEXTURE_SQUARE_SIZE-p)) = _PadTypeColor::Green;
         }
         
         combined_texture_data.insert(combined_texture_data.end(), tx_filler.begin(), tx_filler.end());
@@ -199,14 +220,14 @@ void C2MapRscFile::load(const std::string &file_name)
 
       // TODO: we can use a frame buffer instead of this nastiness
     std::vector<uint16_t> final_texture_data; // Now replace colors with correct entries
-    for (int i=0; i < 2; i++) {
+    for (int i=0; i < tile_padding; i++) {
       for (int row = 0; row < (TEXTURE_SQUARE_SIZE*squared_texture_rows); row++) {
         for (int col = 0; col < (TEXTURE_SQUARE_SIZE*squared_texture_rows); col++) {
           int id_x = col;
           int id_y = row*TEXTURE_SQUARE_SIZE*squared_texture_rows;
           uint16_t color;
           
-          if (i == 1) {
+          if (i >= 1) {
             color = final_texture_data.at(id_y+id_x);
           } else {
             color = combined_texture_data.at(id_y+id_x);
@@ -217,7 +238,7 @@ void C2MapRscFile::load(const std::string &file_name)
               color = final_texture_data.at(id_y+(id_x-1));
               break;
             case _AtlasPadType::Right:
-              if (i == 1) {
+              if (i >= 1) {
                 color = final_texture_data.at(id_y+(id_x+1));
               } else {
                 color = combined_texture_data.at(id_y+(id_x+1));
@@ -227,7 +248,7 @@ void C2MapRscFile::load(const std::string &file_name)
               color = final_texture_data.at(((row-1)*TEXTURE_SQUARE_SIZE*squared_texture_rows)+id_x);
               break;
             case _AtlasPadType::Below:
-              if (i == 1) {
+              if (i >= 1) {
                 color = final_texture_data.at(((row+1)*TEXTURE_SQUARE_SIZE*squared_texture_rows)+id_x);
               } else {
                 color = combined_texture_data.at(((row+1)*TEXTURE_SQUARE_SIZE*squared_texture_rows)+id_x);
@@ -236,7 +257,7 @@ void C2MapRscFile::load(const std::string &file_name)
             default:
               break;
           }
-          if (i == 1) {
+          if (i >= 1) {
             final_texture_data.at(id_y+id_x) = color;
           } else {
             final_texture_data.insert(final_texture_data.end(), color);
@@ -246,6 +267,8 @@ void C2MapRscFile::load(const std::string &file_name)
     }
     
     std::unique_ptr<CETexture> cTexture = std::unique_ptr<CETexture>(new CETexture(final_texture_data, squared_texture_rows*TEXTURE_SQUARE_SIZE*squared_texture_rows*TEXTURE_SQUARE_SIZE, squared_texture_rows*TEXTURE_SQUARE_SIZE, squared_texture_rows*TEXTURE_SQUARE_SIZE));
+    cTexture->saveToBMPFile("/tmp/atlas.bmp");
+
     this->m_texture_atlas_width = squared_texture_rows;
     this->m_texture_count = texture_count;
     this->m_textures.push_back(std::move(cTexture));
@@ -386,6 +409,39 @@ void C2MapRscFile::load(const std::string &file_name)
     Console_PrintLogString("Failed to load " + file_name + ": " + strerror(errno));
     std::cerr << "Exception opening/reading/closing file\n";
   }
+}
+
+void C2MapRscFile::generateTextureAtlas()
+{
+  // Adapted from https://learnopengl.com/Advanced-OpenGL/Framebuffers
+  unsigned int fbo;
+  glGenFramebuffers(1, &fbo);
+  glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+  unsigned int texture;
+  glGenTextures(1, &texture);
+  glBindTexture(GL_TEXTURE_2D, texture);
+
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 800, 600, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glBindTexture(GL_TEXTURE_2D, 0);
+
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
+
+  // Ready
+  if (glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE) {
+
+  } else {
+    std::cout << "Failed to complete FRAMEBUFFER" << std::endl;
+  }
+
+  // CLEAN IT UP
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glBindTexture(GL_TEXTURE_2D, 0);
+
+  glDeleteTextures(1, &texture);
+  glDeleteFramebuffers(1, &fbo);
 }
 
 int C2MapRscFile::getWaterCount()

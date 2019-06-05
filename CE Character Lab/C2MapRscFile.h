@@ -46,7 +46,7 @@ private:
   int m_fade_rgb[3][3]; // calculated sky RGB base values
   int m_trans_rgb[3][3]; // calculated sky transparency values
   
-  std::vector< std::unique_ptr<CETexture> > m_textures; // control access to the textures
+  std::vector< std::unique_ptr<CETexture> > m_textures;
   int m_texture_atlas_width;
   int m_texture_count;
   
@@ -64,6 +64,8 @@ private:
   std::unique_ptr<C2Sky> m_night_sky;
   
   std::vector<uint8_t> m_shadow_map;
+
+  void generateTextureAtlas();
   
   void load(const std::string& file_name);
   void load_c1(const std::string& file_name);
@@ -76,6 +78,9 @@ public:
   int getTextureAtlasWidth();
   int getWorldModelCount();
   int getWaterCount();
+
+  int getAtlasTileWidth();
+  int getAtlasTilePadding();
 
   void setWaterHeight(int i, int h_unscaled);
 

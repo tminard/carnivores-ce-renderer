@@ -1,7 +1,7 @@
 #version 330
 
-in vec2 texCoord0;
-in vec2 texCoord1;
+in highp vec2 texCoord0;
+in highp vec2 texCoord1;
 smooth in float brightness0;
 
 out vec4 outputColor;
@@ -14,9 +14,9 @@ void main()
     vec4 sC;
 
     if (mod(gl_PrimitiveID, 2) == 0) {
-        sC = texture(basic_texture, texCoord1, -2);
+        sC = texture(basic_texture, texCoord1);
     } else {
-        sC = texture(basic_texture, texCoord0, -2);
+        sC = texture(basic_texture, texCoord0);
     }
 
     float percent = (brightness0 / 255.0);

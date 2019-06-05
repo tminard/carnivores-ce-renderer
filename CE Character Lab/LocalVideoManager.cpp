@@ -22,6 +22,13 @@ void LocalVideoManager::printStats()
   std::cout << glfwGetVersionString() << std::endl;
   const GLubyte* renderer = glGetString(GL_RENDERER);
   std::cout << renderer << " : " << glGetString(GL_VERSION) << std::endl;
+  std::cout << "=== Supported Extensions ===" << std::endl;
+
+  if (glfwExtensionSupported("GL_EXT_texture_array")) {
+    std::cout << "\t GL_EXT_texture_array :: true" << std::endl;
+  } else {
+    std::cout << "\t GL_EXT_texture_array :: false" << std::endl;
+  }
 }
 
 GLFWwindow* LocalVideoManager::GetWindow()
@@ -35,10 +42,11 @@ void LocalVideoManager::initGLFW()
     throw;
   }
 
-  glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 3 );
-  glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 2 );
+  glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 4 );
+  glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 1 );
   glfwWindowHint( GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE );
   glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );
+  glfwWindowHint( GLFW_SAMPLES, 4);
 
   GLFWmonitor* primary_monitor = glfwGetPrimaryMonitor();
   const GLFWvidmode* v_mode = glfwGetVideoMode(primary_monitor);

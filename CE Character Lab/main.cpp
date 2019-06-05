@@ -73,8 +73,8 @@ int main(int argc, const char * argv[])
   std::unique_ptr<LocalVideoManager> video_manager(new LocalVideoManager());
   std::unique_ptr<LocalAudioManager> g_audio_manager(new LocalAudioManager());
 
-  std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile(CEMapType::C1, "resources/game/c1/area2.rsc"));
-  std::shared_ptr<C2MapFile> cMap(new C2MapFile(CEMapType::C1, "resources/game/c1/area2.map", cMapRsc.get()));
+  std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile(CEMapType::C1, "resources/game/c1/area4.rsc"));
+  std::shared_ptr<C2MapFile> cMap(new C2MapFile(CEMapType::C1, "resources/game/c1/area4.map", cMapRsc.get()));
   std::unique_ptr<TerrainRenderer> terrain(new TerrainRenderer(cMap.get(), cMapRsc.get()));
 
   GLFWwindow* window = video_manager->GetWindow();
@@ -139,6 +139,7 @@ int main(int argc, const char * argv[])
     double rnTimeDelta = currentTime - lastRndAudioTime;
 
     if (rnTimeDelta >= 10.0) {
+        // TODO: handle maps that have no random audio
       m_random_ambient = cMapRsc->getRandomAudio(currentPosition.x, currentPosition.y, currentPosition.z - 256.f);
       g_audio_manager->play(std::move(m_random_ambient));
 

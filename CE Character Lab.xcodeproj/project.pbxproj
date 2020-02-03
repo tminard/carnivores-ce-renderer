@@ -47,6 +47,7 @@
 		D6D3CD7C20CAEBBC00E3ABAC /* LocalVideoManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6D3CD7A20CAEBBC00E3ABAC /* LocalVideoManager.cpp */; };
 		D6D3CD8620CF123400E3ABAC /* CEShaderProgram.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6D3CD8420CF123400E3ABAC /* CEShaderProgram.cpp */; };
 		D6E7B8241FAB9ADF00D1C100 /* libglfw.3.2.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = D6E7B8231FAB9ADF00D1C100 /* libglfw.3.2.dylib */; };
+		D6F1356922ADE0F100D0F35C /* CETerrainSegment.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6F1356722ADE0F100D0F35C /* CETerrainSegment.cpp */; };
 		D6F2F86A1B836F3A0018DBF0 /* C2Sky.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6F2F8681B836F3A0018DBF0 /* C2Sky.cpp */; };
 		D6F2F86C1B8377E60018DBF0 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D61CCBFB1B7E200E004BD900 /* OpenGL.framework */; };
 		D6F2F8751B83855A0018DBF0 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D6F2F8741B83855A0018DBF0 /* IOKit.framework */; };
@@ -152,6 +153,8 @@
 		D6D3CD8420CF123400E3ABAC /* CEShaderProgram.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CEShaderProgram.cpp; sourceTree = "<group>"; };
 		D6D3CD8520CF123400E3ABAC /* CEShaderProgram.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CEShaderProgram.hpp; sourceTree = "<group>"; };
 		D6E7B8231FAB9ADF00D1C100 /* libglfw.3.2.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libglfw.3.2.dylib; path = ../../../../usr/local/Cellar/glfw/3.2.1/lib/libglfw.3.2.dylib; sourceTree = "<group>"; };
+		D6F1356722ADE0F100D0F35C /* CETerrainSegment.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CETerrainSegment.cpp; sourceTree = "<group>"; };
+		D6F1356822ADE0F100D0F35C /* CETerrainSegment.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CETerrainSegment.hpp; sourceTree = "<group>"; };
 		D6F2F8681B836F3A0018DBF0 /* C2Sky.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = C2Sky.cpp; sourceTree = "<group>"; };
 		D6F2F8691B836F3A0018DBF0 /* C2Sky.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = C2Sky.h; sourceTree = "<group>"; };
 		D6F2F8741B83855A0018DBF0 /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
@@ -296,6 +299,8 @@
 				D6CD13D92271531600A7D7FE /* CETerrainVertex.hpp */,
 				D6AEAC2522A35D5E0083B5A3 /* CETextureArray.cpp */,
 				D6AEAC2622A35D5E0083B5A3 /* CETextureArray.hpp */,
+				D6F1356722ADE0F100D0F35C /* CETerrainSegment.cpp */,
+				D6F1356822ADE0F100D0F35C /* CETerrainSegment.hpp */,
 			);
 			name = Engine;
 			sourceTree = "<group>";
@@ -481,6 +486,7 @@
 				D6B3EDC8224BEFE400DD8E9F /* sound.cpp in Sources */,
 				D6AEAC2722A35D5E0083B5A3 /* CETextureArray.cpp in Sources */,
 				D6C77DA2224905BC00105733 /* CEScene.cpp in Sources */,
+				D6F1356922ADE0F100D0F35C /* CETerrainSegment.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -35,6 +35,10 @@ TerrainRenderer::~TerrainRenderer()
     glDeleteBuffers(1, &this->m_waters[w].m_iab);
     glDeleteVertexArrays(1, &this->m_waters[w].m_vao);
   }
+
+  glDeleteBuffers(1, &this->m_underwater_vab);
+  glDeleteBuffers(1, &this->m_underwater_iab);
+  glDeleteVertexArrays(1, &this->m_underwater_vao);
 }
 
 /*
@@ -102,6 +106,7 @@ void TerrainRenderer::loadShader()
 {
   this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram("resources/shaders/terrain.vs", "resources/shaders/terrain.fs"));
   this->m_water_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram("resources/shaders/water_surface.vs", "resources/shaders/water_surface.fs"));
+  this->m_underwater_terrain_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram("resources/shaders/sh_world_terrain_underwater.vs", "resources/shaders/sh_world_terrain_underwater.fs"));
 
   this->m_shader->use();
   this->m_shader->setFloat("view_distance", (128.f*1024.f));
@@ -124,6 +129,9 @@ void TerrainRenderer::Update(Transform& transform, Camera& camera)
 
   this->m_shader->use();
   this->m_shader->setMat4("MVP", MVP);
+  this->m_underwater_terrain_shader->use();
+  this->m_underwater_terrain_shader->setMat4("MVP", MVP);
+  this->m_underwater_terrain_shader->setVec3("input_cam_pos", camera.GetPosition());
   this->m_water_shader->use();
   this->m_water_shader->setMat4("MVP", MVP);
   this->m_water_shader->setFloat("RealTime", (float)t);
@@ -455,8 +463,19 @@ void TerrainRenderer::loadIntoHardwareMemory()
       int texID = this->m_cmap_data_weak->getTextureIDAt(base_index);
       int texID2 = this->m_cmap_data_weak->getSecondaryTextureIDAt(base_index);
       uint16_t flags = this->m_cmap_data_weak->getFlagsAt(x, y);
+      bool underwater = this->m_cmap_data_weak->hasWaterAt(base_index);
 
-      if (this->m_cmap_data_weak->hasWaterAt(base_index)) loadWaterAt(x, y);
+      std::vector<CETerrainVertex>* p_vertices_vector;
+      std::vector<unsigned int>* p_indices_vector;
+
+      if (underwater) {
+        loadWaterAt(x, y);
+        p_vertices_vector = &m_underwater_vertices;
+        p_indices_vector = &m_underwater_indices;
+      } else {
+        p_vertices_vector = &m_vertices;
+        p_indices_vector = &m_indices;
+      }
 
       glm::vec3 vpositionLL = this->calcWorldVertex(x, y, false, 0.f);
       glm::vec3 vpositionLR = this->calcWorldVertex(fmin(x + 1, height - 1), y, false, 0.f);
@@ -473,33 +492,33 @@ void TerrainRenderer::loadIntoHardwareMemory()
       CETerrainVertex v3(vpositionUL, this->getScaledAtlasUVQuad(vertex_uv_mapping[2], texID, texID2), glm::vec3(0), this->m_cmap_data_weak->getBrightnessAt(x, fmin(y + 1, width - 1)));
       CETerrainVertex v4(vpositionUR, this->getScaledAtlasUVQuad(vertex_uv_mapping[3], texID, texID2), glm::vec3(0), this->m_cmap_data_weak->getBrightnessAt(fmin(x + 1, height - 1), fmin(y + 1, width - 1)));
       
-      m_vertices.push_back(v1);
-      m_vertices.push_back(v2);
-      m_vertices.push_back(v3);
-      m_vertices.push_back(v4);
+      p_vertices_vector->push_back(v1);
+      p_vertices_vector->push_back(v2);
+      p_vertices_vector->push_back(v3);
+      p_vertices_vector->push_back(v4);
 
-      unsigned int lower_left = (y * width * 4) + (x*4);
+      unsigned int lower_left = p_vertices_vector->size() - 4;
       unsigned int lower_right = lower_left + 1;
       unsigned int upper_left = lower_right + 1;
       unsigned int upper_right = upper_left + 1;
 
       // If quad reverse, anchor upper right (bottom left, upper right, lower right). Otherwise, anchor upper left (bottom left, upper left, lower right)
       if (quad_reverse) {
-        m_indices.push_back(lower_left);
-        m_indices.push_back(upper_left);
-        m_indices.push_back(lower_right);
+        p_indices_vector->push_back(lower_left);
+        p_indices_vector->push_back(upper_left);
+        p_indices_vector->push_back(lower_right);
 
-        m_indices.push_back(lower_right);
-        m_indices.push_back(upper_left);
-        m_indices.push_back(upper_right);
+        p_indices_vector->push_back(lower_right);
+        p_indices_vector->push_back(upper_left);
+        p_indices_vector->push_back(upper_right);
       } else {
-        m_indices.push_back(lower_left);
-        m_indices.push_back(upper_right);
-        m_indices.push_back(lower_right);
+        p_indices_vector->push_back(lower_left);
+        p_indices_vector->push_back(upper_right);
+        p_indices_vector->push_back(lower_right);
 
-        m_indices.push_back(lower_left);
-        m_indices.push_back(upper_left);
-        m_indices.push_back(upper_right);
+        p_indices_vector->push_back(lower_left);
+        p_indices_vector->push_back(upper_left);
+        p_indices_vector->push_back(upper_right);
       }
     }
   }
@@ -535,6 +554,38 @@ void TerrainRenderer::loadIntoHardwareMemory()
   glBindVertexArray(0);
 
   this->loadWaterIntoMemory();
+  this->uploadUnderwaterObject();
+}
+
+void TerrainRenderer::uploadUnderwaterObject()
+{
+    // generate buffers and upload
+  glGenVertexArrays(1, &this->m_underwater_vao);
+  glBindVertexArray(this->m_underwater_vao);
+
+  glGenBuffers(1, &this->m_underwater_vab);
+  glBindBuffer(GL_ARRAY_BUFFER, this->m_underwater_vab);
+  glBufferData(GL_ARRAY_BUFFER, (int)m_underwater_vertices.size()*sizeof(CETerrainVertex), m_underwater_vertices.data(), GL_STATIC_DRAW);
+
+    // describe vertex details
+  glEnableVertexAttribArray(0); // position
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(CETerrainVertex), 0);
+
+  glEnableVertexAttribArray(1); // normal
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(CETerrainVertex), (void*)sizeof(glm::vec3));
+
+  glEnableVertexAttribArray(2); // txture coords
+  glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(CETerrainVertex), (void*)(sizeof(glm::vec3)+sizeof(glm::vec3)));
+
+  glEnableVertexAttribArray(3); // brightness
+  glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(CETerrainVertex), (void*)(sizeof(glm::vec3)+sizeof(glm::vec3)+(sizeof(glm::vec4))));
+
+    // indices
+  glGenBuffers(1, &this->m_underwater_iab);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_underwater_iab);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, (int)m_underwater_indices.size()*sizeof(unsigned int), m_underwater_indices.data(), GL_STATIC_DRAW);
+
+  glBindVertexArray(0);
 }
 
 // Calculate the real UV coords using the atlas
@@ -557,6 +608,10 @@ void TerrainRenderer::Render()
   glBindVertexArray(this->m_vertex_array_object);
   
   glDrawElementsBaseVertex(GL_TRIANGLES, m_num_indices, GL_UNSIGNED_INT, 0, 0);
+
+  this->m_underwater_terrain_shader->use();
+  glBindVertexArray(m_underwater_vao);
+  glDrawElementsBaseVertex(GL_TRIANGLES, m_underwater_indices.size(), GL_UNSIGNED_INT, 0, 0);
   
   glBindVertexArray(0);
 }

@@ -37,7 +37,7 @@ find_package(GLFW3 REQUIRED)
 message(STATUS "Found GLFW3 in ${GLFW3_INCLUDE_DIR}")
 
 # Put all libraries into a variable
-set(LIBS glfw3 OpenAL32.lib)
+set(LIBS glfw3 OpenAL32.lib EFX-Util.lib)
 
 # Define the include DIRs
 include_directories(

@@ -341,17 +341,16 @@ void C2MapRscFile::load(const std::string &file_name)
     for (int i = 0; i < this->m_random_sounds_count; i++)
     {
       std::shared_ptr<Sound> snd(new Sound());
+      std::vector<int16_t> snd_data;
       uint32_t length = 0;
-      int8_t* snd_data = nullptr;
 
       infile.read((char*)&length, sizeof(uint32_t));
-      snd_data = new int8_t [ length ];
-      infile.read((char*)snd_data, length);
+
+      snd_data.resize(length / sizeof(uint16_t));
+      infile.read(reinterpret_cast<char*>(snd_data.data()), length);
 
       snd->setName("RndAudio");
       snd->setWaveData(16, 1, length, 22050, snd_data);
-
-      delete [] snd_data;
 
       this->m_random_sounds.push_back(snd);
 
@@ -371,16 +370,15 @@ void C2MapRscFile::load(const std::string &file_name)
     {
       std::shared_ptr<Sound> snd(new Sound());
 
-      int8_t* snd_data = nullptr;
+      std::vector<int16_t> snd_data;
       uint32_t length = 0;
       infile.read((char*)&length, sizeof(uint32_t));
-      snd_data = new int8_t [ length ];
-      infile.read((char*)snd_data, length);
+      
+      snd_data.resize(length / sizeof(uint16_t));
+      infile.read(reinterpret_cast<char*>(snd_data.data()), length);
 
       snd->setName("AmbientAudio");
       snd->setWaveData(16, 1, length, 22050, snd_data);
-
-      delete [] snd_data;
 
       this->m_ambient_sounds.push_back(snd);
       std::unique_ptr<CEAudioSource> src(new CEAudioSource(snd));

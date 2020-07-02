@@ -1,4 +1,5 @@
 #include "CEAudioSource.hpp"
+#include <stdexcept>
 
 CEAudioSource::CEAudioSource(std::shared_ptr<Sound> sfx) : m_original_audio(sfx)
 {
@@ -30,17 +31,33 @@ void CEAudioSource::upload()
 {
     alGenSources((ALuint)1, &m_audio_source);
 
+    if (alGetError() != AL_NO_ERROR) {
+        throw std::runtime_error("Failed to generate OpenAL audio source. FATAL.");
+    }
+    else {
+        printf("\t[AudioSource] Generated audio source `%d`. OK.\n", m_audio_source);
+    }
+
     alSourcef(m_audio_source, AL_PITCH, 1);
     alSourcef(m_audio_source, AL_GAIN, 1);
     alSource3f(m_audio_source, AL_POSITION, 0, 0, 0);
     alSource3f(m_audio_source, AL_VELOCITY, 0, 0, 0);
 
     alSourcei(m_audio_source, AL_ROLLOFF_FACTOR, 1); // decline in gain starting at ref distance, through max distance
-    alSourcei(m_audio_source, AL_MAX_DISTANCE, (256*100)); // distance until gain is 0
-    alSourcei(m_audio_source, AL_REFERENCE_DISTANCE, (256*1)); // clamped distance; up to distance where gain is always 1
+    alSourcei(m_audio_source, AL_MAX_DISTANCE, (128*100*2)); // distance until gain is 0
+    alSourcei(m_audio_source, AL_REFERENCE_DISTANCE, (128*1*2)); // clamped distance; up to distance where gain is always 1
 
     alGenBuffers(1, &m_audio_buffer);
-    alBufferData(m_audio_buffer, AL_FORMAT_MONO16, (ALvoid*)this->m_original_audio->getWaveData(), (ALsizei)this->m_original_audio->getLength(), (ALsizei)this->m_original_audio->getFrequency());
+
+    // Use MONO since channels is always 1 and bits is always 16. TODO: change this when this is no longer the case.
+    alBufferData(m_audio_buffer, AL_FORMAT_MONO16, (ALvoid*)this->m_original_audio->getWaveData().data(), (ALsizei)this->m_original_audio->getLength(), (ALsizei)this->m_original_audio->getFrequency());
+
+    if (alGetError() != AL_NO_ERROR) {
+        throw std::runtime_error("Failed to buffer audio source from wav data. FATAL.");
+    }
+    else {
+        printf("\t[AudioSource] Buffered audio source `%d`. OK.\n", m_audio_source);
+    }
 
     alSourcei(m_audio_source, AL_BUFFER, m_audio_buffer);
 }
@@ -86,6 +103,10 @@ void CEAudioSource::setClampDistance(int distance)
 void CEAudioSource::play()
 {
     alSourcePlay(m_audio_source);
+
+    if (alGetError() != AL_NO_ERROR) {
+        printf("Failed to play audio source!\n");
+    }
 }
 
 void CEAudioSource::setPosition(glm::vec3 position)

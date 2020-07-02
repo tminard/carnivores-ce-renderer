@@ -75,14 +75,6 @@ void CalcMidColor(WORD* tptr, int l, int &mr, int &mg, int &mb)
   mr/=l; mg/=l; mb/=l;
 }
 
-unsigned int timeGetTime()
-{
-    return 0;
- // struct timeval now;
-  //gettimeofday(&now, NULL);
-  //return now.tv_usec/1000;
-}
-
 int CheckPlaceCollision2(Vector3d &v, int wc)
 {
   return 0;

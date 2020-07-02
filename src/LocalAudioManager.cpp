@@ -72,22 +72,32 @@ void LocalAudioManager::setupDevice()
 
   this->m_ready = false;
   this->m_alc_device = alcOpenDevice(NULL);
+  checkError();
 
   if (!m_alc_device) {
     printf("Failed to create audio device. FATAL.\n");
     throw std::runtime_error("Could not create main audio device. FATAL.");
   }
 
-  ALboolean enumeration;
-  enumeration = alcIsExtensionPresent(NULL, "ALC_ENUMERATION_EXT");
+  ALboolean enumeration, eax;
+  enumeration = alcIsExtensionPresent(m_alc_device, "ALC_ENUMERATION_EXT");
+  checkError();
   if (enumeration == AL_FALSE) {
-    printf("Audio: enumeration not supported. FATAL.\n");
+    printf("\tAudio: enumeration not supported. FATAL.\n");
     throw std::runtime_error("Could not query audio parameters. FATAL.");
   }
+  eax = alIsExtensionPresent("EAX2.0");
+  checkError();
+  if (eax == AL_TRUE) {
+      printf("\tAudio: EAX 2.0 supported. OK.\n");
+  }
+  else {
+      printf("\tAudio: EAX 2.0 NOT supported. OK.\n");
+  }
 
-
-  printf("Audio: enumeration supported. OK.\n");
-  const ALCchar* devices = alcGetString(NULL, ALC_DEVICE_SPECIFIER);
+  printf("\tAudio: enumeration supported. OK.\n");
+  const ALCchar* devices = alcGetString(0, ALC_DEVICE_SPECIFIER);
+  checkError();
 
   if (!devices) {
       throw std::runtime_error("Tried to get device list. Found nothing. FATAL.");
@@ -95,19 +105,19 @@ void LocalAudioManager::setupDevice()
 
   listDevices(devices);
 
-  alGetError(); // Prime
-
-  ALint attribs[6] = {
-    0, 0
-  };
+  alGetError(); // Clear
+  ALint attribs[] = { ALC_FREQUENCY, 22050,
+               ALC_INVALID };
   this->m_alc_context = alcCreateContext(m_alc_device, attribs);
+  checkError();
 
   if (!this->m_alc_context) {
       throw std::runtime_error("Could not create audio context. FATAL.");
   }
 
   if (!alcMakeContextCurrent(m_alc_context)) {
-    throw std::runtime_error("Could not make default audio context. FATAL.");
+      checkError();
+      throw std::runtime_error("Could not make default audio context. FATAL.");
   }
   TEST_OPENAL_ERROR("make default context");
 }
@@ -139,6 +149,12 @@ void LocalAudioManager::shutdown()
   if (m_update_thread.joinable()) m_update_thread.join(); // wait for the tread to terminate
 }
 
+void LocalAudioManager::checkError() {
+    if (alGetError() != AL_NO_ERROR) {
+        printf("Failed to set audio property!\n");
+    }
+}
+
 void LocalAudioManager::update()
 {
   const Camera* camera = m_player_controller->getCamera();
@@ -150,8 +166,11 @@ void LocalAudioManager::update()
   ALfloat listenerOri[] = { forward.x, forward.y, forward.z, up.x, up.y, up.z }; // forward and up
 
   alListener3f(AL_POSITION, pos.x, pos.y, pos.z);
+  checkError();
   alListener3f(AL_VELOCITY, 0, 0, 0);
+  checkError();
   alListenerfv(AL_ORIENTATION, listenerOri);
+  checkError();
 
   // Loop through currently playing sources and check status
   {

@@ -60,6 +60,7 @@ private:
   void startUpdateLoop();
   void update();
   void ingestNextAmbient();
+  void checkError();
 
 public:
   LocalAudioManager();

@@ -313,7 +313,7 @@ void C2MapFile::setWaterAt(int x, int y, int water_height)
     this->m_flags_data.at(xy) |= 0x8000;
   } else {
     // meh?
-    this->m_c1_flags_data[xy] |= 0x8000;
+    this->m_c1_flags_data[xy] |= 0x80;
     this->m_watermap_data[xy] = this->m_heightmap_data.at(xy) + 48;
   }
 }

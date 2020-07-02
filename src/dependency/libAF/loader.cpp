@@ -176,19 +176,17 @@ bool FileLoader::loadCharacterFile( const std::string& file_name, Character& cha
 		Sound	snd;
 		char		name[32];
 		uint32_t	length = 0;
-		int8_t*	snd_data = nullptr;
+		std::vector<int16_t>	snd_data;
 
 		file.read( name, 32 );
 		file.read( (char*)&length, sizeof(uint32_t) );
 
-		snd_data = new int8_t [ length ];
+		snd_data.reserve(length / sizeof(int16_t));
 
-		file.read( (char*)snd_data, length );
+		file.read((char*)snd_data.data(), length );
 
 		snd.setName(name);
-		snd.setWaveData( 16, 1, length, 22050, snd_data );
-
-		delete [] snd_data;
+		snd.setWaveData( 16, 1, length, 22050, snd_data);
 
 		character.sounds.push_back(snd);
 	}

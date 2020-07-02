@@ -1,0 +1,65 @@
+carnivores_character
+
+[general]
+title = "Oviraptor"
+model = "oviraptor.3dn"
+
+[animations]
+count = 11
+
+animation_id 0
+	file = "oviraptor_walk"
+	sound_index = 0
+animation_id 1
+	file = "oviraptor_run"
+	sound_index = 1
+animation_id 2
+	file = "oviraptor_idle_active"
+	sound_index = 2
+animation_id 3
+	file = "oviraptor_idle_passive"
+	sound_index = 3
+animation_id 4
+	file = "oviraptor_growl"
+	sound_index = 4
+animation_id 5
+	file = "oviraptor_die"
+	sound_index = 5
+animation_id 6
+	file = "oviraptor_sleep"
+	sound_index = 6
+animation_id 7
+	file = "oviraptor_eat"
+	sound_index = 7
+animation_id 8
+	file = "oviraptor_swim"
+animation_id 9
+	file = "oviraptor_attack"
+	sound_index = 8
+animation_id 10
+	file = "oviraptor_call"
+	sound_index = 9
+
+[sounds]
+count = 10
+
+sound_id 0
+	file = "oviraptor_walk"
+sound_id 1
+	file = "oviraptor_run"
+sound_id 2
+	file = "oviraptor_idle_active"
+sound_id 3
+	file = "oviraptor_idle_passive"
+sound_id 4
+	file = "oviraptor_growl"
+sound_id 5
+	file = "oviraptor_die"
+sound_id 6
+	file = "oviraptor_sleep"
+sound_id 7
+	file = "oviraptor_eat"
+sound_id 8
+	file = "oviraptor_attack"
+sound_id 9
+	file = "oviraptor_call"

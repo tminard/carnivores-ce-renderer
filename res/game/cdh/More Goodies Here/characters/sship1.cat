@@ -1,0 +1,17 @@
+carnivores_character
+
+[general]
+title = "Sship1"
+model = "sship1.3dn"
+
+[animations]
+count = 0
+
+
+[sounds]
+count = 2
+
+sound_id 0
+	file = "sship1_sound_0"
+sound_id 1
+	file = "sship1_sound_1"

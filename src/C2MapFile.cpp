@@ -21,10 +21,10 @@ void Console_PrintLogString(std::string log_msg);
 C2MapFile::C2MapFile(const CEMapType type, const std::string& map_file_name, C2MapRscFile* crsc_weak) : m_type(type)
 {
   switch (m_type) {
-    case C2:
+  case CEMapType::C2:
       this->load(map_file_name, crsc_weak);
       break;
-    case C1:
+  case CEMapType::C1:
       this->load_c1(map_file_name, crsc_weak);
   }
 
@@ -46,7 +46,7 @@ int C2MapFile::getAmbientAudioIDAt(int x, int y)
   return this->m_soundfx_data.at(xy);
 }
 
-float C2MapFile::getWidth()
+int C2MapFile::getWidth()
 {
   if (m_type == CEMapType::C2) {
     return SIZE;
@@ -55,7 +55,7 @@ float C2MapFile::getWidth()
   }
 }
 
-float C2MapFile::getHeight()
+int C2MapFile::getHeight()
 {
   if (m_type == CEMapType::C2) {
     return SIZE;
@@ -71,7 +71,7 @@ float C2MapFile::getTileLength()
 
 int C2MapFile::getWaterTextureIDAt(int xy, int water_texture_id)
 {
-  if (m_type == C2) {
+  if (m_type == CEMapType::C2) {
     return water_texture_id;
   } else {
     int water_texture;
@@ -137,7 +137,7 @@ float C2MapFile::getBrightnessAt(int xy)
 {
   int brightness = this->m_day_brightness_data.at(xy); // uint8 (max 255)
 
-  if (m_type == C1) {
+  if (m_type == CEMapType::C1) {
     float p = float(55.f - brightness) / 55.f;
     brightness = 255.f * p;
   }
@@ -169,7 +169,7 @@ uint16_t C2MapFile::getFlagsAt(int xy)
 
 bool C2MapFile::isQuadRotatedAt(int xy)
 {
-  if (m_type == C2) {
+  if (m_type == CEMapType::C2) {
     return (getFlagsAt(xy) & 0x0010);
   } else {
     return (getFlagsAt(xy) & 0x40);
@@ -183,7 +183,7 @@ bool C2MapFile::isQuadRotatedAt(int xy)
 float C2MapFile::getWaterHeightAt(int x, int y)
 {
   int xy = (y * this->getWidth()) + x;
-  if (xy < 0 || xy >= this->m_heightmap_data.size() || m_type == C2) {
+  if (xy < 0 || xy >= this->m_heightmap_data.size() || m_type == CEMapType::C2) {
     return 0;
   }
 
@@ -199,7 +199,7 @@ float C2MapFile::getHeightAt(int xy)
 {
   float scaled_height;
 
-  if (m_type == C2) {
+  if (m_type == CEMapType::C2) {
     scaled_height = this->m_heightmap_data.at(xy) * this->getHeightmapScale();
   } else {
     scaled_height = this->m_watermap_data.at(xy) * this->getHeightmapScale();
@@ -298,7 +298,7 @@ bool C2MapFile::hasDynamicWaterAt(int x, int y)
 
 void C2MapFile::setWaterAt(int x, int y)
 {
-  if (m_type == C2) {
+  if (m_type == CEMapType::C2) {
     this->setWaterAt(x, y, -1);
   } else {
     throw 1; // Only C2 uses flags for water data
@@ -309,7 +309,7 @@ void C2MapFile::setWaterAt(int x, int y, int water_height)
 {
   int xy = (y * this->getWidth()) + x;
 
-  if (m_type == C2) {
+  if (m_type == CEMapType::C2) {
     this->m_flags_data.at(xy) |= 0x8000;
   } else {
     // meh?
@@ -320,7 +320,7 @@ void C2MapFile::setWaterAt(int x, int y, int water_height)
 
 int C2MapFile::getWaterAt(int xy)
 {
-  if (m_type == C2) {
+  if (m_type == CEMapType::C2) {
     return this->m_watermap_data.at(xy);
   } else {
     return 0; // Only 1 core water type in C1 (but also need to handle lava and ponds)
@@ -378,7 +378,7 @@ int C2MapFile::getObjectHeightForRadius(int x, int y, int R)
 
 void C2MapFile::fillWater(int x, int y, int source_x, int source_y)
 {
-  if (m_type == C1) {
+  if (m_type == CEMapType::C1) {
     int srcxy = (source_y * this->getWidth()) + source_x;
     int h = this->m_heightmap_data.at(srcxy);
     this->setWaterAt(x, y, h);
@@ -393,7 +393,7 @@ void C2MapFile::copyWaterMap(int x, int y, int src_x, int src_y)
   int xy = (y * this->getWidth()) + x;
   int srcxy = (src_y * this->getWidth()) + src_x;
 
-  if (m_type == C2) {
+  if (m_type == CEMapType::C2) {
     this->m_watermap_data.at(xy) = this->m_watermap_data.at(srcxy);
   }
 }
@@ -448,7 +448,7 @@ void C2MapFile::postProcess(C2MapRscFile* crsc_weak)
         m_landings.push_back(glm::vec2(x, y));
       }
 
-      if (m_type == C1) continue;
+      if (m_type == CEMapType::C1) continue;
 
       if (!this->hasOriginalWaterAt(xy)) {
         if (this->hasOriginalWaterAt(x+1, y)) this->fillWater(x, y, x+1, y);

@@ -34,8 +34,8 @@ class CEGeometry;
 class CESimpleGeometry;
 class Vertex;
 
-class Transform;
-class Camera;
+struct Transform;
+struct Camera;
 
 #define objectPLACEWATER       1
 #define objectPLACEGROUND      2

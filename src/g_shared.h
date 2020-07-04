@@ -6,13 +6,12 @@
 //  Copyright (c) 2015 Tyler Minard. All rights reserved.
 //
 
-#ifndef CE_Character_Lab_g_shared_h
-#define CE_Character_Lab_g_shared_h
+#pragma once
 
 #define csONWATER          0x00010000
 #define HiColor(R,G,B) ( ((R)<<10) + ((G)<<5) + (B) )
 
-enum CEMapType { C2, C1 };
+enum class CEMapType { C2, C1 };
 
 typedef unsigned short WORD;
 
@@ -132,5 +131,3 @@ typedef struct TagObject {
   TModel  *model;
   TVTL    vtl;
 } TObject;
-
-#endif

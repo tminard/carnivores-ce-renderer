@@ -26,10 +26,10 @@ private:
   std::shared_ptr<C2CarFile> m_car_file;
 
   Vector3d m_position;
-  float m_scale;
-  float m_alpha; // "direction I am currently pointed": TODO: which axis??! Come on
-  float m_beta;
-  float m_gamma;
+  double m_scale;
+  double m_alpha; // "direction I am currently pointed": TODO: which axis??! Come on
+  double m_beta;
+  double m_gamma;
   
   // Animatable
   std::string m_current_animation_name;
@@ -52,17 +52,17 @@ public:
   
 //  #warning Should not set alpha, beta, gamma. Instead, use rotation functions.
   float getCurrentAlpha();
-  void setAlpha(float alpha);
+  void setAlpha(double alpha);
   
   float getBeta();
-  void setBeta(float beta);
+  void setBeta(double beta);
   
   float getGamma();
-  void setGamma(float gamma);
+  void setGamma(double gamma);
   
   /* sizing */
   float getScale();
-  void setScale(float scale);
+  void setScale(double scale);
   
   /* Animating */
   bool didAnimationFinish();

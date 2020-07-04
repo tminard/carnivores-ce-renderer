@@ -61,7 +61,7 @@ void CEAnimatableModel::moveTo(float x, float z, bool blocked_by_water, bool blo
   this->m_position = p;
 }
 
-void CEAnimatableModel::setScale(float scale)
+void CEAnimatableModel::setScale(double scale)
 {
   this->m_scale = scale;
 }
@@ -83,7 +83,7 @@ Vector3d CEAnimatableModel::getCurrentPosition()
   return this->m_position;
 }
 
-void CEAnimatableModel::setAlpha(float alpha)
+void CEAnimatableModel::setAlpha(double alpha)
 {
   this->m_alpha = alpha;
 }
@@ -93,7 +93,7 @@ float CEAnimatableModel::getCurrentAlpha()
   return this->m_alpha;
 }
 
-void CEAnimatableModel::setBeta(float beta)
+void CEAnimatableModel::setBeta(double beta)
 {
   this->m_beta = beta;
 }
@@ -103,7 +103,7 @@ float CEAnimatableModel::getBeta()
   return this->m_beta;
 }
 
-void CEAnimatableModel::setGamma(float gamma)
+void CEAnimatableModel::setGamma(double gamma)
 {
   this->m_gamma = gamma;
 }

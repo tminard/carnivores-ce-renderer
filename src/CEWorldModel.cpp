@@ -44,18 +44,18 @@ CEWorldModel::CEWorldModel(const CEMapType type, std::ifstream& instream)
   texture_data.resize(_tsize);
   face_data.resize(_fcount);
   file_vertex_data.resize(_vcount);
-  _obj_buffer.resize(_object_count*48); // just throw these details away for now (see above note)
+  _obj_buffer.resize((size_t)_object_count*48); // just throw these details away for now (see above note)
   
-  instream.read(reinterpret_cast<char *>(face_data.data()), _fcount<<6);
-  instream.read(reinterpret_cast<char *>(file_vertex_data.data()), _vcount<<4);
-  instream.read(reinterpret_cast<char *>(_obj_buffer.data()), _object_count*48);
+  instream.read(reinterpret_cast<char *>(face_data.data()), (long long)_fcount<<6);
+  instream.read(reinterpret_cast<char *>(file_vertex_data.data()), (long long)_vcount<<4);
+  instream.read(reinterpret_cast<char *>(_obj_buffer.data()), (long long)_object_count*48);
   instream.read(reinterpret_cast<char *>(texture_data.data()), _tsize);
   
   for (int v=0; v < _vcount; v++) {
     file_vertex_data[v].z *= -1.0f; // Original models need to be inverted across z axis
   }
 
-  if (type == C2) instream.read(reinterpret_cast<char *>(spirit_texture_data.data()), 128*128*2);
+  if (type == CEMapType::C2) instream.read(reinterpret_cast<char *>(spirit_texture_data.data()), 128*128*2);
   
   // load bmp model
   float mxx = file_vertex_data.at(0).x+0.5f;
@@ -102,7 +102,7 @@ CEWorldModel::CEWorldModel(const CEMapType type, std::ifstream& instream)
   
   // load the geo
   std::unique_ptr<CETexture> cTexture;
-  if (type == C2) cTexture = std::unique_ptr<CETexture>(new CETexture(spirit_texture_data, 128*128*2, 128, 128));
+  if (type == CEMapType::C2) cTexture = std::unique_ptr<CETexture>(new CETexture(spirit_texture_data, 128*128*2, 128, 128));
 
   std::unique_ptr<CETexture> mTexture = std::unique_ptr<CETexture>(new CETexture(texture_data, 256*256*2, 256, 256));
   
@@ -140,12 +140,12 @@ CEWorldModel::CEWorldModel(const CEMapType type, std::ifstream& instream)
   
   this->m_geometry = std::move(mGeo);
 
-  if (type == C2) {
+  if (type == CEMapType::C2) {
     std::unique_ptr<CESimpleGeometry> cGeo = std::unique_ptr<CESimpleGeometry>(new CESimpleGeometry(cVertices, std::move(cTexture)));
     this->m_far_geometry = std::move(cGeo);
   }
   
-  if (m_old_object_info->flags & objectANIMATED && type == C2) {
+  if (m_old_object_info->flags & objectANIMATED && type == CEMapType::C2) {
     std::vector<short int> raw_animation_data;
     int ani_vcount;
     int kps, total_frames, total_ani_ms;
@@ -156,9 +156,9 @@ CEWorldModel::CEWorldModel(const CEMapType type, std::ifstream& instream)
     instream.read(reinterpret_cast<char *>(&total_ani_ms), 4);
     total_frames++; // fix the bug in the file manually
     
-    raw_animation_data.resize(ani_vcount*total_frames*6);
+    raw_animation_data.resize((size_t)ani_vcount*total_frames*6);
     total_ani_ms = (total_frames * 1000) / kps;
-    instream.read(reinterpret_cast<char *>(raw_animation_data.data()), ani_vcount*total_frames*6);
+    instream.read(reinterpret_cast<char *>(raw_animation_data.data()), (long long)ani_vcount*total_frames*6);
     std::unique_ptr<CEAnimation> mAni = std::unique_ptr<CEAnimation>( new CEAnimation("OBJECT_ANIMATION", kps, total_frames, total_ani_ms));
     mAni->setAnimationData(raw_animation_data);
     this->m_animation = std::move(mAni);

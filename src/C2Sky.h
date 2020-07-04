@@ -24,9 +24,10 @@
 
 class CETexture;
 class ShaderProgram;
-class Camera;
-class Transform;
 class Tga;
+
+struct Camera;
+struct Transform;
 
 class C2Sky
 {

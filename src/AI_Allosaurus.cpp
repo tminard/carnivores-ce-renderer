@@ -25,7 +25,7 @@ double CorrectedAlpha(double a, double b);
 double FindVectorAlpha(double, double);
 int rRand(int r);
 void DeltaFunc(double &a, double b, double d);
-float SGN(float);
+double SGN(double);
 float AngleDifference(float a, float b);
 
 /*

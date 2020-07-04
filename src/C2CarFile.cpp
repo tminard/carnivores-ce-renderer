@@ -68,8 +68,8 @@ void C2CarFile::load_file(std::string file_name)
 
     _faces.resize(_fcount);
     _vertices.resize(_vcount);
-    infile.read(reinterpret_cast<char *>(_faces.data()), _fcount<<6);
-    infile.read(reinterpret_cast<char *>(_vertices.data()), _vcount<<4);
+    infile.read(reinterpret_cast<char *>(_faces.data()), ((long long)_fcount) << 6);
+    infile.read(reinterpret_cast<char *>(_vertices.data()), ((long long)_vcount) << 4);
 
     int tsize = _texture_size;
     _texture_height = tsize>>9;
@@ -91,8 +91,8 @@ void C2CarFile::load_file(std::string file_name)
       infile.read(reinterpret_cast<char *>(&_frames_count), 4);
 
       animation_length = (float)(_frames_count * 1000) / (float)_ani_kps;
-      _aniData.resize(_frames_count*_vcount*6);
-      infile.read(reinterpret_cast<char *>(_aniData.data()), _vcount*_frames_count*6);
+      _aniData.resize((size_t)_frames_count*_vcount*6);
+      infile.read(reinterpret_cast<char *>(_aniData.data()), (size_t)_vcount*_frames_count*6);
 
       std::string animation_name(_aniName);
       std::shared_ptr<CEAnimation> chAni( new CEAnimation(animation_name, _ani_kps, _frames_count, (int)animation_length));

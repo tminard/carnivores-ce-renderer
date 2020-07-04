@@ -29,31 +29,32 @@
 
 #include "transform.h"
 
-class CETerrainVertex;
 class Vertex;
 class C2MapFile;
 class C2MapRscFile;
 class CEWorldModel;
 class ShaderProgram;
-class Transform;
-class Camera;
+
+struct CETerrainVertex;
+struct Transform;
+struct Camera;
 
 class TerrainRenderer
 {
 private:
   struct _Water {
-    GLuint m_vao;
-    GLuint m_vab;
-    GLuint m_iab;
-    int m_water_id;
-    int m_texture_id;
-    float m_height;
-    float m_transparency; // 1.f = fully transparent on RGB color. 0.f = not transparent. 0.5 = half transparency
-    int m_height_unscaled;
+    GLuint m_vao = 0;
+    GLuint m_vab = 0;
+    GLuint m_iab = 0;
+    int m_water_id = 0;
+    int m_texture_id = 0;
+    float m_height = 0.f;
+    float m_transparency = 0.f; // 1.f = fully transparent on RGB color. 0.f = not transparent. 0.5 = half transparency
+    int m_height_unscaled = 0;
     std::vector < Vertex > m_vertices;
     std::vector < unsigned int > m_indices;
-    int m_vertex_count;
-    int m_num_indices;
+    int m_vertex_count = 0;
+    int m_num_indices = 0;
   };
 
   std::vector <_Water> m_waters;

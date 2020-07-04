@@ -27,26 +27,26 @@ struct _Water;
 class C2MapFile
 {
 private:
-  std::array<uint8_t, 1024*1024> m_heightmap_data;
-  std::array<uint8_t, 512*512> m_texturec1_A_index_data;
-  std::array<uint8_t, 512*512> m_texturec1_B_index_data;
-  std::array<uint16_t, 1024*1024> m_texture_A_index_data;
-  std::array<uint16_t, 1024*1024> m_texture_B_index_data;
-  std::array<uint8_t, 1024*1024> m_object_index_data;
-  std::array<uint16_t, 1024*1024> m_flags_data;
-  std::array<uint8_t, 512*512> m_c1_flags_data;
-  std::array<uint8_t, 1024*1024> m_dawn_brightness_data;
-  std::array<uint8_t, 1024*1024> m_day_brightness_data;
-  std::array<uint8_t, 1024*1024> m_night_brightness_data;
-  std::array<uint8_t, 1024*1024> m_watermap_data;
-  std::array<uint8_t, 1024*1024> m_object_heightmap_data;
-  std::array<uint8_t, 512*512> m_fog_data;
-  std::array<uint8_t, 512*512> m_soundfx_data;
+  std::array<uint8_t, 1024 * 1024> m_heightmap_data = {};
+  std::array<uint8_t, 512 * 512> m_texturec1_A_index_data = {};
+  std::array<uint8_t, 512*512> m_texturec1_B_index_data = {};
+  std::array<uint16_t, 1024*1024> m_texture_A_index_data = {};
+  std::array<uint16_t, 1024*1024> m_texture_B_index_data = {};
+  std::array<uint8_t, 1024*1024> m_object_index_data = {};
+  std::array<uint16_t, 1024*1024> m_flags_data = {};
+  std::array<uint8_t, 512*512> m_c1_flags_data = {};
+  std::array<uint8_t, 1024*1024> m_dawn_brightness_data = {};
+  std::array<uint8_t, 1024*1024> m_day_brightness_data = {};
+  std::array<uint8_t, 1024*1024> m_night_brightness_data = {};
+  std::array<uint8_t, 1024*1024> m_watermap_data = {};
+  std::array<uint8_t, 1024*1024> m_object_heightmap_data = {};
+  std::array<uint8_t, 512*512> m_fog_data = {};
+  std::array<uint8_t, 512*512> m_soundfx_data = {};
   std::vector<glm::vec2> m_landings;
 
   const CEMapType m_type;
-  constexpr static const float SIZE = 1024.f;
-  constexpr static const float SIZE_C1 = 512.f;
+  constexpr static const int SIZE = 1024;
+  constexpr static const int SIZE_C1 = 512;
   constexpr static const float HEIGHT_SCALE = 32.f;
   constexpr static const float HEIGHT_SCALE_C1 = 16.f;
   
@@ -82,8 +82,8 @@ public:
 
   float getAngleBetweenPoints(glm::vec3 a, glm::vec3 b);
 
-  float getHeight();
-  float getWidth();
+  int getHeight();
+  int getWidth();
   float getTileLength();
   float getHeightmapScale();
   float getBrightnessAt(int xy);

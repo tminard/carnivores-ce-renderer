@@ -21,8 +21,9 @@
 class Vertex;
 class CETexture;
 class ShaderProgram;
-class Camera;
-class Transform;
+
+struct Camera;
+struct Transform;
 
 class CESimpleGeometry {
 private:

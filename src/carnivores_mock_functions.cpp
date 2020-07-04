@@ -160,7 +160,7 @@ void DeltaFunc(double &a, double b, double d)
   }
 }
 
-float SGN(float f)
+double SGN(double f)
 {
   if (f<0) return -1.f;
     else return  1.f;

@@ -133,7 +133,7 @@ void C2MapRscFile::load(const std::string &file_name)
     infile.read(reinterpret_cast<char *>(&texture_count), 4);
     infile.read(reinterpret_cast<char *>(&model_count), 4);
 
-    if (m_type == C2) {
+    if (m_type == CEMapType::C2) {
       infile.read(reinterpret_cast<char *>(this->m_fade_rgb), 4*3*3);
       infile.read(reinterpret_cast<char *>(this->m_trans_rgb), 4*3*3);
     } else {
@@ -142,8 +142,8 @@ void C2MapRscFile::load(const std::string &file_name)
     }
     
     std::vector<uint16_t> raw_texture_data; //rgba5551
-    raw_texture_data.resize(SOURCE_SQUARE_SIZE*SOURCE_SQUARE_SIZE*texture_count);
-    infile.read(reinterpret_cast<char *>(raw_texture_data.data()), SOURCE_SQUARE_SIZE*SOURCE_SQUARE_SIZE*sizeof(uint16_t)*texture_count);
+    raw_texture_data.resize((size_t)SOURCE_SQUARE_SIZE*SOURCE_SQUARE_SIZE*texture_count);
+    infile.read(reinterpret_cast<char *>(raw_texture_data.data()), (size_t)SOURCE_SQUARE_SIZE*SOURCE_SQUARE_SIZE*sizeof(uint16_t)*texture_count);
     
     // Combine all the textures into a single texture for ease of opengl use.
     // Add a buffer around images to mimic clamping with GL_LINEAR; see: https://stackoverflow.com/questions/19611745/opengl-black-lines-in-between-tiles
@@ -152,21 +152,21 @@ void C2MapRscFile::load(const std::string &file_name)
     int squared_texture_rows = static_cast<int>(sqrt(static_cast<float>(texture_count)) + .99f); // number of rows and columns needed to fit the data
     
     uint16_t pad_color;
-    std::vector<uint16_t> tx_filler(TEXTURE_SQUARE_SIZE*squared_texture_rows);
+    std::vector<uint16_t> tx_filler((size_t)TEXTURE_SQUARE_SIZE*squared_texture_rows);
     
     for (int line = 0; line < (squared_texture_rows*SOURCE_SQUARE_SIZE); line++) { // Total vertical rows in image file (128 * number of images; current = pointer to vertical pixel location in file that represents the location of a new row of horizontal blocks)
       
       if (line % SOURCE_SQUARE_SIZE == 0) {
         pad_color = _PadTypeColor::Red;
         tx_filler.clear();
-        tx_filler.assign((TEXTURE_SQUARE_SIZE*squared_texture_rows*tile_padding), pad_color);
+        tx_filler.assign(((long long)TEXTURE_SQUARE_SIZE*squared_texture_rows*tile_padding), pad_color);
         
         for (int x=0; x < squared_texture_rows; x++) {
           for (int p = 0; p < tile_padding; p++)
-            tx_filler.at(x*TEXTURE_SQUARE_SIZE + p) = _PadTypeColor::Blue;
+            tx_filler.at((long long)x*TEXTURE_SQUARE_SIZE + p) = _PadTypeColor::Blue;
 
           for (int p = 1; p <= tile_padding; p++)
-            tx_filler.at((x*TEXTURE_SQUARE_SIZE)+(TEXTURE_SQUARE_SIZE-p)) = _PadTypeColor::Green;
+            tx_filler.at(((long long)x*TEXTURE_SQUARE_SIZE)+((long long)TEXTURE_SQUARE_SIZE-p)) = _PadTypeColor::Green;
         }
         combined_texture_data.insert(combined_texture_data.end(), tx_filler.begin(), tx_filler.end());
       }
@@ -184,8 +184,8 @@ void C2MapRscFile::load(const std::string &file_name)
           std::vector<uint16_t> tx_filler(SOURCE_SQUARE_SIZE);
           combined_texture_data.insert(combined_texture_data.end(), tx_filler.begin(), tx_filler.end());
         } else {
-          std::vector<uint16_t>::const_iterator first = raw_texture_data.begin() + (tx_c*SOURCE_SQUARE_SIZE*SOURCE_SQUARE_SIZE) + (tex_start*SOURCE_SQUARE_SIZE); // Get start pos of a single line of pixels
-          std::vector<uint16_t>::const_iterator last = raw_texture_data.begin() + (tx_c*SOURCE_SQUARE_SIZE*SOURCE_SQUARE_SIZE) + (tex_start*SOURCE_SQUARE_SIZE) + SOURCE_SQUARE_SIZE; // Get end pos, which is the start + 128 pixels
+          std::vector<uint16_t>::const_iterator first = raw_texture_data.begin() + ((long long)tx_c*SOURCE_SQUARE_SIZE*SOURCE_SQUARE_SIZE) + ((long long)tex_start*SOURCE_SQUARE_SIZE); // Get start pos of a single line of pixels
+          std::vector<uint16_t>::const_iterator last = raw_texture_data.begin() + ((long long)tx_c*SOURCE_SQUARE_SIZE*SOURCE_SQUARE_SIZE) + ((long long)tex_start*SOURCE_SQUARE_SIZE) + SOURCE_SQUARE_SIZE; // Get end pos, which is the start + 128 pixels
           combined_texture_data.insert(combined_texture_data.end(), first, last);
         }
         
@@ -197,14 +197,14 @@ void C2MapRscFile::load(const std::string &file_name)
       if ((line+1) % SOURCE_SQUARE_SIZE == 0) {
         pad_color = _PadTypeColor::Yellow;
         tx_filler.clear();
-        tx_filler.assign(TEXTURE_SQUARE_SIZE*squared_texture_rows*tile_padding, pad_color);
+        tx_filler.assign((long long)TEXTURE_SQUARE_SIZE*squared_texture_rows*tile_padding, pad_color);
         
         for (int x=0; x < squared_texture_rows; x++) {
           for (int p = 0; p < tile_padding; p++)
-            tx_filler.at(x*TEXTURE_SQUARE_SIZE+p) = _PadTypeColor::Blue;
+            tx_filler.at((long long)x*TEXTURE_SQUARE_SIZE+p) = _PadTypeColor::Blue;
 
           for (int p = 1; p <= tile_padding; p++)
-            tx_filler.at((x*TEXTURE_SQUARE_SIZE)+(TEXTURE_SQUARE_SIZE-p)) = _PadTypeColor::Green;
+            tx_filler.at(((long long)x*TEXTURE_SQUARE_SIZE)+((long long)TEXTURE_SQUARE_SIZE-p)) = _PadTypeColor::Green;
         }
         
         combined_texture_data.insert(combined_texture_data.end(), tx_filler.begin(), tx_filler.end());
@@ -228,37 +228,37 @@ void C2MapRscFile::load(const std::string &file_name)
           uint16_t color;
           
           if (i >= 1) {
-            color = final_texture_data.at(id_y+id_x);
+            color = final_texture_data.at((long long)id_y+id_x);
           } else {
-            color = combined_texture_data.at(id_y+id_x);
+            color = combined_texture_data.at((long long)id_y+id_x);
           }
           
           switch (color) {
             case _AtlasPadType::Left:
-              color = final_texture_data.at(id_y+(id_x-1));
+              color = final_texture_data.at((long long)id_y+((long long)id_x-1));
               break;
             case _AtlasPadType::Right:
               if (i >= 1) {
-                color = final_texture_data.at(id_y+(id_x+1));
+                color = final_texture_data.at((long long)id_y+((long long)id_x+1));
               } else {
-                color = combined_texture_data.at(id_y+(id_x+1));
+                color = combined_texture_data.at((long long)id_y+((long long)id_x+1));
               }
               break;
             case _AtlasPadType::Above:
-              color = final_texture_data.at(((row-1)*TEXTURE_SQUARE_SIZE*squared_texture_rows)+id_x);
+              color = final_texture_data.at((((long long)row-1)*TEXTURE_SQUARE_SIZE*squared_texture_rows)+id_x);
               break;
             case _AtlasPadType::Below:
               if (i >= 1) {
-                color = final_texture_data.at(((row+1)*TEXTURE_SQUARE_SIZE*squared_texture_rows)+id_x);
+                color = final_texture_data.at((((long long)row+1)*TEXTURE_SQUARE_SIZE*squared_texture_rows)+id_x);
               } else {
-                color = combined_texture_data.at(((row+1)*TEXTURE_SQUARE_SIZE*squared_texture_rows)+id_x);
+                color = combined_texture_data.at((((long long)row+1)*TEXTURE_SQUARE_SIZE*squared_texture_rows)+id_x);
               }
               break;
             default:
               break;
           }
           if (i >= 1) {
-            final_texture_data.at(id_y+id_x) = color;
+            final_texture_data.at((long long)id_y+id_x) = color;
           } else {
             final_texture_data.insert(final_texture_data.end(), color);
           }
@@ -275,8 +275,8 @@ void C2MapRscFile::load(const std::string &file_name)
 
     for (int t=0; t < m_texture_count; t++) {
       std::vector<uint16_t> texture_data;
-      std::vector<uint16_t>::const_iterator first = raw_texture_data.begin() + (t * SOURCE_SQUARE_SIZE * SOURCE_SQUARE_SIZE);
-      std::vector<uint16_t>::const_iterator last = first + SOURCE_SQUARE_SIZE*SOURCE_SQUARE_SIZE;
+      std::vector<uint16_t>::const_iterator first = raw_texture_data.begin() + ((long long)t * SOURCE_SQUARE_SIZE * SOURCE_SQUARE_SIZE);
+      std::vector<uint16_t>::const_iterator last = first + (long long)SOURCE_SQUARE_SIZE*SOURCE_SQUARE_SIZE;
       texture_data.insert(texture_data.end(), first, last);
 
       std::unique_ptr<CETexture> c_texture = std::unique_ptr<CETexture>(new CETexture(texture_data, SOURCE_SQUARE_SIZE*SOURCE_SQUARE_SIZE, SOURCE_SQUARE_SIZE, SOURCE_SQUARE_SIZE));
@@ -295,20 +295,20 @@ void C2MapRscFile::load(const std::string &file_name)
     }
     
     // Load sky bitmap and map overlay (dawn, day, night)
-    if (m_type == C2) {
+    if (m_type == CEMapType::C2) {
       this->m_dawn_sky = std::unique_ptr<C2Sky>(new C2Sky(infile));
       this->m_dawn_sky->setRGBA(glm::vec4(m_fade_rgb[0][0], m_fade_rgb[0][1], m_fade_rgb[0][2], 1.f));
     }
 
     this->m_day_sky = std::unique_ptr<C2Sky>(new C2Sky(infile));
 
-    if (m_type == C2) {
+    if (m_type == CEMapType::C2) {
       this->m_day_sky->setRGBA(glm::vec4(m_fade_rgb[1][0], m_fade_rgb[1][1], m_fade_rgb[1][2], 1.f));
     } else {
       this->m_day_sky->setRGBA(glm::vec4(m_fade_rgb[0][0], m_fade_rgb[0][1], m_fade_rgb[0][2], 1.f));
     }
 
-    if (m_type == C2) {
+    if (m_type == CEMapType::C2) {
       this->m_night_sky = std::unique_ptr<C2Sky>(new C2Sky(infile));
       this->m_night_sky->setRGBA(glm::vec4(m_fade_rgb[2][0], m_fade_rgb[2][1], m_fade_rgb[2][2], 1.f));
     }
@@ -395,7 +395,7 @@ void C2MapRscFile::load(const std::string &file_name)
       // For each of these ambient sounds, read a table 16 entries long that maps to the random sounds, and describes which random sounds play in the ambient area and how frequent, time of day, etc
     }
 
-    if (m_type == C1) {
+    if (m_type == CEMapType::C1) {
       CEWaterEntity wd;
       wd.texture_id = 0;
       wd.water_level = -1; // TODO: actually height map height, do this cleaner - currently use magic number to trigger calc in line

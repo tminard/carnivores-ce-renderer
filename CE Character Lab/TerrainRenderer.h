@@ -56,6 +56,13 @@ private:
 
   std::vector <_Water> m_waters;
 
+    // TODO: Move these to TerrainSegments
+  GLuint m_underwater_vao;
+  GLuint m_underwater_vab;
+  GLuint m_underwater_iab;
+  std::vector < CETerrainVertex > m_underwater_vertices;
+  std::vector < unsigned int > m_underwater_indices;
+
   std::vector < CETerrainVertex > m_vertices;
   std::vector < unsigned int > m_indices;
   int m_num_indices;
@@ -68,9 +75,12 @@ private:
   
   std::unique_ptr<ShaderProgram> m_shader;
   std::unique_ptr<ShaderProgram> m_water_shader;
+  std::unique_ptr<ShaderProgram> m_underwater_terrain_shader;
   
   C2MapFile* m_cmap_data_weak;
   C2MapRscFile* m_crsc_data_weak;
+
+  void uploadUnderwaterObject();
   
   void preloadObjectMap();
   void loadShader();

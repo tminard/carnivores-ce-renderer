@@ -66,7 +66,7 @@ float C2MapFile::getHeight()
 
 float C2MapFile::getTileLength()
 {
-  return 128.f;
+  return 256.f;
 }
 
 int C2MapFile::getWaterTextureIDAt(int xy, int water_texture_id)
@@ -235,7 +235,7 @@ bool C2MapFile::hasWaterAt(int xy)
     return false;
   } else {
     uint8_t flags = this->getFlagsAt(xy);
-    if (flags & 0x0080 || flags & 0x8000) return true;
+    if (flags & 0x0080 || flags & 0x80) return true;
     if (this->m_watermap_data.at(xy) != this->m_heightmap_data.at(xy) + 48) return true;
 
     int id = int(this->m_texturec1_A_index_data.at(xy));

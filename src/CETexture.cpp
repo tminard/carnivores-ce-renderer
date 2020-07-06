@@ -47,6 +47,7 @@ void CETexture::use()
 
 void CETexture::loadTextureIntoHardwareMemory()
 {
+
   glGenTextures(1, &this->m_texture_id);
   glBindTexture(GL_TEXTURE_2D, m_texture_id);
   

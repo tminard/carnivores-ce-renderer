@@ -37,18 +37,18 @@ class Vertex;
 struct Transform;
 struct Camera;
 
-#define objectPLACEWATER       1
-#define objectPLACEGROUND      2
-#define objectPLACEUSER        4
-#define objectCIRCLE           8
-#define objectBOUND            16
-#define objectNOBMP            32
-#define objectNOLIGHT          64
-#define objectDEFLIGHT         128
-#define objectGRNDLIGHT        256
-#define objectNOSOFT           512
-#define objectNOSOFT2          1024
-#define objectANIMATED         0x80000000
+const int objectPLACEWATER = 0x01;
+const int objectPLACEGROUND = 0x02;
+const int objectPLACEUSER = 0x04;
+const int objectCIRCLE = 0x08;
+const int objectBOUND = 0x10;
+const int objectNOBMP = 0x20;
+const int objectNOLIGHT = 0x40;
+const int objectDEFLIGHT = 0x80;
+const int objectGRNDLIGHT = 0x100;
+const int objectNOSOFT = 0x200;
+const int objectNOSOFT2 = 0x400;
+const int objectANIMATED = 0x80000000;
 
 class CEWorldModel
 {
@@ -85,7 +85,7 @@ public:
   void render(Transform& transform, Camera& camera);
   void renderFar(Transform& transform, Camera& camera);
   
-  CEGeometry* getGeometry();
+  CEGeometry* getGeometry() const;
   CESimpleGeometry* getFarGeometry();
   TObjInfo* getObjectInfo(); // TODO: Make this unnecessary
 };

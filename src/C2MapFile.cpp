@@ -448,7 +448,7 @@ void C2MapFile::postProcess(C2MapRscFile* crsc_weak)
         m_landings.push_back(glm::vec2(x, y));
       }
 
-      if (m_type == CEMapType::C1) continue;
+      if (m_type == CEMapType::C1 || crsc_weak->getWaterCount() < 1) continue;
 
       if (!this->hasOriginalWaterAt(xy)) {
         if (this->hasOriginalWaterAt(x+1, y)) this->fillWater(x, y, x+1, y);

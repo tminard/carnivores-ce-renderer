@@ -16,10 +16,14 @@ private:
     
     std::map<int, int> m_last_key_state;
     
+    bool m_should_shutdown = false;
     bool m_wireframe = false; // TODO: move this to a LocalVideoManager
     double lastTime = 0.0;
 public:
     void Bind(std::shared_ptr<CELocalPlayerController> player_controller);
     void ProcessLocalInput(GLFWwindow* window, float time_delta);
     void cursorPosCallback(GLFWwindow* window, double x, double y);
+    bool GetShouldShutdown() {
+        return m_should_shutdown;
+    }
 };

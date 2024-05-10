@@ -1,0 +1,273 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\src\carnivores-ce-renderer\src\AI_Allosaurus.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\src\carnivores-ce-renderer\src\C2CarFile.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\src\carnivores-ce-renderer\src\C2CarFilePreloader.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\src\carnivores-ce-renderer\src\C2Character.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\src\carnivores-ce-renderer\src\C2HuntableCharacter.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\src\carnivores-ce-renderer\src\C2MapFile.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\src\carnivores-ce-renderer\src\C2MapRscFile.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\src\carnivores-ce-renderer\src\C2Sky.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\src\carnivores-ce-renderer\src\CEAnimatableModel.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\src\carnivores-ce-renderer\src\CEAnimation.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\src\carnivores-ce-renderer\src\CEAudioSource.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\src\carnivores-ce-renderer\src\CEGeometry.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\src\carnivores-ce-renderer\src\CELocalPlayerController.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\src\carnivores-ce-renderer\src\CEObservable.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\src\carnivores-ce-renderer\src\CEPlayer.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\src\carnivores-ce-renderer\src\CEScene.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\src\carnivores-ce-renderer\src\CEShaderProgram.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\src\carnivores-ce-renderer\src\CESimpleGeometry.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\src\carnivores-ce-renderer\src\CETexture.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\src\carnivores-ce-renderer\src\CETextureArray.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\src\carnivores-ce-renderer\src\CEWaterEntity.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\src\carnivores-ce-renderer\src\CEWorld.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\src\carnivores-ce-renderer\src\CEWorldModel.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\src\carnivores-ce-renderer\src\CEWorldObject.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\src\carnivores-ce-renderer\src\CE_AIUtilities.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\src\carnivores-ce-renderer\src\CE_Allosaurus.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\src\carnivores-ce-renderer\src\CE_ArtificialIntelligence.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\src\carnivores-ce-renderer\src\IndexedMeshLoader.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\src\carnivores-ce-renderer\src\LocalAudioManager.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\src\carnivores-ce-renderer\src\LocalInputManager.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\src\carnivores-ce-renderer\src\LocalVideoManager.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\src\carnivores-ce-renderer\src\TerrainRenderer.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\src\carnivores-ce-renderer\src\carnivores_mock_functions.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\src\carnivores-ce-renderer\src\dependency\libAF\animation.cpp">
+      <Filter>Sources\dependency\libAF</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\src\carnivores-ce-renderer\src\dependency\libAF\sound.cpp">
+      <Filter>Sources\dependency\libAF</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\src\carnivores-ce-renderer\src\dependency\libAF\texture.cpp">
+      <Filter>Sources\dependency\libAF</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\src\carnivores-ce-renderer\src\glad.c">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\src\carnivores-ce-renderer\src\main.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\src\carnivores-ce-renderer\src\vertex.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\AI_Allosaurus.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\C2CarFile.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\C2CarFilePreloader.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\C2Character.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\C2HuntableCharacter.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\C2MapFile.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\C2MapRscFile.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\C2Sky.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\CEAnimatableModel.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\CEAnimation.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\CEAudioSource.hpp">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\CEGeometry.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\CELocalPlayerController.hpp">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\CEObservable.hpp">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\CEPlayer.hpp">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\CEScene.hpp">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\CEShaderProgram.hpp">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\CESimpleGeometry.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\CETerrainVertex.hpp">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\CETexture.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\CETextureArray.hpp">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\CEWaterEntity.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\CEWorld.hpp">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\CEWorldModel.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\CEWorldObject.hpp">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\CE_AIUtilities.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\CE_Allosaurus.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\CE_ArtificialIntelligence.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\Hunt.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\IndexedMeshLoader.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\LocalAudioManager.hpp">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\LocalInputManager.hpp">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\LocalVideoManager.hpp">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\TerrainRenderer.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\bitmap.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\camera.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\dependency\libAF\af2-animation.h">
+      <Filter>Sources\dependency\libAF</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\dependency\libAF\af2-sound.h">
+      <Filter>Sources\dependency\libAF</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\dependency\libAF\af2-texture.h">
+      <Filter>Sources\dependency\libAF</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\g_shared.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\new_shader.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\shader_program.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\tga.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\transform.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\src\carnivores-ce-renderer\src\vertex.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\src\carnivores-ce-renderer\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Sources">
+      <UniqueIdentifier>{959D62EE-ABE7-3351-B85B-FBE02F227F73}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\dependency">
+      <UniqueIdentifier>{4C34DCAF-D9C7-3762-92E9-E130752453CA}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\dependency\libAF">
+      <UniqueIdentifier>{4C612ED7-3440-357E-A9F3-211472AF707C}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

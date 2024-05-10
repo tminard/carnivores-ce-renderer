@@ -22,8 +22,8 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-#define faceHasOpacity      4
-#define faceIsTransparent   8
+const int faceHasOpacity = 4;
+const int faceIsTransparent = 8;
 
 class Shader;
 class CBitmap;

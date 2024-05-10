@@ -47,14 +47,18 @@ void LocalVideoManager::initGLFW()
   glfwWindowHint( GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE );
   glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );
   glfwWindowHint( GLFW_SAMPLES, 4);
+  glfwWindowHint( GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 
   GLFWmonitor* primary_monitor = glfwGetPrimaryMonitor();
   const GLFWvidmode* v_mode = glfwGetVideoMode(primary_monitor);
+  int viewWidth = 1024*2; // TODO: make this configurable, and ensure CEObservable computes aspect from value
+  int viewHeight = 768*2;
 
   std::cout << "== Primary Monitor detected == " << std::endl;
   std::cout << "\t[Video Mode] width: " << v_mode->width << "; height: " << v_mode->height << std::endl;
 
-  this->m_main_window = glfwCreateWindow(v_mode->width, v_mode->height, "Carnivores Renderer", NULL, NULL);
+  // set PRIMARY_MONITOR for full screen
+  this->m_main_window = glfwCreateWindow(viewWidth, viewHeight, "Carnivores Renderer", NULL, NULL);
 
   if (!this->m_main_window) {
     throw;

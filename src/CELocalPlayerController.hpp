@@ -24,10 +24,11 @@ public:
   glm::vec2 getWorldPosition() const;
 
   void setPosition(glm::vec3 position);
+  void setElevation(float elevation);
 
   void lookAt(glm::vec3 direction);
 
-  void update();
+  void update(double timeDelta);
 
   void moveForward();
   void moveBackward();

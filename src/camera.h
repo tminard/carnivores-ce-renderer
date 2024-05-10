@@ -5,9 +5,38 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
 
+enum AspectRatio {
+    Standard, Wide, Ultrawide
+};
+
 struct Camera
 {
 public:
+    Camera(const glm::vec3& pos, float fov, AspectRatio aspect, float zNear, float zFar) {
+        float aspectRatio = 0.f;
+        switch (aspect)
+        {
+        Wide:
+            aspectRatio = 16.f / 9.f;
+            break;
+        Ultrawide:
+            aspectRatio = 21.f / 9.f;
+            break;
+        Standard:
+        default:
+            aspectRatio = 4.f / 3.f;
+            break;
+        }
+
+        this->m_view_distance = zFar;
+        this->pos = pos;
+        this->forward = glm::vec3(0.0f, 0.0f, 1.0f);
+        this->up = glm::vec3(0.0f, 1.0f, 0.0f);
+        this->right = glm::vec3(1.f, 0.f, 0.f); // left handed
+        this->projection = glm::perspective(fov, aspectRatio, zNear, zFar);
+        updateViewProjection();
+    }
+
   Camera(const glm::vec3& pos, float fov, float aspect, float zNear, float zFar)
   {
     // Confused? See https://learnopengl.com/#!Getting-started/Coordinate-Systems
@@ -86,6 +115,10 @@ public:
   
   void SetHeight(float height) {
     pos.y = height;
+  }
+
+  float GetHeight() {
+      return pos.y;
   }
   
   void SetLookAt(glm::vec3 fw) {

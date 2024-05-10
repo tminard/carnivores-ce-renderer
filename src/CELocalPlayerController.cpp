@@ -13,9 +13,8 @@ void CELocalPlayerController::lookAt(glm::vec3 direction)
   this->m_camera.SetLookAt(direction);
 }
 
-void CELocalPlayerController::update()
+void CELocalPlayerController::update(double timeDelta)
 {
-  // Game loop update
   // TODO: all input commands (move etc) should impact player not camera state. Then, update loop updates camera to track player.
 }
 
@@ -56,10 +55,21 @@ void CELocalPlayerController::setPosition(glm::vec3 position)
   this->m_camera.SetPos(position);
 }
 
+void CELocalPlayerController::setElevation(float elevation)
+{
+    this->m_camera.SetHeight(elevation);
+}
+
 void CELocalPlayerController::moveForward()
 {
-  this->m_camera.MoveForward(150.f);
+  this->m_camera.MoveForward(m_tile_size * 0.15f);
 }
-void CELocalPlayerController::moveBackward() {}
-void CELocalPlayerController::strafeRight() {}
-void CELocalPlayerController::strafeLeft() {}
+void CELocalPlayerController::moveBackward() {
+    this->m_camera.MoveForward(m_tile_size * 0.10f * -1);
+}
+void CELocalPlayerController::strafeRight() {
+    this->m_camera.MoveRight(m_tile_size * 0.08f * -1);
+}
+void CELocalPlayerController::strafeLeft() {
+    this->m_camera.MoveRight(m_tile_size * 0.08f);
+}

@@ -15,7 +15,7 @@ bool first = true;
 void LocalInputManager::cursorPosCallback(GLFWwindow* window, double xpos, double ypos)
 {
   if (this->m_player_controller) {
-    float mouseSpeed = 50.0f;
+    float mouseSpeed = 180.0f;
     float deltaTime = glfwGetTime() - this->lastTime;
     
     // Mouse
@@ -48,7 +48,7 @@ void LocalInputManager::cursorPosCallback(GLFWwindow* window, double xpos, doubl
                         );
     
     m_player_controller->lookAt(direction);
-    glfwSetCursorPos(window, winw/2, winh/2);
+    glfwSetCursorPos(window, winw / static_cast<double>(2), winh / static_cast<double>(2));
   }
 }
 
@@ -56,6 +56,10 @@ void LocalInputManager::ProcessLocalInput(GLFWwindow* window, float deltaTime)
 {
   if (this->m_player_controller) {
     this->lastTime = glfwGetTime();
+
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+        this->m_should_shutdown = true;
+    }
 
     if (glfwGetKey(window, GLFW_KEY_UP ) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
       m_player_controller->moveForward();

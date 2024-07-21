@@ -54,6 +54,12 @@ void CETexture::loadTextureIntoHardwareMemory()
   glEnable(GL_TEXTURE_2D);
 
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB5_A1, m_width, m_height, 0, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, m_raw_data.data());
+  //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_width, m_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, m_raw_data.data());
+
+  GLenum error = glGetError();
+  if (error != GL_NO_ERROR) {
+      std::cerr << "OpenGL error after glTexImage2D: " << error << std::endl;
+  }
 
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 6);
   glGenerateMipmap(GL_TEXTURE_2D);

@@ -82,8 +82,8 @@ int main(int argc, const char * argv[])
   std::unique_ptr<LocalVideoManager> video_manager(new LocalVideoManager());
   std::unique_ptr<LocalAudioManager> g_audio_manager(new LocalAudioManager());
 
-  std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile(CEMapType::C2, "C:/src/cce/game/c2/area3.rsc"));
-  std::shared_ptr<C2MapFile> cMap(new C2MapFile(CEMapType::C2, "C:/src/cce/game/c2/area3.map", cMapRsc.get()));
+  std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile(CEMapType::C1, "C:/src/cce/game/c1/AREA5.RSC"));
+  std::shared_ptr<C2MapFile> cMap(new C2MapFile(CEMapType::C1, "C:/src/cce/game/c1/AREA5.MAP", cMapRsc.get()));
   std::unique_ptr<TerrainRenderer> terrain(new TerrainRenderer(cMap.get(), cMapRsc.get()));
 
   GLFWwindow* window = video_manager->GetWindow();
@@ -134,6 +134,15 @@ int main(int argc, const char * argv[])
   {
     glfwMakeContextCurrent(window);
 
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    Camera* camera = g_player_controller->getCamera();
+
+    if (render_sky) {
+        glDisable(GL_DEPTH_TEST);
+        cMapRsc->getDaySky()->Render(window, *camera);
+        glEnable(GL_DEPTH_TEST);
+    }
+
     glm::vec3 currentPosition = g_player_controller->getPosition();
     double currentTime = glfwGetTime();
     double timeDelta = currentTime - lastTime;
@@ -162,9 +171,6 @@ int main(int argc, const char * argv[])
       current_world_pos = next_world_pos;
     }
 
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    Camera* camera = g_player_controller->getCamera();
-
     float headBobbleAmount = CalculateHeadBobble(currentTime);
     float headBobbleAmountLast = CalculateHeadBobble(lastTime);
 
@@ -173,18 +179,12 @@ int main(int argc, const char * argv[])
         (cMap->getWidth() * (int)next_world_pos.y) +
         (int)next_world_pos.x
     );
-    float heightBuffer = 128.f;
+    float heightBuffer = 310.f;
 
     // Apply the head bobble effect
     elevation = (elevation + (camera->GetHeight() + heightBuffer - (headBobbleAmountLast))) / 2;
 
-    g_player_controller->setElevation(elevation);
-
-    if (render_sky) {
-      glDisable(GL_DEPTH_TEST);
-      cMapRsc->getDaySky()->Render(window, *camera);
-      glEnable(GL_DEPTH_TEST);
-    }
+    // g_player_controller->setElevation(elevation);
 
     if (render_objects) {
       glDisable(GL_CULL_FACE);

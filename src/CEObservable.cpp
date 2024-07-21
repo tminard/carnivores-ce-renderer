@@ -1,6 +1,6 @@
 #include "CEObservable.hpp"
 
-CEObservable::CEObservable() : m_camera(glm::vec3(0.f), 45.f, Standard, 0.1f, MAX_VIEW_R)
+CEObservable::CEObservable() : m_camera(glm::vec3(0.f), -80.f, AspectRatio::Standard, 0.1f, MAX_VIEW_R)
 {
 }
 

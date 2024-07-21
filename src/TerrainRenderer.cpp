@@ -20,7 +20,7 @@ TerrainRenderer::TerrainRenderer(C2MapFile* c_map_weak, C2MapRscFile* c_rsc_weak
 : m_cmap_data_weak(c_map_weak), m_crsc_data_weak(c_rsc_weak)
 {
   this->loadIntoHardwareMemory();
-  this->exportAsRaw();
+  // this->exportAsRaw();
   this->loadShader();
   this->preloadObjectMap();
 }
@@ -151,13 +151,18 @@ void TerrainRenderer::loadShader()
 void TerrainRenderer::Update(Transform& transform, Camera& camera)
 {
   glm::mat4 MVP = transform.GetMVP(camera);
+  glm::mat4 model = transform.GetStaticModel(); // Assuming this method exists
   double t = glfwGetTime();
 
   this->m_shader->use();
   this->m_shader->setMat4("MVP", MVP);
   this->m_water_shader->use();
   this->m_water_shader->setMat4("MVP", MVP);
+  this->m_water_shader->setMat4("model", model);
   this->m_water_shader->setFloat("RealTime", (float)t);
+  this->m_water_shader->setVec3("light_dir", camera.GetCurrentPos()); // Assuming lightDir is defined
+  this->m_water_shader->setVec3("view_dir", camera.GetCurrentPos()); // Assuming GetViewDir() returns the camera view direction
+
 
   m_last_update_time = t;
 }

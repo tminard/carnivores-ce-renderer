@@ -5,7 +5,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
 
-enum AspectRatio {
+enum class AspectRatio {
     Standard, Wide, Ultrawide
 };
 
@@ -122,8 +122,14 @@ public:
   }
   
   void SetLookAt(glm::vec3 fw) {
-    this->forward = fw; // TODO: should this be normalized?
-    updateViewProjection();
+      //this->forward = glm::normalize(fw);
+      // Update the right and up vectors based on the new forward vector
+      //this->right = glm::normalize(glm::cross(this->forward, this->up));
+      //this->up = glm::normalize(glm::cross(this->right, this->forward));
+
+      this->forward = glm::normalize(fw);
+
+      updateViewProjection();
   }
   
   void RotateY(float angle)

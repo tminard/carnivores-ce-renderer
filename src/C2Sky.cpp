@@ -21,8 +21,8 @@ C2Sky::C2Sky(std::ifstream& instream)
   instream.read(reinterpret_cast<char *>(raw_sky_texture_data.data()), 256*256*sizeof(uint16_t));
 
   this->m_texture = std::unique_ptr<CETexture>(new CETexture(raw_sky_texture_data, 256*256, 256, 256));
-  this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram("C:/src/cce/shaders/sky.vs", "C:/src/cce/shaders/sky.fs"));
-  this->m_cloud_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram("C:/src/cce/shaders/sky_clouds.vs", "C:/src/cce/shaders/sky_clouds.fs"));
+  this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram("/Users/tminard/source/carnivores/carnivores-ce-renderer/runtime/cce/shaders/sky.vs", "/Users/tminard/source/carnivores/carnivores-ce-renderer/runtime/cce/shaders/sky.fs"));
+  this->m_cloud_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram("/Users/tminard/source/carnivores/carnivores-ce-renderer/runtime/cce/shaders/sky_clouds.vs", "/Users/tminard/source/carnivores/carnivores-ce-renderer/runtime/cce/shaders/sky_clouds.fs"));
 
   this->loadIntoHardwareMemory();
 }
@@ -30,8 +30,8 @@ C2Sky::C2Sky(std::ifstream& instream)
 C2Sky::C2Sky(std::unique_ptr<CETexture> sky_texture)
 : m_texture(std::move(sky_texture))
 {
-  this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram("C:/src/cce/shaders/sky.vs", "C:/src/cce/shaders/sky.fs"));
-  this->m_cloud_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram("C:/src/cce/shaders/sky_clouds.vs", "C:/src/cce/shaders/sky_clouds.fs"));
+  this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram("/Users/tminard/source/carnivores/carnivores-ce-renderer/runtime/cce/shaders/sky.vs", "/Users/tminard/source/carnivores/carnivores-ce-renderer/runtime/cce/shaders/sky.fs"));
+  this->m_cloud_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram("/Users/tminard/source/carnivores/carnivores-ce-renderer/runtime/cce/shaders/sky_clouds.vs", "/Users/tminard/source/carnivores/carnivores-ce-renderer/runtime/cce/shaders/sky_clouds.fs"));
   this->loadIntoHardwareMemory();
 }
 
@@ -219,9 +219,16 @@ void C2Sky::Render(GLFWwindow* window, Camera& camera)
   this->updateClouds();
   int width, height;
   glfwGetFramebufferSize(window, &width, &height);
-  glm::mat4 view = glm::mat4(glm::mat3(camera.GetVM()));
-  glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)width/(float)height, 0.1f, 100000.f);
 
+  glm::mat4 view = camera.GetVM();
+  view[3][0] = 0.0f;
+  view[3][1] = 0.0f;
+  view[3][2] = 0.0f;
+
+  glm::mat4 projection = glm::perspective(glm::radians(80.0f), (float)width / (float)height, 0.1f, 100000.f);
+
+  // Render the skybox
+  //glDepthFunc(GL_LEQUAL); // Change depth function so depth test passes when values are equal to depth buffer's content
   this->m_shader->use();
   this->m_shader->setMat4("view", view);
   this->m_shader->setMat4("projection", projection);
@@ -239,6 +246,8 @@ void C2Sky::Render(GLFWwindow* window, Camera& camera)
 
   this->m_texture->use();
   glDrawArrays(GL_TRIANGLES, 0, 6);
+
+  //glDepthFunc(GL_LESS); // Set depth function back to default
 
   glBindVertexArray(0);
 }

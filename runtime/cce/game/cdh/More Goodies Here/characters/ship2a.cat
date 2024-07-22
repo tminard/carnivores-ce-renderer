@@ -1,0 +1,27 @@
+carnivores_character
+
+[general]
+title = "Ship2a"
+model = "ship2a.3dn"
+
+[animations]
+count = 1
+
+animation_id 0
+	file = "ship2a_animation_0"
+
+[sounds]
+count = 6
+
+sound_id 0
+	file = "ship2a_sound_0"
+sound_id 1
+	file = "ship2a_sound_1"
+sound_id 2
+	file = "ship2a_sound_2"
+sound_id 3
+	file = "ship2a_sound_3"
+sound_id 4
+	file = "ship2a_sound_4"
+sound_id 5
+	file = "ship2a_sound_5"

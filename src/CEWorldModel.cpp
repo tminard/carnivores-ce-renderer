@@ -10,7 +10,7 @@
 
 #include "IndexedMeshLoader.h"
 
-#include <GLFW/glfw3.h>
+// #include <GLFW/glfw3.h>
 
 #include "transform.h"
 #include "camera.h"
@@ -53,6 +53,8 @@ CEWorldModel::CEWorldModel(const CEMapType type, std::ifstream& instream)
   
   for (int v=0; v < _vcount; v++) {
     file_vertex_data[v].z *= -1.0f; // Original models need to be inverted across z axis
+    file_vertex_data[v].x *= 1.0f;
+    file_vertex_data[v].y *= 1.0f;
   }
 
   if (type == CEMapType::C2) instream.read(reinterpret_cast<char *>(spirit_texture_data.data()), 128*128*2);
@@ -170,7 +172,7 @@ CEWorldModel::CEWorldModel(const CEMapType type, std::ifstream& instream)
   }
 }
 
-CEGeometry* CEWorldModel::getGeometry()
+CEGeometry* CEWorldModel::getGeometry() const
 {
   return this->m_geometry.get();
 }

@@ -33,7 +33,7 @@ ShaderProgram* CESimpleGeometry::getShader()
 
 void CESimpleGeometry::loadObjectIntoMemoryBuffer()
 {
-  this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram("C:/src/cce/shaders/simple_geo.vs", "C:/src/cce/shaders/simple_geo.fs"));
+  this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram("/Users/tminard/source/carnivores/carnivores-ce-renderer/runtime/cce/shaders/simple_geo.vs", "/Users/tminard/source/carnivores/carnivores-ce-renderer/runtime/cce/shaders/simple_geo.fs"));
   
   glGenBuffers(1, &this->m_vertex_array_buffer);
   glBindBuffer(GL_ARRAY_BUFFER, this->m_vertex_array_buffer);

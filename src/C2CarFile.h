@@ -29,19 +29,18 @@ class CEAnimation;
 class Vertex;
 
 class C2CarFile {
-
+    
 public:
-  C2CarFile(std::string file_name);
-  ~C2CarFile();
-  void load_file(std::string file_name);
-
-  std::shared_ptr<CEGeometry> getGeometry();
-  std::weak_ptr<CEAnimation> getAnimationByName(std::string animation_name);
-
+    C2CarFile(std::string file_name);
+    ~C2CarFile();
+    void load_file(std::string file_name);
+    
+    std::shared_ptr<CEGeometry> getGeometry();
+    std::weak_ptr<CEAnimation> getAnimationByName(std::string animation_name);
+    
 private:
-  
-  std::shared_ptr<CEGeometry> m_geometry;
-  std::map<std::string, std::shared_ptr<CEAnimation>> m_animations;
+    std::map<std::string, std::shared_ptr<CEAnimation> > m_animations;
+    std::shared_ptr<CEGeometry> m_geometry;
 };
 
 #endif

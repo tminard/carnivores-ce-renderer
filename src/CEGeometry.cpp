@@ -32,7 +32,7 @@ void CEGeometry::saveTextureAsBMP(const std::string &file_name)
 
 void CEGeometry::loadObjectIntoMemoryBuffer()
 {
-  this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram("C:/src/cce/shaders/basic_shader.vs", "C:/src/cce/shaders/basic_shader.fs"));
+  this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram("/Users/tminard/source/carnivores/carnivores-ce-renderer/runtime/cce/shaders/basic_shader.vs", "/Users/tminard/source/carnivores/carnivores-ce-renderer/runtime/cce/shaders/basic_shader.fs"));
 
   glGenVertexArrays(1, &this->m_vertexArrayObject);
   glBindVertexArray(this->m_vertexArrayObject);

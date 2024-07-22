@@ -26,7 +26,7 @@ public:
 	class Frame
 	{
 	public:
-		std::vector<std::array<float, 3>>	vertex_table;
+		std::vector<std::array<float, 3> >	vertex_table;
 
 		Frame();
 		Frame(const Frame& frame);

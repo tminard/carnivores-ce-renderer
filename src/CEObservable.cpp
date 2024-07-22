@@ -1,14 +1,6 @@
-//
-//  CEObservable.cpp
-//  CE Character Lab
-//
-//  Created by Minard, Tyler on 6/8/18.
-//  Copyright © 2018 Tyler Minard. All rights reserved.
-//
-
 #include "CEObservable.hpp"
 
-CEObservable::CEObservable() : m_camera(glm::vec3(0.f), 45.f, (21.f/9.f), 128.f, MAX_VIEW_R)
+CEObservable::CEObservable() : m_camera(glm::vec3(0.f), -80.f, AspectRatio::Standard, 0.1f, MAX_VIEW_R)
 {
 }
 

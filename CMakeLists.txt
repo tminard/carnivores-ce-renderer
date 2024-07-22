@@ -1,8 +1,12 @@
-cmake_minimum_required(VERSION 3.2 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
 project(CarnivoresRenderer)
 
 # Add .lib files
 link_directories(${CMAKE_SOURCE_DIR}/lib)
+
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Add source files
 file(GLOB_RECURSE SOURCE_FILES 
@@ -36,17 +40,40 @@ message(STATUS "GLM included at ${GLM_INCLUDE_DIR}")
 find_package(GLFW3 REQUIRED)
 message(STATUS "Found GLFW3 in ${GLFW3_INCLUDE_DIR}")
 
+
 # Put all libraries into a variable
-set(LIBS glfw3 OpenAL32.lib EFX-Util.lib)
+set(LIBS glfw3)
+
+# Manually add GLAD
+set(GLAD_SRC_DIR "${CMAKE_SOURCE_DIR}/thirdparty/glad/src")
+set(GLAD_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/thirdparty/glad/include")
+
+add_library(glad STATIC "${GLAD_SRC_DIR}/glad.c")
+target_include_directories(glad PUBLIC "${GLAD_INCLUDE_DIR}")
 
 # Define the include DIRs
 include_directories(
 	"${CMAKE_SOURCE_DIR}/src"
 	"${CMAKE_SOURCE_DIR}/include"
+	${GLAD_INCLUDE_DIR}
 )
 
+
 # Define the link libraries
-target_link_libraries(${PROJECT_NAME} ${LIBS})
+if(APPLE)
+    target_link_libraries(${PROJECT_NAME} glad ${GLFW3_LIBRARY} "-framework OpenAL" "-framework OpenGL" "-framework CoreFoundation" "-framework IOKit" "-framework CoreGraphics" "-framework AppKit" ${LIBS})
+else()
+    target_link_libraries(${PROJECT_NAME} glad ${GLFW3_LIBRARY} OpenAL32.lib GL ${LIBS})
+endif()
+
+if(APPLE)
+    find_library(GLFW3_LIBRARY glfw3 PATHS /usr/local/lib /opt/homebrew/lib)
+    if (NOT GLFW3_LIBRARY)
+        message(FATAL_ERROR "Could not find glfw3 library")
+    endif()
+    message(STATUS "GLFW3 found: ${GLFW3_LIBRARY}")
+    link_directories("/usr/local/lib" "/opt/homebrew/lib")
+endif()
 
 # Create virtual folders to make it look nicer in VS
 if(MSVC_IDE)

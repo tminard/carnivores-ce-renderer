@@ -1,22 +1,8 @@
-/*
- * The purpose of this class is to handle the loading and rendering of the current
- * visible terrain.
- *
- * TODO:
- *  [] Generate BSP tree
- *      [] Generate multiple-LOD (MRBSP) trees (see: http://graphicsinterface.org/wp-content/uploads/gi1997-10.pdf)
- *      [] Merge in object data at runtime
- *      [] Include knowledge of the current camera location and handle perspective
- *  [] Properly implement texture mapping
- */
-
-#ifndef __CE_Character_Lab__TerrainRenderer__
-#define __CE_Character_Lab__TerrainRenderer__
+#pragma once
 
 #include <stdio.h>
 #include <exception>
 
-#define GLFW_INCLUDE_GLCOREARB
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/vec4.hpp>
@@ -78,6 +64,7 @@ private:
   void preloadObjectMap();
   void loadShader();
   void loadIntoHardwareMemory();
+  void exportAsRaw();
   
   void loadWaterIntoMemory();
   void loadWaterAt(int x, int y);
@@ -102,5 +89,3 @@ public:
   void Update(Transform& transform, Camera& camera);
   void RenderWater();
 };
-
-#endif /* defined(__CE_Character_Lab__TerrainRenderer__) */

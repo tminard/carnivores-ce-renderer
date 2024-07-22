@@ -6,7 +6,6 @@
 //  Copyright (c) 2015 Tyler Minard. All rights reserved.
 //
 #define GLM_ENABLE_EXPERIMENTAL
-#define GLFW_INCLUDE_GLCOREARB
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
@@ -65,6 +64,14 @@ void cursorPosCallback(GLFWwindow* window, double xpos, double ypos)
   input_manager->cursorPosCallback(window, xpos, ypos);
 }
 
+float CalculateHeadBobble(double currentTime) {
+    // Adjust the following parameters to control the head bobble effect
+    float bobbleFrequency = 100.0f;  // Adjust the frequency of the bobble
+    float bobbleAmplitude = 20.0f; // Adjust the amplitude of the bobble
+
+    return bobbleAmplitude * sin(currentTime * bobbleFrequency);
+}
+
 int main(int argc, const char * argv[])
 {
   alDistanceModel(AL_LINEAR_DISTANCE);
@@ -74,8 +81,8 @@ int main(int argc, const char * argv[])
   std::unique_ptr<LocalVideoManager> video_manager(new LocalVideoManager());
   std::unique_ptr<LocalAudioManager> g_audio_manager(new LocalAudioManager());
 
-  std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile(CEMapType::C2, "C:/src/cce/game/c2/area2.rsc"));
-  std::shared_ptr<C2MapFile> cMap(new C2MapFile(CEMapType::C2, "C:/src/cce/game/c2/area2.map", cMapRsc.get()));
+  std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile(CEMapType::C1, "/Users/tminard/source/carnivores/carnivores-ce-renderer/runtime/cce/game/c1/area5.rsc"));
+  std::shared_ptr<C2MapFile> cMap(new C2MapFile(CEMapType::C1, "/Users/tminard/source/carnivores/carnivores-ce-renderer/runtime/cce/game/c1/area5.map", cMapRsc.get()));
   std::unique_ptr<TerrainRenderer> terrain(new TerrainRenderer(cMap.get(), cMapRsc.get()));
 
   GLFWwindow* window = video_manager->GetWindow();
@@ -110,7 +117,7 @@ int main(int argc, const char * argv[])
   glViewport(0, 0, width, height);
   std::shared_ptr<CEAudioSource> m_ambient;
   std::shared_ptr<CEAudioSource> m_random_ambient;
-
+  
   m_ambient = cMapRsc->getAmbientAudio(0);
   g_audio_manager->playAmbient(m_ambient);
 
@@ -122,9 +129,18 @@ int main(int argc, const char * argv[])
   glm::vec2 current_world_pos = g_player_controller->getWorldPosition();
   int current_ambient_id = 0;
 
-  while (!glfwWindowShouldClose(window))
+  while (!glfwWindowShouldClose(window) && !input_manager->GetShouldShutdown())
   {
     glfwMakeContextCurrent(window);
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    Camera* camera = g_player_controller->getCamera();
+
+    if (render_sky) {
+        glDisable(GL_DEPTH_TEST);
+        cMapRsc->getDaySky()->Render(window, *camera);
+        glEnable(GL_DEPTH_TEST);
+    }
 
     glm::vec3 currentPosition = g_player_controller->getPosition();
     double currentTime = glfwGetTime();
@@ -154,14 +170,20 @@ int main(int argc, const char * argv[])
       current_world_pos = next_world_pos;
     }
 
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    Camera* camera = g_player_controller->getCamera();
+    float headBobbleAmount = CalculateHeadBobble(currentTime);
+    float headBobbleAmountLast = CalculateHeadBobble(lastTime);
 
-    if (render_sky) {
-      glDisable(GL_DEPTH_TEST);
-      cMapRsc->getDaySky()->Render(window, *camera);
-      glEnable(GL_DEPTH_TEST);
-    }
+    // Modify the camera's vertical position based on the head bobble
+    float elevation = cMap->getHeightAt(
+        (cMap->getWidth() * (int)next_world_pos.y) +
+        (int)next_world_pos.x
+    );
+    float heightBuffer = 310.f;
+
+    // Apply the head bobble effect
+    elevation = (elevation + (camera->GetHeight() + heightBuffer - (headBobbleAmountLast))) / 2;
+
+    // g_player_controller->setElevation(elevation);
 
     if (render_objects) {
       glDisable(GL_CULL_FACE);
@@ -181,7 +203,7 @@ int main(int argc, const char * argv[])
       terrain->RenderWater();
     }
 
-    g_player_controller->update();
+    g_player_controller->update(timeDelta);
 
     glfwSwapBuffers(window);
 

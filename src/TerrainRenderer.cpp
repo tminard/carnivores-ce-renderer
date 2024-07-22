@@ -20,6 +20,7 @@ TerrainRenderer::TerrainRenderer(C2MapFile* c_map_weak, C2MapRscFile* c_rsc_weak
 : m_cmap_data_weak(c_map_weak), m_crsc_data_weak(c_rsc_weak)
 {
   this->loadIntoHardwareMemory();
+  // this->exportAsRaw();
   this->loadShader();
   this->preloadObjectMap();
 }
@@ -35,6 +36,32 @@ TerrainRenderer::~TerrainRenderer()
     glDeleteBuffers(1, &this->m_waters[w].m_iab);
     glDeleteVertexArrays(1, &this->m_waters[w].m_vao);
   }
+}
+
+void TerrainRenderer::exportAsRaw()
+{
+    ofstream out("output.obj", ios::out | ios::binary);
+    for (int vi = 0; vi < m_vertices.size(); vi++)
+    {
+        CETerrainVertex v = m_vertices.at(vi);
+
+        out << "v " << v.m_position.x << " " <<
+            v.m_position.y << " " <<
+            v.m_position.z << "\n";
+    }
+    for (size_t i = 0; i < m_indices.size(); i += 3) {
+        uint32 ia = m_indices.at(i) + 1; // obj is base 1 idx
+        uint32 ib = m_indices.at(i + (size_t)1) + 1; // obj is base 1 idx
+        uint32 ic = m_indices.at(i + (size_t)2) + 1; // obj is base 1 idx
+
+        // triangle groups
+        out << "f" << " " <<
+            ia << " " <<
+            ib << " " <<
+            ic << "\n";
+    }
+
+    out.close();
 }
 
 /*
@@ -54,6 +81,10 @@ void TerrainRenderer::preloadObjectMap()
 
       float object_height;
       CEWorldModel* w_obj = this->m_crsc_data_weak->getWorldModel(obj_id);
+      if (w_obj == nullptr) {
+          printf("Invalid object referenced\n");
+          continue;
+      }
       
       if (w_obj->getObjectInfo()->flags & objectPLACEGROUND) {
         // TODO: original implementation gets the lowest height of a quad and uses that.
@@ -100,8 +131,8 @@ void TerrainRenderer::preloadObjectMap()
 
 void TerrainRenderer::loadShader()
 {
-  this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram("C:/src/cce/shaders/terrain.vs", "C:/src/cce/shaders/terrain.fs"));
-  this->m_water_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram("C:/src/cce/shaders/water_surface.vs", "C:/src/cce/shaders/water_surface.fs"));
+  this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram("/Users/tminard/source/carnivores/carnivores-ce-renderer/runtime/cce/shaders/terrain.vs", "/Users/tminard/source/carnivores/carnivores-ce-renderer/runtime/cce/shaders/terrain.fs"));
+  this->m_water_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram("/Users/tminard/source/carnivores/carnivores-ce-renderer/runtime/cce/shaders/water_surface.vs", "/Users/tminard/source/carnivores/carnivores-ce-renderer/runtime/cce/shaders/water_surface.fs"));
 
   this->m_shader->use();
   this->m_shader->setFloat("view_distance", (128.f*1024.f));
@@ -120,13 +151,18 @@ void TerrainRenderer::loadShader()
 void TerrainRenderer::Update(Transform& transform, Camera& camera)
 {
   glm::mat4 MVP = transform.GetMVP(camera);
+  glm::mat4 model = transform.GetStaticModel(); // Assuming this method exists
   double t = glfwGetTime();
 
   this->m_shader->use();
   this->m_shader->setMat4("MVP", MVP);
   this->m_water_shader->use();
   this->m_water_shader->setMat4("MVP", MVP);
+  this->m_water_shader->setMat4("model", model);
   this->m_water_shader->setFloat("RealTime", (float)t);
+  this->m_water_shader->setVec3("light_dir", camera.GetCurrentPos()); // Assuming lightDir is defined
+  this->m_water_shader->setVec3("view_dir", camera.GetCurrentPos()); // Assuming GetViewDir() returns the camera view direction
+
 
   m_last_update_time = t;
 }
@@ -323,6 +359,8 @@ float TerrainRenderer::calcWaterAlpha(int tile_x, int tile_y, float water_height
  */
 void TerrainRenderer::loadWaterAt(int x, int y)
 {
+    if (m_crsc_data_weak->getWaterCount() < 1) return; // Some community maps do not have any waters defined
+
   int width = this->m_cmap_data_weak->getWidth();
   int height = this->m_cmap_data_weak->getHeight();
   int xy = (y*width) + x;
@@ -355,10 +393,10 @@ void TerrainRenderer::loadWaterAt(int x, int y)
 
   std::array<glm::vec2, 4> vertex_uv_mapping = this->calcUVMapForQuad(x, y, quad_reverse, 0);
 
-  Vertex v1(vpositionLL, vertex_uv_mapping[0], glm::vec3(0,0,0), false, calcWaterAlpha(x, y, wheight), texture_id, 0);
-  Vertex v2(vpositionLR, vertex_uv_mapping[1], glm::vec3(0,0,0), false, calcWaterAlpha(fmin(x+1, height-1), y, wheight), texture_id, 0);
-  Vertex v3(vpositionUL, vertex_uv_mapping[2], glm::vec3(0,0,0), false, calcWaterAlpha(x, fmin(y+1, width-1), wheight), texture_id, 0);
-  Vertex v4(vpositionUR, vertex_uv_mapping[3], glm::vec3(0,0,0), false, calcWaterAlpha(fmin(x+1, height-1), fmin(y+1, width-1), wheight), texture_id, 0);
+  Vertex v1(vpositionLL, vertex_uv_mapping[0], glm::vec3(0), false, calcWaterAlpha(x, y, wheight), texture_id, 0);
+  Vertex v2(vpositionLR, vertex_uv_mapping[1], glm::vec3(0), false, calcWaterAlpha(fmin(x+1, height-1), y, wheight), texture_id, 0);
+  Vertex v3(vpositionUL, vertex_uv_mapping[2], glm::vec3(0), false, calcWaterAlpha(x, fmin(y+1, width-1), wheight), texture_id, 0);
+  Vertex v4(vpositionUR, vertex_uv_mapping[3], glm::vec3(0), false, calcWaterAlpha(fmin(x+1, height-1), fmin(y+1, width-1), wheight), texture_id, 0);
 
   water_object->m_vertices.push_back(v1);
   water_object->m_vertices.push_back(v2);
@@ -470,6 +508,14 @@ void TerrainRenderer::loadIntoHardwareMemory()
       
       std::array<glm::vec2, 4> vertex_uv_mapping = this->calcUVMapForQuad(x, y, quad_reverse, texture_direction);
 
+      // TODO: vertex normals
+      // to get the vertex normal:
+      // 1. find the connected faces
+      // 2. get the average of the face normals
+      // 3. this is the vertex normal
+      // Since we dont determine faces until we calculate vertices, we need to do this on the fly
+      // Use memoization.
+      // Each pass is building the two faces of the given quad.
       CETerrainVertex v1(vpositionLL, this->getScaledAtlasUVQuad(vertex_uv_mapping[0], texID, texID2), glm::vec3(0), this->m_cmap_data_weak->getBrightnessAt(x, y));
       CETerrainVertex v2(vpositionLR, this->getScaledAtlasUVQuad(vertex_uv_mapping[1], texID, texID2), glm::vec3(0), this->m_cmap_data_weak->getBrightnessAt(fmin(x + 1, height - 1), y));
       CETerrainVertex v3(vpositionUL, this->getScaledAtlasUVQuad(vertex_uv_mapping[2], texID, texID2), glm::vec3(0), this->m_cmap_data_weak->getBrightnessAt(x, fmin(y + 1, width - 1)));
@@ -486,20 +532,21 @@ void TerrainRenderer::loadIntoHardwareMemory()
       unsigned int upper_right = upper_left + 1;
 
       // If quad reverse, anchor upper right (bottom left, upper right, lower right). Otherwise, anchor upper left (bottom left, upper left, lower right)
+      // Clockwise order.
       if (quad_reverse) {
-        m_indices.push_back(lower_left);
+        m_indices.push_back(lower_left); // Face 1
         m_indices.push_back(upper_left);
         m_indices.push_back(lower_right);
 
-        m_indices.push_back(lower_right);
+        m_indices.push_back(lower_right); // Face 2
         m_indices.push_back(upper_left);
         m_indices.push_back(upper_right);
       } else {
-        m_indices.push_back(lower_left);
+        m_indices.push_back(lower_left); // Face 1
         m_indices.push_back(upper_right);
         m_indices.push_back(lower_right);
 
-        m_indices.push_back(lower_left);
+        m_indices.push_back(lower_left); // Face 2
         m_indices.push_back(upper_left);
         m_indices.push_back(upper_right);
       }
@@ -507,6 +554,23 @@ void TerrainRenderer::loadIntoHardwareMemory()
   }
   
   m_num_indices = (int)m_indices.size();
+
+  // TODO: iterate over indices here to build the vertice normals
+  for (int y = 0; y < width; y++) {
+      for (int x = 0; x < height; x++) {
+          long long base_index = ((long long)y * width) + x;
+
+          // The next 3 indices are the vertices of the first face
+          int face_1_index = m_indices.at(base_index);
+
+          // The next 3 indices are the vertices of the second face
+          int face_2_index = m_indices.at(base_index + 3);
+
+          // For each face, we must determine the adjacent faces and calculate a single normal
+          // Then, set the normal for each vertex to the average of the face normals
+          // Note: you must keep the quad order in mind when determining this.
+      }
+  }
   
   // generate buffers and upload
   glGenVertexArrays(1, &this->m_vertex_array_object);

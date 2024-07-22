@@ -81,15 +81,15 @@ int main(int argc, const char * argv[])
   std::unique_ptr<LocalVideoManager> video_manager(new LocalVideoManager());
   std::unique_ptr<LocalAudioManager> g_audio_manager(new LocalAudioManager());
 
-  std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile(CEMapType::C1, "/Users/tminard/source/carnivores/carnivores-ce-renderer/runtime/cce/game/c1/area5.rsc"));
-  std::shared_ptr<C2MapFile> cMap(new C2MapFile(CEMapType::C1, "/Users/tminard/source/carnivores/carnivores-ce-renderer/runtime/cce/game/c1/area5.map", cMapRsc.get()));
+  std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile(CEMapType::C2, "/Users/tminard/source/carnivores/carnivores-ce-renderer/runtime/cce/game/triassic/area2.rsc"));
+  std::shared_ptr<C2MapFile> cMap(new C2MapFile(CEMapType::C2, "/Users/tminard/source/carnivores/carnivores-ce-renderer/runtime/cce/game/triassic/area2.map", cMapRsc.get()));
   std::unique_ptr<TerrainRenderer> terrain(new TerrainRenderer(cMap.get(), cMapRsc.get()));
 
   GLFWwindow* window = video_manager->GetWindow();
   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
   std::shared_ptr<CEPlayer> g_player_state(new CEPlayer());
-  std::shared_ptr<CELocalPlayerController> g_player_controller(new CELocalPlayerController(std::move(g_player_state), cMap->getWidth(), cMap->getHeight(), cMap->getTileLength()));
+  std::shared_ptr<CELocalPlayerController> g_player_controller(new CELocalPlayerController(std::move(g_player_state), cMap->getWidth(), cMap->getHeight(), cMap->getTileLength(), cMap));
   g_audio_manager->bind(g_player_controller);
   input_manager->Bind(g_player_controller);
 
@@ -136,19 +136,13 @@ int main(int argc, const char * argv[])
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     Camera* camera = g_player_controller->getCamera();
 
-    if (render_sky) {
-        glDisable(GL_DEPTH_TEST);
-        cMapRsc->getDaySky()->Render(window, *camera);
-        glEnable(GL_DEPTH_TEST);
-    }
-
     glm::vec3 currentPosition = g_player_controller->getPosition();
     double currentTime = glfwGetTime();
     double timeDelta = currentTime - lastTime;
 
     double rnTimeDelta = currentTime - lastRndAudioTime;
 
-    if (rnTimeDelta >= 10.0) {
+    if (rnTimeDelta >= 45.0) {
         // TODO: handle maps that have no random audio
       m_random_ambient = cMapRsc->getRandomAudio(currentPosition.x, currentPosition.y, currentPosition.z - 256.f);
       g_audio_manager->play(std::move(m_random_ambient));
@@ -185,23 +179,41 @@ int main(int argc, const char * argv[])
 
     // g_player_controller->setElevation(elevation);
 
-    if (render_objects) {
-      glDisable(GL_CULL_FACE);
-      terrain->RenderObjects(*camera);
-      glEnable(GL_CULL_FACE);
-    }
+      // Render the sky first
+      if (render_sky) {
+          glDepthFunc(GL_LEQUAL);
+          glDisable(GL_CULL_FACE);
+          glDepthMask(GL_FALSE); // Disable depth writes
+          cMapRsc->getDaySky()->Render(window, *camera);
+          glDepthMask(GL_TRUE); // Re-enable depth writes
+          glEnable(GL_CULL_FACE);
+      }
 
-    if (render_terrain) {
-      cMapRsc->getTexture(0)->use();
-      terrain->Update(g_terrain_transform, *camera);
-      glDepthFunc(GL_LESS);
-      terrain->Render();
-    }
+      // Render the terrain objects
+      if (render_objects) {
+          glDisable(GL_CULL_FACE);
+          glDepthFunc(GL_LEQUAL);
+          terrain->RenderObjects(*camera);
+          glEnable(GL_CULL_FACE);
+      }
 
-    if (render_water) {
-      glDepthFunc(GL_LEQUAL);
-      terrain->RenderWater();
-    }
+      // Render the terrain
+      if (render_terrain) {
+          glEnable(GL_POLYGON_OFFSET_FILL);
+          glPolygonOffset(1.0, 1.0); // Adjust these values as needed
+          cMapRsc->getTexture(0)->use();
+          terrain->Update(g_terrain_transform, *camera);
+          glDepthFunc(GL_LESS);
+          terrain->Render();
+          glDisable(GL_POLYGON_OFFSET_FILL);
+      }
+
+      // Render the water
+      if (render_water) {
+          glDepthFunc(GL_LEQUAL);
+          terrain->RenderWater();
+      }
+
 
     g_player_controller->update(timeDelta);
 

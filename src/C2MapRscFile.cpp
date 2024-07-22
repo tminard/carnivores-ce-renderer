@@ -76,11 +76,24 @@ void C2MapRscFile::setWaterHeight(int i, int h_unscaled)
   this->m_waters.at(i) = wd;
 }
 
+float getRandomFloat(float min, float max) {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<> dis(min, max);
+    return dis(gen);
+}
+
 std::shared_ptr<CEAudioSource> C2MapRscFile::getRandomAudio(int x, int y, int z)
 {
   int rnd = rand() % (this->m_random_audio_sources.size()-1);
   std::shared_ptr<CEAudioSource> src = this->m_random_audio_sources.at(rnd);
-  src->setPosition(glm::vec3(x, y, z));
+    
+    float min = 128.0f * -60.f;
+    float max = 128.0f * 60.f;
+
+    float randomX = x + getRandomFloat(min, max);
+    float randomY = y + getRandomFloat(min, max);
+  src->setPosition(glm::vec3(randomX, randomY, z));
 
   return src;
 }
@@ -113,6 +126,15 @@ int C2MapRscFile::getAtlasTileWidth()
 int C2MapRscFile::getAtlasTilePadding()
 {
   return 32;
+}
+
+glm::vec4 C2MapRscFile::getFadeColor()
+{
+    if (m_type == CEMapType::C2) {
+      return glm::vec4(m_fade_rgb[1][0], m_fade_rgb[1][1], m_fade_rgb[1][2], 1.f);
+    } else {
+      return glm::vec4(m_fade_rgb[0][0], m_fade_rgb[0][1], m_fade_rgb[0][2], 1.f);
+    }
 }
 
 void C2MapRscFile::load(const std::string &file_name)
@@ -301,12 +323,7 @@ void C2MapRscFile::load(const std::string &file_name)
     }
 
     this->m_day_sky = std::unique_ptr<C2Sky>(new C2Sky(infile));
-
-    if (m_type == CEMapType::C2) {
-      this->m_day_sky->setRGBA(glm::vec4(m_fade_rgb[1][0], m_fade_rgb[1][1], m_fade_rgb[1][2], 1.f));
-    } else {
-      this->m_day_sky->setRGBA(glm::vec4(m_fade_rgb[0][0], m_fade_rgb[0][1], m_fade_rgb[0][2], 1.f));
-    }
+    this->m_day_sky->setRGBA(this->getFadeColor());
 
     if (m_type == CEMapType::C2) {
       this->m_night_sky = std::unique_ptr<C2Sky>(new C2Sky(infile));

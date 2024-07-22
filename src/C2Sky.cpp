@@ -226,12 +226,15 @@ void C2Sky::Render(GLFWwindow* window, Camera& camera)
   view[3][2] = 0.0f;
 
   glm::mat4 projection = glm::perspective(glm::radians(80.0f), (float)width / (float)height, 0.1f, 100000.f);
+  float elapsedTime = static_cast<float>(glfwGetTime());
 
   // Render the skybox
-  //glDepthFunc(GL_LEQUAL); // Change depth function so depth test passes when values are equal to depth buffer's content
+  glDepthFunc(GL_LEQUAL); // Change depth function so depth test passes when values are equal to depth buffer's content
   this->m_shader->use();
   this->m_shader->setMat4("view", view);
   this->m_shader->setMat4("projection", projection);
+  this->m_shader->setFloat("time", elapsedTime); // Pass the elapsed time to the shader
+
 
   glBindVertexArray(this->m_vertex_array_object);
 
@@ -247,7 +250,7 @@ void C2Sky::Render(GLFWwindow* window, Camera& camera)
   this->m_texture->use();
   glDrawArrays(GL_TRIANGLES, 0, 6);
 
-  //glDepthFunc(GL_LESS); // Set depth function back to default
+  glDepthFunc(GL_LESS); // Set depth function back to default
 
   glBindVertexArray(0);
 }

@@ -31,6 +31,5 @@ void main()
 
     vec3 finalColor = vec3(sC.b * percent, sC.g * percent, sC.r * percent);
     finalColor = finalColor.rgb;
-   
     outputColor = vec4(finalColor, alpha);
 }

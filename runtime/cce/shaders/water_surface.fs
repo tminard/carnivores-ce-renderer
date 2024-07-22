@@ -2,11 +2,13 @@
 
 in vec2 texCoord0;
 smooth in float alpha0;
+in float EdgeFactor;
 
 out vec4 outputColor;
 
 uniform sampler2D basic_texture;
 uniform float time; // Time for wave animation
+uniform vec4 skyColor;
 
 const float wave_speed = 0.1;
 const float wave_scale = 0.02;
@@ -21,8 +23,9 @@ void main()
 
     vec3 finalColor = vec3(sC.b, sC.g, sC.r);
    
-    // Ensure the alpha does not go below 0.75
-    float finalAlpha = max(alpha0, 0.25);
+    // Ensure the alpha does not go below factor
+    float finalAlpha = max(alpha0, 0.15);
 
-    outputColor = vec4(finalColor, finalAlpha);
+    outputColor = mix(vec4(finalColor, finalAlpha), skyColor, 1.0 - EdgeFactor);
+    //outputColor = vec4(finalColor, finalAlpha);
 }

@@ -15,9 +15,12 @@
 #include <vector>
 #include <memory>
 #include <array>
+#include <random>
 
 #include "g_shared.h"
 #include "dependency/libAF/af2-sound.h"
+
+#include <glm/glm.hpp>
 
 using libAF2::Sound;
 
@@ -88,6 +91,8 @@ public:
   CEWorldModel* getWorldModel(int i);
   CETexture* getTexture(int i);
   C2Sky* getDaySky();
+    
+  glm::vec4 getFadeColor();
 
   std::shared_ptr<CEAudioSource> getAmbientAudio(int i);
   std::shared_ptr<CEAudioSource> getRandomAudio(int x, int y, int z);

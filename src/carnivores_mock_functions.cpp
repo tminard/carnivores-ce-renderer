@@ -15,7 +15,7 @@
 #include <iostream>
 #include <string>
 
-// #define M_PI 3.14
+#define M_PI 3.14
 
 extern WORD  FadeTab[65][0x8000];
 

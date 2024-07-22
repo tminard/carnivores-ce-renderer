@@ -63,7 +63,7 @@ include_directories(
 if(APPLE)
     target_link_libraries(${PROJECT_NAME} glad ${GLFW3_LIBRARY} "-framework OpenAL" "-framework OpenGL" "-framework CoreFoundation" "-framework IOKit" "-framework CoreGraphics" "-framework AppKit" ${LIBS})
 else()
-    target_link_libraries(${PROJECT_NAME} glad ${GLFW3_LIBRARY} OpenAL32.lib GL ${LIBS})
+    target_link_libraries(${PROJECT_NAME} glad ${GLFW3_LIBRARY} OpenAL32.lib OpenGL32.lib ${LIBS})
 endif()
 
 if(APPLE)

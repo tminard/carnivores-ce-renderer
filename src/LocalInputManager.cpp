@@ -60,29 +60,26 @@ void LocalInputManager::cursorPosCallback(GLFWwindow* window, double xpos, doubl
 
 void LocalInputManager::ProcessLocalInput(GLFWwindow* window, float deltaTime)
 {
+    double currentTime = glfwGetTime();
+    double timeDelta = currentTime - this->lastTime;
     if (this->m_player_controller) {
-        this->lastTime = glfwGetTime();
-
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
             this->m_should_shutdown = true;
         }
+      
+      bool forwardPressed = glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS;
+      bool backwardPressed = glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS;
+      bool rightPressed = glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS;
+      bool leftPressed = glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS;
 
-        if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-            m_player_controller->moveForward();
-        }
-
-        if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-            m_player_controller->moveBackward();
-        }
-
-        if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-            m_player_controller->strafeRight();
-        }
-
-        if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-            m_player_controller->strafeLeft();
-        }
-
+      m_player_controller->move(currentTime, timeDelta, forwardPressed, backwardPressed, rightPressed, leftPressed);
+      
+      if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && this->m_last_key_state[GLFW_KEY_SPACE] != GLFW_PRESS) {
+          this->m_last_key_state[GLFW_KEY_SPACE] = GLFW_PRESS;
+          m_player_controller->jump(currentTime);
+      } else if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_RELEASE) {
+        this->m_last_key_state[GLFW_KEY_SPACE] = GLFW_RELEASE;
+      }
         if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS && this->m_last_key_state[GLFW_KEY_O] != GLFW_PRESS) {
             this->m_last_key_state[GLFW_KEY_O] = GLFW_PRESS;
             m_player_controller->DBG_printLocationInformation();
@@ -107,4 +104,6 @@ void LocalInputManager::ProcessLocalInput(GLFWwindow* window, float deltaTime)
             this->m_last_key_state[GLFW_KEY_P] = GLFW_RELEASE;
         }
     }
+  
+  this->lastTime = currentTime;
 }

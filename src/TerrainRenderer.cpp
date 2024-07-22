@@ -136,6 +136,10 @@ void TerrainRenderer::loadShader()
 
   this->m_shader->use();
   this->m_shader->setFloat("view_distance", (128.f*1024.f));
+  this->m_water_shader->use();
+  this->m_water_shader->setVec3("mapDimensions", glm::vec3(this->m_cmap_data_weak->getWidth() * this->m_cmap_data_weak->getTileLength(), this->m_cmap_data_weak->getHeight() * this->m_cmap_data_weak->getTileLength(), this->m_cmap_data_weak->getTileLength()));
+    auto color = this->m_crsc_data_weak->getFadeColor();
+  this->m_water_shader->setVec4("skyColor", glm::vec4(color.r / 255.f, color.g / 255.f, color.b / 255.f, color.a));
 }
 
 //      /*
@@ -160,9 +164,7 @@ void TerrainRenderer::Update(Transform& transform, Camera& camera)
   this->m_water_shader->setMat4("MVP", MVP);
   this->m_water_shader->setMat4("model", model);
   this->m_water_shader->setFloat("RealTime", (float)t);
-  this->m_water_shader->setVec3("light_dir", camera.GetCurrentPos()); // Assuming lightDir is defined
-  this->m_water_shader->setVec3("view_dir", camera.GetCurrentPos()); // Assuming GetViewDir() returns the camera view direction
-
+  this->m_water_shader->setVec3("cameraPos", camera.GetCurrentPos());
 
   m_last_update_time = t;
 }

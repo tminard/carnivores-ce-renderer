@@ -13,6 +13,8 @@
 #include "CEAudioSource.hpp"
 #include "camera.h"
 
+#define TARGET_OS_MAC 1
+
 #define TEST_OPENAL_ERROR(_msg)    \
 ALCenum error = alGetError();    \
 if (error != AL_NO_ERROR) {  \
@@ -33,10 +35,10 @@ private:
   /*
    * Collection of active audio sources for "one off" tracks
    */
-  std::vector<std::shared_ptr<CEAudioSource>> m_current_audio_sources;
+  std::vector<std::shared_ptr<CEAudioSource> > m_current_audio_sources;
   std::mutex m_mutate_audio_sources;
 
-  std::vector<std::shared_ptr<CEAudioSource>> m_ambient_queue;
+  std::vector<std::shared_ptr<CEAudioSource> > m_ambient_queue;
   std::shared_ptr<CEAudioSource> m_next_ambient;
   double m_next_ambient_started_at;
   std::mutex m_mutate_next_ambient;

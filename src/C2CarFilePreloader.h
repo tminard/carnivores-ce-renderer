@@ -17,7 +17,7 @@ class C2CarFile;
 
 class C2CarFilePreloader
 {
-  std::map<std::string, std::shared_ptr<C2CarFile>> _files;
+    std::map<std::string, std::shared_ptr<C2CarFile> > _files;
   
 public:
 	const std::shared_ptr<C2CarFile>& fetch(std::string file_name);

@@ -12,7 +12,6 @@
 #include <memory>
 #include <vector>
 
-#define GLFW_INCLUDE_GLCOREARB
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/vec3.hpp>

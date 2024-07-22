@@ -21,3 +21,22 @@ A Carnivores 1, 2, and Ice Age renderer using C++ and OpenGL 3.
  #            VS 11 is VS 2012,
  #            VS 10 is VS 2010
  ```
+
+## Mac OS X
+
+- Make sure CMake is installed
+- Make sure glfw and glew is installed
+
+```sh
+brew install glew glwf3
+```
+
+- Run cmake and open the xcode project
+
+```sh
+cmake -G "Xcode" -B build
+```
+
+We use OpenAL but it should be already included. LMK if you run into issues and we can update the install guide.
+
+Note that resources are hardcoded to a specific path. All files are included in runtime but you will need to update paths.

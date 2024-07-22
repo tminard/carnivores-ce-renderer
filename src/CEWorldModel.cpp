@@ -10,7 +10,7 @@
 
 #include "IndexedMeshLoader.h"
 
-#include <GLFW/glfw3.h>
+// #include <GLFW/glfw3.h>
 
 #include "transform.h"
 #include "camera.h"

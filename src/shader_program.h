@@ -2,8 +2,8 @@
 #define NSHADER_H
 
 #define GLM_ENABLE_EXPERIMENTAL
-#define GLFW_INCLUDE_GLCOREARB
 #define GL_GLEXT_PROTOTYPES 1
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 

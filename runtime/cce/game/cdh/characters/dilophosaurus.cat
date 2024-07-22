@@ -1,0 +1,64 @@
+carnivores_character
+
+[general]
+title = "Dilophosaurus"
+model = "dilophosaurus.3dn"
+
+[animations]
+count = 11
+
+animation_id 0
+	file = "dilophosaurus_walk"
+animation_id 1
+	file = "dilophosaurus_run"
+	sound_index = 1
+animation_id 2
+	file = "dilophosaurus_idle_active"
+	sound_index = 2
+animation_id 3
+	file = "dilophosaurus_idle_passive"
+	sound_index = 3
+animation_id 4
+	file = "dilophosaurus_growl"
+	sound_index = 4
+animation_id 5
+	file = "dilophosaurus_die"
+	sound_index = 5
+animation_id 6
+	file = "dilophosaurus_sleep"
+	sound_index = 6
+animation_id 7
+	file = "dilophosaurus_eat"
+	sound_index = 7
+animation_id 8
+	file = "dilophosaurus_swim"
+animation_id 9
+	file = "dilophosaurus_attack"
+	sound_index = 10
+animation_id 10
+	file = "dilophosaurus_call"
+	sound_index = 9
+
+[sounds]
+count = 10
+
+sound_id 0
+	file = "dilophosaurus_walk"
+sound_id 1
+	file = "dilophosaurus_run"
+sound_id 2
+	file = "dilophosaurus_idle_1"
+sound_id 3
+	file = "dilophosaurus_idle_2"
+sound_id 4
+	file = "dilophosaurus_idle_3"
+sound_id 5
+	file = "dilophosaurus_die"
+sound_id 6
+	file = "dilophosaurus_sleep"
+sound_id 7
+	file = "dilophosaurus_eat"
+sound_id 8
+	file = "dilophosaurus_attack"
+sound_id 9
+	file = "dilophosaurus_call"

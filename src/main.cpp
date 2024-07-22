@@ -6,7 +6,6 @@
 //  Copyright (c) 2015 Tyler Minard. All rights reserved.
 //
 #define GLM_ENABLE_EXPERIMENTAL
-#define GLFW_INCLUDE_GLCOREARB
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
@@ -82,8 +81,8 @@ int main(int argc, const char * argv[])
   std::unique_ptr<LocalVideoManager> video_manager(new LocalVideoManager());
   std::unique_ptr<LocalAudioManager> g_audio_manager(new LocalAudioManager());
 
-  std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile(CEMapType::C1, "C:/src/cce/game/c1/AREA5.RSC"));
-  std::shared_ptr<C2MapFile> cMap(new C2MapFile(CEMapType::C1, "C:/src/cce/game/c1/AREA5.MAP", cMapRsc.get()));
+  std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile(CEMapType::C1, "/Users/tminard/source/carnivores/carnivores-ce-renderer/runtime/cce/game/c1/area5.rsc"));
+  std::shared_ptr<C2MapFile> cMap(new C2MapFile(CEMapType::C1, "/Users/tminard/source/carnivores/carnivores-ce-renderer/runtime/cce/game/c1/area5.map", cMapRsc.get()));
   std::unique_ptr<TerrainRenderer> terrain(new TerrainRenderer(cMap.get(), cMapRsc.get()));
 
   GLFWwindow* window = video_manager->GetWindow();

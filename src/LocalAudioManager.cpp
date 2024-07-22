@@ -5,6 +5,8 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include <thread>
+
 LocalAudioManager::LocalAudioManager()
 {
   m_next_ambient = nullptr;
@@ -132,7 +134,7 @@ void LocalAudioManager::bind(std::shared_ptr<CELocalPlayerController> player)
   this->update();
 
   m_ready = true;
-  m_update_thread = std::thread([this] { startUpdateLoop(); });
+    m_update_thread = std::thread([this] { this->startUpdateLoop(); });
 }
 
 /*
@@ -175,7 +177,7 @@ void LocalAudioManager::update()
   // Loop through currently playing sources and check status
   {
     std::lock_guard<std::mutex> guard(m_mutate_audio_sources);
-    std::vector<std::shared_ptr<CEAudioSource>> playing;
+    std::vector<std::shared_ptr<CEAudioSource> > playing;
 
     for(auto const& source: this->m_current_audio_sources) {
       if (source->isPlaying()) {
@@ -192,7 +194,7 @@ void LocalAudioManager::update()
   // TODO: generalize this?
   {
     std::lock_guard<std::mutex> guard(m_mutate_ambient_queue);
-    std::vector<std::shared_ptr<CEAudioSource>> playing;
+    std::vector<std::shared_ptr<CEAudioSource> > playing;
 
     for(auto const& source: this->m_ambient_queue) {
       if (source->isPlaying()) {

@@ -82,7 +82,7 @@ void TerrainRenderer::preloadObjectMap()
       float object_height;
       CEWorldModel* w_obj = this->m_crsc_data_weak->getWorldModel(obj_id);
       if (w_obj == nullptr) {
-          printf_s("Invalid object referenced\n");
+          printf("Invalid object referenced\n");
           continue;
       }
       
@@ -131,8 +131,8 @@ void TerrainRenderer::preloadObjectMap()
 
 void TerrainRenderer::loadShader()
 {
-  this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram("C:/src/cce/shaders/terrain.vs", "C:/src/cce/shaders/terrain.fs"));
-  this->m_water_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram("C:/src/cce/shaders/water_surface.vs", "C:/src/cce/shaders/water_surface.fs"));
+  this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram("/Users/tminard/source/carnivores/carnivores-ce-renderer/runtime/cce/shaders/terrain.vs", "/Users/tminard/source/carnivores/carnivores-ce-renderer/runtime/cce/shaders/terrain.fs"));
+  this->m_water_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram("/Users/tminard/source/carnivores/carnivores-ce-renderer/runtime/cce/shaders/water_surface.vs", "/Users/tminard/source/carnivores/carnivores-ce-renderer/runtime/cce/shaders/water_surface.fs"));
 
   this->m_shader->use();
   this->m_shader->setFloat("view_distance", (128.f*1024.f));

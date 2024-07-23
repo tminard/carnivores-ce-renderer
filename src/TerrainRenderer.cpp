@@ -94,7 +94,7 @@ void TerrainRenderer::preloadObjectMap()
       
       if (w_obj->getObjectInfo()->flags & objectPLACEGROUND) {
         // TODO: original implementation gets the lowest height of a quad and uses that.
-        float map_height = this->m_cmap_data_weak->getHeightAt(xy);
+        float map_height = this->m_cmap_data_weak->interpolateHeight(x, y);
         object_height = map_height - (w_obj->getObjectInfo()->YLo / 2.f); // Copies funny offsetting in original source - key is to avoid z-fighting without exposing gaps
       } else {
         object_height = this->m_cmap_data_weak->getObjectHeightAt(xy);

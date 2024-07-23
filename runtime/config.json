@@ -1,8 +1,8 @@
 {
-  "basePath": "C:\\src\\carnivores-ce-renderer\\runtime\\cce\\",
+  "basePath": "../../runtime/cce/",
   "map": {
     "type": "C1",
-    "map": "game\\c1\\area2.map",
-    "rsc": "game\\c1\\area2.rsc"
+    "map": "game/c1/area2.map",
+    "rsc": "game/c1/area2.rsc"
   }
 }

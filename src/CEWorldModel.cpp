@@ -52,9 +52,9 @@ CEWorldModel::CEWorldModel(const CEMapType type, std::ifstream& instream)
   instream.read(reinterpret_cast<char *>(texture_data.data()), _tsize);
   
   for (int v=0; v < _vcount; v++) {
-    file_vertex_data[v].z *= -1.0f; // Original models need to be inverted across z axis
-    file_vertex_data[v].x *= 1.0f;
-    file_vertex_data[v].y *= 1.0f;
+    file_vertex_data[v].z *= -2.0f; // Original models need to be inverted across z axis
+    file_vertex_data[v].x *= 2.0f;
+    file_vertex_data[v].y *= 2.0f;
   }
 
   if (type == CEMapType::C2) instream.read(reinterpret_cast<char *>(spirit_texture_data.data()), 128*128*2);

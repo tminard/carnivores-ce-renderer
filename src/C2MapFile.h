@@ -47,8 +47,8 @@ private:
   const CEMapType m_type;
   constexpr static const int SIZE = 1024;
   constexpr static const int SIZE_C1 = 512;
-  constexpr static const float HEIGHT_SCALE = 32.f;
-  constexpr static const float HEIGHT_SCALE_C1 = 16.f;
+  constexpr static const float HEIGHT_SCALE = 64.f;
+  constexpr static const float HEIGHT_SCALE_C1 = 32.f;
   
   void postProcess(C2MapRscFile* crsc_weak);
   void fillWater(int x, int y, int src_x, int src_y);
@@ -60,6 +60,7 @@ public:
 
   int getWaterAt(int xy);
   float getHeightAt(int xy);
+  float interpolateHeight(float x, float z);
   float getLowestHeight(int x, int y);
   float getObjectHeightAt(int xy);
   float getWaterHeightAt(int x, int y);

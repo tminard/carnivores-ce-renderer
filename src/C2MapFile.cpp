@@ -66,7 +66,7 @@ int C2MapFile::getHeight()
 
 float C2MapFile::getTileLength()
 {
-  return 128.f;
+  return 256.f;
 }
 
 int C2MapFile::getWaterTextureIDAt(int xy, int water_texture_id)
@@ -356,6 +356,29 @@ float C2MapFile::getObjectHeightAt(int xy)
   float scaled_height = object_height * this->getHeightmapScale();
 
   return (scaled_height);
+}
+
+float C2MapFile::interpolateHeight(float x, float z)
+{
+  int x0 = static_cast<int>(floor(x));
+  int z0 = static_cast<int>(floor(z));
+  int x1 = x0 + 1;
+  int z1 = z0 + 1;
+
+  float Q11 = this->getHeightAt((this->getWidth() * z0) + x0);
+  float Q21 = this->getHeightAt((this->getWidth() * z0) + x1);
+  float Q12 = this->getHeightAt((this->getWidth() * z1) + x0);
+  float Q22 = this->getHeightAt((this->getWidth() * z1) + x1);
+
+  float xRatio = x - x0;
+  float zRatio = z - z0;
+
+  float R1 = Q11 * (1 - xRatio) + Q21 * xRatio;
+  float R2 = Q12 * (1 - xRatio) + Q22 * xRatio;
+
+  float interpolatedHeight = R1 * (1 - zRatio) + R2 * zRatio;
+
+  return interpolatedHeight;
 }
 
 /*

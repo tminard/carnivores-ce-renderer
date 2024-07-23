@@ -143,8 +143,8 @@ void TerrainRenderer::loadShader()
   fs::path basePath = fs::path(data["basePath"].get<std::string>());
   fs::path shaderPath = basePath / "shaders";
   
-  this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram((shaderPath / "terrain.vs").c_str(), (shaderPath / "terrain.fs").c_str()));
-  this->m_water_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram((shaderPath / "water_surface.vs").c_str(), (shaderPath / "water_surface.fs").c_str()));
+  this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram((shaderPath / "terrain.vs").string(), (shaderPath / "terrain.fs").string()));
+  this->m_water_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram((shaderPath / "water_surface.vs").string(), (shaderPath / "water_surface.fs").string()));
 
   this->m_shader->use();
   this->m_shader->setFloat("view_distance", (128.f*1024.f));

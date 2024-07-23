@@ -44,7 +44,7 @@ void CEGeometry::loadObjectIntoMemoryBuffer()
   fs::path basePath = fs::path(data["basePath"].get<std::string>());
   fs::path shaderPath = basePath / "shaders";
   
-  this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram((shaderPath / "basic_shader.vs").c_str(), (shaderPath / "basic_shader.fs").c_str()));
+  this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram((shaderPath / "basic_shader.vs").string(), (shaderPath / "basic_shader.fs").string()));
 
   glGenVertexArrays(1, &this->m_vertexArrayObject);
   glBindVertexArray(this->m_vertexArrayObject);

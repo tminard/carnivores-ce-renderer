@@ -20,7 +20,7 @@ public:
     unsigned int ID;
     // constructor generates the shader on the fly
     // ------------------------------------------------------------------------
-    ShaderProgram(const char* vertexPath, const char* fragmentPath, const char* geometryPath = nullptr)
+    ShaderProgram(const std::string vertexPath, const std::string fragmentPath, const std::string geometryPath = "")
     {
         // 1. retrieve the vertex/fragment source code from filePath
         std::string vertexCode;
@@ -49,7 +49,7 @@ public:
             vertexCode = vShaderStream.str();
             fragmentCode = fShaderStream.str();
             // if geometry shader path is present, also load a geometry shader
-            if(geometryPath != nullptr)
+            if(geometryPath != "")
             {
                 gShaderFile.open(geometryPath);
                 std::stringstream gShaderStream;

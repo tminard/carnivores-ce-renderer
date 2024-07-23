@@ -21,8 +21,8 @@ C2Sky::C2Sky(std::ifstream& instream, std::filesystem::path shaderPath)
   instream.read(reinterpret_cast<char *>(raw_sky_texture_data.data()), 256*256*sizeof(uint16_t));
 
   this->m_texture = std::unique_ptr<CETexture>(new CETexture(raw_sky_texture_data, 256*256, 256, 256));
-  this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram((shaderPath / "sky.vs").c_str(), (shaderPath / "sky.fs").c_str()));
-  this->m_cloud_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram((shaderPath / "sky_clouds.vs").c_str(), (shaderPath / "sky_clouds.fs").c_str()));
+  this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram((shaderPath / "sky.vs").string(), (shaderPath / "sky.fs").string()));
+  this->m_cloud_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram((shaderPath / "sky_clouds.vs").string(), (shaderPath / "sky_clouds.fs").string()));
 
   this->loadIntoHardwareMemory();
 }
@@ -30,8 +30,8 @@ C2Sky::C2Sky(std::ifstream& instream, std::filesystem::path shaderPath)
 C2Sky::C2Sky(std::unique_ptr<CETexture> sky_texture, std::filesystem::path shaderPath)
 : m_texture(std::move(sky_texture))
 {
-  this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram((shaderPath / "sky.vs").c_str(), (shaderPath / "sky.fs").c_str()));
-  this->m_cloud_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram((shaderPath / "sky_clouds.vs").c_str(), (shaderPath / "sky_clouds.fs").c_str()));
+  this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram((shaderPath / "sky.vs").string(), (shaderPath / "sky.fs").string()));
+  this->m_cloud_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram((shaderPath / "sky_clouds.vs").string(), (shaderPath / "sky_clouds.fs").string()));
   this->loadIntoHardwareMemory();
 }
 

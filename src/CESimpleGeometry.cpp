@@ -45,7 +45,7 @@ void CESimpleGeometry::loadObjectIntoMemoryBuffer()
   fs::path basePath = fs::path(data["basePath"].get<std::string>());
   fs::path shaderPath = basePath / "shaders";
   
-  this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram((shaderPath / "simple_geo.vs").c_str(), (shaderPath / "simple_geo.fs").c_str()));
+  this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram((shaderPath / "simple_geo.vs").string(), (shaderPath / "simple_geo.fs").string()));
   
   glGenBuffers(1, &this->m_vertex_array_buffer);
   glBindBuffer(GL_ARRAY_BUFFER, this->m_vertex_array_buffer);

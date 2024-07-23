@@ -40,3 +40,27 @@ cmake -G "Xcode" -B build
 We use OpenAL but it should be already included. LMK if you run into issues and we can update the install guide.
 
 Note that resources are hardcoded to a specific path. All files are included in runtime but you will need to update paths.
+
+## Config
+
+Resources for runtime are in `runtime`. For first run, you will need to update `config.json` to point to where you want to load these resources from and which map you wish to test.
+
+Example `runtime/config.json`:
+
+```json
+{
+  "basePath": "C:\\src\\carnivores-ce-renderer\\runtime\\cce\\",
+  "map": {
+    "type": "C1",
+    "map": "game\\c1\\area2.map",
+    "rsc": "game\\c1\\area2.rsc"
+  }
+}
+```
+
+Update to your paths. E.g., for Mac, `basePath` may be `~/cce/`.
+`map` is an object with a `map` and `rsc` reference to the map to load.
+
+`type` is either `C1` or `C2` (Ice Age is included in `C2`). Set according to the map type.
+
+No rebuild is needed to change the map.

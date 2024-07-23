@@ -24,7 +24,7 @@ void main()
     vec3 finalColor = vec3(sC.b, sC.g, sC.r);
    
     // Ensure the alpha does not go below factor
-    float finalAlpha = max(alpha0, 0.15);
+    float finalAlpha = max(alpha0, 0.65);
 
     outputColor = mix(vec4(finalColor, finalAlpha), skyColor, 1.0 - EdgeFactor);
     //outputColor = vec4(finalColor, finalAlpha);

@@ -4,11 +4,14 @@ in highp vec2 texCoord0;
 in highp vec2 texCoord1;
 in vec3 normal0;
 smooth in float brightness0;
+in vec2 quadCoord; // Coordinate to sample underwater state texture
+in float wetness;  // Wetness factor from the vertex shader
 
 out vec4 outputColor;
 
 uniform sampler2D basic_texture;
 uniform float view_distance;
+uniform vec4 underwaterColor;
 
 void main()
 {
@@ -31,5 +34,13 @@ void main()
 
     vec3 finalColor = vec3(sC.b * percent, sC.g * percent, sC.r * percent);
     finalColor = finalColor.rgb;
+
+    // Apply underwater effect based on wetness factor
+    // TODO: use an entirely separate shader for underwater effects
+    if (wetness > 0.0) {
+        finalColor = mix(finalColor, underwaterColor.rgb, wetness * 0.10);
+        // alpha *= mix(1.0, 0.5, wetness); // Adjust alpha for underwater visibility
+    }
+
     outputColor = vec4(finalColor, alpha);
 }

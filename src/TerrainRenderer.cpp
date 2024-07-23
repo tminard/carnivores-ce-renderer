@@ -94,7 +94,8 @@ void TerrainRenderer::preloadObjectMap()
       
       if (w_obj->getObjectInfo()->flags & objectPLACEGROUND) {
         // TODO: original implementation gets the lowest height of a quad and uses that.
-        float map_height = this->m_cmap_data_weak->interpolateHeight(x, y);
+        //float map_height = this->m_cmap_data_weak->interpolateHeight(x, y);
+        float map_height = m_cmap_data_weak->getPlaceGroundHeight(x, y);
         object_height = map_height - (w_obj->getObjectInfo()->YLo / 2.f); // Copies funny offsetting in original source - key is to avoid z-fighting without exposing gaps
       } else {
         object_height = this->m_cmap_data_weak->getObjectHeightAt(xy);
@@ -143,14 +144,20 @@ void TerrainRenderer::loadShader()
   fs::path basePath = fs::path(data["basePath"].get<std::string>());
   fs::path shaderPath = basePath / "shaders";
   
+  auto color = this->m_crsc_data_weak->getFadeColor();
+  
   this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram((shaderPath / "terrain.vs").string(), (shaderPath / "terrain.fs").string()));
   this->m_water_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram((shaderPath / "water_surface.vs").string(), (shaderPath / "water_surface.fs").string()));
 
   this->m_shader->use();
-  this->m_shader->setFloat("view_distance", (128.f*1024.f));
+  this->m_shader->setFloat("view_distance", (m_cmap_data_weak->getTileLength() * 1024.f));
+  this->m_shader->setVec4("underwaterColor", glm::vec4(color.r / 255.f, color.g / 255.f, color.b / 255.f, color.a));
+  this->m_shader->setFloat("terrainWidth", this->m_cmap_data_weak->getWidth());
+  this->m_shader->setFloat("terrainHeight", this->m_cmap_data_weak->getHeight());
+  this->m_shader->setFloat("tileWidth", this->m_cmap_data_weak->getTileLength());
+
   this->m_water_shader->use();
   this->m_water_shader->setVec3("mapDimensions", glm::vec3(this->m_cmap_data_weak->getWidth() * this->m_cmap_data_weak->getTileLength(), this->m_cmap_data_weak->getHeight() * this->m_cmap_data_weak->getTileLength(), this->m_cmap_data_weak->getTileLength()));
-    auto color = this->m_crsc_data_weak->getFadeColor();
   this->m_water_shader->setVec4("skyColor", glm::vec4(color.r / 255.f, color.g / 255.f, color.b / 255.f, color.a));
 }
 
@@ -172,6 +179,7 @@ void TerrainRenderer::Update(Transform& transform, Camera& camera)
 
   this->m_shader->use();
   this->m_shader->setMat4("MVP", MVP);
+  this->m_shader->setFloat("time", (float)t);
   this->m_water_shader->use();
   this->m_water_shader->setMat4("MVP", MVP);
   this->m_water_shader->setMat4("model", model);
@@ -444,11 +452,25 @@ void TerrainRenderer::loadWaterAt(int x, int y)
 
 void TerrainRenderer::loadWaterIntoMemory()
 {
+  std::vector<float> underwaterStateData(m_cmap_data_weak->getWidth() * m_cmap_data_weak->getHeight(), 0);
+  auto width = m_cmap_data_weak->getWidth();
+  auto height = m_cmap_data_weak->getHeight();
+  auto tileL = m_cmap_data_weak->getTileLength();
+
   for (int w = 0; w < this->m_crsc_data_weak->getWaterCount(); w++)
   {
     _Water* water_object = &this->m_waters[w];
     water_object->m_vertex_count = (int)water_object->m_vertices.size();
     water_object->m_num_indices = (int)water_object->m_indices.size();
+    
+    // Set underwater state in the texture data
+    for (auto& vertex : water_object->m_vertices) {
+        int x = static_cast<int>(vertex.getPos().x / tileL); // Convert to tile coordinate
+        int y = static_cast<int>(vertex.getPos().z / tileL); // Convert to tile coordinate
+        if (x >= 0 && x < width && y >= 0 && y < height) {
+            underwaterStateData[(y * width) + x] = vertex.getPos().y;
+        }
+    }
 
     glBindVertexArray(water_object->m_vao);
 
@@ -471,8 +493,21 @@ void TerrainRenderer::loadWaterIntoMemory()
 
     glBindVertexArray(0);
   }
+  
+  glGenTextures(1, &underwaterStateTexture);
+  glBindTexture(GL_TEXTURE_2D, underwaterStateTexture);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, m_cmap_data_weak->getWidth(), m_cmap_data_weak->getHeight(), 0, GL_RED, GL_FLOAT, nullptr);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glBindTexture(GL_TEXTURE_2D, 0);
+  updateUnderwaterStateTexture(underwaterStateData);
 }
 
+void TerrainRenderer::updateUnderwaterStateTexture(const std::vector<float>& data) {
+    glBindTexture(GL_TEXTURE_2D, underwaterStateTexture);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, this->m_cmap_data_weak->getWidth(), this->m_cmap_data_weak->getHeight(), GL_RED, GL_FLOAT, data.data());
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
 
 // From http://www.learnopengles.com/android-lesson-eight-an-introduction-to-index-buffer-objects-ibos/
 // using http://stackoverflow.com/questions/10114577/a-method-for-indexing-triangles-from-a-loaded-heightmap
@@ -547,7 +582,13 @@ void TerrainRenderer::loadIntoHardwareMemory()
 
       // If quad reverse, anchor upper right (bottom left, upper right, lower right). Otherwise, anchor upper left (bottom left, upper left, lower right)
       // Clockwise order.
+      
+      // Memoize the height
+      float centerHeight;
+      
       if (quad_reverse) {
+        centerHeight = (vpositionLL.y + vpositionUL.y + vpositionUR.y + vpositionLR.y) / 4.0f;
+
         m_indices.push_back(lower_left); // Face 1
         m_indices.push_back(upper_left);
         m_indices.push_back(lower_right);
@@ -556,6 +597,8 @@ void TerrainRenderer::loadIntoHardwareMemory()
         m_indices.push_back(upper_left);
         m_indices.push_back(upper_right);
       } else {
+        centerHeight = (vpositionLL.y + vpositionLR.y + vpositionUL.y + vpositionUR.y) / 4.0f;
+
         m_indices.push_back(lower_left); // Face 1
         m_indices.push_back(upper_right);
         m_indices.push_back(lower_right);
@@ -564,6 +607,8 @@ void TerrainRenderer::loadIntoHardwareMemory()
         m_indices.push_back(upper_left);
         m_indices.push_back(upper_right);
       }
+      
+      m_cmap_data_weak->setGroundLevelAt(x, y, centerHeight);
     }
   }
   
@@ -633,6 +678,10 @@ glm::vec2 TerrainRenderer::calcAtlasUV(int texID, glm::vec2 uv)
 void TerrainRenderer::Render()
 {
   this->m_shader->use();
+  
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_2D, underwaterStateTexture);
+  this->m_shader->setInt("underwaterStateTexture", 1);
   
   glBindVertexArray(this->m_vertex_array_object);
   

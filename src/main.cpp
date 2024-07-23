@@ -198,20 +198,26 @@ int main(int argc, const char * argv[])
     // Render the terrain objects
     if (render_objects) {
       glDisable(GL_CULL_FACE);
+      glEnable(GL_DEPTH_TEST);
       glDepthFunc(GL_LEQUAL);
       terrain->RenderObjects(*camera);
       glEnable(GL_CULL_FACE);
+      glEnable(GL_DEPTH_TEST);
     }
     
     // Render the terrain
     if (render_terrain) {
+      glEnable(GL_CULL_FACE);
+      glCullFace(GL_BACK); // Cull back faces
+      glFrontFace(GL_CCW); // Define front faces as counter-clockwise
       glEnable(GL_POLYGON_OFFSET_FILL);
-      glPolygonOffset(1.0, 1.0); // Adjust these values as needed
+      glPolygonOffset(1.0f, 1.0f);
       cMapRsc->getTexture(0)->use();
       terrain->Update(g_terrain_transform, *camera);
       glDepthFunc(GL_LESS);
       terrain->Render();
       glDisable(GL_POLYGON_OFFSET_FILL);
+      glDisable(GL_CULL_FACE);
     }
     
     // Render the water

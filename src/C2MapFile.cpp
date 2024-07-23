@@ -198,6 +198,11 @@ float C2MapFile::getWaterHeightAt(int x, int y)
 float C2MapFile::getHeightAt(int xy)
 {
   float scaled_height;
+  
+  if (xy < 0 || xy >= m_heightmap_data.size()) {
+    std::cerr << "OOB height requested for heightmap! Returning -1" << std::endl;
+    return -1.f;
+  }
 
   if (m_type == CEMapType::C2) {
     scaled_height = this->m_heightmap_data.at(xy) * this->getHeightmapScale();
@@ -206,6 +211,13 @@ float C2MapFile::getHeightAt(int xy)
   }
 
   return (scaled_height);
+}
+
+void C2MapFile::setGroundLevelAt(int x, int y, float level)
+{
+  int xy = (y * this->getWidth()) + x;
+
+  m_ground_levels[xy] = level;
 }
 
 int C2MapFile::getObjectAt(int xy)
@@ -379,6 +391,12 @@ float C2MapFile::interpolateHeight(float x, float z)
   float interpolatedHeight = R1 * (1 - zRatio) + R2 * zRatio;
 
   return interpolatedHeight;
+}
+
+float C2MapFile::getPlaceGroundHeight(int x, int y) {
+  // Original Carnivores implementation just returns the lowest height of the approximate quad but we memoize actual vertices during terrain build
+  int xy = (y * this->getWidth()) + x;
+  return m_ground_levels.at(xy) + 1.f;
 }
 
 /*

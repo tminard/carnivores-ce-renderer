@@ -29,9 +29,9 @@ auto make_unique(Args&&... args) -> std::unique_ptr<T>
 }
 void Console_PrintLogString(std::string log_msg);
 
-C2MapRscFile::C2MapRscFile(const CEMapType type, const std::string& file_name) : m_type(type)
+C2MapRscFile::C2MapRscFile(const CEMapType type, const std::string& file_name, std::filesystem::path basePath) : m_type(type)
 {
-  this->load(file_name);
+  this->load(file_name, basePath);
 }
 
 C2MapRscFile::~C2MapRscFile()
@@ -137,7 +137,7 @@ glm::vec4 C2MapRscFile::getFadeColor()
     }
 }
 
-void C2MapRscFile::load(const std::string &file_name)
+void C2MapRscFile::load(const std::string &file_name, std::filesystem::path basePath)
 {
   std::ifstream infile;
   infile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
@@ -318,15 +318,15 @@ void C2MapRscFile::load(const std::string &file_name)
     
     // Load sky bitmap and map overlay (dawn, day, night)
     if (m_type == CEMapType::C2) {
-      this->m_dawn_sky = std::unique_ptr<C2Sky>(new C2Sky(infile));
+      this->m_dawn_sky = std::unique_ptr<C2Sky>(new C2Sky(infile, basePath / "shaders"));
       this->m_dawn_sky->setRGBA(glm::vec4(m_fade_rgb[0][0], m_fade_rgb[0][1], m_fade_rgb[0][2], 1.f));
     }
 
-    this->m_day_sky = std::unique_ptr<C2Sky>(new C2Sky(infile));
+    this->m_day_sky = std::unique_ptr<C2Sky>(new C2Sky(infile, basePath / "shaders"));
     this->m_day_sky->setRGBA(this->getFadeColor());
 
     if (m_type == CEMapType::C2) {
-      this->m_night_sky = std::unique_ptr<C2Sky>(new C2Sky(infile));
+      this->m_night_sky = std::unique_ptr<C2Sky>(new C2Sky(infile, basePath / "shaders"));
       this->m_night_sky->setRGBA(glm::vec4(m_fade_rgb[2][0], m_fade_rgb[2][1], m_fade_rgb[2][2], 1.f));
     }
     

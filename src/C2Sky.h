@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <memory>
 #include <vector>
+#include <filesystem>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -50,8 +51,8 @@ private:
   void loadIntoHardwareMemory();
   void loadTextureIntoMemory();
 public:
-  C2Sky(std::ifstream& instream);
-  C2Sky(std::unique_ptr<CETexture> sky_texture);
+  C2Sky(std::ifstream& instream, std::filesystem::path shaderPath);
+  C2Sky(std::unique_ptr<CETexture> sky_texture, std::filesystem::path shaderPath);
   ~C2Sky();
 
   void saveTextureAsBMP(const std::string& file_name );

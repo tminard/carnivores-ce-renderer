@@ -16,6 +16,12 @@
 
 #include <cstdint>
 
+#include <nlohmann/json.hpp>
+#include <filesystem>
+
+namespace fs = std::filesystem;
+using json = nlohmann::json;
+
 TerrainRenderer::TerrainRenderer(C2MapFile* c_map_weak, C2MapRscFile* c_rsc_weak)
 : m_cmap_data_weak(c_map_weak), m_crsc_data_weak(c_rsc_weak)
 {
@@ -131,8 +137,14 @@ void TerrainRenderer::preloadObjectMap()
 
 void TerrainRenderer::loadShader()
 {
-  this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram("/Users/tminard/source/carnivores/carnivores-ce-renderer/runtime/cce/shaders/terrain.vs", "/Users/tminard/source/carnivores/carnivores-ce-renderer/runtime/cce/shaders/terrain.fs"));
-  this->m_water_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram("/Users/tminard/source/carnivores/carnivores-ce-renderer/runtime/cce/shaders/water_surface.vs", "/Users/tminard/source/carnivores/carnivores-ce-renderer/runtime/cce/shaders/water_surface.fs"));
+  std::ifstream f("config.json");
+  json data = json::parse(f);
+  
+  fs::path basePath = fs::path(data["basePath"].get<std::string>());
+  fs::path shaderPath = basePath / "shaders";
+  
+  this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram((shaderPath / "terrain.vs").c_str(), (shaderPath / "terrain.fs").c_str()));
+  this->m_water_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram((shaderPath / "water_surface.vs").c_str(), (shaderPath / "water_surface.fs").c_str()));
 
   this->m_shader->use();
   this->m_shader->setFloat("view_distance", (128.f*1024.f));

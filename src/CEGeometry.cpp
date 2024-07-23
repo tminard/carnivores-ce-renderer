@@ -8,6 +8,12 @@
 #include "camera.h"
 #include "transform.h"
 
+#include <nlohmann/json.hpp>
+#include <filesystem>
+
+namespace fs = std::filesystem;
+using json = nlohmann::json;
+
 CEGeometry::CEGeometry(std::vector < Vertex > vertices, std::vector < uint32_t > indices, std::unique_ptr<CETexture> texture)
 : m_vertices(vertices), m_indices(indices), m_texture(std::move(texture))
 {
@@ -32,7 +38,13 @@ void CEGeometry::saveTextureAsBMP(const std::string &file_name)
 
 void CEGeometry::loadObjectIntoMemoryBuffer()
 {
-  this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram("/Users/tminard/source/carnivores/carnivores-ce-renderer/runtime/cce/shaders/basic_shader.vs", "/Users/tminard/source/carnivores/carnivores-ce-renderer/runtime/cce/shaders/basic_shader.fs"));
+  std::ifstream f("config.json");
+  json data = json::parse(f);
+  
+  fs::path basePath = fs::path(data["basePath"].get<std::string>());
+  fs::path shaderPath = basePath / "shaders";
+  
+  this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram((shaderPath / "basic_shader.vs").c_str(), (shaderPath / "basic_shader.fs").c_str()));
 
   glGenVertexArrays(1, &this->m_vertexArrayObject);
   glBindVertexArray(this->m_vertexArrayObject);

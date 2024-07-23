@@ -13,6 +13,12 @@
 #include "camera.h"
 #include "transform.h"
 
+#include <nlohmann/json.hpp>
+#include <filesystem>
+
+namespace fs = std::filesystem;
+using json = nlohmann::json;
+
 CESimpleGeometry::CESimpleGeometry(std::vector < Vertex > vertices, std::unique_ptr<CETexture> texture)
 : m_vertices(vertices), m_texture(std::move(texture))
 {
@@ -33,7 +39,13 @@ ShaderProgram* CESimpleGeometry::getShader()
 
 void CESimpleGeometry::loadObjectIntoMemoryBuffer()
 {
-  this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram("/Users/tminard/source/carnivores/carnivores-ce-renderer/runtime/cce/shaders/simple_geo.vs", "/Users/tminard/source/carnivores/carnivores-ce-renderer/runtime/cce/shaders/simple_geo.fs"));
+  std::ifstream f("config.json");
+  json data = json::parse(f);
+  
+  fs::path basePath = fs::path(data["basePath"].get<std::string>());
+  fs::path shaderPath = basePath / "shaders";
+  
+  this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram((shaderPath / "simple_geo.vs").c_str(), (shaderPath / "simple_geo.fs").c_str()));
   
   glGenBuffers(1, &this->m_vertex_array_buffer);
   glBindBuffer(GL_ARRAY_BUFFER, this->m_vertex_array_buffer);

@@ -16,6 +16,7 @@
 #include <memory>
 #include <array>
 #include <random>
+#include <filesystem>
 
 #include "g_shared.h"
 #include "dependency/libAF/af2-sound.h"
@@ -70,12 +71,12 @@ private:
 
   void generateTextureAtlas();
   
-  void load(const std::string& file_name);
-  void load_c1(const std::string& file_name);
+  void load(const std::string& file_name, std::filesystem::path basePath);
+  void load_c1(const std::string& file_name, std::filesystem::path basePath);
 public:
   std::vector< std::unique_ptr<CEWorldModel> > m_models;
 
-  C2MapRscFile(const CEMapType type, const std::string& file_name);
+  C2MapRscFile(const CEMapType type, const std::string& file_name, std::filesystem::path basePath);
   ~C2MapRscFile();
   
   int getTextureAtlasWidth();

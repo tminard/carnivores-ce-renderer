@@ -1,0 +1,8 @@
+{
+  "basePath": "/Users/tminard/source/carnivores/carnivores-ce-renderer/runtime/cce/",
+  "map": {
+    "type": "C1",
+    "map": "game/c1/area2.map",
+    "rsc": "game/c1/area2.rsc"
+  }
+}

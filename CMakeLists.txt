@@ -4,9 +4,14 @@ project(CarnivoresRenderer)
 # Add .lib files
 link_directories(${CMAKE_SOURCE_DIR}/lib)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+include(FetchContent)
+
+FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz)
+FetchContent_MakeAvailable(json)
 
 # Add source files
 file(GLOB_RECURSE SOURCE_FILES 
@@ -42,7 +47,7 @@ message(STATUS "Found GLFW3 in ${GLFW3_INCLUDE_DIR}")
 
 
 # Put all libraries into a variable
-set(LIBS glfw3)
+set(LIBS glfw3 nlohmann_json::nlohmann_json)
 
 # Manually add GLAD
 set(GLAD_SRC_DIR "${CMAKE_SOURCE_DIR}/thirdparty/glad/src")
@@ -103,3 +108,15 @@ if(WIN32)
 		"${PROJECT_SOURCE_DIR}/dlls"
 		$<TARGET_FILE_DIR:${PROJECT_NAME}>)
 endif()
+
+# Specify the source and destination for config.json
+set(CONFIG_SOURCE "${CMAKE_SOURCE_DIR}/runtime/config.json")
+set(CONFIG_DESTINATION "$<TARGET_FILE_DIR:${PROJECT_NAME}>/config.json")
+
+# Copy config.json to the executable directory
+add_custom_command(
+    TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    ${CONFIG_SOURCE} ${CONFIG_DESTINATION}
+)
+

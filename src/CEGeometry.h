@@ -19,6 +19,8 @@
 class Vertex;
 class CETexture;
 class ShaderProgram;
+class C2MapFile;
+class C2MapRscFile;
 
 struct Camera;
 struct Transform;
@@ -59,6 +61,8 @@ public:
   void saveTextureAsBMP(const std::string& file_name );
   void Update(Transform& transform, Camera& camera);
   void Draw();
+  
+  void ConfigureShaderUniforms(C2MapFile* map, C2MapRscFile* rsc);
 
   void Update(Camera& camera);
   void UpdateInstances(std::vector<glm::mat4> transforms);

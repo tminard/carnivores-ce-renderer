@@ -11,7 +11,7 @@ out vec4 outputColor;
 
 uniform sampler2D basic_texture;
 uniform float view_distance;
-uniform vec4 underwaterColor;
+uniform vec4 distanceColor;
 
 void main()
 {
@@ -27,20 +27,24 @@ void main()
 
     // ambient and fade
     float percent = (brightness0 / 255.0);
-    float min_distance = view_distance * 0.80;
-    float alpha = 1.0;
-    float dist_percent = max((gl_FragCoord.z / gl_FragCoord.w) - min_distance, 0.0) / (view_distance - min_distance);
-    alpha = 1.0 - clamp(dist_percent, 0.0, 1.0);
+    float min_distance = view_distance * 0.50; // Start fog at half distance
+    float max_distance = view_distance;
+    float fogFactor = 0.0;
+    float distance = gl_FragCoord.z / gl_FragCoord.w;
 
-    vec3 finalColor = vec3(sC.b * percent, sC.g * percent, sC.r * percent);
-    finalColor = finalColor.rgb;
-
-    // Apply underwater effect based on wetness factor
-    // TODO: use an entirely separate shader for underwater effects
-    if (wetness > 0.0) {
-        finalColor = mix(finalColor, underwaterColor.rgb, wetness * 0.10);
-        // alpha *= mix(1.0, 0.5, wetness); // Adjust alpha for underwater visibility
+    if (distance > min_distance) {
+        fogFactor = clamp((distance - min_distance) / (max_distance - min_distance), 0.0, 1.0);
+        fogFactor = min(fogFactor, 0.45); // Limit the max fill so we keep things visible
     }
 
-    outputColor = vec4(finalColor, alpha);
+    vec3 finalColor = vec3(sC.b * percent, sC.g * percent, sC.r * percent);
+    finalColor = mix(finalColor, distanceColor.rgb, fogFactor);
+
+    // Apply wetness effect
+    // if (wetness > 0.0) {
+    //     finalColor = mix(finalColor, distanceColor.rgb, wetness * 0.10);
+    //     // alpha *= mix(1.0, 0.5, wetness); // Adjust alpha for underwater visibility
+    // }
+
+    outputColor = vec4(finalColor, 1.0);
 }

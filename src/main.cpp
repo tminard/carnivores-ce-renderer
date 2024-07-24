@@ -163,7 +163,7 @@ int main(int argc, const char * argv[])
     
     double rnTimeDelta = currentTime - lastRndAudioTime;
     
-    if (rnTimeDelta >= 12.0) {
+    if (rnTimeDelta >= 6.0) {
       // TODO: handle maps that have no random audio
       m_random_ambient = cMapRsc->getRandomAudio(currentPosition.x, currentPosition.y, currentPosition.z - cMap->getTileLength());
       g_audio_manager->play(std::move(m_random_ambient));

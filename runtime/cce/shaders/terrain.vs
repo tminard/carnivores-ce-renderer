@@ -36,16 +36,6 @@ void main()
     float waterHeight = texture(underwaterStateTexture, quadCoord).r;
     wetness = clamp((waterHeight - position.y) / tileWidth, 0.0, 1.0);
 
-    // Apply ripple effect if underwater
-    //if (wetness > 0.0) {
-    //    vec3 animatedPosition = position;
-//
-//        animatedPosition.y += sin(position.x * waveFrequency + time * waveSpeed) * waveAmplitude;
- //       animatedPosition.y += cos(position.z * waveFrequency + time * waveSpeed) * waveAmplitude;
-//
- //       worldPosition = vec4(animatedPosition, 1.0);
- //   }
-
     worldPosition = MVP * worldPosition;
 
     texCoord0 = vec2(texCoords[0], texCoords[1]);

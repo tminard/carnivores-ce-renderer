@@ -131,8 +131,16 @@ void TerrainRenderer::preloadObjectMap()
     }
   }
 
+  auto color = this->m_crsc_data_weak->getFadeColor();
+  auto dist = (m_cmap_data_weak->getTileLength() * (m_cmap_data_weak->getWidth() / 4.f));
+  auto dColor = glm::vec4(color.r / 255.f, color.g / 255.f, color.b / 255.f, color.a);
+
   for (int m = 0; m < this->m_crsc_data_weak->getWorldModelCount(); m++) {
-    this->m_crsc_data_weak->getWorldModel(m)->updateNearInstances();
+    auto model = this->m_crsc_data_weak->getWorldModel(m);
+    // Update instances
+    model->updateNearInstances();
+    // Configure shader
+    model->getGeometry()->ConfigureShaderUniforms(m_cmap_data_weak, m_crsc_data_weak);
   }
 }
 
@@ -145,20 +153,33 @@ void TerrainRenderer::loadShader()
   fs::path shaderPath = basePath / "shaders";
   
   auto color = this->m_crsc_data_weak->getFadeColor();
+  float r = color.r / 255.0f;
+  float g = color.g / 255.0f;
+  float b = color.b / 255.0f;
+  float a = color.a;
+
+  // Define a brightness factor
+  float brightnessFactor = 1.2f; // Increase by 20%
+
+  // Increase the brightness
+  r = std::min(r * brightnessFactor, 1.0f);
+  g = std::min(g * brightnessFactor, 1.0f);
+  b = std::min(b * brightnessFactor, 1.0f);
   
   this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram((shaderPath / "terrain.vs").string(), (shaderPath / "terrain.fs").string()));
   this->m_water_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram((shaderPath / "water_surface.vs").string(), (shaderPath / "water_surface.fs").string()));
 
   this->m_shader->use();
-  this->m_shader->setFloat("view_distance", (m_cmap_data_weak->getTileLength() * 1024.f));
-  this->m_shader->setVec4("underwaterColor", glm::vec4(color.r / 255.f, color.g / 255.f, color.b / 255.f, color.a));
+  this->m_shader->setFloat("view_distance", (m_cmap_data_weak->getTileLength() * (m_cmap_data_weak->getWidth() / 8.f)));
+  this->m_shader->setVec4("distanceColor", glm::vec4(r, g, b, a));
   this->m_shader->setFloat("terrainWidth", this->m_cmap_data_weak->getWidth());
   this->m_shader->setFloat("terrainHeight", this->m_cmap_data_weak->getHeight());
   this->m_shader->setFloat("tileWidth", this->m_cmap_data_weak->getTileLength());
 
   this->m_water_shader->use();
   this->m_water_shader->setVec3("mapDimensions", glm::vec3(this->m_cmap_data_weak->getWidth() * this->m_cmap_data_weak->getTileLength(), this->m_cmap_data_weak->getHeight() * this->m_cmap_data_weak->getTileLength(), this->m_cmap_data_weak->getTileLength()));
-  this->m_water_shader->setVec4("skyColor", glm::vec4(color.r / 255.f, color.g / 255.f, color.b / 255.f, color.a));
+  this->m_water_shader->setVec4("skyColor", glm::vec4(r, g, b, a));
+  this->m_water_shader->setFloat("view_distance", (m_cmap_data_weak->getTileLength() * (m_cmap_data_weak->getWidth() / 8.f)));
 }
 
 //      /*

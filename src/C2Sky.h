@@ -32,8 +32,8 @@ struct Transform;
 class C2Sky
 {
 private:
-  const float SKY_DISTANCE = 16000.f; // 4000
-  const float SKY_HEIGHT = 2024.f;
+  const float SKY_DISTANCE = 8000.f; // 4000
+  const float SKY_HEIGHT = 368.f;
 
   std::unique_ptr<ShaderProgram> m_shader;
 

@@ -46,8 +46,8 @@ void LocalVideoManager::initGLFW()
   glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 1 );
   glfwWindowHint( GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE );
   glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );
-  glfwWindowHint( GLFW_SAMPLES, 4);
-  glfwWindowHint( GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+  glfwWindowHint( GLFW_SAMPLES, 6);
+  glfwWindowHint( GLFW_OPENGL_DEBUG_CONTEXT, GL_FALSE);
 
   GLFWmonitor* primary_monitor = glfwGetPrimaryMonitor();
   const GLFWvidmode* v_mode = glfwGetVideoMode(primary_monitor);
@@ -58,7 +58,7 @@ void LocalVideoManager::initGLFW()
   std::cout << "\t[Video Mode] width: " << v_mode->width << "; height: " << v_mode->height << std::endl;
 
   // set PRIMARY_MONITOR for full screen
-  this->m_main_window = glfwCreateWindow(viewWidth, viewHeight, "Carnivores", NULL, NULL);
+  this->m_main_window = glfwCreateWindow(viewWidth, viewHeight, "Carnivores", primary_monitor, NULL);
 
   if (!this->m_main_window) {
     throw;
@@ -75,7 +75,9 @@ void LocalVideoManager::initGLFW()
 void LocalVideoManager::initGL()
 {
   glEnable(GL_DEPTH_TEST);
+  glEnable(GL_MULTISAMPLE);
   glDepthFunc(GL_LESS);
+  glClearDepth(1.0f);
 
   glDisable(GL_CULL_FACE);
 
@@ -83,8 +85,7 @@ void LocalVideoManager::initGL()
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   glClearColor(0.94f, 0.97f, 1.f, 0);
-
-
+  
   this->printStats();
 }
 

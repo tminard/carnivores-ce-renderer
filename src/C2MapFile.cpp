@@ -188,9 +188,9 @@ float C2MapFile::getWaterHeightAt(int x, int y)
   }
 
   // In c1, half water tiles have anchor vertex (at xy) in the ground, and thus calculate a different height. Fix this here
-  int lowest_height = this->getLowestHeight(x, y);
+  float lowest_height = this->getLowestHeight(x, y);
 
-  float scaled_height = (lowest_height + 48) * this->getHeightmapScale();
+  float scaled_height = (lowest_height + (48.f)) * this->getHeightmapScale();
 
   return (scaled_height);
 }

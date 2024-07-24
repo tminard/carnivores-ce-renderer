@@ -88,8 +88,8 @@ std::shared_ptr<CEAudioSource> C2MapRscFile::getRandomAudio(int x, int y, int z)
   int rnd = rand() % (this->m_random_audio_sources.size()-1);
   std::shared_ptr<CEAudioSource> src = this->m_random_audio_sources.at(rnd);
     
-    float min = 128.0f * -60.f;
-    float max = 128.0f * 60.f;
+    float min = 128.0f * -32.f;
+    float max = 128.0f * 32.f;
 
     float randomX = x + getRandomFloat(min, max);
     float randomY = y + getRandomFloat(min, max);
@@ -451,7 +451,7 @@ void C2MapRscFile::generateTextureAtlas()
   glGenTextures(1, &texture);
   glBindTexture(GL_TEXTURE_2D, texture);
 
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 800, 600, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1024, 1024, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glBindTexture(GL_TEXTURE_2D, 0);

@@ -473,62 +473,79 @@ void TerrainRenderer::loadWaterAt(int x, int y)
 
 void TerrainRenderer::loadWaterIntoMemory()
 {
-  std::vector<float> underwaterStateData(m_cmap_data_weak->getWidth() * m_cmap_data_weak->getHeight(), 0);
-  auto width = m_cmap_data_weak->getWidth();
-  auto height = m_cmap_data_weak->getHeight();
-  auto tileL = m_cmap_data_weak->getTileLength();
+    std::vector<float> underwaterStateData(m_cmap_data_weak->getWidth() * m_cmap_data_weak->getHeight(), 0);
+    auto width = m_cmap_data_weak->getWidth();
+    auto height = m_cmap_data_weak->getHeight();
+    auto tileL = m_cmap_data_weak->getTileLength();
 
-  for (int w = 0; w < this->m_crsc_data_weak->getWaterCount(); w++)
-  {
-    _Water* water_object = &this->m_waters[w];
-    water_object->m_vertex_count = (int)water_object->m_vertices.size();
-    water_object->m_num_indices = (int)water_object->m_indices.size();
-    
-    // Set underwater state in the texture data
-    for (auto& vertex : water_object->m_vertices) {
-        int x = static_cast<int>(vertex.getPos().x / tileL); // Convert to tile coordinate
-        int y = static_cast<int>(vertex.getPos().z / tileL); // Convert to tile coordinate
-        if (x >= 0 && x < width && y >= 0 && y < height) {
-            underwaterStateData[(y * width) + x] = vertex.getPos().y;
+    for (int w = 0; w < this->m_crsc_data_weak->getWaterCount(); w++)
+    {
+        _Water* water_object = &this->m_waters[w];
+        water_object->m_vertex_count = (int)water_object->m_vertices.size();
+        water_object->m_num_indices = (int)water_object->m_indices.size();
+        
+        // Set underwater state in the texture data
+        for (auto& vertex : water_object->m_vertices) {
+            int x = static_cast<int>(vertex.getPos().x / tileL); // Convert to tile coordinate
+            int y = static_cast<int>(vertex.getPos().z / tileL); // Convert to tile coordinate
+            if (x >= 0 && x < width && y >= 0 && y < height) {
+                underwaterStateData[(y * width) + x] = vertex.getPos().y;
+            }
         }
+
+        glBindVertexArray(water_object->m_vao);
+
+        glBindBuffer(GL_ARRAY_BUFFER, water_object->m_vab);
+        glBufferData(GL_ARRAY_BUFFER, (int)water_object->m_vertices.size() * sizeof(Vertex), water_object->m_vertices.data(), GL_STATIC_DRAW);
+
+        // Describe vertex details
+        glEnableVertexAttribArray(0); // position
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
+        glEnableVertexAttribArray(1); // uv
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)sizeof(glm::vec3));
+        glEnableVertexAttribArray(2); // normal
+        glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(glm::vec3) + sizeof(glm::vec2)));
+        glEnableVertexAttribArray(3); // alpha
+        glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(glm::vec3) + sizeof(glm::vec2) + sizeof(glm::vec3)));
+
+        glGenBuffers(1, &water_object->m_iab);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, water_object->m_iab);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, (int)water_object->m_indices.size() * sizeof(unsigned int), water_object->m_indices.data(), GL_STATIC_DRAW);
+
+        glBindVertexArray(0);
     }
 
-    glBindVertexArray(water_object->m_vao);
-
-    glBindBuffer(GL_ARRAY_BUFFER, water_object->m_vab);
-    glBufferData(GL_ARRAY_BUFFER, (int)water_object->m_vertices.size()*sizeof(Vertex), water_object->m_vertices.data(), GL_STATIC_DRAW);
-
-      // describe vertex details
-    glEnableVertexAttribArray(0); // position
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
-    glEnableVertexAttribArray(1); // uv
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)sizeof(glm::vec3));
-    glEnableVertexAttribArray(2); // normal
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(glm::vec3)+sizeof(glm::vec2)));
-    glEnableVertexAttribArray(3); // alpha
-    glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(glm::vec3)+sizeof(glm::vec2)+(sizeof(glm::vec3))));
-
-    glGenBuffers(1, &water_object->m_iab);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, water_object->m_iab);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, (int)water_object->m_indices.size()*sizeof(unsigned int), water_object->m_indices.data(), GL_STATIC_DRAW);
-
-    glBindVertexArray(0);
-  }
-  
-  glGenTextures(1, &underwaterStateTexture);
-  glBindTexture(GL_TEXTURE_2D, underwaterStateTexture);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, m_cmap_data_weak->getWidth(), m_cmap_data_weak->getHeight(), 0, GL_RED, GL_FLOAT, nullptr);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glBindTexture(GL_TEXTURE_2D, 0);
-  updateUnderwaterStateTexture(underwaterStateData);
-}
-
-void TerrainRenderer::updateUnderwaterStateTexture(const std::vector<float>& data) {
+    // Generate and bind the underwater state texture
+    glGenTextures(1, &underwaterStateTexture);
     glBindTexture(GL_TEXTURE_2D, underwaterStateTexture);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, this->m_cmap_data_weak->getWidth(), this->m_cmap_data_weak->getHeight(), GL_RED, GL_FLOAT, data.data());
+
+    // Initialize the texture with the data
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, width, height, 0, GL_RED, GL_FLOAT, underwaterStateData.data());
+    
+    // Set texture parameters
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
     glBindTexture(GL_TEXTURE_2D, 0);
+  
+  GLenum err;
+  while ((err = glGetError()) != GL_NO_ERROR) {
+      std::cerr << "OpenGL error at " << "loadWaterIntoMem" << ": " << err << std::endl;
+  }
 }
+
+void TerrainRenderer::updateUnderwaterStateTexture(const std::vector<float>& data)
+{
+    glBindTexture(GL_TEXTURE_2D, underwaterStateTexture);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_cmap_data_weak->getWidth(), m_cmap_data_weak->getHeight(), GL_RED, GL_FLOAT, data.data());
+    glBindTexture(GL_TEXTURE_2D, 0);
+  
+  GLenum err;
+  while ((err = glGetError()) != GL_NO_ERROR) {
+      std::cerr << "OpenGL error at " << "updateUnderwaterStateTexture" << ": " << err << std::endl;
+  }
+}
+
 
 // From http://www.learnopengles.com/android-lesson-eight-an-introduction-to-index-buffer-objects-ibos/
 // using http://stackoverflow.com/questions/10114577/a-method-for-indexing-triangles-from-a-loaded-heightmap

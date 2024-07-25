@@ -58,7 +58,7 @@ bool operator!= (Vertex &v1, Vertex &v2)
   return !(v1 == v2);
 }
 
-glm::vec3 Vertex::getPos() {
+const glm::vec3 Vertex::getPos() const {
   return this->m_position;
 }
 

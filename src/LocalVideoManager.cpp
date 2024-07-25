@@ -58,7 +58,7 @@ void LocalVideoManager::initGLFW()
   std::cout << "\t[Video Mode] width: " << v_mode->width << "; height: " << v_mode->height << std::endl;
 
   // set PRIMARY_MONITOR for full screen
-  this->m_main_window = glfwCreateWindow(viewWidth, viewHeight, "Carnivores", primary_monitor, NULL);
+  this->m_main_window = glfwCreateWindow(viewWidth, viewHeight, "Carnivores", NULL, NULL);
 
   if (!this->m_main_window) {
     throw;
@@ -85,6 +85,12 @@ void LocalVideoManager::initGL()
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   glClearColor(0.94f, 0.97f, 1.f, 0);
+  
+  // Check for OpenGL errors
+  GLenum err;
+  while ((err = glGetError()) != GL_NO_ERROR) {
+      std::cerr << "OpenGL error: " << err << std::endl;
+  }
   
   this->printStats();
 }

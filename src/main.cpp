@@ -75,6 +75,21 @@ fs::path constructPath(const fs::path& basePath, const std::string& relativePath
   return basePath / relativePath;
 }
 
+void checkGLError(const std::string& location) {
+    GLenum err;
+    while ((err = glGetError()) != GL_NO_ERROR) {
+        std::cerr << "OpenGL error at " << location << ": " << err << std::endl;
+    }
+}
+
+void readStencilBuffer(int width, int height) {
+    std::vector<GLint> stencilValues(width * height);
+    glReadPixels(0, 0, width, height, GL_STENCIL_INDEX, GL_INT, stencilValues.data());
+    GLint minStencilValue = *std::min_element(stencilValues.begin(), stencilValues.end());
+    GLint maxStencilValue = *std::max_element(stencilValues.begin(), stencilValues.end());
+    std::cerr << "Stencil bits: min=" << minStencilValue << " max=" << maxStencilValue << std::endl;
+}
+
 int main(int argc, const char * argv[])
 {
   std::ifstream f("config.json");
@@ -133,9 +148,12 @@ int main(int argc, const char * argv[])
   
   glEnable(GL_CULL_FACE);
   glEnable(GL_DEPTH_TEST);
-  glEnable(GL_CLIP_DISTANCE0);
+  //glEnable(GL_CLIP_DISTANCE0);
+  glEnable(GL_STENCIL_TEST);
   
   glViewport(0, 0, width, height);
+  checkGLError("After viewport setup");
+  
   std::shared_ptr<CEAudioSource> m_ambient;
   std::shared_ptr<CEAudioSource> m_random_ambient;
   
@@ -150,90 +168,139 @@ int main(int argc, const char * argv[])
   glm::vec2 current_world_pos = g_player_controller->getWorldPosition();
   int current_ambient_id = 0;
   
-  while (!glfwWindowShouldClose(window) && !input_manager->GetShouldShutdown())
-  {
-    glfwMakeContextCurrent(window);
-    
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    Camera* camera = g_player_controller->getCamera();
-    
-    glm::vec3 currentPosition = g_player_controller->getPosition();
-    double currentTime = glfwGetTime();
-    double timeDelta = currentTime - lastTime;
-    
-    double rnTimeDelta = currentTime - lastRndAudioTime;
-    
-    if (rnTimeDelta >= 6.0) {
-      // TODO: handle maps that have no random audio
-      m_random_ambient = cMapRsc->getRandomAudio(currentPosition.x, currentPosition.y, currentPosition.z - cMap->getTileLength());
-      g_audio_manager->play(std::move(m_random_ambient));
-      
-      lastRndAudioTime = currentTime;
-    }
-    
-    glm::vec2 next_world_pos = g_player_controller->getWorldPosition();
-    if (next_world_pos != current_world_pos) {
-      int next_ambient_id = cMap->getAmbientAudioIDAt((int)next_world_pos.x, (int)next_world_pos.y);
-      
-      if (next_ambient_id != current_ambient_id) {
-        m_ambient = cMapRsc->getAmbientAudio(next_ambient_id);
-        g_audio_manager->playAmbient(std::move(m_ambient));
-        
-        current_ambient_id = next_ambient_id;
-      }
-      
-      current_world_pos = next_world_pos;
-    }
-    
-    // Render the sky first
-    if (render_sky) {
-      glDepthFunc(GL_LEQUAL);
-      glDisable(GL_CULL_FACE);
-      glDepthMask(GL_FALSE); // Disable depth writes
-      cMapRsc->getDaySky()->Render(window, *camera);
-      glDepthMask(GL_TRUE); // Re-enable depth writes
-      glEnable(GL_CULL_FACE);
-    }
-    
-    // Render the terrain objects
-    if (render_objects) {
-      glDisable(GL_CULL_FACE);
-      glEnable(GL_DEPTH_TEST);
-      glDepthFunc(GL_LEQUAL);
-      terrain->RenderObjects(*camera);
-      glEnable(GL_CULL_FACE);
-      glEnable(GL_DEPTH_TEST);
-    }
-    
-    // Render the terrain
-    if (render_terrain) {
-      glEnable(GL_CULL_FACE);
-      glCullFace(GL_BACK); // Cull back faces
-      glFrontFace(GL_CCW); // Define front faces as counter-clockwise
-      glEnable(GL_POLYGON_OFFSET_FILL);
-      glPolygonOffset(1.0f, 1.0f);
-      cMapRsc->getTexture(0)->use();
-      terrain->Update(g_terrain_transform, *camera);
-      glDepthFunc(GL_LESS);
-      terrain->Render();
-      glDisable(GL_POLYGON_OFFSET_FILL);
-      glDisable(GL_CULL_FACE);
-    }
-    
-    // Render the water
-    if (render_water) {
-      glDepthFunc(GL_LEQUAL);
-      terrain->RenderWater();
-    }
-    
-    g_player_controller->update(timeDelta);
-    
-    glfwSwapBuffers(window);
-    
-    input_manager->ProcessLocalInput(window, timeDelta);
-    
-    glfwPollEvents();
-  }
+  std::cout << "== Entering render loop ==" << std::endl;
   
+  GLenum err;
+  while ((err = glGetError()) != GL_NO_ERROR) {
+      std::cerr << "OpenGL error at " << "entering render loop" << ": " << err << std::endl;
+  }
+
+  while (!glfwWindowShouldClose(window) && !input_manager->GetShouldShutdown()) {
+      glfwMakeContextCurrent(window);
+
+      // Process input before rendering
+      double currentTime = glfwGetTime();
+      double timeDelta = currentTime - lastTime;
+      lastTime = currentTime;
+
+      input_manager->ProcessLocalInput(window, timeDelta);
+      g_player_controller->update(timeDelta);
+
+      // Clear color, depth, and stencil buffers at the beginning of each frame
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+      checkGLError("After glClear");
+
+      Camera* camera = g_player_controller->getCamera();
+
+      glm::vec3 currentPosition = g_player_controller->getPosition();
+      double rnTimeDelta = currentTime - lastRndAudioTime;
+
+      if (rnTimeDelta >= 6.0) {
+          m_random_ambient = cMapRsc->getRandomAudio(currentPosition.x, currentPosition.y, currentPosition.z - cMap->getTileLength());
+          g_audio_manager->play(std::move(m_random_ambient));
+          lastRndAudioTime = currentTime;
+      }
+
+      glm::vec2 next_world_pos = g_player_controller->getWorldPosition();
+      if (next_world_pos != current_world_pos) {
+          int next_ambient_id = cMap->getAmbientAudioIDAt((int)next_world_pos.x, (int)next_world_pos.y);
+
+          if (next_ambient_id != current_ambient_id) {
+              m_ambient = cMapRsc->getAmbientAudio(next_ambient_id);
+              g_audio_manager->playAmbient(std::move(m_ambient));
+              current_ambient_id = next_ambient_id;
+          }
+
+          current_world_pos = next_world_pos;
+      }
+
+      // Render the sky first
+      if (render_sky) {
+          glDepthFunc(GL_LEQUAL);
+          checkGLError("After glDepthFunc (sky)");
+
+          glDisable(GL_CULL_FACE);
+          checkGLError("After glDisable(GL_CULL_FACE) (sky)");
+
+          glDepthMask(GL_FALSE); // Disable depth writes
+          checkGLError("After glDepthMask(GL_FALSE) (sky)");
+
+          cMapRsc->getDaySky()->Render(window, *camera);
+          checkGLError("After getDaySky()->Render (sky)");
+
+          glDepthMask(GL_TRUE); // Re-enable depth writes
+          checkGLError("After glDepthMask(GL_TRUE) (sky)");
+
+          glEnable(GL_CULL_FACE);
+          checkGLError("After glEnable(GL_CULL_FACE) (sky)");
+      }
+
+      // Render the terrain
+      if (render_terrain) {
+          glDepthFunc(GL_LEQUAL); // Depth test for terrain
+          checkGLError("After glDepthFunc (terrain)");
+
+          glEnable(GL_CULL_FACE);
+          checkGLError("After glEnable(GL_CULL_FACE) (terrain)");
+
+          glCullFace(GL_BACK); // Cull back faces
+          checkGLError("After glCullFace (terrain)");
+
+          glEnable(GL_POLYGON_OFFSET_FILL);
+          checkGLError("After glEnable(GL_POLYGON_OFFSET_FILL) (terrain)");
+
+          glPolygonOffset(1.0f, 1.0f);
+          checkGLError("After glPolygonOffset (terrain)");
+
+          cMapRsc->getTexture(0)->use();
+          checkGLError("After getTexture(0)->use (terrain)");
+
+          terrain->Update(g_terrain_transform, *camera);
+          checkGLError("After terrain->Update (terrain)");
+
+          terrain->Render();
+          checkGLError("After terrain->Render (terrain)");
+
+          glDisable(GL_POLYGON_OFFSET_FILL);
+          checkGLError("After glDisable(GL_POLYGON_OFFSET_FILL) (terrain)");
+
+          glDisable(GL_CULL_FACE);
+          checkGLError("After glDisable(GL_CULL_FACE) (terrain)");
+      }
+
+      // Render the terrain objects after terrain
+      if (render_objects) {
+          glDepthFunc(GL_LESS); // Ensure objects render correctly with the terrain
+          checkGLError("After glDepthFunc (objects)");
+
+          glDisable(GL_CULL_FACE);
+          checkGLError("After glDisable(GL_CULL_FACE) (objects)");
+
+          glEnable(GL_DEPTH_TEST);
+          checkGLError("After glEnable(GL_DEPTH_TEST) (objects)");
+
+          terrain->RenderObjects(*camera);
+          checkGLError("After terrain->RenderObjects (objects)");
+
+          glEnable(GL_CULL_FACE);
+          checkGLError("After glEnable(GL_CULL_FACE) (objects)");
+      }
+
+      // Render the water
+      if (render_water) {
+          glDepthFunc(GL_LEQUAL);
+          checkGLError("After glDepthFunc (water)");
+
+          terrain->RenderWater();
+          checkGLError("After terrain->RenderWater (water)");
+      }
+
+      glfwSwapBuffers(window);
+      glfwPollEvents();
+
+      checkGLError("End of frame");
+  }
+
+
   return 0;
 }

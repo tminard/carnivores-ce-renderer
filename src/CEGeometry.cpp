@@ -160,3 +160,7 @@ void CEGeometry::UpdateInstances(std::vector<glm::mat4> transforms)
   glBindBuffer(GL_ARRAY_BUFFER, this->m_instanced_vab);
   glBufferData(GL_ARRAY_BUFFER, this->m_num_instances*sizeof(glm::mat4), transforms.data(), GL_STATIC_DRAW);
 }
+
+const std::vector<Vertex>& CEGeometry::GetVertices() const {
+  return m_vertices;
+}

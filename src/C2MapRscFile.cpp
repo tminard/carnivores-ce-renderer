@@ -14,6 +14,9 @@
 #include "CEWorldModel.h"
 #include "C2Sky.h"
 #include "CEWaterEntity.h"
+#include "CEGeometry.h"
+#include "vertex.h"
+#include "transform.h"
 
 #include "dependency/libAF/af2-sound.h"
 #include "CEAudioSource.hpp"
@@ -316,6 +319,9 @@ void C2MapRscFile::load(const std::string &file_name, std::filesystem::path base
       this->m_models.push_back(std::move(cModel));
     }
     
+    // Create clusters for LOD rendering
+    generateClusters(512);
+    
     // Load sky bitmap and map overlay (dawn, day, night)
     if (m_type == CEMapType::C2) {
       this->m_dawn_sky = std::unique_ptr<C2Sky>(new C2Sky(infile, basePath / "shaders"));
@@ -442,36 +448,58 @@ void C2MapRscFile::load(const std::string &file_name, std::filesystem::path base
 
 void C2MapRscFile::generateTextureAtlas()
 {
-  // Adapted from https://learnopengl.com/Advanced-OpenGL/Framebuffers
-  unsigned int fbo;
-  glGenFramebuffers(1, &fbo);
-  glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    // Generate and bind the framebuffer
+    unsigned int fbo;
+    glGenFramebuffers(1, &fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
-  unsigned int texture;
-  glGenTextures(1, &texture);
-  glBindTexture(GL_TEXTURE_2D, texture);
+    // Generate and bind the texture
+    unsigned int texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
 
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1024, 1024, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glBindTexture(GL_TEXTURE_2D, 0);
+    // Define the texture with common, compatible parameters
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1024, 1024, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
+    GLenum error = glGetError();
+    if (error != GL_NO_ERROR) {
+        std::cerr << "OpenGL error after glTexImage2D for generateTextureAtlas: " << error << std::endl;
+        // Handle the error appropriately here
+        // Cleanup before returning to avoid leaking resources
+        glDeleteTextures(1, &texture);
+        glDeleteFramebuffers(1, &fbo);
+        return;
+    }
 
-  // Ready
-  if (glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE) {
+    // Set texture parameters
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-  } else {
-    std::cout << "Failed to complete FRAMEBUFFER" << std::endl;
-  }
+    // Attach the texture to the framebuffer
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
 
-  // CLEAN IT UP
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  glBindTexture(GL_TEXTURE_2D, 0);
+    // Check framebuffer status
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        std::cerr << "Failed to complete FRAMEBUFFER" << std::endl;
+        // Cleanup before returning to avoid leaking resources
+        glDeleteTextures(1, &texture);
+        glDeleteFramebuffers(1, &fbo);
+        return;
+    }
 
-  glDeleteTextures(1, &texture);
-  glDeleteFramebuffers(1, &fbo);
+    // Clean up bindings
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    // Do not delete the texture here if you intend to use it later.
+    // Keep the texture ID for later use in rendering.
+
+    // Only delete the framebuffer
+    glDeleteFramebuffers(1, &fbo);
 }
+
 
 int C2MapRscFile::getWaterCount()
 {
@@ -487,3 +515,37 @@ const CEWaterEntity& C2MapRscFile::getWater(int i) const
   }
   return this->m_waters.at(i);
 }
+
+void C2MapRscFile::generateClusters(int clusterSize) {
+    clusters.clear();
+
+    // Iterate through all world models
+    for (auto& worldModel : m_models) {
+        // Access the transforms for the current world model
+        const std::vector<Transform>& transforms = worldModel->getTransforms();
+
+        // Create clusters based on clusterSize
+        for (size_t i = 0; i < transforms.size(); i += clusterSize) {
+            Cluster cluster;
+            glm::vec3 bboxMin(FLT_MAX), bboxMax(-FLT_MAX);
+
+            for (size_t j = i; j < i + clusterSize && j < transforms.size(); ++j) {
+                glm::mat4 modelMatrix = transforms[j].GetStaticModel();
+                cluster.instanceTransforms.push_back(modelMatrix);
+
+                // Calculate bounding box
+                for (const auto& vertex : worldModel->getGeometry()->GetVertices()) {
+                    glm::vec3 pos = glm::vec3(modelMatrix * glm::vec4(vertex.getPos(), 1.0));
+                    bboxMin = glm::min(bboxMin, pos);
+                    bboxMax = glm::max(bboxMax, pos);
+                }
+            }
+
+            cluster.boundingBoxMin = bboxMin;
+            cluster.boundingBoxMax = bboxMax;
+            glGenQueries(1, &cluster.occlusionQuery);
+            clusters.push_back(cluster);
+        }
+    }
+}
+

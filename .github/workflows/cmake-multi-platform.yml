@@ -91,6 +91,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ${{ steps.strings.outputs.build-output-dir }}/Release\CarnivoresRenderer.zip
+        asset_path: ${{ steps.strings.outputs.build-output-dir }}\CarnivoresRenderer.zip
         asset_name: CarnivoresRenderer.zip
         asset_content_type: application/zip

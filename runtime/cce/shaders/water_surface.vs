@@ -25,8 +25,11 @@ void main()
     // Apply wave animation to the vertex position
     vec3 animatedPosition = position;
 
-    animatedPosition.y += sin(position.x * waveFrequency + RealTime * waveSpeed) * waveAmplitude;
-    animatedPosition.y += cos(position.z * waveFrequency + RealTime * waveSpeed) * waveAmplitude;
+    if (alpha > 0.95) {
+        // Only animate the main body of the surface and not the edges or shallow pools
+        animatedPosition.y += sin(position.x * waveFrequency + RealTime * waveSpeed) * waveAmplitude;
+        animatedPosition.y += cos(position.z * waveFrequency + RealTime * waveSpeed) * waveAmplitude;
+    }
 
     vec4 worldPosition = model * vec4(animatedPosition, 1.0);
     gl_Position = MVP * worldPosition;

@@ -43,6 +43,9 @@ private:
   std::array<uint8_t, 512*512> m_fog_data = {};
   std::array<uint8_t, 512*512> m_soundfx_data = {};
   std::vector<glm::vec2> m_landings;
+  
+  // Store computed ground level heights
+  std::array<float, 1024 * 1024> m_ground_levels = {};
 
   const CEMapType m_type;
   constexpr static const int SIZE = 1024;
@@ -63,6 +66,7 @@ public:
   float interpolateHeight(float x, float z);
   float getLowestHeight(int x, int y);
   float getObjectHeightAt(int xy);
+  float getPlaceGroundHeight(int x, int y);
   float getWaterHeightAt(int x, int y);
   int getObjectHeightForRadius(int x, int y, int R);
   int getObjectAt(int xy);
@@ -100,6 +104,8 @@ public:
 
   void setWaterAt(int x, int y); // for C2
   void setWaterAt(int x, int y, int water_height);// c1
+  
+  void setGroundLevelAt(int x, int y, float level);
 
   void load(const std::string& file_name, C2MapRscFile* crsc_weak);
   void load_c1(const std::string& file_name, C2MapRscFile* crsc_weak);

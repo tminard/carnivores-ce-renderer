@@ -260,8 +260,8 @@ void CELocalPlayerController::move(double currentTime, double deltaTime, bool fo
   glm::vec3 pos = m_camera.GetPosition() + movement * (m_current_speed * dTime);
   glm::vec2 worldPos = glm::vec2(int(floorf(pos.x / m_tile_size)), int(floorf(pos.z / m_tile_size)));
   
-  float currentWorldHeight = interpolateHeight(currentWorldPos.x, currentWorldPos.y);
-  float nextWorldHeight = interpolateHeight(worldPos.x, worldPos.y);
+  float currentWorldHeight = m_map->getPlaceGroundHeight(currentWorldPos.x, currentWorldPos.y);// interpolateHeight(currentWorldPos.x, currentWorldPos.y);
+  float nextWorldHeight = m_map->getPlaceGroundHeight(worldPos.x, worldPos.y);
   
   // Apply head bobble effect
   float bobbleOffset = 0.f;

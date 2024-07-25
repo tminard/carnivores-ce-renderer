@@ -2,6 +2,8 @@
 
 #include "CEGeometry.h"
 #include "CETexture.h"
+#include "C2MapFile.h"
+#include "C2MapRscFile.h"
 #include "vertex.h"
 #include "shader_program.h"
 
@@ -45,7 +47,9 @@ void CEGeometry::loadObjectIntoMemoryBuffer()
   fs::path shaderPath = basePath / "shaders";
   
   this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram((shaderPath / "basic_shader.vs").string(), (shaderPath / "basic_shader.fs").string()));
-
+  this->m_shader->use();
+  this->m_shader->setBool("enable_transparency", true);
+  
   glGenVertexArrays(1, &this->m_vertexArrayObject);
   glBindVertexArray(this->m_vertexArrayObject);
   
@@ -101,20 +105,42 @@ void CEGeometry::Draw()
   glBindVertexArray(0);
 }
 
+void CEGeometry::ConfigureShaderUniforms(C2MapFile* map, C2MapRscFile* rsc)
+{
+  auto color = rsc->getFadeColor();
+  float r = color.r / 255.0f;
+  float g = color.g / 255.0f;
+  float b = color.b / 255.0f;
+  float a = color.a;
+
+  // Define a brightness factor
+  float brightnessFactor = 1.2f; // Increase by 20%
+
+  // Increase the brightness
+  r = std::min(r * brightnessFactor, 1.0f);
+  g = std::min(g * brightnessFactor, 1.0f);
+  b = std::min(b * brightnessFactor, 1.0f);
+  
+  auto dist = (map->getTileLength() * (map->getWidth() / 8.f));
+  auto dColor = glm::vec4(r, g, b, a);
+  
+  m_shader->use();
+  m_shader->setFloat("view_distance", dist);
+  m_shader->setVec4("distanceColor", dColor);
+}
+
 void CEGeometry::Update(Transform &transform, Camera &camera)
 {
   this->m_shader->use();
   glm::mat4 MVP = transform.GetStaticModelVP(camera);
 
   this->m_shader->setMat4("MVP", MVP);
-  this->m_shader->setBool("enable_transparency", true);
 }
 
 void CEGeometry::Update(Camera &camera)
 {
   this->m_shader->use();
   this->m_shader->setMat4("projection_view", camera.GetViewProjection());
-  this->m_shader->setBool("enable_transparency", true);
 }
 
 void CEGeometry::DrawInstances()

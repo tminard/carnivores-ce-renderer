@@ -4,7 +4,7 @@
 #include <memory>
 #include "camera.h"
 
-const float MAX_VIEW_R = (128.f * 1024.f * 2.f);
+const float MAX_VIEW_R = (256.f * 1024.f * 2.f);
 
 class CEObservable {
 protected:

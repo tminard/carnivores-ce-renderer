@@ -66,6 +66,8 @@ private:
   std::vector<glm::mat4> m_far_instances;
   std::vector<glm::mat4> m_near_instances;
   
+  std::vector<Transform> m_transforms;
+  
   std::unique_ptr<TObjInfo> m_old_object_info; // Easier to use old object for now
   
   void _generateBoundingBox(std::vector<Vertex>& vertex_data); // old method for bounding box. Move to geo when able
@@ -88,4 +90,6 @@ public:
   CEGeometry* getGeometry() const;
   CESimpleGeometry* getFarGeometry();
   TObjInfo* getObjectInfo(); // TODO: Make this unnecessary
+  
+  const std::vector<Transform>& getTransforms() const;
 };

@@ -269,6 +269,7 @@ void CEWorldModel::renderFarInstances()
 void CEWorldModel::addNear(Transform& transform)
 {
   this->m_near_instances.push_back(transform.GetStaticModel());
+  this->m_transforms.push_back(transform);
 }
 
 void CEWorldModel::updateNearInstances()
@@ -280,4 +281,8 @@ void CEWorldModel::updateNearInstances()
 void CEWorldModel::renderNearInstances()
 {
   m_geometry->DrawInstances();
+}
+
+const std::vector<Transform>& CEWorldModel::getTransforms() const {
+    return m_transforms;
 }

@@ -1,6 +1,9 @@
 
 # Created by https://www.gitignore.io/api/cmake,visualstudio
 
+### Game assets
+runtime/game/
+
 ### CMake ###
 CMakeCache.txt
 CMakeFiles

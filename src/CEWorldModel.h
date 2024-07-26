@@ -91,5 +91,9 @@ public:
   CESimpleGeometry* getFarGeometry();
   TObjInfo* getObjectInfo(); // TODO: Make this unnecessary
   
+  void renderInstancesWithLOD(const std::vector<Transform>& instances, const Camera& camera);
+  void renderBoundingBox(const glm::mat4& viewProjectionMatrix);
+  int determineLOD(const Transform& transform, const Camera& camera);
+  
   const std::vector<Transform>& getTransforms() const;
 };

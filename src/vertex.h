@@ -24,7 +24,7 @@ public:
   friend bool operator== (Vertex &v1, Vertex &v2);
   friend bool operator!= (Vertex &v1, Vertex &v2);
   
-  glm::vec3 getPos();
+  const glm::vec3 getPos() const;
   glm::vec2 getUVPos();
   glm::vec3 getNormal();
   

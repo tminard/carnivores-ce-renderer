@@ -50,35 +50,46 @@ void C2Sky::saveTextureAsBMP(const std::string &file_name)
 
 void C2Sky::loadTextureIntoMemory()
 {
-    // Have to do something special for our texture as we want it as a cube
-    // TODO: refactor CETexture to handle different types
-  GLuint textureID;
-  glGenTextures(1, &textureID);
-  glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+    // Generate and bind the cubemap texture
+    GLuint textureID;
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
 
-  /*
-   GL_TEXTURE_CUBE_MAP_POSITIVE_X    Right
-   GL_TEXTURE_CUBE_MAP_NEGATIVE_X    Left
-   GL_TEXTURE_CUBE_MAP_POSITIVE_Y    Top
-   GL_TEXTURE_CUBE_MAP_NEGATIVE_Y    Bottom
-   GL_TEXTURE_CUBE_MAP_POSITIVE_Z    Back
-   GL_TEXTURE_CUBE_MAP_NEGATIVE_Z    Front
-   */
+    /*
+     GL_TEXTURE_CUBE_MAP_POSITIVE_X    Right
+     GL_TEXTURE_CUBE_MAP_NEGATIVE_X    Left
+     GL_TEXTURE_CUBE_MAP_POSITIVE_Y    Top
+     GL_TEXTURE_CUBE_MAP_NEGATIVE_Y    Bottom
+     GL_TEXTURE_CUBE_MAP_POSITIVE_Z    Back
+     GL_TEXTURE_CUBE_MAP_NEGATIVE_Z    Front
+     */
 
-  for (int i = 0; i < 6; i++) {
-    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB5_A1, 256, 256, 0, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, this->m_texture->getRawData()->data());
-  }
+    // Use a common internal format and format/type combination
+    for (int i = 0; i < 6; i++) {
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA, 256, 256, 0, GL_RGBA, GL_UNSIGNED_BYTE, this->m_texture->getRawData()->data());
 
-  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        GLenum error = glGetError();
+        if (error != GL_NO_ERROR) {
+            std::cerr << "OpenGL error after glTexImage2D for face " << i << ": " << error << std::endl;
+            // Handle the error appropriately here
+            // Cleanup before returning to avoid leaking resources
+            glDeleteTextures(1, &textureID);
+            return;
+        }
+    }
 
-  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    // Set texture parameters
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
-  this->m_cube_texture = textureID;
+    // Store the texture ID for later use
+    this->m_cube_texture = textureID;
 
-  glBindTexture(GL_TEXTURE_2D, 0);
+    // Unbind the texture
+    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 }
 
 void C2Sky::updateClouds()

@@ -17,7 +17,7 @@ public:
     this->precalc_model = GetModel();
   }
 
-  inline glm::mat4 GetStaticModel()
+  const inline glm::mat4 GetStaticModel() const
   {
     return this->precalc_model;
   }

@@ -58,10 +58,24 @@ jobs:
     - name: Prepare Windows Build
       if: matrix.os == 'windows-latest'
       run: |
-        # Remove existing config.json and rename config.json.example
-        del ${{ steps.strings.outputs.runtime-dir  }}\config.json
-        ren ${{ steps.strings.outputs.runtime-dir  }}\config.json.example config.json
-        xcopy ${{ steps.strings.outputs.runtime-dir }} ${{ steps.strings.outputs.build-output-dir }}\Release\ /s /e /y
+        runtime_dir="${{ steps.strings.outputs.runtime-dir }}"
+        build_output_dir="${{ steps.strings.outputs.build-output-dir }}\Release"
+    
+        echo "Runtime directory: $runtime_dir"
+        echo "Build output directory: $build_output_dir"
+    
+        # Remove existing config.json if it exists
+        if exist "$runtime_dir\config.json" (
+          del "$runtime_dir\config.json"
+        )
+    
+        # Rename config.json.example to config.json
+        if exist "$runtime_dir\config.json.example" (
+          ren "$runtime_dir\config.json.example" config.json
+        )
+    
+        # Copy all runtime contents to the build output directory
+        xcopy "$runtime_dir" "$build_output_dir" /s /e /y
 
     - name: Zip Windows Build
       if: matrix.os == 'windows-latest'

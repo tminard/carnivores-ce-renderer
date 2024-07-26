@@ -58,12 +58,10 @@ jobs:
     - name: Prepare Windows Build
       if: matrix.os == 'windows-latest'
       run: |
-        # Copy runtime contents to build output directory
-        xcopy ${{ steps.strings.outputs.runtime-dir }} ${{ steps.strings.outputs.build-output-dir }}\Release\ /s /e /y
-        
         # Remove existing config.json and rename config.json.example
-        del ${{ steps.strings.outputs.build-output-dir }}\Release\config.json
-        ren ${{ steps.strings.outputs.build-output-dir }}\Release\config.json.example config.json
+        del ${{ steps.strings.outputs.runtime-dir  }}\config.json
+        ren ${{ steps.strings.outputs.runtime-dir  }}\config.json.example config.json
+        xcopy ${{ steps.strings.outputs.runtime-dir }} ${{ steps.strings.outputs.build-output-dir }}\Release\ /s /e /y
 
     - name: Zip Windows Build
       if: matrix.os == 'windows-latest'

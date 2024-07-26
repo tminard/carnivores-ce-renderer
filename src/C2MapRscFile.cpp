@@ -319,9 +319,6 @@ void C2MapRscFile::load(const std::string &file_name, std::filesystem::path base
       this->m_models.push_back(std::move(cModel));
     }
     
-    // Create clusters for LOD rendering
-    generateClusters(512);
-    
     // Load sky bitmap and map overlay (dawn, day, night)
     if (m_type == CEMapType::C2) {
       this->m_dawn_sky = std::unique_ptr<C2Sky>(new C2Sky(infile, basePath / "shaders"));
@@ -515,37 +512,3 @@ const CEWaterEntity& C2MapRscFile::getWater(int i) const
   }
   return this->m_waters.at(i);
 }
-
-void C2MapRscFile::generateClusters(int clusterSize) {
-    clusters.clear();
-
-    // Iterate through all world models
-    for (auto& worldModel : m_models) {
-        // Access the transforms for the current world model
-        const std::vector<Transform>& transforms = worldModel->getTransforms();
-
-        // Create clusters based on clusterSize
-        for (size_t i = 0; i < transforms.size(); i += clusterSize) {
-            Cluster cluster;
-            glm::vec3 bboxMin(FLT_MAX), bboxMax(-FLT_MAX);
-
-            for (size_t j = i; j < i + clusterSize && j < transforms.size(); ++j) {
-                glm::mat4 modelMatrix = transforms[j].GetStaticModel();
-                cluster.instanceTransforms.push_back(modelMatrix);
-
-                // Calculate bounding box
-                for (const auto& vertex : worldModel->getGeometry()->GetVertices()) {
-                    glm::vec3 pos = glm::vec3(modelMatrix * glm::vec4(vertex.getPos(), 1.0));
-                    bboxMin = glm::min(bboxMin, pos);
-                    bboxMax = glm::max(bboxMax, pos);
-                }
-            }
-
-            cluster.boundingBoxMin = bboxMin;
-            cluster.boundingBoxMax = bboxMax;
-            glGenQueries(1, &cluster.occlusionQuery);
-            clusters.push_back(cluster);
-        }
-    }
-}
-

@@ -31,13 +31,6 @@ class C2Sky;
 class CEWaterEntity;
 class CEAudioSource;
 
-struct Cluster {
-    std::vector<glm::mat4> instanceTransforms;
-    glm::vec3 boundingBoxMin;
-    glm::vec3 boundingBoxMax;
-    uint occlusionQuery;
-};
-
 class C2MapRscFile
 {
 private:
@@ -82,10 +75,6 @@ private:
   void load_c1(const std::string& file_name, std::filesystem::path basePath);
 public:
   std::vector< std::unique_ptr<CEWorldModel> > m_models;
-  std::vector<Cluster> clusters;
-  
-  void generateClusters(int clusterSize);
-  const std::vector<Cluster>& getClusters() const { return clusters; };
 
   C2MapRscFile(const CEMapType type, const std::string& file_name, std::filesystem::path basePath);
   ~C2MapRscFile();

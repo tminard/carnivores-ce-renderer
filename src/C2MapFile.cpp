@@ -396,7 +396,7 @@ float C2MapFile::interpolateHeight(float x, float z)
 float C2MapFile::getPlaceGroundHeight(int x, int y) {
   // Original Carnivores implementation just returns the lowest height of the approximate quad but we memoize actual vertices during terrain build
   int xy = (y * this->getWidth()) + x;
-  return m_ground_levels.at(xy) + 1.f;
+  return m_ground_levels.at(xy) + 12.f;
 }
 
 /*

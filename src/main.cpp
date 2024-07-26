@@ -174,7 +174,7 @@ int main(int argc, const char * argv[])
   while ((err = glGetError()) != GL_NO_ERROR) {
       std::cerr << "OpenGL error at " << "entering render loop" << ": " << err << std::endl;
   }
-
+  
   while (!glfwWindowShouldClose(window) && !input_manager->GetShouldShutdown()) {
       glfwMakeContextCurrent(window);
 
@@ -216,7 +216,7 @@ int main(int argc, const char * argv[])
 
       // Render the sky first
       if (render_sky) {
-          glDepthFunc(GL_LEQUAL);
+          glDepthFunc(GL_LESS);
           checkGLError("After glDepthFunc (sky)");
 
           glDisable(GL_CULL_FACE);
@@ -237,7 +237,7 @@ int main(int argc, const char * argv[])
 
       // Render the terrain
       if (render_terrain) {
-          glDepthFunc(GL_LEQUAL); // Depth test for terrain
+          glDepthFunc(GL_LESS); // Depth test for terrain
           checkGLError("After glDepthFunc (terrain)");
 
           glEnable(GL_CULL_FACE);
@@ -245,12 +245,6 @@ int main(int argc, const char * argv[])
 
           glCullFace(GL_BACK); // Cull back faces
           checkGLError("After glCullFace (terrain)");
-
-          glEnable(GL_POLYGON_OFFSET_FILL);
-          checkGLError("After glEnable(GL_POLYGON_OFFSET_FILL) (terrain)");
-
-          glPolygonOffset(1.0f, 1.0f);
-          checkGLError("After glPolygonOffset (terrain)");
 
           cMapRsc->getTexture(0)->use();
           checkGLError("After getTexture(0)->use (terrain)");
@@ -261,34 +255,40 @@ int main(int argc, const char * argv[])
           terrain->Render();
           checkGLError("After terrain->Render (terrain)");
 
-          glDisable(GL_POLYGON_OFFSET_FILL);
-          checkGLError("After glDisable(GL_POLYGON_OFFSET_FILL) (terrain)");
-
           glDisable(GL_CULL_FACE);
           checkGLError("After glDisable(GL_CULL_FACE) (terrain)");
       }
+    
+    // Render the terrain objects
+    if (render_objects) {
+        glDepthFunc(GL_LESS); // Depth test for objects
+        checkGLError("After glDepthFunc (objects)");
 
-      // Render the terrain objects after terrain
-      if (render_objects) {
-          glDepthFunc(GL_LESS); // Ensure objects render correctly with the terrain
-          checkGLError("After glDepthFunc (objects)");
+        glDisable(GL_CULL_FACE);
+        checkGLError("After glDisable(GL_CULL_FACE) (objects)");
 
-          glDisable(GL_CULL_FACE);
-          checkGLError("After glDisable(GL_CULL_FACE) (objects)");
+        glEnable(GL_DEPTH_TEST);
+        checkGLError("After glEnable(GL_DEPTH_TEST) (objects)");
+      
+        glEnable(GL_POLYGON_OFFSET_FILL);
+        checkGLError("After glEnable(GL_POLYGON_OFFSET_FILL) (terrain)");
 
-          glEnable(GL_DEPTH_TEST);
-          checkGLError("After glEnable(GL_DEPTH_TEST) (objects)");
+        glPolygonOffset(-1.0f, -1.0f);
+        checkGLError("After glPolygonOffset (terrain)");
 
-          terrain->RenderObjects(*camera);
-          checkGLError("After terrain->RenderObjects (objects)");
+        terrain->RenderObjects(*camera);
+        checkGLError("After terrain->RenderObjects (objects)");
+      
+        glDisable(GL_POLYGON_OFFSET_FILL);
+        checkGLError("After glDisable(GL_POLYGON_OFFSET_FILL) (terrain)");
 
-          glEnable(GL_CULL_FACE);
-          checkGLError("After glEnable(GL_CULL_FACE) (objects)");
-      }
+        glEnable(GL_CULL_FACE);
+        checkGLError("After glEnable(GL_CULL_FACE) (objects)");
+    }
 
       // Render the water
       if (render_water) {
-          glDepthFunc(GL_LEQUAL);
+          glDepthFunc(GL_LESS);
           checkGLError("After glDepthFunc (water)");
 
           terrain->RenderWater();

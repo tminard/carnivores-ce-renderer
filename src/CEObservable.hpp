@@ -4,8 +4,6 @@
 #include <memory>
 #include "camera.h"
 
-const float MAX_VIEW_R = (256.f * 1024.f * 1024.f * 4.f);
-
 class CEObservable {
 protected:
   Camera m_camera;
@@ -15,10 +13,4 @@ public:
 
   glm::vec3 virtual getPosition();
   Camera* getCamera();
-
-  /*
-   * The absolute farthest range before hard culling.
-   * Fog and fade out should begin well before this.
-   */
-  float getMaxViewRange();
 };

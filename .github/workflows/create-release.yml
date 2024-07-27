@@ -72,6 +72,7 @@ jobs:
     
         # Copy the .exe and runtime contents to the release directory
         Copy-Item -Path "$build_output_dir\*.exe" -Destination $release_dir
+        Copy-Item -Path "$build_output_dir\*.dll" -Destination $release_dir
         Copy-Item -Path "$runtime_dir\*" -Destination $release_dir -Recurse
     
     - name: Zip Release Directory

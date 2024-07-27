@@ -93,8 +93,7 @@ void TerrainRenderer::preloadObjectMap()
       }
       
       if (w_obj->getObjectInfo()->flags & objectPLACEGROUND) {
-        // TODO: original implementation gets the lowest height of a quad and uses that.
-        //float map_height = this->m_cmap_data_weak->interpolateHeight(x, y);
+        // Note: original implementation gets the lowest height of a quad and uses that.
         float map_height = m_cmap_data_weak->getPlaceGroundHeight(x, y);
         object_height = map_height - (w_obj->getObjectInfo()->YLo / 2.f); // Copies funny offsetting in original source - key is to avoid z-fighting without exposing gaps
       } else {
@@ -653,21 +652,21 @@ void TerrainRenderer::loadIntoHardwareMemory()
   m_num_indices = (int)m_indices.size();
 
   // TODO: iterate over indices here to build the vertice normals
-  for (int y = 0; y < width; y++) {
-      for (int x = 0; x < height; x++) {
-          long long base_index = ((long long)y * width) + x;
-
-          // The next 3 indices are the vertices of the first face
-          int face_1_index = m_indices.at(base_index);
-
-          // The next 3 indices are the vertices of the second face
-          int face_2_index = m_indices.at(base_index + 3);
-
-          // For each face, we must determine the adjacent faces and calculate a single normal
-          // Then, set the normal for each vertex to the average of the face normals
-          // Note: you must keep the quad order in mind when determining this.
-      }
-  }
+//  for (int y = 0; y < width; y++) {
+//      for (int x = 0; x < height; x++) {
+//          long long base_index = ((long long)y * width) + x;
+//
+//          // The next 3 indices are the vertices of the first face
+//          int face_1_index = m_indices.at(base_index);
+//
+//          // The next 3 indices are the vertices of the second face
+//          int face_2_index = m_indices.at(base_index + 3);
+//
+//          // For each face, we must determine the adjacent faces and calculate a single normal
+//          // Then, set the normal for each vertex to the average of the face normals
+//          // Note: you must keep the quad order in mind when determining this.
+//      }
+//  }
   
   // generate buffers and upload
   glGenVertexArrays(1, &this->m_vertex_array_object);

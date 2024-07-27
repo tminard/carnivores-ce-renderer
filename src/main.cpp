@@ -48,6 +48,7 @@
 #include <OpenAL/alc.h>
 
 #include <mutex>
+#include <chrono>
 
 #include <nlohmann/json.hpp>
 
@@ -88,6 +89,26 @@ void readStencilBuffer(int width, int height) {
     GLint minStencilValue = *std::min_element(stencilValues.begin(), stencilValues.end());
     GLint maxStencilValue = *std::max_element(stencilValues.begin(), stencilValues.end());
     std::cerr << "Stencil bits: min=" << minStencilValue << " max=" << maxStencilValue << std::endl;
+}
+
+int _fpsCount = 0;
+int fps = 0;
+
+std::chrono::time_point<std::chrono::steady_clock> lastTime = std::chrono::steady_clock::now();
+
+void CalculateFrameRate() {
+    auto currentTime = std::chrono::steady_clock::now();
+
+    const auto elapsedTime = std::chrono::duration_cast<std::chrono::nanoseconds>(currentTime - lastTime).count();
+    ++_fpsCount;
+
+    if (elapsedTime > 1000000000) {
+        lastTime = currentTime;
+        fps = _fpsCount;
+        _fpsCount = 0;
+        
+        std::cout << "fps: " << fps << std::endl;
+    }
 }
 
 int main(int argc, const char * argv[])
@@ -299,6 +320,8 @@ int main(int argc, const char * argv[])
       glfwPollEvents();
 
       checkGLError("End of frame");
+    
+    CalculateFrameRate();
   }
 
 

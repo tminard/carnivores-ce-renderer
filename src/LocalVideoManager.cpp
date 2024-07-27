@@ -22,6 +22,7 @@ void LocalVideoManager::printStats()
   std::cout << glfwGetVersionString() << std::endl;
   const GLubyte* renderer = glGetString(GL_RENDERER);
   std::cout << renderer << " : " << glGetString(GL_VERSION) << std::endl;
+  
   std::cout << "=== Supported Extensions ===" << std::endl;
 
   if (glfwExtensionSupported("GL_EXT_texture_array")) {
@@ -46,8 +47,10 @@ void LocalVideoManager::initGLFW()
   glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 1 );
   glfwWindowHint( GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE );
   glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );
-  glfwWindowHint( GLFW_SAMPLES, 6);
-  glfwWindowHint( GLFW_OPENGL_DEBUG_CONTEXT, GL_FALSE);
+  glfwWindowHint( GLFW_SAMPLES, 4 );
+  glfwWindowHint( GLFW_OPENGL_DEBUG_CONTEXT, GL_FALSE );
+  glfwWindowHint( GLFW_DOUBLEBUFFER, GLFW_TRUE );
+  glfwWindowHint( GLFW_DEPTH_BITS, 32 );
 
   GLFWmonitor* primary_monitor = glfwGetPrimaryMonitor();
   const GLFWvidmode* v_mode = glfwGetVideoMode(primary_monitor);
@@ -58,7 +61,7 @@ void LocalVideoManager::initGLFW()
   std::cout << "\t[Video Mode] width: " << v_mode->width << "; height: " << v_mode->height << std::endl;
 
   // set PRIMARY_MONITOR for full screen
-  this->m_main_window = glfwCreateWindow(viewWidth, viewHeight, "Carnivores", NULL, NULL);
+  this->m_main_window = glfwCreateWindow(viewWidth, viewHeight, "Carnivores", primary_monitor, NULL);
 
   if (!this->m_main_window) {
     throw;
@@ -75,7 +78,6 @@ void LocalVideoManager::initGLFW()
 void LocalVideoManager::initGL()
 {
   glEnable(GL_DEPTH_TEST);
-  glEnable(GL_MULTISAMPLE);
   glDepthFunc(GL_LESS);
   glClearDepth(1.0f);
 

@@ -59,26 +59,28 @@ jobs:
     - name: Prepare Release Directory
       if: matrix.os == 'windows-latest'
       run: |
-        release_dir="${{ steps.strings.outputs.release-dir }}"
-        build_output_dir="${{ steps.strings.outputs.build-output-dir }}\Release"
-        runtime_dir="${{ steps.strings.outputs.runtime-dir }}"
-
-        echo "Release directory: $release_dir"
-        echo "Build output directory: $build_output_dir"
-        echo "Runtime directory: $runtime_dir"
+        $release_dir = "${{ steps.strings.outputs.release-dir }}"
+        $build_output_dir = "${{ steps.strings.outputs.build-output-dir }}\Release"
+        $runtime_dir = "${{ steps.strings.outputs.runtime-dir }}"
+    
+        Write-Output "Release directory: $release_dir"
+        Write-Output "Build output directory: $build_output_dir"
+        Write-Output "Runtime directory: $runtime_dir"
         
         # Create the release directory
-        mkdir -p "$release_dir"
-
+        New-Item -ItemType Directory -Force -Path $release_dir
+    
         # Copy the .exe and runtime contents to the release directory
-        copy "$build_output_dir\*.exe" "$release_dir"
-        xcopy "$runtime_dir" "$release_dir" /s /e /y
-
+        Copy-Item -Path "$build_output_dir\*.exe" -Destination $release_dir
+        Copy-Item -Path "$runtime_dir\*" -Destination $release_dir -Recurse
+    
     - name: Zip Release Directory
       if: matrix.os == 'windows-latest'
       run: |
-        powershell Compress-Archive -Path ${{ steps.strings.outputs.release-dir }}\* -DestinationPath ${{ steps.strings.outputs.release-dir }}\CarnivoresRenderer.zip
-
+        $release_dir = "${{ steps.strings.outputs.release-dir }}"
+        $zip_path = "$release_dir\CarnivoresRenderer.zip"
+        Compress-Archive -Path "$release_dir\*" -DestinationPath $zip_path
+  
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1

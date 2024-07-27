@@ -1,6 +1,6 @@
 # This starter workflow is for a CMake project running on multiple platforms. There is a different starter workflow if you just want a single platform.
 # See: https://github.com/actions/starter-workflows/blob/main/ci/cmake-single-platform.yml
-name: CMake on multiple platforms
+name: Create release
 
 on:
   push:
@@ -34,6 +34,7 @@ jobs:
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
         echo "runtime-dir=${{ github.workspace }}/runtime" >> "$GITHUB_OUTPUT"
+        echo "release-dir=${{ github.workspace }}/release" >> "$GITHUB_OUTPUT"
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
@@ -55,33 +56,31 @@ jobs:
       # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
       run: ctest --build-config ${{ matrix.build_type }}
     
-    - name: Prepare Windows Build
+    - name: Prepare Release Directory
       if: matrix.os == 'windows-latest'
       run: |
-        runtime_dir="${{ steps.strings.outputs.runtime-dir }}"
-        build_output_dir="${{ steps.strings.outputs.build-output-dir }}\Release"
+        $release_dir = "${{ steps.strings.outputs.release-dir }}"
+        $build_output_dir = "${{ steps.strings.outputs.build-output-dir }}\Release"
+        $runtime_dir = "${{ steps.strings.outputs.runtime-dir }}"
     
-        echo "Runtime directory: $runtime_dir"
-        echo "Build output directory: $build_output_dir"
+        Write-Output "Release directory: $release_dir"
+        Write-Output "Build output directory: $build_output_dir"
+        Write-Output "Runtime directory: $runtime_dir"
+        
+        # Create the release directory
+        New-Item -ItemType Directory -Force -Path $release_dir
     
-        # Remove existing config.json if it exists
-        if exist "$runtime_dir\config.json" (
-          del "$runtime_dir\config.json"
-        )
+        # Copy the .exe and runtime contents to the release directory
+        Copy-Item -Path "$build_output_dir\*.exe" -Destination $release_dir
+        Copy-Item -Path "$runtime_dir\*" -Destination $release_dir -Recurse
     
-        # Rename config.json.example to config.json
-        if exist "$runtime_dir\config.json.example" (
-          ren "$runtime_dir\config.json.example" config.json
-        )
-    
-        # Copy all runtime contents to the build output directory
-        xcopy "$runtime_dir" "$build_output_dir" /s /e /y
-
-    - name: Zip Windows Build
+    - name: Zip Release Directory
       if: matrix.os == 'windows-latest'
       run: |
-        powershell Compress-Archive -Path ${{ steps.strings.outputs.build-output-dir }}\Release\* -DestinationPath ${{ steps.strings.outputs.build-output-dir }}\CarnivoresRenderer.zip
-
+        $release_dir = "${{ steps.strings.outputs.release-dir }}"
+        $zip_path = "$release_dir\CarnivoresRenderer.zip"
+        Compress-Archive -Path "$release_dir\*" -DestinationPath $zip_path
+  
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
@@ -99,6 +98,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ${{ steps.strings.outputs.build-output-dir }}\CarnivoresRenderer.zip
+        asset_path: ${{ steps.strings.outputs.release-dir }}\CarnivoresRenderer.zip
         asset_name: CarnivoresRenderer.zip
         asset_content_type: application/zip

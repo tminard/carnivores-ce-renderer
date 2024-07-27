@@ -259,6 +259,16 @@ void CELocalPlayerController::move(double currentTime, double deltaTime, bool fo
 
   glm::vec3 pos = m_camera.GetPosition() + movement * (m_current_speed * dTime);
   glm::vec2 worldPos = glm::vec2(int(floorf(pos.x / m_tile_size)), int(floorf(pos.z / m_tile_size)));
+  bool outOfBounds = worldPos.x < 0 || worldPos.x > m_map->getWidth() || worldPos.y < 0 || worldPos.y > m_map->getHeight();
+  
+  // If we are currently out of bounds then do something about it
+  if (outOfBounds) {
+    pos = m_map->getRandomLanding();
+    setPosition(pos);
+    currentPos = pos;
+    worldPos = glm::vec2(int(floorf(pos.x / m_tile_size)), int(floorf(pos.z / m_tile_size)));
+    currentWorldPos = glm::vec2(int(floorf(currentPos.x / m_tile_size)), int(floorf(currentPos.z / m_tile_size)));
+  }
   
   float currentWorldHeight = m_map->getPlaceGroundHeight(currentWorldPos.x, currentWorldPos.y);// interpolateHeight(currentWorldPos.x, currentWorldPos.y);
   float nextWorldHeight = m_map->getPlaceGroundHeight(worldPos.x, worldPos.y);
@@ -281,9 +291,9 @@ void CELocalPlayerController::move(double currentTime, double deltaTime, bool fo
     maxClimbHeight = m_player_height * 2.f;
   }
 
-  if (slopeAngle <= maxSlopeAngle ||
+  if ((slopeAngle <= maxSlopeAngle ||
       nextWorldHeight < currentWorldHeight ||
-      abs(nextWorldHeight - currentWorldHeight) < maxClimbHeight) {
+      abs(nextWorldHeight - currentWorldHeight) < maxClimbHeight) && !outOfBounds) {
     
     if (!m_is_jumping) {
       pos.y = smoothedHeight + m_player_height + bobbleOffset;

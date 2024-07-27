@@ -77,18 +77,18 @@ fs::path constructPath(const fs::path& basePath, const std::string& relativePath
 }
 
 void checkGLError(const std::string& location) {
-    GLenum err;
-    while ((err = glGetError()) != GL_NO_ERROR) {
-        std::cerr << "OpenGL error at " << location << ": " << err << std::endl;
-    }
+  GLenum err;
+  while ((err = glGetError()) != GL_NO_ERROR) {
+    std::cerr << "OpenGL error at " << location << ": " << err << std::endl;
+  }
 }
 
 void readStencilBuffer(int width, int height) {
-    std::vector<GLint> stencilValues(width * height);
-    glReadPixels(0, 0, width, height, GL_STENCIL_INDEX, GL_INT, stencilValues.data());
-    GLint minStencilValue = *std::min_element(stencilValues.begin(), stencilValues.end());
-    GLint maxStencilValue = *std::max_element(stencilValues.begin(), stencilValues.end());
-    std::cerr << "Stencil bits: min=" << minStencilValue << " max=" << maxStencilValue << std::endl;
+  std::vector<GLint> stencilValues(width * height);
+  glReadPixels(0, 0, width, height, GL_STENCIL_INDEX, GL_INT, stencilValues.data());
+  GLint minStencilValue = *std::min_element(stencilValues.begin(), stencilValues.end());
+  GLint maxStencilValue = *std::max_element(stencilValues.begin(), stencilValues.end());
+  std::cerr << "Stencil bits: min=" << minStencilValue << " max=" << maxStencilValue << std::endl;
 }
 
 int _fpsCount = 0;
@@ -97,18 +97,18 @@ int fps = 0;
 std::chrono::time_point<std::chrono::steady_clock> lastTime = std::chrono::steady_clock::now();
 
 void CalculateFrameRate() {
-    auto currentTime = std::chrono::steady_clock::now();
-
-    const auto elapsedTime = std::chrono::duration_cast<std::chrono::nanoseconds>(currentTime - lastTime).count();
-    ++_fpsCount;
-
-    if (elapsedTime > 1000000000) {
-        lastTime = currentTime;
-        fps = _fpsCount;
-        _fpsCount = 0;
-        
-        std::cout << "fps: " << fps << std::endl;
-    }
+  auto currentTime = std::chrono::steady_clock::now();
+  
+  const auto elapsedTime = std::chrono::duration_cast<std::chrono::nanoseconds>(currentTime - lastTime).count();
+  ++_fpsCount;
+  
+  if (elapsedTime > 1000000000) {
+    lastTime = currentTime;
+    fps = _fpsCount;
+    _fpsCount = 0;
+    
+    std::cout << "fps: " << fps << std::endl;
+  }
 }
 
 int main(int argc, const char * argv[])
@@ -193,137 +193,141 @@ int main(int argc, const char * argv[])
   
   GLenum err;
   while ((err = glGetError()) != GL_NO_ERROR) {
-      std::cerr << "OpenGL error at " << "entering render loop" << ": " << err << std::endl;
+    std::cerr << "OpenGL error at " << "entering render loop" << ": " << err << std::endl;
   }
   
   while (!glfwWindowShouldClose(window) && !input_manager->GetShouldShutdown()) {
-      glfwMakeContextCurrent(window);
-
-      // Process input before rendering
-      double currentTime = glfwGetTime();
-      double timeDelta = currentTime - lastTime;
-      lastTime = currentTime;
-
-      input_manager->ProcessLocalInput(window, timeDelta);
-      g_player_controller->update(timeDelta);
-
-      // Clear color, depth, and stencil buffers at the beginning of each frame
-      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-      checkGLError("After glClear");
-
-      Camera* camera = g_player_controller->getCamera();
-
-      glm::vec3 currentPosition = g_player_controller->getPosition();
-      double rnTimeDelta = currentTime - lastRndAudioTime;
-
-      if (rnTimeDelta >= 6.0) {
-          m_random_ambient = cMapRsc->getRandomAudio(currentPosition.x, currentPosition.y, currentPosition.z - cMap->getTileLength());
-          g_audio_manager->play(std::move(m_random_ambient));
-          lastRndAudioTime = currentTime;
+    glfwMakeContextCurrent(window);
+    
+    // Process input before rendering
+    double currentTime = glfwGetTime();
+    double timeDelta = currentTime - lastTime;
+    lastTime = currentTime;
+    
+    input_manager->ProcessLocalInput(window, timeDelta);
+    g_player_controller->update(timeDelta);
+    
+    // Clear color, depth, and stencil buffers at the beginning of each frame
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    checkGLError("After glClear");
+    
+    Camera* camera = g_player_controller->getCamera();
+    
+    glm::vec3 currentPosition = g_player_controller->getPosition();
+    double rnTimeDelta = currentTime - lastRndAudioTime;
+    
+    if (rnTimeDelta >= 6.0) {
+      m_random_ambient = cMapRsc->getRandomAudio(currentPosition.x, currentPosition.y, currentPosition.z - cMap->getTileLength());
+      g_audio_manager->play(std::move(m_random_ambient));
+      lastRndAudioTime = currentTime;
+    }
+    
+    glm::vec2 next_world_pos = g_player_controller->getWorldPosition();
+    if (next_world_pos != current_world_pos) {
+      bool outOfBounds = next_world_pos.x < 0 || next_world_pos.x > cMap->getWidth() || next_world_pos.y < 0 || next_world_pos.y > cMap->getHeight();
+      
+      if (!outOfBounds) {
+        int next_ambient_id = cMap->getAmbientAudioIDAt((int)next_world_pos.x, (int)next_world_pos.y);
+        
+        if (next_ambient_id != current_ambient_id) {
+          m_ambient = cMapRsc->getAmbientAudio(next_ambient_id);
+          g_audio_manager->playAmbient(std::move(m_ambient));
+          current_ambient_id = next_ambient_id;
+        }
       }
-
-      glm::vec2 next_world_pos = g_player_controller->getWorldPosition();
-      if (next_world_pos != current_world_pos) {
-          int next_ambient_id = cMap->getAmbientAudioIDAt((int)next_world_pos.x, (int)next_world_pos.y);
-
-          if (next_ambient_id != current_ambient_id) {
-              m_ambient = cMapRsc->getAmbientAudio(next_ambient_id);
-              g_audio_manager->playAmbient(std::move(m_ambient));
-              current_ambient_id = next_ambient_id;
-          }
-
-          current_world_pos = next_world_pos;
-      }
-
-      // Render the sky first
-      if (render_sky) {
-          glDepthFunc(GL_LESS);
-          checkGLError("After glDepthFunc (sky)");
-
-          glDisable(GL_CULL_FACE);
-          checkGLError("After glDisable(GL_CULL_FACE) (sky)");
-
-          glDepthMask(GL_FALSE); // Disable depth writes
-          checkGLError("After glDepthMask(GL_FALSE) (sky)");
-
-          cMapRsc->getDaySky()->Render(window, *camera);
-          checkGLError("After getDaySky()->Render (sky)");
-
-          glDepthMask(GL_TRUE); // Re-enable depth writes
-          checkGLError("After glDepthMask(GL_TRUE) (sky)");
-
-          glEnable(GL_CULL_FACE);
-          checkGLError("After glEnable(GL_CULL_FACE) (sky)");
-      }
-
-      // Render the terrain
-      if (render_terrain) {
-          glDepthFunc(GL_LESS); // Depth test for terrain
-          checkGLError("After glDepthFunc (terrain)");
-
-          glEnable(GL_CULL_FACE);
-          checkGLError("After glEnable(GL_CULL_FACE) (terrain)");
-
-          glCullFace(GL_BACK); // Cull back faces
-          checkGLError("After glCullFace (terrain)");
-
-          cMapRsc->getTexture(0)->use();
-          checkGLError("After getTexture(0)->use (terrain)");
-
-          terrain->Update(g_terrain_transform, *camera);
-          checkGLError("After terrain->Update (terrain)");
-
-          terrain->Render();
-          checkGLError("After terrain->Render (terrain)");
-
-          glDisable(GL_CULL_FACE);
-          checkGLError("After glDisable(GL_CULL_FACE) (terrain)");
-      }
+      
+      current_world_pos = next_world_pos;
+    }
+    
+    // Render the sky first
+    if (render_sky) {
+      glDepthFunc(GL_LESS);
+      checkGLError("After glDepthFunc (sky)");
+      
+      glDisable(GL_CULL_FACE);
+      checkGLError("After glDisable(GL_CULL_FACE) (sky)");
+      
+      glDepthMask(GL_FALSE); // Disable depth writes
+      checkGLError("After glDepthMask(GL_FALSE) (sky)");
+      
+      cMapRsc->getDaySky()->Render(window, *camera);
+      checkGLError("After getDaySky()->Render (sky)");
+      
+      glDepthMask(GL_TRUE); // Re-enable depth writes
+      checkGLError("After glDepthMask(GL_TRUE) (sky)");
+      
+      glEnable(GL_CULL_FACE);
+      checkGLError("After glEnable(GL_CULL_FACE) (sky)");
+    }
+    
+    // Render the terrain
+    if (render_terrain) {
+      glDepthFunc(GL_LESS); // Depth test for terrain
+      checkGLError("After glDepthFunc (terrain)");
+      
+      glEnable(GL_CULL_FACE);
+      checkGLError("After glEnable(GL_CULL_FACE) (terrain)");
+      
+      glCullFace(GL_BACK); // Cull back faces
+      checkGLError("After glCullFace (terrain)");
+      
+      cMapRsc->getTexture(0)->use();
+      checkGLError("After getTexture(0)->use (terrain)");
+      
+      terrain->Update(g_terrain_transform, *camera);
+      checkGLError("After terrain->Update (terrain)");
+      
+      terrain->Render();
+      checkGLError("After terrain->Render (terrain)");
+      
+      glDisable(GL_CULL_FACE);
+      checkGLError("After glDisable(GL_CULL_FACE) (terrain)");
+    }
     
     // Render the terrain objects
     if (render_objects) {
-        glDepthFunc(GL_LESS); // Depth test for objects
-        checkGLError("After glDepthFunc (objects)");
-
-        glDisable(GL_CULL_FACE);
-        checkGLError("After glDisable(GL_CULL_FACE) (objects)");
-
-        glEnable(GL_DEPTH_TEST);
-        checkGLError("After glEnable(GL_DEPTH_TEST) (objects)");
+      glDepthFunc(GL_LESS); // Depth test for objects
+      checkGLError("After glDepthFunc (objects)");
       
-        glEnable(GL_POLYGON_OFFSET_FILL);
-        checkGLError("After glEnable(GL_POLYGON_OFFSET_FILL) (terrain)");
-
-        glPolygonOffset(-1.0f, -1.0f);
-        checkGLError("After glPolygonOffset (terrain)");
-
-        terrain->RenderObjects(*camera);
-        checkGLError("After terrain->RenderObjects (objects)");
+      glDisable(GL_CULL_FACE);
+      checkGLError("After glDisable(GL_CULL_FACE) (objects)");
       
-        glDisable(GL_POLYGON_OFFSET_FILL);
-        checkGLError("After glDisable(GL_POLYGON_OFFSET_FILL) (terrain)");
-
-        glEnable(GL_CULL_FACE);
-        checkGLError("After glEnable(GL_CULL_FACE) (objects)");
+      glEnable(GL_DEPTH_TEST);
+      checkGLError("After glEnable(GL_DEPTH_TEST) (objects)");
+      
+      glEnable(GL_POLYGON_OFFSET_FILL);
+      checkGLError("After glEnable(GL_POLYGON_OFFSET_FILL) (terrain)");
+      
+      glPolygonOffset(-1.0f, -1.0f);
+      checkGLError("After glPolygonOffset (terrain)");
+      
+      terrain->RenderObjects(*camera);
+      checkGLError("After terrain->RenderObjects (objects)");
+      
+      glDisable(GL_POLYGON_OFFSET_FILL);
+      checkGLError("After glDisable(GL_POLYGON_OFFSET_FILL) (terrain)");
+      
+      glEnable(GL_CULL_FACE);
+      checkGLError("After glEnable(GL_CULL_FACE) (objects)");
     }
-
-      // Render the water
-      if (render_water) {
-          glDepthFunc(GL_LESS);
-          checkGLError("After glDepthFunc (water)");
-
-          terrain->RenderWater();
-          checkGLError("After terrain->RenderWater (water)");
-      }
-
-      glfwSwapBuffers(window);
-      glfwPollEvents();
-
-      checkGLError("End of frame");
     
-      // CalculateFrameRate();
+    // Render the water
+    if (render_water) {
+      glDepthFunc(GL_LESS);
+      checkGLError("After glDepthFunc (water)");
+      
+      terrain->RenderWater();
+      checkGLError("After terrain->RenderWater (water)");
+    }
+    
+    glfwSwapBuffers(window);
+    glfwPollEvents();
+    
+    checkGLError("End of frame");
+    
+    // CalculateFrameRate();
   }
-
-
+  
+  
   return 0;
 }

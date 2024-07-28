@@ -96,4 +96,7 @@ public:
   int determineLOD(const Transform& transform, const Camera& camera);
   
   const std::vector<Transform>& getTransforms() const;
+  
+  bool hasBoundingBox();
+  const std::array<TBound, 8>& getBoundingBox() const;
 };

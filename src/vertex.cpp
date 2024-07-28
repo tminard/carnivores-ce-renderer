@@ -8,6 +8,12 @@
 
 #include "vertex.h"
 
+glm::vec3 calculateFaceNormal(const glm::vec3& v1, const glm::vec3& v2, const glm::vec3& v3) {
+    glm::vec3 edge1 = v2 - v1;
+    glm::vec3 edge2 = v3 - v1;
+    return glm::normalize(glm::cross(edge1, edge2));
+}
+
 Vertex::Vertex(const glm::vec3& position, const glm::vec2& texture_coord, const glm::vec3& normal, bool hidden, float alpha, uint32_t owner, uint32_t flags)
 : m_position(position), m_uv_coord(texture_coord), m_normal(normal), m_hide(hidden), m_owner(owner), m_flags(flags), m_alpha(alpha)
 {

@@ -66,7 +66,6 @@ public:
   
   const std::vector<Vertex>& GetVertices() const;
 
-  void Update(Camera& camera);
   void UpdateInstances(std::vector<glm::mat4> transforms);
   void DrawInstances();
 };

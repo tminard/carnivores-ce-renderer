@@ -2,6 +2,8 @@
 
 in vec2 texCoord0;
 in float faceAlpha0;
+in vec3 surfaceNormal;
+in vec3 toLightVector;
 
 out vec4 outputColor;
 
@@ -10,14 +12,29 @@ uniform bool enable_transparency;
 uniform float view_distance;
 uniform vec4 distanceColor;
 
+uniform float ambientStrength = 0.65;
+uniform float diffuseStrength = 0.35;
+uniform float time;
+
 void main()
 {
-    vec4 sC = texture( basic_texture, texCoord0 );
+    vec4 sC = texture(basic_texture, texCoord0);
 
-    // ambient and fade
+    // Lighting
+    vec3 unitSurfaceNormal = normalize(surfaceNormal);
+    vec3 unitToLightVector = normalize(toLightVector);
+
+    float diffuse = max(dot(unitSurfaceNormal, unitToLightVector), 0.0);
+    float brightness = ambientStrength + diffuse * diffuseStrength;
+
+    // Apply the lighting to the texture color
+    vec3 finalColor = vec3(sC.b, sC.g, sC.r) * brightness;
+
+    // Fog effect
     float min_distance = view_distance * 0.50; // Start fog at half distance
     float max_distance = view_distance;
     float fogFactor = 0.0;
+
     float distance = gl_FragCoord.z / gl_FragCoord.w;
 
     if (distance > min_distance) {
@@ -25,9 +42,9 @@ void main()
         fogFactor = min(fogFactor, 0.45); // Limit the max fill so we keep things visible
     }
 
-    vec3 finalColor = vec3(sC.b, sC.g, sC.r);
     finalColor = mix(finalColor, distanceColor.rgb, fogFactor);
     
+    // Transparency discard
     float trans = 0.095;
     if (faceAlpha0 == 0.0 && enable_transparency && sC.r <= trans && sC.g <= trans && sC.b <= trans) {
         discard;

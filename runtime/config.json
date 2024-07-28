@@ -2,7 +2,7 @@
   "basePath": "../../runtime/cce/",
   "map": {
     "type": "C2",
-    "map": "../game/c2/area2.map",
-    "rsc": "../game/c2/area2.rsc"
+    "map": "../game/c2/area1.map",
+    "rsc": "../game/c2/area1.rsc"
   }
 }

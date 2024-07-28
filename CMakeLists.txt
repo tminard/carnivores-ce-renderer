@@ -4,7 +4,7 @@ project(CarnivoresRenderer)
 # Add .lib files
 link_directories(${CMAKE_SOURCE_DIR}/lib)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -63,9 +63,23 @@ include_directories(
 	${GLAD_INCLUDE_DIR}
 )
 
+# Define the path to your runtime folder
+set(RUNTIME_DIR "${CMAKE_SOURCE_DIR}/runtime")
+
+# Create a list of files in the runtime directory
+file(GLOB RUNTIME_FILES
+    "${RUNTIME_DIR}/*"
+)
+
+# Add the runtime files to the IDE as a source group
+source_group("Runtime Files" FILES ${RUNTIME_FILES})
+
+# Add the runtime files to the project
+add_custom_target(runtime_files SOURCES ${RUNTIME_FILES})
 
 # Define the link libraries
 if(APPLE)
+    add_compile_definitions(TARGET_OS_MAC=1)
     target_link_libraries(${PROJECT_NAME} glad ${GLFW3_LIBRARY} "-framework OpenAL" "-framework OpenGL" "-framework CoreFoundation" "-framework IOKit" "-framework CoreGraphics" "-framework AppKit" ${LIBS})
 else()
     target_link_libraries(${PROJECT_NAME} glad ${GLFW3_LIBRARY} OpenAL32.lib OpenGL32.lib ${LIBS})

@@ -20,14 +20,6 @@ void C2Character::printDebuggingInfo(std::string& output)
 	output = "C2Character abstract class debugging info.";
 }
 
-const char* C2Character::debuggingInfoCString()
-{
-	std::string debuggingString = "";
-	this->printDebuggingInfo(debuggingString);
-
-	return debuggingString.c_str();
-}
-
 void C2Character::performWalkAction()
 {
   return;

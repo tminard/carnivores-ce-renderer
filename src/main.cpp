@@ -137,7 +137,7 @@ int main(int argc, const char * argv[])
   std::unique_ptr<LocalVideoManager> video_manager(new LocalVideoManager());
   std::unique_ptr<LocalAudioManager> g_audio_manager(new LocalAudioManager());
   
-  std::unique_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile(mapType, mapRscPath.string(), basePath.string()));
+  std::shared_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile(mapType, mapRscPath.string(), basePath.string()));
   std::shared_ptr<C2MapFile> cMap(new C2MapFile(mapType, mapPath.string(), cMapRsc.get()));
   
   std::unique_ptr<TerrainRenderer> terrain(new TerrainRenderer(cMap.get(), cMapRsc.get()));
@@ -146,7 +146,7 @@ int main(int argc, const char * argv[])
   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
   
   std::shared_ptr<CEPlayer> g_player_state(new CEPlayer());
-  std::shared_ptr<CELocalPlayerController> g_player_controller(new CELocalPlayerController(std::move(g_player_state), cMap->getWidth(), cMap->getHeight(), cMap->getTileLength(), cMap));
+  std::shared_ptr<CELocalPlayerController> g_player_controller(new CELocalPlayerController(std::move(g_player_state), cMap->getWidth(), cMap->getHeight(), cMap->getTileLength(), cMap, cMapRsc));
   g_audio_manager->bind(g_player_controller);
   input_manager->Bind(g_player_controller);
   
@@ -261,6 +261,9 @@ int main(int argc, const char * argv[])
     }
     
     // Render the terrain
+    terrain->Update(g_terrain_transform, *camera);
+    checkGLError("After terrain->Update (terrain)");
+    
     if (render_terrain) {
       glDepthFunc(GL_LESS); // Depth test for terrain
       checkGLError("After glDepthFunc (terrain)");
@@ -273,9 +276,6 @@ int main(int argc, const char * argv[])
       
       cMapRsc->getTexture(0)->use();
       checkGLError("After getTexture(0)->use (terrain)");
-      
-      terrain->Update(g_terrain_transform, *camera);
-      checkGLError("After terrain->Update (terrain)");
       
       terrain->Render();
       checkGLError("After terrain->Render (terrain)");
@@ -300,7 +300,7 @@ int main(int argc, const char * argv[])
       
       glPolygonOffset(-1.0f, -1.0f);
       checkGLError("After glPolygonOffset (terrain)");
-      
+
       terrain->RenderObjects(*camera);
       checkGLError("After terrain->RenderObjects (objects)");
       

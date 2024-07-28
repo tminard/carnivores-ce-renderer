@@ -3,6 +3,8 @@
 in vec2 texCoord0;
 smooth in float alpha0;
 in float EdgeFactor;
+in vec3 surfaceNormal;
+in vec3 toLightVector;
 
 out vec4 outputColor;
 
@@ -13,6 +15,8 @@ uniform float view_distance;
 
 const float wave_speed = 0.1;
 const float wave_scale = 0.02;
+uniform float ambientStrength = 0.45;
+uniform float diffuseStrength = 0.55;
 
 void main()
 {
@@ -35,7 +39,17 @@ void main()
         sC = texture(basic_texture, wave);
     }
 
-    vec3 finalColor = vec3(sC.b, sC.g, sC.r);
+    // Lighting
+    vec3 unitSurfaceNormal = normalize(surfaceNormal);
+    vec3 unitToLightVector = normalize(toLightVector);
+
+    float diffuse = max(dot(unitSurfaceNormal, unitToLightVector), 0.0);
+    float brightness = ambientStrength + diffuse * diffuseStrength;
+
+    // Apply the lighting to the texture color
+    vec3 finalColor = vec3(sC.b, sC.g, sC.r) * brightness;
+
+    // Mix in the sky color
     finalColor = mix(finalColor, skyColor.rgb, fogFactor);
    
     // Ensure the alpha does not go below factor

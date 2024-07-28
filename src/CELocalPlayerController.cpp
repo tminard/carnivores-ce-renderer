@@ -2,11 +2,13 @@
 #include "CEPlayer.hpp"
 #include "camera.h"
 #include "C2MapFile.h"
+#include "C2MapRscFile.h"
+#include "CEWorldModel.h"
 
 #include <iostream>
 #include <string>
 
-CELocalPlayerController::CELocalPlayerController(std::shared_ptr<CEPlayer> player, float world_width, float world_height, float tile_size, std::shared_ptr<C2MapFile> map) : m_player(player), m_world_width(world_width), m_world_height(world_height), m_tile_size(tile_size), m_map(map) {
+CELocalPlayerController::CELocalPlayerController(std::shared_ptr<CEPlayer> player, float world_width, float world_height, float tile_size, std::shared_ptr<C2MapFile> map, std::shared_ptr<C2MapRscFile> rsc) : m_player(player), m_world_width(world_width), m_world_height(world_height), m_tile_size(tile_size), m_map(map), m_rsc(rsc) {
   
   m_walk_speed = m_tile_size * 3.5f;  // This seems reasonable for walk speed
   m_player_height = m_tile_size * 0.85f;
@@ -272,6 +274,20 @@ void CELocalPlayerController::move(double currentTime, double deltaTime, bool fo
   
   float currentWorldHeight = m_map->getPlaceGroundHeight(currentWorldPos.x, currentWorldPos.y);// interpolateHeight(currentWorldPos.x, currentWorldPos.y);
   float nextWorldHeight = m_map->getPlaceGroundHeight(worldPos.x, worldPos.y);
+  
+  // Apply object bounding box
+  int objectIndex = m_map->getObjectAt((worldPos.y * m_map->getWidth()) + worldPos.x);
+  if (objectIndex < m_rsc->getWorldModelCount()) {
+    auto obj = m_rsc->getWorldModel(objectIndex);
+    if (obj != nullptr && obj->hasBoundingBox()) {
+      //std::cout << "Obj at pos has bounding box" << std::endl;
+      // Determine height of box at exact position
+      // I dont know why there's 8 of these
+      auto& b = obj->getBoundingBox();
+      // It appears to be up to 8 boxes, with different angles and positions
+      // So we can loop through them to find the one that matches the player
+    }
+  }
   
   // Apply head bobble effect
   float bobbleOffset = 0.f;

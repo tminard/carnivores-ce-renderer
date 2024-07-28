@@ -5,6 +5,8 @@
 #include <glm/glm.hpp>
 #include <string>
 
+glm::vec3 calculateFaceNormal(const glm::vec3& v1, const glm::vec3& v2, const glm::vec3& v3);
+
 class Vertex
 {
 private:

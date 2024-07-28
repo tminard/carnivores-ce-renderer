@@ -176,7 +176,9 @@ void TerrainRenderer::loadShader()
   this->m_shader->setFloat("tileWidth", this->m_cmap_data_weak->getTileLength());
 
   this->m_water_shader->use();
-  this->m_water_shader->setVec3("mapDimensions", glm::vec3(this->m_cmap_data_weak->getWidth() * this->m_cmap_data_weak->getTileLength(), this->m_cmap_data_weak->getHeight() * this->m_cmap_data_weak->getTileLength(), this->m_cmap_data_weak->getTileLength()));
+  this->m_water_shader->setFloat("terrainWidth", this->m_cmap_data_weak->getWidth());
+  this->m_water_shader->setFloat("terrainHeight", this->m_cmap_data_weak->getHeight());
+  this->m_water_shader->setFloat("tileWidth", this->m_cmap_data_weak->getTileLength());
   this->m_water_shader->setVec4("skyColor", glm::vec4(r, g, b, a));
   this->m_water_shader->setFloat("view_distance", (m_cmap_data_weak->getTileLength() * (m_cmap_data_weak->getWidth() / 8.f)));
 }
@@ -194,17 +196,27 @@ void TerrainRenderer::loadShader()
 void TerrainRenderer::Update(Transform& transform, Camera& camera)
 {
   glm::mat4 MVP = transform.GetMVP(camera);
-  glm::mat4 model = transform.GetStaticModel(); // Assuming this method exists
+  glm::mat4 model = transform.GetStaticModel();
   double t = glfwGetTime();
 
   this->m_shader->use();
   this->m_shader->setMat4("MVP", MVP);
+  this->m_shader->setMat4("model", model);
+  this->m_shader->setMat4("view", camera.GetVM());
+  this->m_shader->setMat4("projection", camera.GetProjection());
   this->m_shader->setFloat("time", (float)t);
+
   this->m_water_shader->use();
   this->m_water_shader->setMat4("MVP", MVP);
   this->m_water_shader->setMat4("model", model);
-  this->m_water_shader->setFloat("RealTime", (float)t);
+  this->m_water_shader->setMat4("view", camera.GetVM());
+  this->m_water_shader->setMat4("projection", camera.GetProjection());
+  this->m_water_shader->setFloat("time", (float)t);
   this->m_water_shader->setVec3("cameraPos", camera.GetCurrentPos());
+  
+  for (int m = 0; m < this->m_crsc_data_weak->getWorldModelCount(); m++) {
+    this->m_crsc_data_weak->getWorldModel(m)->getGeometry()->Update(transform, camera);
+  }
 
   m_last_update_time = t;
 }
@@ -212,7 +224,6 @@ void TerrainRenderer::Update(Transform& transform, Camera& camera)
 void TerrainRenderer::RenderObjects(Camera& camera)
 {
   for (int m = 0; m < this->m_crsc_data_weak->getWorldModelCount(); m++) {
-    this->m_crsc_data_weak->getWorldModel(m)->getGeometry()->Update(camera);
     this->m_crsc_data_weak->getWorldModel(m)->getGeometry()->DrawInstances();
   }
 }
@@ -435,10 +446,10 @@ void TerrainRenderer::loadWaterAt(int x, int y)
 
   std::array<glm::vec2, 4> vertex_uv_mapping = this->calcUVMapForQuad(x, y, quad_reverse, 0);
 
-  Vertex v1(vpositionLL, vertex_uv_mapping[0], glm::vec3(0), false, calcWaterAlpha(x, y, wheight), texture_id, 0);
-  Vertex v2(vpositionLR, vertex_uv_mapping[1], glm::vec3(0), false, calcWaterAlpha(fmin(x+1, height-1), y, wheight), texture_id, 0);
-  Vertex v3(vpositionUL, vertex_uv_mapping[2], glm::vec3(0), false, calcWaterAlpha(x, fmin(y+1, width-1), wheight), texture_id, 0);
-  Vertex v4(vpositionUR, vertex_uv_mapping[3], glm::vec3(0), false, calcWaterAlpha(fmin(x+1, height-1), fmin(y+1, width-1), wheight), texture_id, 0);
+  Vertex v1(vpositionLL, vertex_uv_mapping[0], glm::vec3(0.0, 1.0, 0.0), false, calcWaterAlpha(x, y, wheight), texture_id, 0);
+  Vertex v2(vpositionLR, vertex_uv_mapping[1], glm::vec3(0.0, 1.0, 0.0), false, calcWaterAlpha(fmin(x+1, height-1), y, wheight), texture_id, 0);
+  Vertex v3(vpositionUL, vertex_uv_mapping[2], glm::vec3(0.0, 1.0, 0.0), false, calcWaterAlpha(x, fmin(y+1, width-1), wheight), texture_id, 0);
+  Vertex v4(vpositionUR, vertex_uv_mapping[3], glm::vec3(0.0, 1.0, 0.0), false, calcWaterAlpha(fmin(x+1, height-1), fmin(y+1, width-1), wheight), texture_id, 0);
 
   water_object->m_vertices.push_back(v1);
   water_object->m_vertices.push_back(v2);
@@ -545,7 +556,6 @@ void TerrainRenderer::updateUnderwaterStateTexture(const std::vector<float>& dat
   }
 }
 
-
 // From http://www.learnopengles.com/android-lesson-eight-an-introduction-to-index-buffer-objects-ibos/
 // using http://stackoverflow.com/questions/10114577/a-method-for-indexing-triangles-from-a-loaded-heightmap
 void TerrainRenderer::loadIntoHardwareMemory()
@@ -573,6 +583,54 @@ void TerrainRenderer::loadIntoHardwareMemory()
 
     this->m_waters.push_back(wd);
   }
+  
+  // Structures to store accumulated normals and counts for averaging
+  std::vector<glm::vec3> vertexNormals(width * height, glm::vec3(0.0f));
+  std::vector<int> normalCounts(width * height, 0);
+  
+  for (int y = 0; y < width; y++) {
+      for (int x = 0; x < height; x++) {
+          unsigned int base_index = (y * width) + x;
+
+          glm::vec3 vpositionLL = this->calcWorldVertex(x, y, false, 0.f);
+          glm::vec3 vpositionLR = this->calcWorldVertex(fmin(x + 1, height - 1), y, false, 0.f);
+          glm::vec3 vpositionUL = this->calcWorldVertex(x, fmin(y + 1, width - 1), false, 0.f);
+          glm::vec3 vpositionUR = this->calcWorldVertex(fmin(x + 1, height - 1), fmin(y + 1, width - 1), false, 0.f);
+
+          // Calculate face normals
+          glm::vec3 normal1, normal2;
+          if (this->m_cmap_data_weak->isQuadRotatedAt(base_index)) {
+              normal1 = calculateFaceNormal(vpositionLL, vpositionUL, vpositionLR);
+              normal2 = calculateFaceNormal(vpositionLR, vpositionUL, vpositionUR);
+          } else {
+              normal1 = calculateFaceNormal(vpositionLL, vpositionUR, vpositionLR);
+              normal2 = calculateFaceNormal(vpositionLL, vpositionUL, vpositionUR);
+          }
+
+        // Accumulate face normals for each vertex with boundary checks
+        if (y < height && x < width) {
+            vertexNormals[y * width + x] += normal1;
+            normalCounts[y * width + x]++;
+        }
+        if (y < height && x + 1 < width) {
+            vertexNormals[y * width + (x + 1)] += normal1;
+            normalCounts[y * width + (x + 1)]++;
+        }
+        if (y + 1 < height && x < width) {
+            vertexNormals[(y + 1) * width + x] += normal1;
+            normalCounts[(y + 1) * width + x]++;
+        }
+        if (y + 1 < height && x + 1 < width) {
+            vertexNormals[(y + 1) * width + (x + 1)] += normal2;
+            normalCounts[(y + 1) * width + (x + 1)]++;
+        }
+      }
+  }
+
+  // Normalize accumulated normals
+  for (int i = 0; i < vertexNormals.size(); ++i) {
+      vertexNormals[i] = glm::normalize(vertexNormals[i]);
+  }
 
   for (int y=0; y < width; y++) {
     for (int x=0; x < height; x++) {
@@ -593,19 +651,16 @@ void TerrainRenderer::loadIntoHardwareMemory()
       int texture_direction = (flags & 3);
       
       std::array<glm::vec2, 4> vertex_uv_mapping = this->calcUVMapForQuad(x, y, quad_reverse, texture_direction);
+      
+      glm::vec3 normalLL = vertexNormals[y * width + x];
+      glm::vec3 normalLR = (x + 1 < width) ? vertexNormals[y * width + (x + 1)] : normalLL;
+      glm::vec3 normalUL = (y + 1 < height) ? vertexNormals[(y + 1) * width + x] : normalLL;
+      glm::vec3 normalUR = (y + 1 < height && x + 1 < width) ? vertexNormals[(y + 1) * width + (x + 1)] : normalLL;
 
-      // TODO: vertex normals
-      // to get the vertex normal:
-      // 1. find the connected faces
-      // 2. get the average of the face normals
-      // 3. this is the vertex normal
-      // Since we dont determine faces until we calculate vertices, we need to do this on the fly
-      // Use memoization.
-      // Each pass is building the two faces of the given quad.
-      CETerrainVertex v1(vpositionLL, this->getScaledAtlasUVQuad(vertex_uv_mapping[0], texID, texID2), glm::vec3(0), this->m_cmap_data_weak->getBrightnessAt(x, y));
-      CETerrainVertex v2(vpositionLR, this->getScaledAtlasUVQuad(vertex_uv_mapping[1], texID, texID2), glm::vec3(0), this->m_cmap_data_weak->getBrightnessAt(fmin(x + 1, height - 1), y));
-      CETerrainVertex v3(vpositionUL, this->getScaledAtlasUVQuad(vertex_uv_mapping[2], texID, texID2), glm::vec3(0), this->m_cmap_data_weak->getBrightnessAt(x, fmin(y + 1, width - 1)));
-      CETerrainVertex v4(vpositionUR, this->getScaledAtlasUVQuad(vertex_uv_mapping[3], texID, texID2), glm::vec3(0), this->m_cmap_data_weak->getBrightnessAt(fmin(x + 1, height - 1), fmin(y + 1, width - 1)));
+      CETerrainVertex v1(vpositionLL, this->getScaledAtlasUVQuad(vertex_uv_mapping[0], texID, texID2), normalLL, this->m_cmap_data_weak->getBrightnessAt(x, y));
+      CETerrainVertex v2(vpositionLR, this->getScaledAtlasUVQuad(vertex_uv_mapping[1], texID, texID2), normalLR, this->m_cmap_data_weak->getBrightnessAt(fmin(x + 1, width - 1), y));
+      CETerrainVertex v3(vpositionUL, this->getScaledAtlasUVQuad(vertex_uv_mapping[2], texID, texID2), normalUL, this->m_cmap_data_weak->getBrightnessAt(x, fmin(y + 1, height - 1)));
+      CETerrainVertex v4(vpositionUR, this->getScaledAtlasUVQuad(vertex_uv_mapping[3], texID, texID2), normalUR, this->m_cmap_data_weak->getBrightnessAt(fmin(x + 1, width - 1), fmin(y + 1, height - 1)));
       
       m_vertices.push_back(v1);
       m_vertices.push_back(v2);
@@ -650,23 +705,6 @@ void TerrainRenderer::loadIntoHardwareMemory()
   }
   
   m_num_indices = (int)m_indices.size();
-
-  // TODO: iterate over indices here to build the vertice normals
-//  for (int y = 0; y < width; y++) {
-//      for (int x = 0; x < height; x++) {
-//          long long base_index = ((long long)y * width) + x;
-//
-//          // The next 3 indices are the vertices of the first face
-//          int face_1_index = m_indices.at(base_index);
-//
-//          // The next 3 indices are the vertices of the second face
-//          int face_2_index = m_indices.at(base_index + 3);
-//
-//          // For each face, we must determine the adjacent faces and calculate a single normal
-//          // Then, set the normal for each vertex to the average of the face normals
-//          // Note: you must keep the quad order in mind when determining this.
-//      }
-//  }
   
   // generate buffers and upload
   glGenVertexArrays(1, &this->m_vertex_array_object);

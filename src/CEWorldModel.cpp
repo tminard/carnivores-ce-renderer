@@ -177,6 +177,14 @@ CEGeometry* CEWorldModel::getGeometry() const
   return this->m_geometry.get();
 }
 
+bool CEWorldModel::hasBoundingBox() {
+  return m_old_object_info->flags & objectBOUND;
+}
+
+const std::array<TBound, 8>& CEWorldModel::getBoundingBox() const {
+  return m_bounding_box;
+}
+
 CESimpleGeometry* CEWorldModel::getFarGeometry()
 {
   return this->m_far_geometry.get();
@@ -221,11 +229,18 @@ void CEWorldModel::_generateBoundingBox(std::vector<Vertex>& vertex_data)
     z1-=72.f;
     z2+=72.f;
     
+    // Why do we do this 8 times?
+    // Smallest y position in model (min height)
     m_bounding_box[o].y1 = y1;
+    // Largest y position in model (max height)
     m_bounding_box[o].y2 = y2;
+    // Avg x (e.g, "center")
     m_bounding_box[o].cx = (x1+x2) / 2;
+    // Avg y (center, across Z axis)
     m_bounding_box[o].cy = (z1+z2) / 2;
+    // Center of delta between largest x pos and smallest?
     m_bounding_box[o].a  = (x2-x1) / 2;
+    // Center of delta between largests z pos and smallest?
     m_bounding_box[o].b  = (z2-z1) / 2;
     
   }

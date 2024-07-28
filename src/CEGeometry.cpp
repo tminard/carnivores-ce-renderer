@@ -127,20 +127,23 @@ void CEGeometry::ConfigureShaderUniforms(C2MapFile* map, C2MapRscFile* rsc)
   m_shader->use();
   m_shader->setFloat("view_distance", dist);
   m_shader->setVec4("distanceColor", dColor);
+  m_shader->setFloat("terrainWidth", map->getWidth());
+  m_shader->setFloat("terrainHeight", map->getHeight());
+  m_shader->setFloat("tileWidth", map->getTileLength());
 }
 
 void CEGeometry::Update(Transform &transform, Camera &camera)
 {
   this->m_shader->use();
+  double t = glfwGetTime();
   glm::mat4 MVP = transform.GetStaticModelVP(camera);
+  glm::mat4 model = transform.GetStaticModel();
 
   this->m_shader->setMat4("MVP", MVP);
-}
-
-void CEGeometry::Update(Camera &camera)
-{
-  this->m_shader->use();
-  this->m_shader->setMat4("projection_view", camera.GetViewProjection());
+  this->m_shader->setMat4("model", model);
+  this->m_shader->setMat4("view", camera.GetVM());
+  this->m_shader->setMat4("projection", camera.GetProjection());
+  this->m_shader->setFloat("time", (float)t);
 }
 
 void CEGeometry::DrawInstances()

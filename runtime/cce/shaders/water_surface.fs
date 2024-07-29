@@ -5,18 +5,21 @@ smooth in float alpha0;
 in float EdgeFactor;
 in vec3 surfaceNormal;
 in vec3 toLightVector;
+in vec2 cloudTexCoord;
 
 out vec4 outputColor;
 
 uniform sampler2D basic_texture;
+uniform sampler2D skyTexture;
 uniform float time; // Time for wave animation
 uniform vec4 skyColor;
 uniform float view_distance;
 
-const float wave_speed = 0.1;
-const float wave_scale = 0.02;
 uniform float ambientStrength = 0.45;
 uniform float diffuseStrength = 0.55;
+
+const float wave_speed = 0.1;
+const float wave_scale = 0.02;
 
 void main()
 {
@@ -34,7 +37,7 @@ void main()
     } else {
         // Apply wave distortion to texture coordinates
         vec2 wave = texCoord0 + vec2(sin(texCoord0.x * 10.0 + time * wave_speed) * wave_scale,
-                                    cos(texCoord0.y * 10.0 + time * wave_speed) * wave_scale);
+                                     cos(texCoord0.y * 10.0 + time * wave_speed) * wave_scale);
         
         sC = texture(basic_texture, wave);
     }
@@ -45,6 +48,17 @@ void main()
 
     float diffuse = max(dot(unitSurfaceNormal, unitToLightVector), 0.0);
     float brightness = ambientStrength + diffuse * diffuseStrength;
+
+    // Apply distortion to cloud texture coordinates
+    vec2 distortedCloudTexCoord = cloudTexCoord + vec2(sin(cloudTexCoord.x * 10.0 + time * wave_speed) * wave_scale,
+                                                       cos(cloudTexCoord.y * 10.0 + time * wave_speed) * wave_scale);
+    
+    // Sample the sky texture for cloud shadows using distorted cloud texture coordinates
+    vec4 cloudColor = texture(skyTexture, distortedCloudTexCoord);
+    float cloudLuminance = (0.299 * cloudColor.b + 0.587 * cloudColor.g + 0.114 * cloudColor.r) * 2.0;
+
+    // Adjust brightness based on cloud luminance
+    brightness *= cloudLuminance;
 
     // Apply the lighting to the texture color
     vec3 finalColor = vec3(sC.b, sC.g, sC.r) * brightness;

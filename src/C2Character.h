@@ -29,7 +29,6 @@ class C2Character: public CEAnimatableModel {
 
     // Debug info should be extended in derived class
     virtual void printDebuggingInfo(std::string& output);
-    const char* debuggingInfoCString();
 
     /* Game Animations hooks. Note that only a few of these are provided in the general
     * implementation, such as walk, run, and die. Derived class should implement others.

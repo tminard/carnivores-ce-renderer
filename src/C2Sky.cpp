@@ -43,6 +43,10 @@ C2Sky::~C2Sky()
   glDeleteVertexArrays(1, &this->m_vertex_array_object);
 }
 
+const GLint C2Sky::getTextureID() const {
+  return m_texture->getTextureID();
+}
+
 void C2Sky::saveTextureAsBMP(const std::string &file_name)
 {
   this->m_texture->saveToBMPFile(file_name);
@@ -227,7 +231,7 @@ void C2Sky::setRGBA(glm::vec4 color)
 
 void C2Sky::Render(GLFWwindow* window, Camera& camera)
 {
-  this->updateClouds();
+  //this->updateClouds();
   int width, height;
   glfwGetFramebufferSize(window, &width, &height);
 
@@ -257,6 +261,7 @@ void C2Sky::Render(GLFWwindow* window, Camera& camera)
   this->m_cloud_shader->use();
   this->m_cloud_shader->setMat4("view", view);
   this->m_cloud_shader->setMat4("projection", projection);
+  this->m_cloud_shader->setFloat("time", elapsedTime); // Pass the elapsed time to the shader
 
   this->m_texture->use();
   glDrawArrays(GL_TRIANGLES, 0, 6);

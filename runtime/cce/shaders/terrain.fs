@@ -4,24 +4,25 @@ in highp vec2 texCoord0;
 in highp vec2 texCoord1;
 in vec3 surfaceNormal;
 in vec3 toLightVector;
-in vec2 quadCoord; // Coordinate to sample underwater state texture
-in float wetness;  // Wetness factor from the vertex shader
+in vec2 quadCoord;
+in float wetness;
+in highp vec2 out_textCoord_clouds;
 
 out vec4 outputColor;
 
 uniform sampler2D basic_texture;
+uniform sampler2D skyTexture;
 uniform float view_distance;
 uniform vec4 distanceColor;
 
-uniform float ambientStrength = 0.45;
-uniform float diffuseStrength = 0.55;
+uniform float ambientStrength = 0.25;
+uniform float diffuseStrength = 0.75;
 
 void main()
 {
     vec4 sC;
 
-    // to use the first or second texture ID for the triangle face. Just a naive round-robin.
-    // C1 only. FIXME BUG: the order (which face is 1 vs 2) is dependent on something (perhaps rotation or "order" flag).
+    // Determine which texture coordinates to use for the current face
     if (mod(gl_PrimitiveID, 2) == 0) {
         sC = texture(basic_texture, texCoord1);
     } else {
@@ -44,7 +45,11 @@ void main()
     vec3 unitToLightVector = normalize(toLightVector);
 
     float diffuse = max(dot(unitSurfaceNormal, unitToLightVector), 0.0);
-    float brightness = ambientStrength + diffuse * diffuseStrength;
+
+    vec4 cloudColor = texture(skyTexture, out_textCoord_clouds);
+    float cloudLuminance = (0.299 * cloudColor.b + 0.587 * cloudColor.g + 0.114 * cloudColor.r) * 2.0;
+
+    float brightness = (ambientStrength + diffuse * diffuseStrength) * (cloudLuminance);
 
     // Apply the lighting to the texture color
     vec3 finalColor = vec3(sC.b, sC.g, sC.r) * brightness;

@@ -29,7 +29,7 @@ namespace CE {
         void bind();
         virtual void updateUniforms();
         GLuint getProgram() const;
-        
+
         virtual ~ShaderProgram();
     };
 };

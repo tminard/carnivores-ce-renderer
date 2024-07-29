@@ -101,9 +101,9 @@ void C2CarFile::load_file(std::string file_name)
       this->m_animations.insert(std::make_pair(animation_name, std::move(chAni)));
     }
 
-      // TODO: Sounds and Animations
+      // TODO: Sounds
 
-      // brighten texture
+    // Original game brightened the texture here too but we wont do that
     infile.close();
   }
   catch (std::ifstream::failure e) {
@@ -115,7 +115,9 @@ void C2CarFile::load_file(std::string file_name)
 
     // data correction
   for (int v=0; v < _vcount; v++) {
-    _vertices[v].z *= -1.0f; // Original models need to be inverted across z axis
+    _vertices[v].z *= -2.0f; // Original models need to be inverted across z axis
+    _vertices[v].y *= 2.0f;
+    _vertices[v].x *= 2.0f;
   }
 
     // load instance

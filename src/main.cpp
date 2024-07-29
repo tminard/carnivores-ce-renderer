@@ -52,6 +52,9 @@
 
 #include <nlohmann/json.hpp>
 
+#include "CE_Allosaurus.h"
+#include "CEAnimatableModel.h"
+
 namespace fs = std::filesystem;
 using json = nlohmann::json;
 
@@ -141,6 +144,22 @@ int main(int argc, const char * argv[])
   std::shared_ptr<C2MapFile> cMap(new C2MapFile(mapType, mapPath.string(), cMapRsc.get()));
   
   std::unique_ptr<TerrainRenderer> terrain(new TerrainRenderer(cMap.get(), cMapRsc.get()));
+  
+  // Load dino example
+  std::unique_ptr<CE_Allosaurus> allo(new CE_Allosaurus(cFileLoad.get(), basePath / "game" / "models" / "velo2.car"));
+
+  glm::vec2 alloWorldPos = glm::vec2(cMap->getWidth() / 2.f, cMap->getHeight() / 2.f);
+  float alloHeight = cMap->getPlaceGroundHeight(alloWorldPos.x, alloWorldPos.y);
+  glm::vec3 alloPos = glm::vec3(
+                                (((float)(alloWorldPos.x)*cMap->getTileLength()) ) + (cMap->getTileLength() / 2),
+                                alloHeight - 12.f,
+                                (((float)(alloWorldPos.y)*cMap->getTileLength())) + (cMap->getTileLength() / 2)
+  );
+  allo->setAnimation("");
+  Transform mTrans_allo(alloPos, glm::vec3(0,0,0), glm::vec3(1.f, 1.f, 1.f));
+  std::vector<glm::mat4> aTM = {mTrans_allo.GetStaticModel()};
+  allo->getCurrentModelForRender().lock()->UpdateInstances(aTM);
+  // End dino example
   
   GLFWwindow* window = video_manager->GetWindow();
   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -239,27 +258,6 @@ int main(int argc, const char * argv[])
       current_world_pos = next_world_pos;
     }
     
-    // Render the sky first
-    if (render_sky) {
-      glDepthFunc(GL_LESS);
-      checkGLError("After glDepthFunc (sky)");
-      
-      glDisable(GL_CULL_FACE);
-      checkGLError("After glDisable(GL_CULL_FACE) (sky)");
-      
-      glDepthMask(GL_FALSE); // Disable depth writes
-      checkGLError("After glDepthMask(GL_FALSE) (sky)");
-      
-      cMapRsc->getDaySky()->Render(window, *camera);
-      checkGLError("After getDaySky()->Render (sky)");
-      
-      glDepthMask(GL_TRUE); // Re-enable depth writes
-      checkGLError("After glDepthMask(GL_TRUE) (sky)");
-      
-      glEnable(GL_CULL_FACE);
-      checkGLError("After glEnable(GL_CULL_FACE) (sky)");
-    }
-    
     // Render the terrain
     terrain->Update(g_terrain_transform, *camera);
     checkGLError("After terrain->Update (terrain)");
@@ -302,6 +300,22 @@ int main(int argc, const char * argv[])
       checkGLError("After glEnable(GL_CULL_FACE) (objects)");
     }
     
+    // Render models
+    if (render_objects) {
+      glDepthFunc(GL_LESS);
+      glDisable(GL_CULL_FACE);
+      
+      glEnable(GL_DEPTH_TEST);
+
+      std::weak_ptr<CEGeometry> poacher = allo->getCurrentModelForRender();
+      poacher.lock()->Update(g_terrain_transform, *camera);
+      checkGLError("After update allo");
+      poacher.lock()->DrawInstances();
+      checkGLError("After draw allo");
+      
+      glEnable(GL_CULL_FACE);
+    }
+    
     // Render the water
     if (render_water) {
       glDepthFunc(GL_LESS);
@@ -309,6 +323,27 @@ int main(int argc, const char * argv[])
       
       terrain->RenderWater();
       checkGLError("After terrain->RenderWater (water)");
+    }
+    
+    // Render the sky
+    if (render_sky) {
+      glDepthFunc(GL_LESS);
+      checkGLError("After glDepthFunc (sky)");
+      
+      glDisable(GL_CULL_FACE);
+      checkGLError("After glDisable(GL_CULL_FACE) (sky)");
+      
+      glDepthMask(GL_FALSE); // Disable depth writes
+      checkGLError("After glDepthMask(GL_FALSE) (sky)");
+      
+      cMapRsc->getDaySky()->Render(window, *camera);
+      checkGLError("After getDaySky()->Render (sky)");
+      
+      glDepthMask(GL_TRUE); // Re-enable depth writes
+      checkGLError("After glDepthMask(GL_TRUE) (sky)");
+      
+      glEnable(GL_CULL_FACE);
+      checkGLError("After glEnable(GL_CULL_FACE) (sky)");
     }
     
     glfwSwapBuffers(window);

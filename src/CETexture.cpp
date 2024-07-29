@@ -55,7 +55,6 @@ void CETexture::loadTextureIntoHardwareMemory()
     GLenum error = glGetError();
     if (error != GL_NO_ERROR) {
         std::cerr << "OpenGL error after glTexImage2D: " << error << std::endl;
-        // Handle the error appropriately here
     }
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 12);

@@ -43,6 +43,8 @@ public:
   void use();
   std::unique_ptr<CBitmap> getCBitmap();
   std::vector<uint16_t>* getRawData();
+  
+  GLuint getTextureID() const { return m_texture_id; }
 };
 
 #endif /* defined(__CE_Character_Lab__CETexture__) */

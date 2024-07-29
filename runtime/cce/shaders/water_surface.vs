@@ -10,11 +10,10 @@ smooth out float alpha0;
 out float EdgeFactor;
 out vec3 surfaceNormal;
 out vec3 toLightVector;
+out vec2 cloudTexCoord;
 
 uniform mat4 MVP;
 uniform mat4 model;
-uniform mat4 view;
-uniform mat4 projection;
 uniform float terrainWidth;
 uniform float terrainHeight;
 uniform float tileWidth;
@@ -30,7 +29,7 @@ void main()
 {
     // Apply wave animation to the vertex position
     vec3 animatedPosition = position;
-    vec3 lightPosition = vec3((tileWidth * terrainWidth * 0.5), 20000.0, (tileWidth * terrainHeight * 0.5));
+    vec3 lightPosition = vec3((tileWidth * terrainWidth * 0.5), (tileWidth * terrainHeight * 0.5), 20000.0);
 
     if (alpha > 0.95) {
         // Only animate the main body of the surface and not the edges or shallow pools
@@ -54,4 +53,7 @@ void main()
     
     texCoord0 = texCoord;
     alpha0 = alpha;
+
+    // Calculate cloud texture coordinates
+    cloudTexCoord = vec2(1.0 - (position.z / (tileWidth * 128.0)) - (time * 0.008), 1.0 - (position.x / (tileWidth * 128.0)) - (time * 0.008));
 }

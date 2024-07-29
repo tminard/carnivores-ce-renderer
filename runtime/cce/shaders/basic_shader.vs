@@ -24,7 +24,7 @@ uniform float time;
 void main()
 {
     vec4 worldPosition = model * instancedMatrix * vec4(position, 1.0);
-    vec3 lightPosition = vec3((tileWidth * terrainWidth * 0.5), 20000.0, (tileWidth * terrainHeight * 0.5));
+    vec3 lightPosition = vec3((tileWidth * terrainWidth * 0.5), (tileWidth * terrainHeight * 0.5), 20000.0);
 
     surfaceNormal = mat3(transpose(inverse(model))) * normal; // Transform normal to world space
     toLightVector = lightPosition - worldPosition.xyz;

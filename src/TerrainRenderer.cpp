@@ -11,6 +11,7 @@
 #include "shader_program.h"
 #include "camera.h"
 #include "transform.h"
+#include "C2Sky.h"
 
 #include "CEWaterEntity.h"
 
@@ -157,13 +158,15 @@ void TerrainRenderer::loadShader()
   float b = color.b / 255.0f;
   float a = color.a;
 
-  // Define a brightness factor
-  float brightnessFactor = 1.2f; // Increase by 20%
+  // Define a baseline brightness factor
+  float brightnessFactor = 1.0f;
 
   // Increase the brightness
   r = std::min(r * brightnessFactor, 1.0f);
   g = std::min(g * brightnessFactor, 1.0f);
   b = std::min(b * brightnessFactor, 1.0f);
+  
+  float atlas_square_size = (float)this->m_crsc_data_weak->getTextureAtlasWidth();
   
   this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram((shaderPath / "terrain.vs").string(), (shaderPath / "terrain.fs").string()));
   this->m_water_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram((shaderPath / "water_surface.vs").string(), (shaderPath / "water_surface.fs").string()));
@@ -174,6 +177,7 @@ void TerrainRenderer::loadShader()
   this->m_shader->setFloat("terrainWidth", this->m_cmap_data_weak->getWidth());
   this->m_shader->setFloat("terrainHeight", this->m_cmap_data_weak->getHeight());
   this->m_shader->setFloat("tileWidth", this->m_cmap_data_weak->getTileLength());
+  this->m_shader->setVec2("atlasSize", glm::vec2(atlas_square_size));
 
   this->m_water_shader->use();
   this->m_water_shader->setFloat("terrainWidth", this->m_cmap_data_weak->getWidth());
@@ -181,6 +185,7 @@ void TerrainRenderer::loadShader()
   this->m_water_shader->setFloat("tileWidth", this->m_cmap_data_weak->getTileLength());
   this->m_water_shader->setVec4("skyColor", glm::vec4(r, g, b, a));
   this->m_water_shader->setFloat("view_distance", (m_cmap_data_weak->getTileLength() * (m_cmap_data_weak->getWidth() / 8.f)));
+  this->m_water_shader->setVec2("atlasSize", glm::vec2(atlas_square_size));
 }
 
 //      /*
@@ -757,6 +762,8 @@ void TerrainRenderer::Render()
   glActiveTexture(GL_TEXTURE1);
   glBindTexture(GL_TEXTURE_2D, underwaterStateTexture);
   this->m_shader->setInt("underwaterStateTexture", 1);
+
+  this->m_shader->bindTexture("skyTexture", m_crsc_data_weak->getDaySky()->getTextureID(), 2);
   
   glBindVertexArray(this->m_vertex_array_object);
   
@@ -768,6 +775,7 @@ void TerrainRenderer::Render()
 void TerrainRenderer::RenderWater()
 {
   this->m_water_shader->use();
+  this->m_water_shader->bindTexture("skyTexture", m_crsc_data_weak->getDaySky()->getTextureID(), 2);
 
   for (int w = 0; w < this->m_waters.size(); w++) {
     this->m_crsc_data_weak->getTexture(this->m_waters[w].m_texture_id + 1)->use();

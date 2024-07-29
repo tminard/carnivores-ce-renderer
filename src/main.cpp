@@ -294,18 +294,9 @@ int main(int argc, const char * argv[])
       
       glEnable(GL_DEPTH_TEST);
       checkGLError("After glEnable(GL_DEPTH_TEST) (objects)");
-      
-      glEnable(GL_POLYGON_OFFSET_FILL);
-      checkGLError("After glEnable(GL_POLYGON_OFFSET_FILL) (terrain)");
-      
-      glPolygonOffset(-1.0f, -1.0f);
-      checkGLError("After glPolygonOffset (terrain)");
 
       terrain->RenderObjects(*camera);
       checkGLError("After terrain->RenderObjects (objects)");
-      
-      glDisable(GL_POLYGON_OFFSET_FILL);
-      checkGLError("After glDisable(GL_POLYGON_OFFSET_FILL) (terrain)");
       
       glEnable(GL_CULL_FACE);
       checkGLError("After glEnable(GL_CULL_FACE) (objects)");

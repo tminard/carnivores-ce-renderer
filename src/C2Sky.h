@@ -32,7 +32,7 @@ struct Transform;
 class C2Sky
 {
 private:
-  const float SKY_DISTANCE = 8000.f; // 4000
+  const float SKY_DISTANCE = 8000.f;
   const float SKY_HEIGHT = 368.f;
 
   std::unique_ptr<ShaderProgram> m_shader;
@@ -59,4 +59,6 @@ public:
   void Render(GLFWwindow* window, Camera& camera);
   void setRGBA(glm::vec4 color);
   void updateClouds();
+  
+  const GLint getTextureID() const;
 };

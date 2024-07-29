@@ -165,7 +165,17 @@ public:
     {
         glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, &mat[0][0]);
     }
-    
+
+    void bindTexture(const std::string& uniformName, GLuint textureID, GLuint textureUnit)
+    {
+        use();
+        
+        glActiveTexture(GL_TEXTURE0 + textureUnit);
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        
+        setInt(uniformName, textureUnit);
+    }
+
     virtual ~ShaderProgram()
     {
         glDeleteProgram(ID);

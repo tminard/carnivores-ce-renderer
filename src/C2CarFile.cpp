@@ -96,8 +96,9 @@ void C2CarFile::load_file(std::string file_name)
 
       std::string animation_name(_aniName);
       std::shared_ptr<CEAnimation> chAni( new CEAnimation(animation_name, _ani_kps, _frames_count, (int)animation_length));
-      chAni->setAnimationData(_aniData);
+      chAni->setAnimationData(_aniData, _vcount, _faces, _vertices);
 
+      std::cout << "Loaded animation: " << animation_name << std::endl;
       this->m_animations.insert(std::make_pair(animation_name, std::move(chAni)));
     }
 
@@ -122,5 +123,5 @@ void C2CarFile::load_file(std::string file_name)
 
     // load instance
   std::unique_ptr<IndexedMeshLoader> m_loader(new IndexedMeshLoader(_vertices, _faces));
-  this->m_geometry = std::unique_ptr<CEGeometry>(new CEGeometry(m_loader->getVertices(), m_loader->getIndices(), std::move(m_texture)));
+  this->m_geometry = std::unique_ptr<CEGeometry>(new CEGeometry(m_loader->getVertices(), m_loader->getIndices(), std::move(m_texture), "dinosaur"));
 }

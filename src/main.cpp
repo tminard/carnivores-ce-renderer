@@ -21,8 +21,6 @@
 #include "CEGeometry.h"
 #include "CETexture.h"
 
-#include "CE_ArtificialIntelligence.h"
-
 #include "CEObservable.hpp"
 #include "CEPlayer.hpp"
 
@@ -53,7 +51,7 @@
 #include <nlohmann/json.hpp>
 
 #include "CE_Allosaurus.h"
-#include "CEAnimatableModel.h"
+#include "CEAnimation.h"
 
 namespace fs = std::filesystem;
 using json = nlohmann::json;
@@ -114,6 +112,30 @@ void CalculateFrameRate() {
   }
 }
 
+std::unique_ptr<C2CarFile> spawnRaptor(const std::filesystem::path& basePath, std::shared_ptr<C2MapFile> cMap, const glm::vec2& alloWorldPos, const glm::vec3& initialScale) {
+    // We need to load from disk to get a unique instance of our car file
+    std::unique_ptr<C2CarFile> carFile = std::unique_ptr<C2CarFile>(new C2CarFile(basePath / "game" / "models" / "velo2.car"));
+    auto geo = carFile->getGeometry();
+
+    // Determine world position and height for the Allosaurus
+    float alloHeight = cMap->getPlaceGroundHeight(alloWorldPos.x, alloWorldPos.y);
+    glm::vec3 alloPos = glm::vec3(
+        (alloWorldPos.x * cMap->getTileLength()) + (cMap->getTileLength() / 2),
+        alloHeight - 12.f,
+        (alloWorldPos.y * cMap->getTileLength()) + (cMap->getTileLength() / 2)
+    );
+
+    // Set the transform for the Allosaurus with the given initial position and scale
+    Transform mTrans_allo(alloPos, glm::vec3(0, 0, 0), initialScale);
+    std::vector<glm::mat4> aTM = { mTrans_allo.GetStaticModel() };
+
+    // Only ever ONE instance!
+  geo->UpdateInstances(aTM);
+
+    // Return control
+    return std::move(carFile);
+}
+
 int main(int argc, const char * argv[])
 {
   std::ifstream f("config.json");
@@ -135,8 +157,6 @@ int main(int argc, const char * argv[])
   
   alDistanceModel(AL_LINEAR_DISTANCE);
   
-  std::unique_ptr<C2CarFilePreloader> cFileLoad(new C2CarFilePreloader);
-  
   std::unique_ptr<LocalVideoManager> video_manager(new LocalVideoManager());
   std::unique_ptr<LocalAudioManager> g_audio_manager(new LocalAudioManager());
   
@@ -145,21 +165,11 @@ int main(int argc, const char * argv[])
   
   std::unique_ptr<TerrainRenderer> terrain(new TerrainRenderer(cMap.get(), cMapRsc.get()));
   
-  // Load dino example
-  std::unique_ptr<CE_Allosaurus> allo(new CE_Allosaurus(cFileLoad.get(), basePath / "game" / "models" / "velo2.car"));
-
-  glm::vec2 alloWorldPos = glm::vec2(cMap->getWidth() / 2.f, cMap->getHeight() / 2.f);
-  float alloHeight = cMap->getPlaceGroundHeight(alloWorldPos.x, alloWorldPos.y);
-  glm::vec3 alloPos = glm::vec3(
-                                (((float)(alloWorldPos.x)*cMap->getTileLength()) ) + (cMap->getTileLength() / 2),
-                                alloHeight - 12.f,
-                                (((float)(alloWorldPos.y)*cMap->getTileLength())) + (cMap->getTileLength() / 2)
-  );
-  allo->setAnimation("");
-  Transform mTrans_allo(alloPos, glm::vec3(0,0,0), glm::vec3(1.f, 1.f, 1.f));
-  std::vector<glm::mat4> aTM = {mTrans_allo.GetStaticModel()};
-  allo->getCurrentModelForRender().lock()->UpdateInstances(aTM);
-  // End dino example
+  std::vector<std::unique_ptr<C2CarFile>> dinos = {};
+  dinos.push_back(spawnRaptor(basePath, cMap, glm::vec2(cMap->getWidth() / 2.f, cMap->getHeight() / 2.f), glm::vec3(1.f)));
+  dinos.push_back(spawnRaptor(basePath, cMap, glm::vec2((cMap->getWidth() / 2.f) + 8, (cMap->getHeight() / 2.f) - 2), glm::vec3(1.f)));
+  dinos.push_back(spawnRaptor(basePath, cMap, glm::vec2((cMap->getWidth() / 2.f) - 8, (cMap->getHeight() / 2.f) + 4), glm::vec3(1.f)));
+  dinos.push_back(spawnRaptor(basePath, cMap, glm::vec2((cMap->getWidth() / 2.f) - 15, (cMap->getHeight() / 2.f) - 12), glm::vec3(1.f)));
   
   GLFWwindow* window = video_manager->GetWindow();
   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -225,6 +235,33 @@ int main(int argc, const char * argv[])
     
     input_manager->ProcessLocalInput(window, timeDelta);
     g_player_controller->update(timeDelta);
+    
+    // Process AI
+    int di = 0;
+    std::string aniName = "Vel_eat";
+    for (const auto& dino : dinos) {
+      switch (di)  {
+        case 0:
+          aniName = "Vel_eat";
+          break;
+        case 1:
+          aniName = "Vel_wlk";
+          break;
+        case 2:
+          aniName = "Vel_run1";
+          break;
+        case 3:
+          aniName = "Vel_jmp5";
+          break;
+        default:
+          aniName = "Vel_eat";
+      }
+      
+        if (dino) {
+          dino->getGeometry()->SetAnimation(dino->getAnimationByName(aniName), currentTime);
+        }
+      di++;
+    }
     
     // Clear color, depth, and stencil buffers at the beginning of each frame
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -307,11 +344,13 @@ int main(int argc, const char * argv[])
       
       glEnable(GL_DEPTH_TEST);
 
-      std::weak_ptr<CEGeometry> poacher = allo->getCurrentModelForRender();
-      poacher.lock()->Update(g_terrain_transform, *camera);
-      checkGLError("After update allo");
-      poacher.lock()->DrawInstances();
-      checkGLError("After draw allo");
+      for (const auto& dino : dinos) {
+          if (dino) {
+            dino->getGeometry()->Update(g_terrain_transform, *camera);
+            dino->getGeometry()->DrawInstances();
+            checkGLError("After draw dino");
+          }
+      }
       
       glEnable(GL_CULL_FACE);
     }
@@ -354,6 +393,8 @@ int main(int argc, const char * argv[])
     // CalculateFrameRate();
   }
   
+  dinos.clear();
+  dinos.shrink_to_fit();
   
   return 0;
 }

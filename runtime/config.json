@@ -2,7 +2,29 @@
   "basePath": "../../runtime/cce/",
   "map": {
     "type": "C1",
-    "map": "../game/c1/area6.map",
-    "rsc": "../game/c1/area6.rsc"
-  }
+    "map": "../game/c1/area5.map",
+    "rsc": "../game/c1/area5.rsc"
+  },
+  "spawns": [
+    {
+      "file": "../../runtime/cce/game/models/velo2.car",
+      "animation": "Vel_eat",
+      "position": [256, 256]
+    },
+    {
+      "file": "../../runtime/cce/game/models/velo2.car",
+      "animation": "Vel_wlk",
+      "position": [262, 242]
+    },
+    {
+      "file": "../../runtime/cce/game/models/velo2.car",
+      "animation": "Vel_run1",
+      "position": [242, 260]
+    },
+    {
+      "file": "../../runtime/cce/game/models/tirex.car",
+      "animation": "Tx_see2",
+      "position": [200, 232]
+    }
+  ]
 }

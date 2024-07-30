@@ -6,6 +6,7 @@
 #include "C2MapRscFile.h"
 #include "vertex.h"
 #include "shader_program.h"
+#include "CEAnimation.h"
 
 #include "camera.h"
 #include "transform.h"
@@ -13,13 +14,15 @@
 #include <nlohmann/json.hpp>
 #include <filesystem>
 
+#include "IndexedMeshLoader.h"
+
 namespace fs = std::filesystem;
 using json = nlohmann::json;
 
-CEGeometry::CEGeometry(std::vector < Vertex > vertices, std::vector < uint32_t > indices, std::unique_ptr<CETexture> texture)
+CEGeometry::CEGeometry(std::vector < Vertex > vertices, std::vector < uint32_t > indices, std::unique_ptr<CETexture> texture, std::string shaderName)
 : m_vertices(vertices), m_indices(indices), m_texture(std::move(texture))
 {
-  this->loadObjectIntoMemoryBuffer();
+  this->loadObjectIntoMemoryBuffer(shaderName);
 }
 
 CEGeometry::~CEGeometry()
@@ -38,7 +41,7 @@ void CEGeometry::saveTextureAsBMP(const std::string &file_name)
   this->m_texture->saveToBMPFile(file_name);
 }
 
-void CEGeometry::loadObjectIntoMemoryBuffer()
+void CEGeometry::loadObjectIntoMemoryBuffer(std::string shaderName)
 {
   std::ifstream f("config.json");
   json data = json::parse(f);
@@ -46,7 +49,7 @@ void CEGeometry::loadObjectIntoMemoryBuffer()
   fs::path basePath = fs::path(data["basePath"].get<std::string>());
   fs::path shaderPath = basePath / "shaders";
   
-  this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram((shaderPath / "basic_shader.vs").string(), (shaderPath / "basic_shader.fs").string()));
+  this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram((shaderPath / (shaderName + ".vs")).string(), (shaderPath / (shaderName + ".fs")).string()));
   this->m_shader->use();
   this->m_shader->setBool("enable_transparency", true);
   
@@ -56,7 +59,7 @@ void CEGeometry::loadObjectIntoMemoryBuffer()
   glGenBuffers(NUM_BUFFERS, this->m_vertexArrayBuffers);
 
   glBindBuffer(GL_ARRAY_BUFFER, this->m_vertexArrayBuffers[VERTEX_VB]);
-  glBufferData(GL_ARRAY_BUFFER, (int)this->m_vertices.size()*sizeof(Vertex), this->m_vertices.data(), GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, (int)this->m_vertices.size()*sizeof(Vertex), this->m_vertices.data(), GL_STREAM_DRAW);
   
   glEnableVertexAttribArray(0); // position
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
@@ -68,7 +71,7 @@ void CEGeometry::loadObjectIntoMemoryBuffer()
   glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(glm::vec3)+sizeof(glm::vec2)+sizeof(glm::vec3)));
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_vertexArrayBuffers[INDEX_VB]);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, (int)this->m_indices.size()*sizeof(unsigned int), this->m_indices.data(), GL_STATIC_DRAW);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, (int)this->m_indices.size()*sizeof(unsigned int), this->m_indices.data(), GL_DYNAMIC_DRAW);
 
     // instanced vab
   this->m_num_instances = 0;
@@ -92,6 +95,66 @@ void CEGeometry::loadObjectIntoMemoryBuffer()
   glVertexAttribDivisor(7, 1);
 
   glBindVertexArray(0);
+}
+
+void CEGeometry::SetAnimation(std::weak_ptr<CEAnimation> animation, double at_time) {
+    std::shared_ptr<CEAnimation> ani = animation.lock();
+    if (!ani) {
+        // Handle the case where the animation is no longer available
+        return;
+    }
+    
+    auto aniData = *ani->GetAnimationData();
+    auto origVData = ani->GetOriginalVertices();
+    assert(aniData.size() % 3 == 0);
+    size_t numVertices = origVData->size();
+    
+    // We need to copy original vertices to updatedVertices for modification
+    std::vector<TPoint3d> updatedVertices = *origVData;
+  
+    double animationStartTime = ani->m_animation_start_at;
+    int totalFrames = ani->m_number_of_frames;
+
+    // Calculate the elapsed time since the animation started
+    double elapsedTime = at_time - animationStartTime;
+
+    // Calculate the time per frame based on KPS (Keyframes Per Second)
+    double timePerFrame = 1.0 / double(ani->m_kps);
+
+    // Calculate the total time for the animation cycle
+    double totalTime = totalFrames * timePerFrame;
+
+    // Wrap the elapsed time around the total animation time
+    double currentTime = fmod(elapsedTime, totalTime);
+
+    // Determine the frame index and interpolation factor
+    double exactFrameIndex = currentTime / timePerFrame;
+    int currentFrame = static_cast<int>(exactFrameIndex) % totalFrames;
+    int nextFrame = (currentFrame + 1) % totalFrames;
+    
+    float k2 = static_cast<float>(exactFrameIndex - currentFrame); // Interpolation factor
+    float k1 = 1.0f - k2;
+
+    int aniOffset = currentFrame * (int)numVertices * 3;
+    int nextFrameOffset = nextFrame * (int)numVertices * 3;
+    
+    for (size_t v = 0; v < numVertices; v++) {
+        updatedVertices[v].x = (aniData[aniOffset + (v * 3 + 0)] * k1 + aniData[nextFrameOffset + (v * 3 + 0)] * k2) / 8.f;
+        updatedVertices[v].y = (aniData[aniOffset + (v * 3 + 1)] * k1 + aniData[nextFrameOffset + (v * 3 + 1)] * k2) / 8.f;
+        updatedVertices[v].z = (-(aniData[aniOffset + (v * 3 + 2)] * k1 + aniData[nextFrameOffset + (v * 3 + 2)] * k2)) / 8.f;
+    }
+    
+    // Recompute vertex and index buffer using face data
+    std::unique_ptr<IndexedMeshLoader> m_loader(new IndexedMeshLoader(updatedVertices, *ani->GetFaces()));
+    m_vertices = m_loader->getVertices();
+    m_indices = m_loader->getIndices();
+
+    // Update the vertex buffer
+    glBindBuffer(GL_ARRAY_BUFFER, this->m_vertexArrayBuffers[VERTEX_VB]);
+    glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizei>(m_vertices.size() * sizeof(Vertex)), m_vertices.data(), GL_DYNAMIC_DRAW);
+    // Update the index buffer
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_vertexArrayBuffers[INDEX_VB]);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, static_cast<GLsizei>(m_indices.size() * sizeof(unsigned int)), m_indices.data(), GL_DYNAMIC_DRAW);
 }
 
 void CEGeometry::Draw()
@@ -161,7 +224,7 @@ void CEGeometry::UpdateInstances(std::vector<glm::mat4> transforms)
 {
   this->m_num_instances = (int)transforms.size();
   glBindBuffer(GL_ARRAY_BUFFER, this->m_instanced_vab);
-  glBufferData(GL_ARRAY_BUFFER, this->m_num_instances*sizeof(glm::mat4), transforms.data(), GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, this->m_num_instances*sizeof(glm::mat4), transforms.data(), GL_DYNAMIC_DRAW);
 }
 
 const std::vector<Vertex>& CEGeometry::GetVertices() const {

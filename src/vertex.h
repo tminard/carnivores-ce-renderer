@@ -27,6 +27,7 @@ public:
   friend bool operator!= (Vertex &v1, Vertex &v2);
   
   const glm::vec3 getPos() const;
+  void setPos(glm::vec3 pos);
   glm::vec2 getUVPos();
   glm::vec3 getNormal();
   

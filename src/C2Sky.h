@@ -33,7 +33,7 @@ class C2Sky
 {
 private:
   const float SKY_DISTANCE = 8000.f;
-  const float SKY_HEIGHT = 368.f;
+  const float SKY_HEIGHT = 748.f;
 
   std::unique_ptr<ShaderProgram> m_shader;
 

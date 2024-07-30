@@ -19,8 +19,8 @@
 namespace fs = std::filesystem;
 using json = nlohmann::json;
 
-CEGeometry::CEGeometry(std::vector < Vertex > vertices, std::vector < uint32_t > indices, std::unique_ptr<CETexture> texture, std::string shaderName)
-: m_vertices(vertices), m_indices(indices), m_texture(std::move(texture))
+CEGeometry::CEGeometry(std::vector < Vertex > vertices, std::vector < uint32_t > indices, std::shared_ptr<CETexture> texture, std::string shaderName)
+: m_vertices(vertices), m_indices(indices), m_texture(texture)
 {
   this->loadObjectIntoMemoryBuffer(shaderName);
 }
@@ -31,9 +31,9 @@ CEGeometry::~CEGeometry()
   glDeleteVertexArrays(1, &this->m_vertexArrayObject);
 }
 
-CETexture* CEGeometry::getTexture()
+std::weak_ptr<CETexture> CEGeometry::getTexture()
 {
-  return this->m_texture.get();
+  return this->m_texture;
 }
 
 void CEGeometry::saveTextureAsBMP(const std::string &file_name)
@@ -97,19 +97,19 @@ void CEGeometry::loadObjectIntoMemoryBuffer(std::string shaderName)
   glBindVertexArray(0);
 }
 
-void CEGeometry::SetAnimation(std::weak_ptr<CEAnimation> animation, double atTime, bool deferUpdate, bool maxFPS, bool notVisible) {
+bool CEGeometry::SetAnimation(std::weak_ptr<CEAnimation> animation, double atTime, double startAt, double lastUpdateAt, bool deferUpdate, bool maxFPS, bool notVisible) {
   std::shared_ptr<CEAnimation> ani = animation.lock();
   if (!ani) {
     // Handle the case where the animation is no longer available or doesn't exist
-    return;
+    return false;
   }
   
-  double animationStartTime = ani->m_animation_start_at;
+  double animationStartTime = startAt;
   int totalFrames = ani->m_number_of_frames;
   
   // Calculate the elapsed time since the animation started
   double elapsedTime = atTime - animationStartTime;
-  double lastUpdateDelta = atTime - ani->m_animation_last_update_at;
+  double lastUpdateDelta = atTime - lastUpdateAt;
   
   // Calculate the time per frame based on KPS (Keyframes Per Second)
   double timePerFrame = 1.0 / double(ani->m_kps);
@@ -118,15 +118,13 @@ void CEGeometry::SetAnimation(std::weak_ptr<CEAnimation> animation, double atTim
   // Also, run at minimum FPS unless very close
   double maxUpdateThreshold = maxFPS ? timePerFrame / 4.0 : timePerFrame;
   if (lastUpdateDelta < maxUpdateThreshold) {
-    return;
+    return false;
   }
   
   // Optimization: no need to run through animations if dino is very far or we're not visible
   if (deferUpdate && (notVisible || lastUpdateDelta < timePerFrame * 4.0)) {
-    return;
+    return false;
   }
-  
-  ani->m_animation_last_update_at = atTime;
   
   // Calculate the total time for the animation cycle
   double totalTime = totalFrames * timePerFrame;
@@ -170,6 +168,8 @@ void CEGeometry::SetAnimation(std::weak_ptr<CEAnimation> animation, double atTim
   // Update the index buffer
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_vertexArrayBuffers[INDEX_VB]);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, static_cast<GLsizei>(m_indices.size() * sizeof(unsigned int)), m_indices.data(), GL_DYNAMIC_DRAW);
+  
+  return true;
 }
 
 void CEGeometry::Draw()

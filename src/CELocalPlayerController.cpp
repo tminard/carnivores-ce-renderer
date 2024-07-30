@@ -1,5 +1,4 @@
 #include "CELocalPlayerController.hpp"
-#include "CEPlayer.hpp"
 #include "camera.h"
 #include "C2MapFile.h"
 #include "C2MapRscFile.h"
@@ -8,7 +7,7 @@
 #include <iostream>
 #include <string>
 
-CELocalPlayerController::CELocalPlayerController(std::shared_ptr<CEPlayer> player, float world_width, float world_height, float tile_size, std::shared_ptr<C2MapFile> map, std::shared_ptr<C2MapRscFile> rsc) : m_player(player), m_world_width(world_width), m_world_height(world_height), m_tile_size(tile_size), m_map(map), m_rsc(rsc) {
+CELocalPlayerController::CELocalPlayerController(float world_width, float world_height, float tile_size, std::shared_ptr<C2MapFile> map, std::shared_ptr<C2MapRscFile> rsc) : m_world_width(world_width), m_world_height(world_height), m_tile_size(tile_size), m_map(map), m_rsc(rsc) {
   
   m_walk_speed = m_tile_size * 3.5f;  // This seems reasonable for walk speed
   m_player_height = m_tile_size * 0.85f;

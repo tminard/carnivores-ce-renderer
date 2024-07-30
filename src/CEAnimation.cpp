@@ -2,8 +2,6 @@
 
 CEAnimation::CEAnimation(const std::string& ani_name, int kps, int total_frames, int total_time_ms)
     : m_name(ani_name), m_kps(kps), m_number_of_frames(total_frames), m_total_time(total_time_ms) {
-      m_animation_start_at = 0.0;
-      m_animation_last_update_at = 0.0;
 }
 
 CEAnimation::~CEAnimation() {

@@ -22,7 +22,6 @@
 #include "CETexture.h"
 
 #include "CEObservable.hpp"
-#include "CEPlayer.hpp"
 
 #include "g_shared.h"
 #include <chrono>
@@ -39,6 +38,7 @@
 #include "LocalAudioManager.hpp"
 
 #include "CELocalPlayerController.hpp"
+#include "CERemotePlayerController.hpp"
 
 #include "C2Sky.h"
 
@@ -50,7 +50,6 @@
 
 #include <nlohmann/json.hpp>
 
-#include "CE_Allosaurus.h"
 #include "CEAnimation.h"
 
 namespace fs = std::filesystem;
@@ -61,10 +60,6 @@ struct ConfigSpawn {
     std::string animation;
     std::vector<int> position;
 };
-
-void CreateFadeTab();
-// unsigned int timeGetTime();
-WORD  FadeTab[65][0x8000];
 
 std::unique_ptr<LocalInputManager> input_manager(new LocalInputManager());
 
@@ -118,29 +113,8 @@ void CalculateFrameRate() {
   }
 }
 
-std::unique_ptr<C2CarFile> spawnCarFile(const std::filesystem::path& fPath, std::shared_ptr<C2MapFile> cMap, std::shared_ptr<C2MapRscFile> cRsc, const glm::vec2& alloWorldPos, const glm::vec3& initialScale) {
-    // We need to load from disk to get a unique instance of our car file
-    std::unique_ptr<C2CarFile> carFile = std::unique_ptr<C2CarFile>(new C2CarFile(fPath.string()));
-    auto geo = carFile->getGeometry();
-
-    float alloHeight = cMap->getPlaceGroundHeight(alloWorldPos.x, alloWorldPos.y);
-    glm::vec3 alloPos = glm::vec3(
-        (alloWorldPos.x * cMap->getTileLength()) + (cMap->getTileLength() / 2),
-        alloHeight - 12.f,
-        (alloWorldPos.y * cMap->getTileLength()) + (cMap->getTileLength() / 2)
-    );
-
-    // Set the transform for the Allosaurus with the given initial position and scale
-    Transform mTrans_allo(alloPos, glm::vec3(0, 0, 0), initialScale);
-    std::vector<glm::mat4> aTM = { mTrans_allo.GetStaticModel() };
-
-    // Only ever ONE instance!
-    geo->UpdateInstances(aTM);
-    geo->ConfigureShaderUniforms(cMap.get(), cRsc.get());
-
-    // Return control
-    return std::move(carFile);
-}
+const int FPS = 80;
+const int frameDelay = 1000 / FPS;
 
 int main(int argc, const char * argv[])
 {
@@ -178,27 +152,59 @@ int main(int argc, const char * argv[])
     mapType = CEMapType::C1;
   }
   
+  std::unique_ptr<LocalVideoManager> video_manager = std::make_unique<LocalVideoManager>();
+  std::unique_ptr<LocalAudioManager> g_audio_manager = std::make_unique<LocalAudioManager>();
+  
+  std::shared_ptr<C2MapRscFile> cMapRsc;
+  std::shared_ptr<C2MapFile> cMap;
+
+  try {
+      cMapRsc = std::make_shared<C2MapRscFile>(mapType, mapRscPath.string(), basePath.string());
+      cMap = std::make_shared<C2MapFile>(mapType, mapPath.string(), cMapRsc.get());
+  } catch (const std::exception& e) {
+      std::cerr << "Error loading map files: " << e.what() << std::endl;
+      return 1;
+  }
   alDistanceModel(AL_LINEAR_DISTANCE);
   
-  std::unique_ptr<LocalVideoManager> video_manager(new LocalVideoManager());
-  std::unique_ptr<LocalAudioManager> g_audio_manager(new LocalAudioManager());
+  std::unique_ptr<TerrainRenderer> terrain = std::make_unique<TerrainRenderer>(cMap.get(), cMapRsc.get());
   
-  std::shared_ptr<C2MapRscFile> cMapRsc(new C2MapRscFile(mapType, mapRscPath.string(), basePath.string()));
-  std::shared_ptr<C2MapFile> cMap(new C2MapFile(mapType, mapPath.string(), cMapRsc.get()));
+  // shared loader to minimize resource usage
+  std::unique_ptr<C2CarFilePreloader> cFileLoad(new C2CarFilePreloader);
+
+  std::vector<std::unique_ptr<CERemotePlayerController>> characters = {};
   
-  std::unique_ptr<TerrainRenderer> terrain(new TerrainRenderer(cMap.get(), cMapRsc.get()));
-  
-  std::vector<std::unique_ptr<C2CarFile>> dinos = {};
-  
+  int dCount = 0;
   for (const auto& spawn : spawns) {
-    dinos.push_back(spawnCarFile(spawn.file, cMap, cMapRsc, glm::vec2(spawn.position[0], spawn.position[1]), glm::vec3(1.f)));
+    if (dCount < 512) {
+      auto character = std::make_unique<CERemotePlayerController>(
+                                                                  cFileLoad->fetch(spawn.file),
+                                                                  cMap,
+                                                                  cMapRsc,
+                                                                  spawn.animation
+                                                                  );
+      float spawnHeight = cMap->getPlaceGroundHeight(spawn.position[0], spawn.position[1]);
+      glm::vec3 spawnPos = glm::vec3(
+          (spawn.position[0] * cMap->getTileLength()) + (cMap->getTileLength() / 2),
+          spawnHeight - 12.f,
+          (spawn.position[1] * cMap->getTileLength()) + (cMap->getTileLength() / 2)
+      );
+
+      character->setPosition(spawnPos);
+
+      characters.push_back(std::move(character));
+      
+      std::cout << "Spawned " << spawn.file << " # " << dCount << " @ [" << spawn.position[0] << "," << spawn.position[1] << "];" << std::endl;
+    } else {
+      std::cerr << "Failed to spawn CAR: " << spawn.file << " @ [" << spawn.position[0] << "," << spawn.position[1] << "]; max limit of 512 exceeded!" << std::endl;
+    }
+    dCount++;
   }
   
   GLFWwindow* window = video_manager->GetWindow();
   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
   
-  std::shared_ptr<CEPlayer> g_player_state(new CEPlayer());
-  std::shared_ptr<CELocalPlayerController> g_player_controller(new CELocalPlayerController(std::move(g_player_state), cMap->getWidth(), cMap->getHeight(), cMap->getTileLength(), cMap, cMapRsc));
+  std::shared_ptr<CELocalPlayerController> g_player_controller = std::make_shared<CELocalPlayerController>(cMap->getWidth(), cMap->getHeight(), cMap->getTileLength(), cMap, cMapRsc);
   g_audio_manager->bind(g_player_controller);
   input_manager->Bind(g_player_controller);
   
@@ -252,6 +258,7 @@ int main(int argc, const char * argv[])
     glfwMakeContextCurrent(window);
     
     // Process input before rendering
+    auto frameStart = std::chrono::high_resolution_clock::now();
     double currentTime = glfwGetTime();
     double timeDelta = currentTime - lastTime;
     lastTime = currentTime;
@@ -262,27 +269,13 @@ int main(int argc, const char * argv[])
     Camera* camera = g_player_controller->getCamera();
     
     // Process AI
-    int di = 0;
-    for (const auto& dino : dinos) {
-      auto spawnData = spawns.at(di);
-      glm::vec2 pos = glm::vec2(spawnData.position[0], spawnData.position[1]);
-      glm::vec2 pPos = g_player_controller->getWorldPosition();
-      
-      auto dist = glm::distance(pos, pPos);
-
-      // Optimizations: biggest impact is uploading FBOs, so minimize this
-      // Slower updates above 80 tiles
-      bool deferUpdate = dist > 80.f;
-      // Max the FPS at this range
-      bool maxFPS = dist < 20.f;
-      // Do not even animate at this range
-      bool notVisible = dist > 128.f;
-
-      if (dino) {
-        dino->getGeometry()->Update(g_terrain_transform, *camera);
-        dino->getGeometry()->SetAnimation(dino->getAnimationByName(spawnData.animation), currentTime, deferUpdate, maxFPS, notVisible);
+    glm::vec2 player_world_pos = g_player_controller->getWorldPosition();
+    for (const auto& character : characters) {
+      if (character) {
+        character->update(currentTime, g_terrain_transform, *camera, player_world_pos);
+      } else {
+        throw std::runtime_error("Character missing!!");
       }
-      di++;
     }
     
     // Clear color, depth, and stencil buffers at the beginning of each frame
@@ -363,11 +356,12 @@ int main(int argc, const char * argv[])
       glDisable(GL_CULL_FACE);
       
       glEnable(GL_DEPTH_TEST);
-
-      for (const auto& dino : dinos) {
-        if (dino) {
-          dino->getGeometry()->DrawInstances();
-          checkGLError("After draw dino");
+      
+      for (const auto& character : characters) {
+        if (character) {
+          character->Render();
+        } else {
+          throw std::runtime_error("Character missing!!");
         }
       }
       
@@ -410,10 +404,17 @@ int main(int argc, const char * argv[])
     checkGLError("End of frame");
     
     // CalculateFrameRate();
+    
+    auto frameEnd = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<float, std::milli> frameDuration = frameEnd - frameStart;
+
+    if (frameDuration.count() < frameDelay) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(frameDelay) - frameDuration);
+    }
   }
   
-  dinos.clear();
-  dinos.shrink_to_fit();
+  characters.clear();
+  characters.shrink_to_fit();
   
   return 0;
 }

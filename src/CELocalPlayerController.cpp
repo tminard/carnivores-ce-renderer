@@ -9,17 +9,17 @@
 
 CELocalPlayerController::CELocalPlayerController(float world_width, float world_height, float tile_size, std::shared_ptr<C2MapFile> map, std::shared_ptr<C2MapRscFile> rsc) : m_world_width(world_width), m_world_height(world_height), m_tile_size(tile_size), m_map(map), m_rsc(rsc) {
   
-  m_walk_speed = m_tile_size * 3.5f;  // This seems reasonable for walk speed
+  m_walk_speed = m_tile_size * 3.5f * 1.25f;  // This seems reasonable for walk speed
   m_player_height = m_tile_size * 0.85f;
 
   m_current_speed = 0.0f;
   m_target_speed = 0.0f;
 
   // Adjusted acceleration and deceleration values
-  m_acceleration = m_walk_speed * 4.0f;  // Reduce to 1.0x walk speed for smoother acceleration
-  m_deceleration = m_walk_speed * 1.5f;  // Increase to 0.5x walk speed for less abrupt deceleration
+  m_acceleration = m_walk_speed * 4.0f * 1.25f;  // Reduce to 1.0x walk speed for smoother acceleration
+  m_deceleration = m_walk_speed * 1.5f * 1.25f;  // Increase to 0.5x walk speed for less abrupt deceleration
   
-  m_bobble_speed = 0.1f;
+  m_bobble_speed = 0.1f * 1.25f;
   m_bobble_amount = m_player_height * 0.1f;
   m_bobble_time = 0.f;
 }

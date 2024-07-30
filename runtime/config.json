@@ -1,9 +1,9 @@
 {
   "basePath": "../../runtime/cce/",
   "map": {
-    "type": "C2",
-    "map": "../game/ice/area5.map",
-    "rsc": "../game/ice/area5.rsc"
+    "type": "C1",
+    "map": "../game/c1/area2.map",
+    "rsc": "../game/c1/area2.rsc"
   },
   "spawns": [
     {
@@ -30,6 +30,21 @@
       "file": "../../runtime/cce/game/models/velo2.car",
       "animation": "Vel_run1",
       "position": [186, 40]
+    },
+    {
+      "file": "../../runtime/cce/game/models/poacher.car",
+      "animation": "Pr_idle3",
+      "position": [250, 96]
+    },
+    {
+      "file": "../../runtime/cce/game/models/stego.car",
+      "animation": "Sr_idle1",
+      "position": [192, 46]
+    },
+    {
+      "file": "../../runtime/cce/game/models/pach.car",
+      "animation": "Pac_idle2",
+      "position": [201, 211]
     }
   ]
 }

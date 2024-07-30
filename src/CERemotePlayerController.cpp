@@ -38,11 +38,14 @@ CERemotePlayerController::CERemotePlayerController(std::shared_ptr<C2CarFile> ca
   // Get an exclusive copy of the geometry by rebuilding from the first animation
   std::shared_ptr<CEAnimation> initialAni = carFile->getAnimationByName(m_current_animation).lock();
   if (!initialAni) {
-    std::cerr << "Error: car file missing default animation: " << m_current_animation << std::endl;
+    std::cerr << "Error: car file missing default animation: " << m_current_animation << std::endl << "Falling back to original" << std::endl;
 
     // TODO: We can't use this without animations, right?
     // Consider a different class to spawn non-interactive CAR models
-    throw std::runtime_error("Error: car file missing requested animation!");
+    initialAni = carFile->getFirstAnimation().lock();
+    if (!initialAni) {
+      throw std::runtime_error("Error: car file missing requested animation and no fallback was available. Consider static class if this is expected.");
+    }
   }
   
   std::unique_ptr<IndexedMeshLoader> m_loader = std::make_unique<IndexedMeshLoader>(*initialAni->GetOriginalVertices(), *initialAni->GetFaces());

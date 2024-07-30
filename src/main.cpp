@@ -258,12 +258,19 @@ int main(int argc, const char * argv[])
     input_manager->ProcessLocalInput(window, timeDelta);
     g_player_controller->update(timeDelta);
     
+    Camera* camera = g_player_controller->getCamera();
+    
     // Process AI
     int di = 0;
     for (const auto& dino : dinos) {
-      auto aniName = spawns.at(di).animation;
-      if (dino) {
-        dino->getGeometry()->SetAnimation(dino->getAnimationByName(aniName), currentTime);
+      auto spawnData = spawns.at(di);
+      glm::vec2 pos = glm::vec2(spawnData.position[0], spawnData.position[1]);
+      glm::vec2 pPos = g_player_controller->getWorldPosition();
+      
+      auto dist = glm::distance(pos, pPos);
+      if (dist < 80.f && dino) {
+        dino->getGeometry()->Update(g_terrain_transform, *camera);
+        dino->getGeometry()->SetAnimation(dino->getAnimationByName(spawnData.animation), currentTime);
       }
       di++;
     }
@@ -271,8 +278,6 @@ int main(int argc, const char * argv[])
     // Clear color, depth, and stencil buffers at the beginning of each frame
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     checkGLError("After glClear");
-    
-    Camera* camera = g_player_controller->getCamera();
     
     glm::vec3 currentPosition = g_player_controller->getPosition();
     double rnTimeDelta = currentTime - lastRndAudioTime;
@@ -349,12 +354,18 @@ int main(int argc, const char * argv[])
       
       glEnable(GL_DEPTH_TEST);
 
+      int di = 0;
       for (const auto& dino : dinos) {
-          if (dino) {
-            dino->getGeometry()->Update(g_terrain_transform, *camera);
+          auto spawnData = spawns.at(di);
+          glm::vec2 pos = glm::vec2(spawnData.position[0], spawnData.position[1]);
+          glm::vec2 pPos = g_player_controller->getWorldPosition();
+          
+          auto dist = glm::distance(pos, pPos);
+          if (dist < 60.f && dino) {
             dino->getGeometry()->DrawInstances();
             checkGLError("After draw dino");
           }
+          di++;
       }
       
       glEnable(GL_CULL_FACE);

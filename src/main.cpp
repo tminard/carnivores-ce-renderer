@@ -56,6 +56,12 @@
 namespace fs = std::filesystem;
 using json = nlohmann::json;
 
+struct ConfigSpawn {
+    std::string file;
+    std::string animation;
+    std::vector<int> position;
+};
+
 void CreateFadeTab();
 // unsigned int timeGetTime();
 WORD  FadeTab[65][0x8000];
@@ -112,12 +118,11 @@ void CalculateFrameRate() {
   }
 }
 
-std::unique_ptr<C2CarFile> spawnRaptor(const std::filesystem::path& basePath, std::shared_ptr<C2MapFile> cMap, const glm::vec2& alloWorldPos, const glm::vec3& initialScale) {
+std::unique_ptr<C2CarFile> spawnCarFile(const std::filesystem::path& fPath, std::shared_ptr<C2MapFile> cMap, const glm::vec2& alloWorldPos, const glm::vec3& initialScale) {
     // We need to load from disk to get a unique instance of our car file
-    std::unique_ptr<C2CarFile> carFile = std::unique_ptr<C2CarFile>(new C2CarFile(basePath / "game" / "models" / "velo2.car"));
+    std::unique_ptr<C2CarFile> carFile = std::unique_ptr<C2CarFile>(new C2CarFile(fPath.string()));
     auto geo = carFile->getGeometry();
 
-    // Determine world position and height for the Allosaurus
     float alloHeight = cMap->getPlaceGroundHeight(alloWorldPos.x, alloWorldPos.y);
     glm::vec3 alloPos = glm::vec3(
         (alloWorldPos.x * cMap->getTileLength()) + (cMap->getTileLength() / 2),
@@ -130,7 +135,7 @@ std::unique_ptr<C2CarFile> spawnRaptor(const std::filesystem::path& basePath, st
     std::vector<glm::mat4> aTM = { mTrans_allo.GetStaticModel() };
 
     // Only ever ONE instance!
-  geo->UpdateInstances(aTM);
+    geo->UpdateInstances(aTM);
 
     // Return control
     return std::move(carFile);
@@ -139,16 +144,33 @@ std::unique_ptr<C2CarFile> spawnRaptor(const std::filesystem::path& basePath, st
 int main(int argc, const char * argv[])
 {
   std::ifstream f("config.json");
+  if (!f.is_open()) {
+      std::cerr << "Unable to open config.json!" << std::endl;
+      return 1;
+  }
+
   json data = json::parse(f);
+  std::vector<ConfigSpawn> spawns;
   
   fs::path basePath = fs::path(data["basePath"].get<std::string>());
   fs::path mapRscPath = constructPath(basePath, data["map"]["rsc"]);
   fs::path mapPath = constructPath(basePath, data["map"]["map"]);
+
+  if (data.contains("spawns")) {
+      for (const auto& spawnJson : data["spawns"]) {
+          ConfigSpawn spawn;
+          spawn.file = spawnJson.value("file", "");
+          spawn.animation = spawnJson.value("animation", "");
+          spawn.position = spawnJson.value("position", std::vector<int>{});
+          spawns.push_back(spawn);
+      }
+  }
   
   std::cout << "Base Path: " << basePath << std::endl;
   std::cout << "Map: " << data["map"]["type"] << std::endl;
   std::cout << "MAP: " << mapPath << std::endl;
   std::cout << "RSC: " << mapRscPath << std::endl;
+  std::cout << "Spawns: " << spawns.size() << std::endl;
   
   auto mapType = CEMapType::C2;
   if (data["map"]["type"] == "C1") {
@@ -166,10 +188,10 @@ int main(int argc, const char * argv[])
   std::unique_ptr<TerrainRenderer> terrain(new TerrainRenderer(cMap.get(), cMapRsc.get()));
   
   std::vector<std::unique_ptr<C2CarFile>> dinos = {};
-  dinos.push_back(spawnRaptor(basePath, cMap, glm::vec2(cMap->getWidth() / 2.f, cMap->getHeight() / 2.f), glm::vec3(1.f)));
-  dinos.push_back(spawnRaptor(basePath, cMap, glm::vec2((cMap->getWidth() / 2.f) + 8, (cMap->getHeight() / 2.f) - 2), glm::vec3(1.f)));
-  dinos.push_back(spawnRaptor(basePath, cMap, glm::vec2((cMap->getWidth() / 2.f) - 8, (cMap->getHeight() / 2.f) + 4), glm::vec3(1.f)));
-  dinos.push_back(spawnRaptor(basePath, cMap, glm::vec2((cMap->getWidth() / 2.f) - 15, (cMap->getHeight() / 2.f) - 12), glm::vec3(1.f)));
+  
+  for (const auto& spawn : spawns) {
+    dinos.push_back(spawnCarFile(spawn.file, cMap, glm::vec2(spawn.position[0], spawn.position[1]), glm::vec3(1.f)));
+  }
   
   GLFWwindow* window = video_manager->GetWindow();
   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -238,28 +260,11 @@ int main(int argc, const char * argv[])
     
     // Process AI
     int di = 0;
-    std::string aniName = "Vel_eat";
     for (const auto& dino : dinos) {
-      switch (di)  {
-        case 0:
-          aniName = "Vel_eat";
-          break;
-        case 1:
-          aniName = "Vel_wlk";
-          break;
-        case 2:
-          aniName = "Vel_run1";
-          break;
-        case 3:
-          aniName = "Vel_jmp5";
-          break;
-        default:
-          aniName = "Vel_eat";
+      auto aniName = spawns.at(di).animation;
+      if (dino) {
+        dino->getGeometry()->SetAnimation(dino->getAnimationByName(aniName), currentTime);
       }
-      
-        if (dino) {
-          dino->getGeometry()->SetAnimation(dino->getAnimationByName(aniName), currentTime);
-        }
       di++;
     }
     

@@ -22,11 +22,9 @@
 #include "dependency/libAF/af2-sound.h"
 #include "CEAudioSource.hpp"
 
-void Console_PrintLogString(std::string log_msg);
-
 C2CarFile::C2CarFile(std::string file_name)
 {
-  Console_PrintLogString("Loading file " + file_name);
+  std::cout << "Loading " << file_name << std::endl;
   this->load_file(file_name);
 }
 
@@ -37,6 +35,16 @@ C2CarFile::~C2CarFile()
 std::shared_ptr<CEGeometry> C2CarFile::getGeometry()
 {
   return this->m_geometry;
+}
+
+std::weak_ptr<CEAnimation> C2CarFile::getFirstAnimation()
+{
+  if (!m_animations.empty()) {
+      std::string firstKey = m_animations.begin()->first;
+    return getAnimationByName(firstKey);
+  } else {
+    return std::weak_ptr<CEAnimation>();
+  }
 }
 
 std::weak_ptr<CEAnimation> C2CarFile::getAnimationByName(std::string animation_name)
@@ -105,7 +113,8 @@ void C2CarFile::load_file(std::string file_name)
       this->m_animations.insert(std::make_pair(animation_name, std::move(chAni)));
     }
 
-      // TODO: Sounds
+    // TODO: we should share sound resources vs loading them over and over...
+    // Really we only need top copy geometry, so possible keep the same CAR file and only create new instances of geo
     // Load rnd sounds
     for (int i = 0; i < c_char_info.SfxCount; i++)
     {
@@ -143,11 +152,12 @@ void C2CarFile::load_file(std::string file_name)
     infile.close();
   }
   catch (std::ifstream::failure e) {
-    Console_PrintLogString("Failed to load " + file_name + ": " + strerror(errno));
-    std::cerr << "Exception opening/reading/closing file\n";
+    std::cerr << "Failed to load " + file_name + ": " + strerror(errno) << e.what() << std::endl;
+
+    throw e;
   }
 
-  Console_PrintLogString("Loaded " + file_name);
+  std::cout << "Loaded OK " << file_name << std::endl;
 
     // data correction
   for (int v=0; v < _vcount; v++) {
@@ -158,6 +168,8 @@ void C2CarFile::load_file(std::string file_name)
 
     // load instance
   std::unique_ptr<IndexedMeshLoader> m_loader(new IndexedMeshLoader(_vertices, _faces));
+  
+  // Note we transfer ownership of the texture
   this->m_geometry = std::unique_ptr<CEGeometry>(new CEGeometry(m_loader->getVertices(), m_loader->getIndices(), std::move(m_texture), "dinosaur"));
 }
 

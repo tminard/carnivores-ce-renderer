@@ -1,9 +1,9 @@
 {
   "basePath": "../../runtime/cce/",
   "map": {
-    "type": "C1",
-    "map": "../game/c1/area2.map",
-    "rsc": "../game/c1/area2.rsc"
+    "type": "C2",
+    "map": "../game/ice/area5.map",
+    "rsc": "../game/ice/area5.rsc"
   },
   "spawns": [
     {
@@ -12,144 +12,24 @@
       "position": [256, 256]
     },
     {
-      "file": "../../runtime/cce/game/models/poacher.car",
-      "animation": "Pr_idle2",
-      "position": [263, 215]
-    },
-    {
-      "file": "../../runtime/cce/game/models/velo2.car",
-      "animation": "Vel_wlk",
-      "position": [252, 242]
-    },
-    {
-      "file": "../../runtime/cce/game/models/velo2.car",
-      "animation": "Vel_wlk",
-      "position": [242, 242]
-    },
-    {
-      "file": "../../runtime/cce/game/models/velo2.car",
-      "animation": "Vel_wlk",
-      "position": [232, 242]
-    },
-    {
-      "file": "../../runtime/cce/game/models/velo2.car",
-      "animation": "Vel_wlk",
-      "position": [222, 242]
-    },
-    {
-      "file": "../../runtime/cce/game/models/velo2.car",
-      "animation": "Vel_wlk",
-      "position": [212, 242]
-    },
-    {
-      "file": "../../runtime/cce/game/models/velo2.car",
-      "animation": "Vel_wlk",
-      "position": [202, 242]
-    },
-    {
-      "file": "../../runtime/cce/game/models/velo2.car",
-      "animation": "Vel_wlk",
-      "position": [192, 242]
-    },
-    {
-      "file": "../../runtime/cce/game/models/velo2.car",
-      "animation": "Vel_wlk",
-      "position": [182, 242]
-    },
-    {
-      "file": "../../runtime/cce/game/models/velo2.car",
-      "animation": "Vel_wlk",
-      "position": [172, 242]
-    },
-    {
-      "file": "../../runtime/cce/game/models/velo2.car",
-      "animation": "Vel_wlk",
-      "position": [162, 242]
-    },
-    {
-      "file": "../../runtime/cce/game/models/velo2.car",
-      "animation": "Vel_wlk",
-      "position": [152, 242]
-    },
-    {
-      "file": "../../runtime/cce/game/models/velo2.car",
-      "animation": "Vel_wlk",
-      "position": [142, 242]
-    },
-    {
-      "file": "../../runtime/cce/game/models/velo2.car",
-      "animation": "Vel_run1",
-      "position": [242, 260]
-    },
-    {
-      "file": "../../runtime/cce/game/models/velo2.car",
-      "animation": "Vel_wlk",
-      "position": [252, 232]
-    },
-    {
-      "file": "../../runtime/cce/game/models/velo2.car",
-      "animation": "Vel_wlk",
-      "position": [242, 222]
-    },
-    {
-      "file": "../../runtime/cce/game/models/velo2.car",
-      "animation": "Vel_wlk",
-      "position": [232, 212]
-    },
-    {
-      "file": "../../runtime/cce/game/models/velo2.car",
-      "animation": "Vel_wlk",
-      "position": [222, 202]
-    },
-    {
-      "file": "../../runtime/cce/game/models/velo2.car",
-      "animation": "Vel_wlk",
-      "position": [212, 192]
-    },
-    {
-      "file": "../../runtime/cce/game/models/velo2.car",
-      "animation": "Vel_wlk",
-      "position": [202, 182]
-    },
-    {
-      "file": "../../runtime/cce/game/models/velo2.car",
-      "animation": "Vel_wlk",
-      "position": [192, 172]
-    },
-    {
-      "file": "../../runtime/cce/game/models/velo2.car",
-      "animation": "Vel_wlk",
-      "position": [182, 162]
-    },
-    {
-      "file": "../../runtime/cce/game/models/velo2.car",
-      "animation": "Vel_wlk",
-      "position": [172, 152]
-    },
-    {
-      "file": "../../runtime/cce/game/models/velo2.car",
-      "animation": "Vel_wlk",
-      "position": [162, 142]
-    },
-    {
-      "file": "../../runtime/cce/game/models/velo2.car",
-      "animation": "Vel_wlk",
-      "position": [152, 132]
-    },
-    {
-      "file": "../../runtime/cce/game/models/velo2.car",
-      "animation": "Vel_wlk",
-      "position": [142, 122]
-    },
-    {
-      "file": "../../runtime/cce/game/models/velo2.car",
-      "animation": "Vel_run1",
-      "position": [242, 110]
-    },
-    {
       "file": "../../runtime/cce/game/models/tirex.car",
       "animation": "Tx_see2",
       "position": [200, 232]
+    },
+    {
+      "file": "../../runtime/cce/game/models/velo2.car",
+      "animation": "Vel_run1",
+      "position": [136, 261]
+    },
+    {
+      "file": "../../runtime/cce/game/models/velo2.car",
+      "animation": "Vel_run1",
+      "position": [25, 170]
+    },
+    {
+      "file": "../../runtime/cce/game/models/velo2.car",
+      "animation": "Vel_run1",
+      "position": [186, 40]
     }
   ]
 }

@@ -44,6 +44,7 @@ public:
     
     std::shared_ptr<CEGeometry> getGeometry();
     std::weak_ptr<CEAnimation> getAnimationByName(std::string animation_name);
+    std::weak_ptr<CEAnimation> getFirstAnimation();
   
     void playAudio(int i, glm::vec3 pos);
     

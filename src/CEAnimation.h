@@ -23,8 +23,6 @@ public:
 	std::string m_name;
 	int m_kps, m_number_of_frames;
 	int m_total_time;
-  double m_animation_start_at;
-  double m_animation_last_update_at;
 	std::vector<short int> m_animation_data;
   std::vector<TFace> m_faces;
   std::vector<TPoint3d> m_original_vertices;

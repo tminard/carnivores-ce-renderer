@@ -30,7 +30,6 @@ auto make_unique(Args&&... args) -> std::unique_ptr<T>
 {
   return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
 }
-void Console_PrintLogString(std::string log_msg);
 
 C2MapRscFile::C2MapRscFile(const CEMapType type, const std::string& file_name, std::filesystem::path basePath) : m_type(type)
 {
@@ -438,8 +437,9 @@ void C2MapRscFile::load(const std::string &file_name, std::filesystem::path base
     
     infile.close();
   } catch (std::ifstream::failure e) {
-    Console_PrintLogString("Failed to load " + file_name + ": " + strerror(errno));
-    std::cerr << "Exception opening/reading/closing file\n";
+    std::cerr << "Failed to load " + file_name + ": " + strerror(errno) << e.what() << std::endl;
+    
+    throw e;
   }
 }
 

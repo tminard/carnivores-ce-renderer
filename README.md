@@ -47,6 +47,8 @@ Resources for runtime are in `runtime`. For first run, you will need to update `
 
 Example `runtime/config.json`:
 
+See `config.json.example` for a full example.
+
 ```json
 {
   "basePath": "C:\\src\\carnivores-ce-renderer\\runtime\\cce\\",
@@ -57,6 +59,45 @@ Example `runtime/config.json`:
   }
 }
 ```
+
+### Spawns
+
+You can add .car spawns to the map. Animations play in loop and there is no sound FX playback yet.
+
+```json
+{
+  "basePath": "runtime\\cce\\",
+  "map": {
+    "type": "C1",
+    "map": "game\\c1\\area6.map",
+    "rsc": "game\\c1\\area6.rsc"
+  },
+  "spawns": [
+    {
+      "file": "runtime\\cce\\velo2.car",
+      "animation": "Vel_eat",
+      "position": [256, 256]
+    },
+    {
+      "file": "runtime\\cce\\velo2.car",
+      "animation": "Vel_wlk",
+      "position": [262, 242]
+    },
+    {
+      "file": "runtime\\cce\\velo2.car",
+      "animation": "Vel_run1",
+      "position": [242, 260]
+    },
+    {
+      "file": "runtime\\cce\\tirex.car",
+      "animation": "Tx_see2",
+      "position": [200, 232]
+    }
+  ]
+}
+```
+
+### Config Path
 
 Update to your paths. E.g., for Mac, `basePath` may be `~/cce/`.
 `map` is an object with a `map` and `rsc` reference to the map to load.

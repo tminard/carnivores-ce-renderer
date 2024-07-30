@@ -6,14 +6,12 @@
 #include <glm/vec3.hpp>
 #include "CEObservable.hpp"
 
-class CEPlayer;
 class C2MapFile;
 class C2MapRscFile;
 
 class CELocalPlayerController : CEObservable
 {
 private:
-  std::shared_ptr<CEPlayer> m_player;
   std::shared_ptr<C2MapFile> m_map;
   std::shared_ptr<C2MapRscFile> m_rsc;
 
@@ -48,7 +46,7 @@ private:
   const double m_jump_cooldown = 0.25; // Cooldown period in seconds
 
 public:
-  CELocalPlayerController(std::shared_ptr<CEPlayer> player, float world_width, float world_height, float tile_size, std::shared_ptr<C2MapFile> map, std::shared_ptr<C2MapRscFile> rsc);
+  CELocalPlayerController(float world_width, float world_height, float tile_size, std::shared_ptr<C2MapFile> map, std::shared_ptr<C2MapRscFile> rsc);
 
   glm::vec3 getPosition() const;
   glm::vec2 getWorldPosition() const;

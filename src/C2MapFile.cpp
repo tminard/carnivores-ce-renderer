@@ -16,8 +16,6 @@
 
 #include <math.h>
 
-void Console_PrintLogString(std::string log_msg);
-
 C2MapFile::C2MapFile(const CEMapType type, const std::string& map_file_name, C2MapRscFile* crsc_weak) : m_type(type)
 {
   switch (m_type) {
@@ -535,8 +533,9 @@ void C2MapFile::load_c1(const std::string &file_name, C2MapRscFile* crsc_weak)
     infile.close();
     this->postProcess(crsc_weak);
   } catch (std::ifstream::failure e) {
-    Console_PrintLogString("Failed to load C1 " + file_name + ": " + strerror(errno));
-    std::cerr << "Exception opening/reading/closing file\n";
+    std::cerr << "Failed to load C1 " + file_name + ": " + strerror(errno) << e.what() << std::endl;
+
+    throw e;
   }
 }
 
@@ -567,7 +566,8 @@ void C2MapFile::load(const std::string &file_name, C2MapRscFile* crsc_weak)
     
     this->postProcess(crsc_weak);
   } catch (std::ifstream::failure e) {
-    Console_PrintLogString("Failed to load " + file_name + ": " + strerror(errno));
-    std::cerr << "Exception opening/reading/closing file\n";
+    std::cerr << "Failed to load " + file_name + ": " + strerror(errno) << e.what() << std::endl;
+    
+    throw e;
   }
 }

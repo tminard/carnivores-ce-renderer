@@ -19,8 +19,8 @@
 namespace fs = std::filesystem;
 using json = nlohmann::json;
 
-CEGeometry::CEGeometry(std::vector < Vertex > vertices, std::vector < uint32_t > indices, std::unique_ptr<CETexture> texture, std::string shaderName)
-: m_vertices(vertices), m_indices(indices), m_texture(std::move(texture))
+CEGeometry::CEGeometry(std::vector < Vertex > vertices, std::vector < uint32_t > indices, std::shared_ptr<CETexture> texture, std::string shaderName)
+: m_vertices(vertices), m_indices(indices), m_texture(texture)
 {
   this->loadObjectIntoMemoryBuffer(shaderName);
 }
@@ -31,9 +31,9 @@ CEGeometry::~CEGeometry()
   glDeleteVertexArrays(1, &this->m_vertexArrayObject);
 }
 
-CETexture* CEGeometry::getTexture()
+std::weak_ptr<CETexture> CEGeometry::getTexture()
 {
-  return this->m_texture.get();
+  return this->m_texture;
 }
 
 void CEGeometry::saveTextureAsBMP(const std::string &file_name)

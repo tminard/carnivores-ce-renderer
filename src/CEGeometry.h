@@ -48,16 +48,16 @@ private:
 
   std::vector < Vertex > m_vertices;
   std::vector < unsigned int > m_indices;
-  std::unique_ptr<CETexture> m_texture;
   std::unique_ptr<ShaderProgram> m_shader;
 
+  std::shared_ptr<CETexture> m_texture;
 public:
-  CEGeometry(std::vector < Vertex > vertices, std::vector < unsigned int > indices, std::unique_ptr<CETexture> texture, std::string shaderName);
+  CEGeometry(std::vector < Vertex > vertices, std::vector < unsigned int > indices, std::shared_ptr<CETexture> texture, std::string shaderName);
   ~CEGeometry();
   
   void loadObjectIntoMemoryBuffer(std::string shaderName);
   
-  CETexture* getTexture();
+  std::weak_ptr<CETexture> getTexture();
 
   void saveTextureAsBMP(const std::string& file_name );
   void Update(Transform& transform, Camera& camera);

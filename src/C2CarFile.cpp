@@ -19,6 +19,9 @@
 
 #include "IndexedMeshLoader.h"
 
+#include "dependency/libAF/af2-sound.h"
+#include "CEAudioSource.hpp"
+
 void Console_PrintLogString(std::string log_msg);
 
 C2CarFile::C2CarFile(std::string file_name)
@@ -103,6 +106,38 @@ void C2CarFile::load_file(std::string file_name)
     }
 
       // TODO: Sounds
+    // Load rnd sounds
+    for (int i = 0; i < c_char_info.SfxCount; i++)
+    {
+      std::shared_ptr<Sound> snd(new Sound());
+      std::vector<int16_t> snd_data;
+      
+      char _sndName[32];
+
+      infile.read(_sndName, 32);
+      std::string sndName(_sndName);
+      
+      uint32_t length = 0;
+      infile.read((char*)&length, sizeof(uint32_t));
+      snd_data.resize(length / sizeof(uint16_t));
+      infile.read(reinterpret_cast<char*>(snd_data.data()), length);
+
+      snd->setName(sndName);
+      snd->setWaveData(16, 1, length, 22050, snd_data);
+
+      this->m_animation_sounds.push_back(snd);
+
+      std::unique_ptr<CEAudioSource> src(new CEAudioSource(snd));
+
+      // TODO: use tile length
+      //src->setClampDistance((256*2));
+      //src->setMaxDistance((256*200));
+      src->setLooped(true);
+      
+      std::cout << "Loaded audio " << sndName << std::endl;
+
+      this->m_animation_audio_sources.push_back(std::move(src));
+    }
 
     // Original game brightened the texture here too but we wont do that
     infile.close();
@@ -124,4 +159,11 @@ void C2CarFile::load_file(std::string file_name)
     // load instance
   std::unique_ptr<IndexedMeshLoader> m_loader(new IndexedMeshLoader(_vertices, _faces));
   this->m_geometry = std::unique_ptr<CEGeometry>(new CEGeometry(m_loader->getVertices(), m_loader->getIndices(), std::move(m_texture), "dinosaur"));
+}
+
+void C2CarFile::playAudio(int i, glm::vec3 pos)
+{
+  CEAudioSource* src = this->m_animation_audio_sources.at(i).get();
+  src->setPosition(pos);
+  src->play();
 }

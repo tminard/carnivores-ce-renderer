@@ -96,14 +96,15 @@ void C2CarFile::load_file(std::string file_name)
 
       std::string animation_name(_aniName);
       std::shared_ptr<CEAnimation> chAni( new CEAnimation(animation_name, _ani_kps, _frames_count, (int)animation_length));
-      chAni->setAnimationData(_aniData);
+      chAni->setAnimationData(_aniData, _vcount, _faces, _vertices);
 
+      std::cout << "Loaded animation: " << animation_name << std::endl;
       this->m_animations.insert(std::make_pair(animation_name, std::move(chAni)));
     }
 
-      // TODO: Sounds and Animations
+      // TODO: Sounds
 
-      // brighten texture
+    // Original game brightened the texture here too but we wont do that
     infile.close();
   }
   catch (std::ifstream::failure e) {
@@ -115,10 +116,12 @@ void C2CarFile::load_file(std::string file_name)
 
     // data correction
   for (int v=0; v < _vcount; v++) {
-    _vertices[v].z *= -1.0f; // Original models need to be inverted across z axis
+    _vertices[v].z *= -2.0f; // Original models need to be inverted across z axis
+    _vertices[v].y *= 2.0f;
+    _vertices[v].x *= 2.0f;
   }
 
     // load instance
   std::unique_ptr<IndexedMeshLoader> m_loader(new IndexedMeshLoader(_vertices, _faces));
-  this->m_geometry = std::unique_ptr<CEGeometry>(new CEGeometry(m_loader->getVertices(), m_loader->getIndices(), std::move(m_texture)));
+  this->m_geometry = std::unique_ptr<CEGeometry>(new CEGeometry(m_loader->getVertices(), m_loader->getIndices(), std::move(m_texture), "dinosaur"));
 }

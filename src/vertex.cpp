@@ -29,6 +29,11 @@ std::string Vertex::getHash()
     + std::to_string(m_normal.x) + "-"+ std::to_string(m_normal.y) + "-"+ std::to_string(m_normal.z) + "-";
 }
 
+void Vertex::setPos(glm::vec3 pos)
+{
+  m_position = pos;
+}
+
 bool operator== (Vertex &v1, Vertex &v2)
 {
   // pos, tex, and normals should be same. Ignoring hide and owner attributes for now.

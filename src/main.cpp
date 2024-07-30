@@ -21,8 +21,6 @@
 #include "CEGeometry.h"
 #include "CETexture.h"
 
-#include "CE_ArtificialIntelligence.h"
-
 #include "CEObservable.hpp"
 #include "CEPlayer.hpp"
 
@@ -52,8 +50,17 @@
 
 #include <nlohmann/json.hpp>
 
+#include "CE_Allosaurus.h"
+#include "CEAnimation.h"
+
 namespace fs = std::filesystem;
 using json = nlohmann::json;
+
+struct ConfigSpawn {
+    std::string file;
+    std::string animation;
+    std::vector<int> position;
+};
 
 void CreateFadeTab();
 // unsigned int timeGetTime();
@@ -111,19 +118,59 @@ void CalculateFrameRate() {
   }
 }
 
+std::unique_ptr<C2CarFile> spawnCarFile(const std::filesystem::path& fPath, std::shared_ptr<C2MapFile> cMap, const glm::vec2& alloWorldPos, const glm::vec3& initialScale) {
+    // We need to load from disk to get a unique instance of our car file
+    std::unique_ptr<C2CarFile> carFile = std::unique_ptr<C2CarFile>(new C2CarFile(fPath.string()));
+    auto geo = carFile->getGeometry();
+
+    float alloHeight = cMap->getPlaceGroundHeight(alloWorldPos.x, alloWorldPos.y);
+    glm::vec3 alloPos = glm::vec3(
+        (alloWorldPos.x * cMap->getTileLength()) + (cMap->getTileLength() / 2),
+        alloHeight - 12.f,
+        (alloWorldPos.y * cMap->getTileLength()) + (cMap->getTileLength() / 2)
+    );
+
+    // Set the transform for the Allosaurus with the given initial position and scale
+    Transform mTrans_allo(alloPos, glm::vec3(0, 0, 0), initialScale);
+    std::vector<glm::mat4> aTM = { mTrans_allo.GetStaticModel() };
+
+    // Only ever ONE instance!
+    geo->UpdateInstances(aTM);
+
+    // Return control
+    return std::move(carFile);
+}
+
 int main(int argc, const char * argv[])
 {
   std::ifstream f("config.json");
+  if (!f.is_open()) {
+      std::cerr << "Unable to open config.json!" << std::endl;
+      return 1;
+  }
+
   json data = json::parse(f);
+  std::vector<ConfigSpawn> spawns;
   
   fs::path basePath = fs::path(data["basePath"].get<std::string>());
   fs::path mapRscPath = constructPath(basePath, data["map"]["rsc"]);
   fs::path mapPath = constructPath(basePath, data["map"]["map"]);
+
+  if (data.contains("spawns")) {
+      for (const auto& spawnJson : data["spawns"]) {
+          ConfigSpawn spawn;
+          spawn.file = spawnJson.value("file", "");
+          spawn.animation = spawnJson.value("animation", "");
+          spawn.position = spawnJson.value("position", std::vector<int>{});
+          spawns.push_back(spawn);
+      }
+  }
   
   std::cout << "Base Path: " << basePath << std::endl;
   std::cout << "Map: " << data["map"]["type"] << std::endl;
   std::cout << "MAP: " << mapPath << std::endl;
   std::cout << "RSC: " << mapRscPath << std::endl;
+  std::cout << "Spawns: " << spawns.size() << std::endl;
   
   auto mapType = CEMapType::C2;
   if (data["map"]["type"] == "C1") {
@@ -132,8 +179,6 @@ int main(int argc, const char * argv[])
   
   alDistanceModel(AL_LINEAR_DISTANCE);
   
-  std::unique_ptr<C2CarFilePreloader> cFileLoad(new C2CarFilePreloader);
-  
   std::unique_ptr<LocalVideoManager> video_manager(new LocalVideoManager());
   std::unique_ptr<LocalAudioManager> g_audio_manager(new LocalAudioManager());
   
@@ -141,6 +186,12 @@ int main(int argc, const char * argv[])
   std::shared_ptr<C2MapFile> cMap(new C2MapFile(mapType, mapPath.string(), cMapRsc.get()));
   
   std::unique_ptr<TerrainRenderer> terrain(new TerrainRenderer(cMap.get(), cMapRsc.get()));
+  
+  std::vector<std::unique_ptr<C2CarFile>> dinos = {};
+  
+  for (const auto& spawn : spawns) {
+    dinos.push_back(spawnCarFile(spawn.file, cMap, glm::vec2(spawn.position[0], spawn.position[1]), glm::vec3(1.f)));
+  }
   
   GLFWwindow* window = video_manager->GetWindow();
   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -207,6 +258,16 @@ int main(int argc, const char * argv[])
     input_manager->ProcessLocalInput(window, timeDelta);
     g_player_controller->update(timeDelta);
     
+    // Process AI
+    int di = 0;
+    for (const auto& dino : dinos) {
+      auto aniName = spawns.at(di).animation;
+      if (dino) {
+        dino->getGeometry()->SetAnimation(dino->getAnimationByName(aniName), currentTime);
+      }
+      di++;
+    }
+    
     // Clear color, depth, and stencil buffers at the beginning of each frame
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     checkGLError("After glClear");
@@ -237,27 +298,6 @@ int main(int argc, const char * argv[])
       }
       
       current_world_pos = next_world_pos;
-    }
-    
-    // Render the sky first
-    if (render_sky) {
-      glDepthFunc(GL_LESS);
-      checkGLError("After glDepthFunc (sky)");
-      
-      glDisable(GL_CULL_FACE);
-      checkGLError("After glDisable(GL_CULL_FACE) (sky)");
-      
-      glDepthMask(GL_FALSE); // Disable depth writes
-      checkGLError("After glDepthMask(GL_FALSE) (sky)");
-      
-      cMapRsc->getDaySky()->Render(window, *camera);
-      checkGLError("After getDaySky()->Render (sky)");
-      
-      glDepthMask(GL_TRUE); // Re-enable depth writes
-      checkGLError("After glDepthMask(GL_TRUE) (sky)");
-      
-      glEnable(GL_CULL_FACE);
-      checkGLError("After glEnable(GL_CULL_FACE) (sky)");
     }
     
     // Render the terrain
@@ -302,6 +342,24 @@ int main(int argc, const char * argv[])
       checkGLError("After glEnable(GL_CULL_FACE) (objects)");
     }
     
+    // Render models
+    if (render_objects) {
+      glDepthFunc(GL_LESS);
+      glDisable(GL_CULL_FACE);
+      
+      glEnable(GL_DEPTH_TEST);
+
+      for (const auto& dino : dinos) {
+          if (dino) {
+            dino->getGeometry()->Update(g_terrain_transform, *camera);
+            dino->getGeometry()->DrawInstances();
+            checkGLError("After draw dino");
+          }
+      }
+      
+      glEnable(GL_CULL_FACE);
+    }
+    
     // Render the water
     if (render_water) {
       glDepthFunc(GL_LESS);
@@ -309,6 +367,27 @@ int main(int argc, const char * argv[])
       
       terrain->RenderWater();
       checkGLError("After terrain->RenderWater (water)");
+    }
+    
+    // Render the sky
+    if (render_sky) {
+      glDepthFunc(GL_LESS);
+      checkGLError("After glDepthFunc (sky)");
+      
+      glDisable(GL_CULL_FACE);
+      checkGLError("After glDisable(GL_CULL_FACE) (sky)");
+      
+      glDepthMask(GL_FALSE); // Disable depth writes
+      checkGLError("After glDepthMask(GL_FALSE) (sky)");
+      
+      cMapRsc->getDaySky()->Render(window, *camera);
+      checkGLError("After getDaySky()->Render (sky)");
+      
+      glDepthMask(GL_TRUE); // Re-enable depth writes
+      checkGLError("After glDepthMask(GL_TRUE) (sky)");
+      
+      glEnable(GL_CULL_FACE);
+      checkGLError("After glEnable(GL_CULL_FACE) (sky)");
     }
     
     glfwSwapBuffers(window);
@@ -319,6 +398,8 @@ int main(int argc, const char * argv[])
     // CalculateFrameRate();
   }
   
+  dinos.clear();
+  dinos.shrink_to_fit();
   
   return 0;
 }

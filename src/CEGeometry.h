@@ -14,13 +14,14 @@
 #include <vector>
 #include <cstdint>
 #include <fstream>
-
+#include <string>
 
 class Vertex;
 class CETexture;
 class ShaderProgram;
 class C2MapFile;
 class C2MapRscFile;
+class CEAnimation;
 
 struct Camera;
 struct Transform;
@@ -51,15 +52,16 @@ private:
   std::unique_ptr<ShaderProgram> m_shader;
 
 public:
-  CEGeometry(std::vector < Vertex > vertices, std::vector < unsigned int > indices, std::unique_ptr<CETexture> texture);
+  CEGeometry(std::vector < Vertex > vertices, std::vector < unsigned int > indices, std::unique_ptr<CETexture> texture, std::string shaderName);
   ~CEGeometry();
   
-  void loadObjectIntoMemoryBuffer();
+  void loadObjectIntoMemoryBuffer(std::string shaderName);
   
   CETexture* getTexture();
 
   void saveTextureAsBMP(const std::string& file_name );
   void Update(Transform& transform, Camera& camera);
+  void SetAnimation(std::weak_ptr<CEAnimation> animation, double at_time);
   void Draw();
   
   void ConfigureShaderUniforms(C2MapFile* map, C2MapRscFile* rsc);

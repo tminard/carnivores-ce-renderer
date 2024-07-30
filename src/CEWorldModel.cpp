@@ -108,7 +108,7 @@ CEWorldModel::CEWorldModel(const CEMapType type, std::ifstream& instream)
 
   std::unique_ptr<CETexture> mTexture = std::unique_ptr<CETexture>(new CETexture(texture_data, 256*256*2, 256, 256));
   
-  std::unique_ptr<CEGeometry> mGeo = std::unique_ptr<CEGeometry>(new CEGeometry(m_loader->getVertices(), m_loader->getIndices(), std::move(mTexture)));
+  std::unique_ptr<CEGeometry> mGeo = std::unique_ptr<CEGeometry>(new CEGeometry(m_loader->getVertices(), m_loader->getIndices(), std::move(mTexture), "basic_shader"));
   
   std::vector<Vertex> cVertices;
   cVertices.clear();
@@ -151,7 +151,7 @@ CEWorldModel::CEWorldModel(const CEMapType type, std::ifstream& instream)
     std::vector<short int> raw_animation_data;
     int ani_vcount;
     int kps, total_frames, total_ani_ms;
-    instream.read(reinterpret_cast<char *>(&ani_vcount), 4); // some vertice info we dont need
+    instream.read(reinterpret_cast<char *>(&ani_vcount), 4);
     instream.read(reinterpret_cast<char *>(&ani_vcount), 4); // Repeated, for some reason...
     instream.read(reinterpret_cast<char *>(&kps), 4);
     instream.read(reinterpret_cast<char *>(&total_frames), 4); // FILE FORMAT BUG: 1 minus actual amount
@@ -162,7 +162,7 @@ CEWorldModel::CEWorldModel(const CEMapType type, std::ifstream& instream)
     total_ani_ms = (total_frames * 1000) / kps;
     instream.read(reinterpret_cast<char *>(raw_animation_data.data()), (long long)ani_vcount*total_frames*6);
     std::unique_ptr<CEAnimation> mAni = std::unique_ptr<CEAnimation>( new CEAnimation("OBJECT_ANIMATION", kps, total_frames, total_ani_ms));
-    mAni->setAnimationData(raw_animation_data);
+    mAni->setAnimationData(raw_animation_data, ani_vcount, face_data, file_vertex_data);
     this->m_animation = std::move(mAni);
   }
   

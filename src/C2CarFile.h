@@ -24,8 +24,15 @@
 
 #include "g_shared.h"
 
+#include "dependency/libAF/af2-sound.h"
+
+#include <glm/glm.hpp>
+
+using libAF2::Sound;
+
 class CEGeometry;
 class CEAnimation;
+class CEAudioSource;
 class Vertex;
 
 class C2CarFile {
@@ -37,10 +44,14 @@ public:
     
     std::shared_ptr<CEGeometry> getGeometry();
     std::weak_ptr<CEAnimation> getAnimationByName(std::string animation_name);
+  
+    void playAudio(int i, glm::vec3 pos);
     
 private:
     std::map<std::string, std::shared_ptr<CEAnimation> > m_animations;
     std::shared_ptr<CEGeometry> m_geometry;
+    std::vector<std::shared_ptr<Sound>> m_animation_sounds;
+    std::vector<std::shared_ptr<CEAudioSource>> m_animation_audio_sources;
 };
 
 #endif

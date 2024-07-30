@@ -118,7 +118,7 @@ void CalculateFrameRate() {
   }
 }
 
-std::unique_ptr<C2CarFile> spawnCarFile(const std::filesystem::path& fPath, std::shared_ptr<C2MapFile> cMap, const glm::vec2& alloWorldPos, const glm::vec3& initialScale) {
+std::unique_ptr<C2CarFile> spawnCarFile(const std::filesystem::path& fPath, std::shared_ptr<C2MapFile> cMap, std::shared_ptr<C2MapRscFile> cRsc, const glm::vec2& alloWorldPos, const glm::vec3& initialScale) {
     // We need to load from disk to get a unique instance of our car file
     std::unique_ptr<C2CarFile> carFile = std::unique_ptr<C2CarFile>(new C2CarFile(fPath.string()));
     auto geo = carFile->getGeometry();
@@ -136,6 +136,7 @@ std::unique_ptr<C2CarFile> spawnCarFile(const std::filesystem::path& fPath, std:
 
     // Only ever ONE instance!
     geo->UpdateInstances(aTM);
+    geo->ConfigureShaderUniforms(cMap.get(), cRsc.get());
 
     // Return control
     return std::move(carFile);
@@ -190,7 +191,7 @@ int main(int argc, const char * argv[])
   std::vector<std::unique_ptr<C2CarFile>> dinos = {};
   
   for (const auto& spawn : spawns) {
-    dinos.push_back(spawnCarFile(spawn.file, cMap, glm::vec2(spawn.position[0], spawn.position[1]), glm::vec3(1.f)));
+    dinos.push_back(spawnCarFile(spawn.file, cMap, cMapRsc, glm::vec2(spawn.position[0], spawn.position[1]), glm::vec3(1.f)));
   }
   
   GLFWwindow* window = video_manager->GetWindow();
@@ -268,9 +269,18 @@ int main(int argc, const char * argv[])
       glm::vec2 pPos = g_player_controller->getWorldPosition();
       
       auto dist = glm::distance(pos, pPos);
-      if (dist < 80.f && dino) {
+
+      // Optimizations: biggest impact is uploading FBOs, so minimize this
+      // Slower updates above 80 tiles
+      bool deferUpdate = dist > 80.f;
+      // Max the FPS at this range
+      bool maxFPS = dist < 20.f;
+      // Do not even animate at this range
+      bool notVisible = dist > 128.f;
+
+      if (dino) {
         dino->getGeometry()->Update(g_terrain_transform, *camera);
-        dino->getGeometry()->SetAnimation(dino->getAnimationByName(spawnData.animation), currentTime);
+        dino->getGeometry()->SetAnimation(dino->getAnimationByName(spawnData.animation), currentTime, deferUpdate, maxFPS, notVisible);
       }
       di++;
     }
@@ -354,18 +364,11 @@ int main(int argc, const char * argv[])
       
       glEnable(GL_DEPTH_TEST);
 
-      int di = 0;
       for (const auto& dino : dinos) {
-          auto spawnData = spawns.at(di);
-          glm::vec2 pos = glm::vec2(spawnData.position[0], spawnData.position[1]);
-          glm::vec2 pPos = g_player_controller->getWorldPosition();
-          
-          auto dist = glm::distance(pos, pPos);
-          if (dist < 60.f && dino) {
-            dino->getGeometry()->DrawInstances();
-            checkGLError("After draw dino");
-          }
-          di++;
+        if (dino) {
+          dino->getGeometry()->DrawInstances();
+          checkGLError("After draw dino");
+        }
       }
       
       glEnable(GL_CULL_FACE);

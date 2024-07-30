@@ -24,6 +24,8 @@ CERemotePlayerController::CERemotePlayerController(std::shared_ptr<C2CarFile> ca
   m_is_deployed = false;
   m_current_speed = 0.f;
   m_target_speed = 0.f;
+  m_animation_started_at = 0.0;
+  m_animation_last_update_at = 0.0;
   
   // TODO: make these configurable
   // Perhaps an attachable physics controller or something
@@ -36,11 +38,11 @@ CERemotePlayerController::CERemotePlayerController(std::shared_ptr<C2CarFile> ca
   // Get an exclusive copy of the geometry by rebuilding from the first animation
   std::shared_ptr<CEAnimation> initialAni = carFile->getAnimationByName(m_current_animation).lock();
   if (!initialAni) {
-    std::cerr << "Error: car file missing default animation!" << std::endl;
+    std::cerr << "Error: car file missing default animation: " << m_current_animation << std::endl;
 
     // TODO: We can't use this without animations, right?
     // Consider a different class to spawn non-interactive CAR models
-    throw std::runtime_error("Error: car file missing default animation!");
+    throw std::runtime_error("Error: car file missing requested animation!");
   }
   
   std::unique_ptr<IndexedMeshLoader> m_loader = std::make_unique<IndexedMeshLoader>(*initialAni->GetOriginalVertices(), *initialAni->GetFaces());
@@ -74,6 +76,7 @@ void CERemotePlayerController::update(double currentTime, Transform &baseTransfo
 {
   auto worldPos = getWorldPosition();
   auto dist = glm::distance(worldPos, observerWorldPosition);
+  auto anim = m_car->getAnimationByName(m_current_animation);
   
   // Slower updates above 80 tiles
   bool deferUpdate = dist > 80.f;
@@ -81,10 +84,13 @@ void CERemotePlayerController::update(double currentTime, Transform &baseTransfo
   bool maxFPS = dist < 20.f;
   // Do not even animate at this range
   bool notVisible = dist > 128.f;
-  
-  // TODO: set location and rotation of the model
+
   m_geo->Update(baseTransform, observerCamera);
-  m_geo->SetAnimation(m_car->getAnimationByName(m_current_animation), currentTime, deferUpdate, maxFPS, notVisible);
+  bool didUpdate = m_geo->SetAnimation(anim, currentTime, m_animation_started_at, m_animation_last_update_at, deferUpdate, maxFPS, notVisible);
+  
+  if (didUpdate) {
+    m_animation_last_update_at = currentTime;
+  }
 }
 
 void CERemotePlayerController::Render()

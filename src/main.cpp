@@ -113,6 +113,9 @@ void CalculateFrameRate() {
   }
 }
 
+const int FPS = 80;
+const int frameDelay = 1000 / FPS;
+
 int main(int argc, const char * argv[])
 {
   std::ifstream f("config.json");
@@ -173,7 +176,7 @@ int main(int argc, const char * argv[])
   
   int dCount = 0;
   for (const auto& spawn : spawns) {
-    if (dCount < 300) {
+    if (dCount < 512) {
       auto character = std::make_unique<CERemotePlayerController>(
                                                                   cFileLoad->fetch(spawn.file),
                                                                   cMap,
@@ -190,8 +193,10 @@ int main(int argc, const char * argv[])
       character->setPosition(spawnPos);
 
       characters.push_back(std::move(character));
+      
+      std::cout << "Spawned " << spawn.file << " # " << dCount << " @ [" << spawn.position[0] << "," << spawn.position[1] << "];" << std::endl;
     } else {
-      std::cerr << "Failed to spawn CAR: " << spawn.file << " @ [" << spawn.position[0] << "," << spawn.position[1] << "]; max limit of 120 exceeded!" << std::endl;
+      std::cerr << "Failed to spawn CAR: " << spawn.file << " @ [" << spawn.position[0] << "," << spawn.position[1] << "]; max limit of 512 exceeded!" << std::endl;
     }
     dCount++;
   }
@@ -253,6 +258,7 @@ int main(int argc, const char * argv[])
     glfwMakeContextCurrent(window);
     
     // Process input before rendering
+    auto frameStart = std::chrono::high_resolution_clock::now();
     double currentTime = glfwGetTime();
     double timeDelta = currentTime - lastTime;
     lastTime = currentTime;
@@ -267,6 +273,8 @@ int main(int argc, const char * argv[])
     for (const auto& character : characters) {
       if (character) {
         character->update(currentTime, g_terrain_transform, *camera, player_world_pos);
+      } else {
+        throw std::runtime_error("Character missing!!");
       }
     }
     
@@ -352,6 +360,8 @@ int main(int argc, const char * argv[])
       for (const auto& character : characters) {
         if (character) {
           character->Render();
+        } else {
+          throw std::runtime_error("Character missing!!");
         }
       }
       
@@ -394,6 +404,13 @@ int main(int argc, const char * argv[])
     checkGLError("End of frame");
     
     // CalculateFrameRate();
+    
+    auto frameEnd = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<float, std::milli> frameDuration = frameEnd - frameStart;
+
+    if (frameDuration.count() < frameDelay) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(frameDelay) - frameDuration);
+    }
   }
   
   characters.clear();

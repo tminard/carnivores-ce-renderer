@@ -43,6 +43,10 @@ private:
   std::unique_ptr<CEGeometry> m_geo;
   
   std::string m_current_animation;
+  // Currently always 0, but eventually marks the start of an ani
+  double m_animation_started_at;
+  
+  double m_animation_last_update_at;
   
   float m_walk_speed;
   float m_player_height;

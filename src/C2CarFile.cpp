@@ -202,8 +202,10 @@ void C2CarFile::load_file(std::string file_name)
 
 std::shared_ptr<CEAudioSource> C2CarFile::getSoundForAnimation(std::string animation_name) const
 {
-  int sfx = (int)m_ani_to_sfx.at(animation_name);
-  if (sfx) {
+  bool hasSfx = m_ani_to_sfx.contains(animation_name);
+
+  if (hasSfx) {
+    int sfx = (int)m_ani_to_sfx.at(animation_name);
     return m_animation_audio_sources.at(sfx);
   }
   

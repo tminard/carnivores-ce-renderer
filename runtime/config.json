@@ -2,11 +2,11 @@
   "basePath": "../../runtime/cce/",
   "map": {
     "type": "C1",
-    "map": "../game/c1/trophy.map",
-    "rsc": "../game/c1/trophy.rsc"
+    "map": "../game/c1/area2.map",
+    "rsc": "../game/c1/area2.rsc"
   },
   "video": {
-    "fullscreen": true
+    "fullscreen": false
   },
   "spawns": [
     {
@@ -40,9 +40,24 @@
       "position": [186, 40]
     },
     {
-      "file": "../../runtime/cce/game/models/poacher.car",
-      "animation": "Pr_idle3",
+      "file": "../../runtime/cce/game/models/Bear.car",
+      "animation": "Br_idle3",
       "position": [250, 96]
+    },
+    {
+      "file": "../../runtime/cce/game/models/Bigfoot.car",
+      "animation": "bf_idle3",
+      "position": [253, 96]
+    },
+    {
+      "file": "../../runtime/cce/game/models/Sship1.car",
+      "animation": "Ship",
+      "position": [256, 96]
+    },
+    {
+      "file": "../../runtime/cce/game/models/Smilo.car",
+      "animation": "Sn_idle1",
+      "position": [263, 96]
     },
     {
       "file": "../../runtime/cce/game/models/stego.car",

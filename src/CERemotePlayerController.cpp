@@ -18,8 +18,9 @@
 #include "IndexedMeshLoader.h"
 #include "CEGeometry.h"
 #include "CEAnimation.h"
+#include "LocalAudioManager.hpp"
 
-CERemotePlayerController::CERemotePlayerController(std::shared_ptr<C2CarFile> carFile, std::shared_ptr<C2MapFile> map, std::shared_ptr<C2MapRscFile> rsc, std::string initialAnimationName): m_map(map), m_rsc(rsc), m_car(carFile), m_current_animation(initialAnimationName)
+CERemotePlayerController::CERemotePlayerController(std::shared_ptr<LocalAudioManager> audioManager, std::shared_ptr<C2CarFile> carFile, std::shared_ptr<C2MapFile> map, std::shared_ptr<C2MapRscFile> rsc, std::string initialAnimationName): m_map(map), m_rsc(rsc), m_car(carFile), m_current_animation(initialAnimationName), m_g_audio_manager(audioManager)
 {
   m_is_deployed = false;
   m_current_speed = 0.f;
@@ -92,6 +93,16 @@ void CERemotePlayerController::update(double currentTime, Transform &baseTransfo
   bool didUpdate = m_geo->SetAnimation(anim, currentTime, m_animation_started_at, m_animation_last_update_at, deferUpdate, maxFPS, notVisible);
   
   if (didUpdate) {
+    if (m_geo->GetCurrentFrame() == 0) {
+      auto audioSrc = m_car->getSoundForAnimation(m_current_animation);
+      if (audioSrc) {
+        audioSrc->setPosition(m_camera.GetCurrentPos());
+        audioSrc->setLooped(false);
+        audioSrc->setMaxDistance(m_map->getTileLength() * 60.f);
+        audioSrc->setClampDistance(6);
+        m_g_audio_manager->play(audioSrc);
+      }
+    }
     m_animation_last_update_at = currentTime;
   }
 }

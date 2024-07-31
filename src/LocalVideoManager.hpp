@@ -10,12 +10,12 @@ class LocalVideoManager
 private:
     GLFWwindow* m_main_window;
     
-    void initGLFW();
+    void initGLFW(bool fullscreen);
     void initGL();
     void destroyGLFW();
     void printStats();
 public:
-    LocalVideoManager();
+    LocalVideoManager(bool fullscreen);
     ~LocalVideoManager();
     
     GLFWwindow* GetWindow();

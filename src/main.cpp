@@ -127,6 +127,8 @@ int main(int argc, const char * argv[])
   json data = json::parse(f);
   std::vector<ConfigSpawn> spawns;
   
+  bool fullscreen = true;
+  
   fs::path basePath = fs::path(data["basePath"].get<std::string>());
   fs::path mapRscPath = constructPath(basePath, data["map"]["rsc"]);
   fs::path mapPath = constructPath(basePath, data["map"]["map"]);
@@ -140,6 +142,12 @@ int main(int argc, const char * argv[])
           spawns.push_back(spawn);
       }
   }
+
+  if (data.contains("video") && data["video"].is_object()) {
+    if (data["video"].contains("fullscreen") && data["video"]["fullscreen"].is_boolean()) {
+      fullscreen = data["video"]["fullscreen"];
+    }
+  }
   
   std::cout << "Base Path: " << basePath << std::endl;
   std::cout << "Map: " << data["map"]["type"] << std::endl;
@@ -152,8 +160,8 @@ int main(int argc, const char * argv[])
     mapType = CEMapType::C1;
   }
   
-  std::unique_ptr<LocalVideoManager> video_manager = std::make_unique<LocalVideoManager>();
-  std::unique_ptr<LocalAudioManager> g_audio_manager = std::make_unique<LocalAudioManager>();
+  std::unique_ptr<LocalVideoManager> video_manager = std::make_unique<LocalVideoManager>(fullscreen);
+  std::shared_ptr<LocalAudioManager> g_audio_manager = std::make_shared<LocalAudioManager>();
   
   std::shared_ptr<C2MapRscFile> cMapRsc;
   std::shared_ptr<C2MapFile> cMap;
@@ -178,6 +186,7 @@ int main(int argc, const char * argv[])
   for (const auto& spawn : spawns) {
     if (dCount < 512) {
       auto character = std::make_unique<CERemotePlayerController>(
+                                                                  g_audio_manager,
                                                                   cFileLoad->fetch(spawn.file),
                                                                   cMap,
                                                                   cMapRsc,
@@ -285,10 +294,12 @@ int main(int argc, const char * argv[])
     glm::vec3 currentPosition = g_player_controller->getPosition();
     double rnTimeDelta = currentTime - lastRndAudioTime;
     
-    if (rnTimeDelta >= 6.0) {
+    if (rnTimeDelta >= 32.0) {
       m_random_ambient = cMapRsc->getRandomAudio(currentPosition.x, currentPosition.y, currentPosition.z - cMap->getTileLength());
-      g_audio_manager->play(std::move(m_random_ambient));
-      lastRndAudioTime = currentTime;
+      if (m_random_ambient) {
+        g_audio_manager->play(std::move(m_random_ambient));
+        lastRndAudioTime = currentTime;
+      }
     }
     
     glm::vec2 next_world_pos = g_player_controller->getWorldPosition();

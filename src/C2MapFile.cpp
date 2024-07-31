@@ -18,6 +18,12 @@
 
 C2MapFile::C2MapFile(const CEMapType type, const std::string& map_file_name, C2MapRscFile* crsc_weak) : m_type(type)
 {
+  if (!std::filesystem::exists(map_file_name)) {
+      throw std::runtime_error("File not found: " + map_file_name);
+  } else {
+    std::cout << "Found " << map_file_name << "; OK. Loading..." << std::endl;
+  }
+  
   switch (m_type) {
   case CEMapType::C2:
       this->load(map_file_name, crsc_weak);
@@ -532,10 +538,16 @@ void C2MapFile::load_c1(const std::string &file_name, C2MapRscFile* crsc_weak)
 
     infile.close();
     this->postProcess(crsc_weak);
-  } catch (std::ifstream::failure e) {
-    std::cerr << "Failed to load C1 " + file_name + ": " + strerror(errno) << e.what() << std::endl;
-
-    throw e;
+  } catch (const std::ios_base::failure& e) {
+    std::cerr << "I/O error: " << e.what() << std::endl;
+    throw;
+  } catch (const std::runtime_error& e) {
+      std::cerr << "Runtime error: " << e.what() << std::endl;
+    throw;
+  } catch (...) {
+      std::cerr << "An unknown error occurred." << std::endl;
+    
+    throw;
   }
 }
 
@@ -565,9 +577,15 @@ void C2MapFile::load(const std::string &file_name, C2MapRscFile* crsc_weak)
     infile.close();
     
     this->postProcess(crsc_weak);
-  } catch (std::ifstream::failure e) {
-    std::cerr << "Failed to load " + file_name + ": " + strerror(errno) << e.what() << std::endl;
+  } catch (const std::ios_base::failure& e) {
+    std::cerr << "I/O error: " << e.what() << std::endl;
+    throw;
+  } catch (const std::runtime_error& e) {
+      std::cerr << "Runtime error: " << e.what() << std::endl;
+    throw;
+  } catch (...) {
+      std::cerr << "An unknown error occurred." << std::endl;
     
-    throw e;
+    throw;
   }
 }

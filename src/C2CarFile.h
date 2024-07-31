@@ -45,14 +45,16 @@ public:
     std::shared_ptr<CEGeometry> getGeometry();
     std::weak_ptr<CEAnimation> getAnimationByName(std::string animation_name);
     std::weak_ptr<CEAnimation> getFirstAnimation();
-  
-    void playAudio(int i, glm::vec3 pos);
+    
+  std::shared_ptr<CEAudioSource> getSoundForAnimation(std::string animation_name) const;
     
 private:
     std::map<std::string, std::shared_ptr<CEAnimation> > m_animations;
+    std::map<std::string, int> m_ani_to_sfx;
     std::shared_ptr<CEGeometry> m_geometry;
     std::vector<std::shared_ptr<Sound>> m_animation_sounds;
     std::vector<std::shared_ptr<CEAudioSource>> m_animation_audio_sources;
+    std::vector<int32_t> m_fx_lookup;
 };
 
 #endif

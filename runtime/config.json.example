@@ -5,6 +5,9 @@
     "map": "game\\c1\\area6.map",
     "rsc": "game\\c1\\area6.rsc"
   },
+  "video": {
+    "fullscreen": true
+  },
   "spawns": [
     {
       "file": "runtime\\cce\\velo2.car",

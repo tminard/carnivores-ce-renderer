@@ -23,6 +23,7 @@ CEGeometry::CEGeometry(std::vector < Vertex > vertices, std::vector < uint32_t >
 : m_vertices(vertices), m_indices(indices), m_texture(texture)
 {
   this->loadObjectIntoMemoryBuffer(shaderName);
+  m_current_frame = 0;
 }
 
 CEGeometry::~CEGeometry()
@@ -137,6 +138,8 @@ bool CEGeometry::SetAnimation(std::weak_ptr<CEAnimation> animation, double atTim
   int currentFrame = static_cast<int>(exactFrameIndex) % totalFrames;
   int nextFrame = (currentFrame + 1) % totalFrames;
   
+  m_current_frame = currentFrame;
+  
   float k2 = static_cast<float>(exactFrameIndex - currentFrame); // Interpolation factor
   float k1 = 1.0f - k2;
   
@@ -244,4 +247,8 @@ void CEGeometry::UpdateInstances(std::vector<glm::mat4> transforms)
 
 const std::vector<Vertex>& CEGeometry::GetVertices() const {
   return m_vertices;
+}
+
+const int CEGeometry::GetCurrentFrame() const {
+  return m_current_frame;
 }

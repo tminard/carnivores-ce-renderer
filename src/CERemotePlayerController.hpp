@@ -18,6 +18,7 @@
 class C2MapFile;
 class C2CarFile;
 class C2MapRscFile;
+class LocalAudioManager;
 struct Camera;
 struct Transform;
 
@@ -35,6 +36,7 @@ class CERemotePlayerController : CEObservable
 private:
   std::shared_ptr<C2MapFile> m_map;
   std::shared_ptr<C2MapRscFile> m_rsc;
+  std::shared_ptr<LocalAudioManager> m_g_audio_manager;
   
   // Shared reference to CAR. Defines audio, texture, animations, etc
   std::shared_ptr<C2CarFile> m_car;
@@ -69,7 +71,7 @@ private:
   bool m_is_deployed;
 
 public:
-  CERemotePlayerController(std::shared_ptr<C2CarFile> carFile, std::shared_ptr<C2MapFile> map, std::shared_ptr<C2MapRscFile> rsc, std::string initialAnimationName);
+  CERemotePlayerController(std::shared_ptr<LocalAudioManager> audioManager, std::shared_ptr<C2CarFile> carFile, std::shared_ptr<C2MapFile> map, std::shared_ptr<C2MapRscFile> rsc, std::string initialAnimationName);
 
   glm::vec3 getPosition() const;
   glm::vec2 getWorldPosition() const;

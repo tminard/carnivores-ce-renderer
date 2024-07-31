@@ -90,31 +90,32 @@ void C2CarFile::load_file(std::string file_name)
     _texture_data.resize(tsize);
     infile.read(reinterpret_cast<char *>(_texture_data.data()), tsize);
     m_texture = std::unique_ptr<CETexture>(new CETexture(_texture_data, 256*256, 256, 256));
+    
+    std::vector<std::string> orderedAniNames;
 
     for (int ani = 0; ani < c_char_info.AniCount; ani++) {
       int _ani_kps, _frames_count;
       float animation_length;
       std::vector<short int> _aniData;
       char _aniName[32];
-
+      
       infile.read(_aniName, 32);
       infile.read(reinterpret_cast<char *>(&_ani_kps), 4);
       infile.read(reinterpret_cast<char *>(&_frames_count), 4);
-
+      
       animation_length = (float)(_frames_count * 1000) / (float)_ani_kps;
       _aniData.resize((size_t)_frames_count*_vcount*6);
       infile.read(reinterpret_cast<char *>(_aniData.data()), (size_t)_vcount*_frames_count*6);
-
+      
       std::string animation_name(_aniName);
       std::shared_ptr<CEAnimation> chAni( new CEAnimation(animation_name, _ani_kps, _frames_count, (int)animation_length));
       chAni->setAnimationData(_aniData, _vcount, _faces, _vertices);
-
+      
       std::cout << "Loaded animation: " << animation_name << std::endl;
       this->m_animations.insert(std::make_pair(animation_name, std::move(chAni)));
+      orderedAniNames.push_back(animation_name);
     }
 
-    // TODO: we should share sound resources vs loading them over and over...
-    // Really we only need top copy geometry, so possible keep the same CAR file and only create new instances of geo
     // Load rnd sounds
     for (int i = 0; i < c_char_info.SfxCount; i++)
     {
@@ -147,6 +148,32 @@ void C2CarFile::load_file(std::string file_name)
 
       this->m_animation_audio_sources.push_back(std::move(src));
     }
+    
+    // Load the lookup table
+    m_fx_lookup.resize(c_char_info.AniCount);
+
+    // Read the lookup table
+    infile.read(reinterpret_cast<char*>(m_fx_lookup.data()), c_char_info.AniCount * sizeof(int32_t));
+
+    if (infile.fail()) {
+        std::cerr << "Error: Failed to read animation lookup table from file " << file_name << std::endl;
+      
+        infile.close();
+        return;
+    }
+    
+    // Now create a map of animation names -> sound FX names for lookup during gameplay
+    for (int i = 0; i < orderedAniNames.size(); i++) {
+      // get the sfx index
+      auto sfx = m_fx_lookup.at(i);
+      if (sfx >= 0) {
+        auto sfxSrc = m_animation_sounds.at(sfx);
+        if (sfxSrc) {
+          auto aniName = orderedAniNames.at(i);
+          m_ani_to_sfx[aniName] = sfx;
+        }
+      }
+    }
 
     // Original game brightened the texture here too but we wont do that
     infile.close();
@@ -173,9 +200,12 @@ void C2CarFile::load_file(std::string file_name)
   this->m_geometry = std::unique_ptr<CEGeometry>(new CEGeometry(m_loader->getVertices(), m_loader->getIndices(), std::move(m_texture), "dinosaur"));
 }
 
-void C2CarFile::playAudio(int i, glm::vec3 pos)
+std::shared_ptr<CEAudioSource> C2CarFile::getSoundForAnimation(std::string animation_name) const
 {
-  CEAudioSource* src = this->m_animation_audio_sources.at(i).get();
-  src->setPosition(pos);
-  src->play();
+  int sfx = (int)m_ani_to_sfx.at(animation_name);
+  if (sfx) {
+    return m_animation_audio_sources.at(sfx);
+  }
+  
+  return std::shared_ptr<CEAudioSource>();
 }

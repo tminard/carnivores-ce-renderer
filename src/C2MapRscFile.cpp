@@ -87,6 +87,10 @@ float getRandomFloat(float min, float max) {
 
 std::shared_ptr<CEAudioSource> C2MapRscFile::getRandomAudio(int x, int y, int z)
 {
+  if (this->m_random_audio_sources.empty()) {
+    return std::shared_ptr<CEAudioSource>();
+  }
+
   int rnd = rand() % (this->m_random_audio_sources.size()-1);
   std::shared_ptr<CEAudioSource> src = this->m_random_audio_sources.at(rnd);
     
@@ -143,6 +147,12 @@ void C2MapRscFile::load(const std::string &file_name, std::filesystem::path base
 {
   std::ifstream infile;
   infile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+
+  if (!std::filesystem::exists(file_name)) {
+      throw std::runtime_error("File not found: " + file_name);
+  } else {
+    std::cout << "Found " << file_name << "; OK. Loading..." << std::endl;
+  }
   
   try {
     infile.open(file_name.c_str(), std::ios::binary | std::ios::in);
@@ -383,7 +393,7 @@ void C2MapRscFile::load(const std::string &file_name, std::filesystem::path base
       this->m_random_audio_sources.push_back(std::move(src));
     }
 
-    // Skip table for now
+    // TODO: Skip table for now
     infile.read(reinterpret_cast<char *>(&this->m_ambient_sounds_count), 4);
     for (int i = 0; i < this->m_ambient_sounds_count; i++)
     {
@@ -407,7 +417,7 @@ void C2MapRscFile::load(const std::string &file_name, std::filesystem::path base
 
       this->m_ambient_audio_sources.push_back(std::move(src));
 
-      // TODO
+      // TODO: read random play areas (needed to restrict randoms to specific areas)
       infile.seekg((16*16) + 8, std::ios_base::cur);
 
       // read data first, then a 16x16 table
@@ -421,6 +431,10 @@ void C2MapRscFile::load(const std::string &file_name, std::filesystem::path base
       wd.transparency = 0.8f;
 
       this->m_waters.push_back(wd);
+      
+      // C1 we are done here
+      infile.close();
+
       return;
     }
 
@@ -434,12 +448,17 @@ void C2MapRscFile::load(const std::string &file_name, std::filesystem::path base
       this->m_waters.push_back(wd);
     }
 
-    
     infile.close();
-  } catch (std::ifstream::failure e) {
-    std::cerr << "Failed to load " + file_name + ": " + strerror(errno) << e.what() << std::endl;
+  } catch (const std::ios_base::failure& e) {
+    std::cerr << "I/O error: " << e.what() << std::endl;
+    throw;
+  } catch (const std::runtime_error& e) {
+      std::cerr << "Runtime error: " << e.what() << std::endl;
+    throw;
+  } catch (...) {
+      std::cerr << "An unknown error occurred." << std::endl;
     
-    throw e;
+    throw;
   }
 }
 

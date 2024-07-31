@@ -33,6 +33,8 @@ private:
   bool m_transparency;
 
   float m_vertice_light[4][1024];
+  
+  int m_current_frame;
 
   enum {
     VERTEX_VB=0,
@@ -67,6 +69,8 @@ public:
   void ConfigureShaderUniforms(C2MapFile* map, C2MapRscFile* rsc);
   
   const std::vector<Vertex>& GetVertices() const;
+  
+  const int GetCurrentFrame() const;
 
   void UpdateInstances(std::vector<glm::mat4> transforms);
   void DrawInstances();

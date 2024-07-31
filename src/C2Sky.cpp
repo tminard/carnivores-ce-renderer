@@ -68,9 +68,8 @@ void C2Sky::loadTextureIntoMemory()
      GL_TEXTURE_CUBE_MAP_NEGATIVE_Z    Front
      */
 
-    // Use a common internal format and format/type combination
     for (int i = 0; i < 6; i++) {
-        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA, 256, 256, 0, GL_RGBA, GL_UNSIGNED_BYTE, this->m_texture->getRawData()->data());
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RED, 256, 256, 0, GL_RED, GL_UNSIGNED_BYTE, this->m_texture->getRawData()->data());
 
         GLenum error = glGetError();
         if (error != GL_NO_ERROR) {

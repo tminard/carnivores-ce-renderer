@@ -211,7 +211,15 @@ float C2MapFile::getHeightAt(int xy)
   if (m_type == CEMapType::C2) {
     scaled_height = this->m_heightmap_data.at(xy) * this->getHeightmapScale();
   } else {
-    scaled_height = this->m_watermap_data.at(xy) * this->getHeightmapScale();
+      auto c1WaterHeight = this->m_watermap_data.at(xy);
+      auto c1LandHeight = this->m_heightmap_data.at(xy);
+      uint8_t flags = this->getFlagsAt(xy);
+      if (flags & 0x80) {
+          scaled_height = (c1WaterHeight) * this->getHeightmapScale();
+      }
+      else {
+          scaled_height = (c1LandHeight + 48) * this->getHeightmapScale();
+      }
   }
 
   return (scaled_height);

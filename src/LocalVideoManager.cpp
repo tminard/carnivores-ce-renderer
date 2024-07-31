@@ -8,9 +8,9 @@
 
 #include "LocalVideoManager.hpp"
 
-LocalVideoManager::LocalVideoManager()
+LocalVideoManager::LocalVideoManager(bool fullscreen)
 {
-  initGLFW();
+  initGLFW(fullscreen);
   initGL();
 }
 
@@ -37,7 +37,7 @@ GLFWwindow* LocalVideoManager::GetWindow()
   return this->m_main_window;
 }
 
-void LocalVideoManager::initGLFW()
+void LocalVideoManager::initGLFW(bool fullscreen)
 {
   if (!glfwInit()) {
     throw;
@@ -61,7 +61,7 @@ void LocalVideoManager::initGLFW()
   std::cout << "\t[Video Mode] width: " << v_mode->width << "; height: " << v_mode->height << std::endl;
 
   // set PRIMARY_MONITOR for full screen
-  this->m_main_window = glfwCreateWindow(viewWidth, viewHeight, "Carnivores", primary_monitor, NULL);
+  this->m_main_window = glfwCreateWindow(viewWidth, viewHeight, "Carnivores", fullscreen ? primary_monitor : NULL, NULL);
 
   if (!this->m_main_window) {
     throw;

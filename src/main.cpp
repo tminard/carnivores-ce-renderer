@@ -52,13 +52,18 @@
 
 #include "CEAnimation.h"
 
+#include "CEAIGenericAmbientManager.hpp"
+
 namespace fs = std::filesystem;
 using json = nlohmann::json;
 
 struct ConfigSpawn {
-    std::string file;
-    std::string animation;
-    std::vector<int> position;
+  std::string file;
+  std::string animation;
+  std::vector<int> position;
+  bool isAmbient;
+  std::string ambientWalkAnim;
+  json data;
 };
 
 std::unique_ptr<LocalInputManager> input_manager(new LocalInputManager());
@@ -120,10 +125,10 @@ int main(int argc, const char * argv[])
 {
   std::ifstream f("config.json");
   if (!f.is_open()) {
-      std::cerr << "Unable to open config.json!" << std::endl;
-      return 1;
+    std::cerr << "Unable to open config.json!" << std::endl;
+    return 1;
   }
-
+  
   json data = json::parse(f);
   std::vector<ConfigSpawn> spawns;
   
@@ -132,17 +137,29 @@ int main(int argc, const char * argv[])
   fs::path basePath = fs::path(data["basePath"].get<std::string>());
   fs::path mapRscPath = constructPath(basePath, data["map"]["rsc"]);
   fs::path mapPath = constructPath(basePath, data["map"]["map"]);
-
+  
   if (data.contains("spawns")) {
-      for (const auto& spawnJson : data["spawns"]) {
-          ConfigSpawn spawn;
-          spawn.file = spawnJson.value("file", "");
-          spawn.animation = spawnJson.value("animation", "");
-          spawn.position = spawnJson.value("position", std::vector<int>{});
-          spawns.push_back(spawn);
+    for (const auto& spawnJson : data["spawns"]) {
+      ConfigSpawn spawn;
+      spawn.data = spawnJson;
+      spawn.file = spawnJson.value("file", "");
+      spawn.animation = spawnJson.value("animation", "");
+      spawn.position = spawnJson.value("position", std::vector<int>{});
+      spawn.isAmbient = false;
+      spawn.ambientWalkAnim = "";
+      // TODO: temporary. Switch to generic controlled character class from direct remote controller.
+      if (spawnJson.contains("attachAI")) {
+        if (spawnJson["attachAI"].contains("controller")) {
+          if (spawnJson["attachAI"]["controller"] == "GenericAmbient") {
+            spawn.isAmbient = true;
+            spawn.ambientWalkAnim = spawnJson["attachAI"]["args"]["animations"]["WALK"];
+          }
+        }
       }
+      spawns.push_back(spawn);
+    }
   }
-
+  
   if (data.contains("video") && data["video"].is_object()) {
     if (data["video"].contains("fullscreen") && data["video"]["fullscreen"].is_boolean()) {
       fullscreen = data["video"]["fullscreen"];
@@ -165,13 +182,13 @@ int main(int argc, const char * argv[])
   
   std::shared_ptr<C2MapRscFile> cMapRsc;
   std::shared_ptr<C2MapFile> cMap;
-
+  
   try {
-      cMapRsc = std::make_shared<C2MapRscFile>(mapType, mapRscPath.string(), basePath.string());
-      cMap = std::make_shared<C2MapFile>(mapType, mapPath.string(), cMapRsc.get());
+    cMapRsc = std::make_shared<C2MapRscFile>(mapType, mapRscPath.string(), basePath.string());
+    cMap = std::make_shared<C2MapFile>(mapType, mapPath.string(), cMapRsc.get());
   } catch (const std::exception& e) {
-      std::cerr << "Error loading map files: " << e.what() << std::endl;
-      return 1;
+    std::cerr << "Error loading map files: " << e.what() << std::endl;
+    return 1;
   }
   alDistanceModel(AL_LINEAR_DISTANCE);
   
@@ -179,13 +196,14 @@ int main(int argc, const char * argv[])
   
   // shared loader to minimize resource usage
   std::unique_ptr<C2CarFilePreloader> cFileLoad(new C2CarFilePreloader);
-
-  std::vector<std::unique_ptr<CERemotePlayerController>> characters = {};
+  
+  std::vector<std::shared_ptr<CERemotePlayerController>> characters = {};
+  std::vector<std::unique_ptr<CEAIGenericAmbientManager>> ambients = {};
   
   int dCount = 0;
   for (const auto& spawn : spawns) {
     if (dCount < 512) {
-      auto character = std::make_unique<CERemotePlayerController>(
+      auto character = std::make_shared<CERemotePlayerController>(
                                                                   g_audio_manager,
                                                                   cFileLoad->fetch(spawn.file),
                                                                   cMap,
@@ -194,14 +212,24 @@ int main(int argc, const char * argv[])
                                                                   );
       float spawnHeight = cMap->getPlaceGroundHeight(spawn.position[0], spawn.position[1]);
       glm::vec3 spawnPos = glm::vec3(
-          (spawn.position[0] * cMap->getTileLength()) + (cMap->getTileLength() / 2),
-          spawnHeight - 12.f,
-          (spawn.position[1] * cMap->getTileLength()) + (cMap->getTileLength() / 2)
-      );
-
+                                     (spawn.position[0] * cMap->getTileLength()) + (cMap->getTileLength() / 2),
+                                     spawnHeight - 12.f,
+                                     (spawn.position[1] * cMap->getTileLength()) + (cMap->getTileLength() / 2)
+                                     );
+      
       character->setPosition(spawnPos);
+      characters.push_back(character);
 
-      characters.push_back(std::move(character));
+      if (spawn.isAmbient) {
+        AIGenericAmbientManagerConfig aiConfig;
+        aiConfig.WalkAnimName = spawn.ambientWalkAnim;
+        auto ambientMg = std::make_unique<CEAIGenericAmbientManager>(
+                                                                     aiConfig,
+                                                                     character,
+                                                                     cMap,
+                                                                     cMapRsc);
+        ambients.push_back(std::move(ambientMg));
+      }
       
       std::cout << "Spawned " << spawn.file << " # " << dCount << " @ [" << spawn.position[0] << "," << spawn.position[1] << "];" << std::endl;
     } else {
@@ -282,8 +310,11 @@ int main(int argc, const char * argv[])
     for (const auto& character : characters) {
       if (character) {
         character->update(currentTime, g_terrain_transform, *camera, player_world_pos);
-      } else {
-        throw std::runtime_error("Character missing!!");
+      }
+    }
+    for (const auto& ambient : ambients) {
+      if (ambient) {
+        ambient->Process(currentTime);
       }
     }
     
@@ -353,7 +384,7 @@ int main(int argc, const char * argv[])
       
       glEnable(GL_DEPTH_TEST);
       checkGLError("After glEnable(GL_DEPTH_TEST) (objects)");
-
+      
       terrain->RenderObjects(*camera);
       checkGLError("After terrain->RenderObjects (objects)");
       
@@ -371,8 +402,6 @@ int main(int argc, const char * argv[])
       for (const auto& character : characters) {
         if (character) {
           character->Render();
-        } else {
-          throw std::runtime_error("Character missing!!");
         }
       }
       
@@ -418,9 +447,9 @@ int main(int argc, const char * argv[])
     
     auto frameEnd = std::chrono::high_resolution_clock::now();
     std::chrono::duration<float, std::milli> frameDuration = frameEnd - frameStart;
-
+    
     if (frameDuration.count() < frameDelay) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(frameDelay) - frameDuration);
+      std::this_thread::sleep_for(std::chrono::milliseconds(frameDelay) - frameDuration);
     }
   }
   

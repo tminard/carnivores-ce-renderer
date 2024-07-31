@@ -45,6 +45,7 @@ private:
   std::unique_ptr<CEGeometry> m_geo;
   
   std::string m_current_animation;
+  glm::vec3 m_look_at;
   // Currently always 0, but eventually marks the start of an ani
   double m_animation_started_at;
   
@@ -79,6 +80,8 @@ public:
   void setPosition(glm::vec3 position);
   void setElevation(float elevation);
   void lookAt(glm::vec3 direction);
+  
+  void setNextAnimation(std::string animationName);
 
   void update(double currentTime, Transform &baseTransform, Camera &observerCamera, glm::vec2 observerWorldPosition);
   

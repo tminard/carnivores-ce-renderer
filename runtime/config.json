@@ -27,7 +27,22 @@
     {
       "file": "../../runtime/cce/game/models/velo2.car",
       "animation": "Vel_run1",
-      "position": [136, 261]
+      "position": [256, 256],
+      "attachAI": {
+        "controller": "GenericAmbient",
+        "args": {
+          "animations": {
+            "WALK": "Vel_wlk",
+            "RUN": "Vel_run1",
+            "DIE": "Vel_die1",
+            "SLEEP": "Vel_slp"
+          },
+          "character": {
+            "walkSpeed": 3,
+            "runSpeed": 6
+          }
+        }
+      }
     },
     {
       "file": "../../runtime/cce/game/models/velo2.car",

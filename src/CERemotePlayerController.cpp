@@ -36,6 +36,8 @@ CERemotePlayerController::CERemotePlayerController(std::shared_ptr<LocalAudioMan
   m_acceleration = m_walk_speed * 10.f;
   m_deceleration = m_walk_speed * 4.f;
   
+  m_look_at = glm::vec3(0.f);
+  
   // Get an exclusive copy of the geometry by rebuilding from the first animation
   std::shared_ptr<CEAnimation> initialAni = carFile->getAnimationByName(m_current_animation).lock();
   if (!initialAni) {
@@ -74,6 +76,12 @@ glm::vec2 CERemotePlayerController::getWorldPosition() const
   glm::vec3 pos = m_camera.GetPosition();
 
   return glm::vec2(int(floorf(pos.x / m_map->getTileLength())), int(floorf(pos.z / m_map->getTileLength())));
+}
+
+void CERemotePlayerController::setNextAnimation(std::string animationName)
+{
+  // TODO: use a separate "next" animation so we can morph between them
+  m_current_animation = animationName;
 }
 
 void CERemotePlayerController::update(double currentTime, Transform &baseTransform, Camera &observerCamera, glm::vec2 observerWorldPosition)
@@ -117,12 +125,52 @@ void CERemotePlayerController::jump(double currentTime)
   // TODO: add jump
 }
 
+float calculateYaw(const glm::vec3& direction) {
+    // Ignore the Y component and normalize the vector
+    glm::vec3 directionXZ = glm::normalize(glm::vec3(direction.x, 0.0f, direction.z));
+
+    // Calculate the angle with respect to the positive Z-axis
+    float yaw = atan2(directionXZ.x, directionXZ.z);
+
+    return yaw;
+}
+
+float getYawDifferenceInDegrees(const glm::vec3& pos1, const glm::vec3& pos2) {
+    // Calculate the direction vectors from the origin to the positions
+    glm::vec3 direction1 = glm::normalize(glm::vec3(pos1.x, 0.0f, pos1.z));
+    glm::vec3 direction2 = glm::normalize(glm::vec3(pos2.x, 0.0f, pos2.z));
+
+    // Calculate the yaw angles in radians
+    float yaw1 = calculateYaw(direction1);
+    float yaw2 = calculateYaw(direction2);
+
+    // Compute the difference in yaw angles in radians
+    float yawDifference = yaw2 - yaw1;
+
+    // Normalize the difference to the range [-π, π]
+    if (yawDifference > glm::pi<float>()) {
+        yawDifference -= glm::two_pi<float>();
+    } else if (yawDifference < -glm::pi<float>()) {
+        yawDifference += glm::two_pi<float>();
+    }
+
+    // Convert the yaw difference to degrees
+    float yawDifferenceDegrees = glm::degrees(yawDifference);
+
+    // Ensure the result is in the range [0, 360)
+    if (yawDifferenceDegrees < 0) {
+        yawDifferenceDegrees += 360.0f;
+    }
+
+    return yawDifferenceDegrees;
+}
+
 void CERemotePlayerController::setPosition(glm::vec3 position)
 {
   m_camera.SetPos(position);
-  
+
   // TODO: add lookAt
-  Transform transform(m_camera.GetPosition(), glm::vec3(0), glm::vec3(1.f));
+  Transform transform(m_camera.GetPosition(), glm::vec3(0.f), glm::vec3(1.f));
   std::vector<glm::mat4> model = { transform.GetStaticModel() };
   
   // Only ever ONE instance!
@@ -136,7 +184,7 @@ void CERemotePlayerController::setElevation(float elevation)
 
 void CERemotePlayerController::lookAt(glm::vec3 direction)
 {
-  this->m_camera.SetLookAt(direction);
+  m_look_at = direction;
 }
 
 Camera* CERemotePlayerController::getCamera()
@@ -148,7 +196,7 @@ void CERemotePlayerController::move(double currentTime, double deltaTime, bool f
 {
   // TODO: add movement processing
   
-  Transform transform(m_camera.GetPosition(), m_camera.GetForward(), glm::vec3(1.f));
+  Transform transform(m_camera.GetPosition(), glm::vec3(0.f), glm::vec3(1.f));
   std::vector<glm::mat4> model = { transform.GetStaticModel() };
   
   // Only ever ONE instance!

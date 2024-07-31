@@ -116,6 +116,9 @@ void LocalAudioManager::setupDevice()
   if (!this->m_alc_context) {
       throw std::runtime_error("Could not create audio context. FATAL.");
   }
+  
+  alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
+  checkError();
 
   if (!alcMakeContextCurrent(m_alc_context)) {
       checkError();

@@ -43,9 +43,10 @@ void CEAudioSource::upload()
     alSource3f(m_audio_source, AL_POSITION, 0, 0, 0);
     alSource3f(m_audio_source, AL_VELOCITY, 0, 0, 0);
 
-    alSourcei(m_audio_source, AL_ROLLOFF_FACTOR, 1); // decline in gain starting at ref distance, through max distance
-    alSourcei(m_audio_source, AL_MAX_DISTANCE, (256*100*2)); // distance until gain is 0
-    alSourcei(m_audio_source, AL_REFERENCE_DISTANCE, (256*1*2)); // clamped distance; up to distance where gain is always 1
+    alSourcef(m_audio_source, AL_ROLLOFF_FACTOR, 256.f); // decline in gain starting at ref distance, through max distance
+    alSourcei(m_audio_source, AL_MAX_DISTANCE, 256*60); // distance until gain is 0
+  
+    alSourcei(m_audio_source, AL_REFERENCE_DISTANCE, (256*1)); // clamped distance; up to distance where gain is always 1
 
     alGenBuffers(1, &m_audio_buffer);
 

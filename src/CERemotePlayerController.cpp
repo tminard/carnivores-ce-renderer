@@ -98,8 +98,8 @@ void CERemotePlayerController::update(double currentTime, Transform &baseTransfo
       if (audioSrc) {
         audioSrc->setPosition(m_camera.GetCurrentPos());
         audioSrc->setLooped(false);
-        audioSrc->setMaxDistance(m_map->getTileLength() * 60.f);
-        audioSrc->setClampDistance(6);
+        // TODO: allow character to control audio distance
+        audioSrc->setMaxDistance(m_map->getTileLength() * 45.f);
         m_g_audio_manager->play(audioSrc);
       }
     }

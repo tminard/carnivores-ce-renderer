@@ -450,6 +450,32 @@ glm::vec2 C2MapFile::getXYAtWorldPosition(glm::vec2 pos)
   return xy;
 }
 
+// Take tile x,y and return actual x,y,z marking the center of the tile
+// at world coordinates and at ground or water level
+glm::vec3 C2MapFile::getPositionAtCenterTile(glm::vec2 pos)
+{
+  int x = pos.x;
+  int y = pos.y;
+  
+  if (x < 0 || x > getWidth() || y < 0 || y > getHeight()) {
+    return glm::vec3(0.f);
+  }
+  
+  bool hasWater = hasWaterAt(x, y);
+  
+  float height = hasWater ? getWaterHeightAt(x, y) : getPlaceGroundHeight(x, y);
+  
+  float tile = getTileLength();
+  float halfTile = tile / 2.f;
+
+  return glm::vec3((static_cast<float>(x) * tile) + halfTile, height, (static_cast<float>(y) * tile) + halfTile);
+}
+
+glm::vec2 C2MapFile::getWorldTilePosition(glm::vec3 pos)
+{
+  return glm::vec2(int(floorf(pos.x / getTileLength())), int(floorf(pos.z / getTileLength())));
+}
+
 float C2MapFile::getAngleBetweenPoints(glm::vec3 a, glm::vec3 b)
 {
   glm::vec3 da=glm::normalize(a);

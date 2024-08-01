@@ -501,7 +501,7 @@ void C2MapFile::postProcess(std::weak_ptr<C2MapRscFile> rsc)
   if (!m_rsc) {
     std::cerr << "Cannot aquire reference to RSC for postProcess! RSC no longer loaded." << std::endl;
 
-    return false;
+    throw std::runtime_error("Lost reference to RSC file during map build!");
   }
 
   int w = (int)this->getWidth();

@@ -1,12 +1,12 @@
 {
   "basePath": "../../runtime/cce/",
   "map": {
-    "type": "C2",
-    "map": "../game/c2/area3.map",
-    "rsc": "../game/c2/area3.rsc"
+    "type": "C1",
+    "map": "../game/c1/area4.map",
+    "rsc": "../game/c1/area4.rsc"
   },
   "video": {
-    "fullscreen": false
+    "fullscreen": true
   },
   "spawns": [
     {

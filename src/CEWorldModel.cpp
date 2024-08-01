@@ -184,10 +184,10 @@ CEWorldModel::CEWorldModel(const CEMapType type, std::ifstream& instream)
     this->m_animation = std::move(mAni);
   }
   
-  if (m_old_object_info->flags & objectBOUND) {
-    std::vector<Vertex> vData = m_loader->getVertices();
-    this->_generateBoundingBox(vData);
-  }
+//  if (m_old_object_info->flags & objectBOUND) {
+//    std::vector<Vertex> vData = m_loader->getVertices();
+//    this->_generateBoundingBox(vData);
+//  }
 }
 
 CEGeometry* CEWorldModel::getGeometry() const

@@ -188,14 +188,14 @@ bool C2MapFile::isQuadRotatedAt(int xy)
 float C2MapFile::getWaterHeightAt(int x, int y)
 {
   int xy = (y * this->getWidth()) + x;
-  if (xy < 0 || xy >= this->m_heightmap_data.size() || m_type == CEMapType::C2) {
-    return 0;
+  if (m_type == CEMapType::C2) {
+    return -1;
   }
 
   // In c1, half water tiles have anchor vertex (at xy) in the ground, and thus calculate a different height. Fix this here
-  float lowest_height = this->getLowestHeight(x, y);
+  float lowest_height = this->getLowestHeight(x, y, true);
 
-  float scaled_height = (lowest_height + (48.f)) * this->getHeightmapScale();
+  float scaled_height = (lowest_height + 48.f) * this->getHeightmapScale();
 
   return (scaled_height);
 }
@@ -260,8 +260,7 @@ bool C2MapFile::hasWaterAt(int xy)
     return false;
   } else {
     uint8_t flags = this->getFlagsAt(xy);
-    if (flags & 0x80) return true;
-    if (this->m_watermap_data.at(xy) != this->m_heightmap_data.at(xy) + 48) return true;
+    if (flags & 0x0080 || flags & 0x8000) return true;
 
     int id = int(this->m_texturec1_A_index_data.at(xy));
     int id_second = int(this->m_texturec1_B_index_data.at(xy));
@@ -269,6 +268,11 @@ bool C2MapFile::hasWaterAt(int xy)
       // Has a water texture, but not set to water in flag. Original engine did the same check.
       return true;
     }
+    
+    // Note some mountains in C1 have a slight delta and incorrectly add water....
+    if (this->m_watermap_data.at(xy) != this->m_heightmap_data.at(xy) + 48) {
+      return true;
+    };
 
     return false;
   }
@@ -284,13 +288,15 @@ bool C2MapFile::hasWaterAt(int x, int y)
 // true if the tile has water as specified in the original file flags
 bool C2MapFile::hasOriginalWaterAt(int xy)
 {
+  uint16_t flags = this->getFlagsAt(xy);
+
   if (m_type == CEMapType::C2) {
-    uint16_t flags = this->getFlagsAt(xy);
     if (flags & 0x0080) return true;
 
     return false;
   } else {
-    throw 1; // Not supported
+    if (flags & 0x0080) return true;
+    return (this->m_watermap_data.at(xy) != this->m_heightmap_data.at(xy) + 48);
   }
 }
 
@@ -323,11 +329,7 @@ bool C2MapFile::hasDynamicWaterAt(int x, int y)
 
 void C2MapFile::setWaterAt(int x, int y)
 {
-  if (m_type == CEMapType::C2) {
-    this->setWaterAt(x, y, -1);
-  } else {
-    throw 1; // Only C2 uses flags for water data
-  }
+  this->setWaterAt(x, y, -1);
 }
 
 void C2MapFile::setWaterAt(int x, int y, int water_height)
@@ -339,7 +341,6 @@ void C2MapFile::setWaterAt(int x, int y, int water_height)
   } else {
     // meh?
     this->m_c1_flags_data[xy] |= 0x80;
-    this->m_watermap_data[xy] = this->m_heightmap_data.at(xy) + 48;
   }
 }
 
@@ -348,27 +349,48 @@ int C2MapFile::getWaterAt(int xy)
   if (m_type == CEMapType::C2) {
     return this->m_watermap_data.at(xy);
   } else {
-    return 0; // Only 1 core water type in C1 (but also need to handle lava and ponds)
+    // Use a different method for C1
+    throw std::runtime_error("Water type unsupported by selected Carnivores engine.");
   }
 }
 
-float C2MapFile::getLowestHeight(int x, int y)
+float C2MapFile::getLowestHeight(int x, int y, bool waterOnly)
 {
   int width = (int)this->getWidth();
+  int height = (int)this->getHeight();
   
-  std::array<int, 4> quad_locations = {
+  std::array<int, 9> quad_locations = {
     (y * width) + x,
-    ((y+1) * width) + x,
-    (y * width) + (x + 1),
-    ((y+1) * width) + (x + 1),
+      // Top-left
+      (std::max(y - 1, 0) * width) + std::max(x - 1, 0),
+      // Top
+      (std::max(y - 1, 0) * width) + x,
+      // Top-right
+      (std::max(y - 1, 0) * width) + std::min(x + 1, width - 1),
+      // Left
+      (y * width) + std::max(x - 1, 0),
+      // Right
+      (y * width) + std::min(x + 1, width - 1),
+      // Bottom-left
+      (std::min(y + 1, height - 1) * width) + std::max(x - 1, 0),
+      // Bottom
+      (std::min(y + 1, height - 1) * width) + x,
+      // Bottom-right
+      (std::min(y + 1, height - 1) * width) + std::min(x + 1, width - 1)
   };
 
   uint8_t lowest = this->m_heightmap_data.at(quad_locations[0]);
 
+  // We have to do this for water since tiles can have HALF water and half land.
+  // For these, we want the water portion to be aligned with the neighboring water and not the land.
   for (int e=1; e < quad_locations.size(); e++) {
     uint8_t h = this->m_heightmap_data.at(quad_locations[e]);
 
-    if (h < lowest) lowest = h;
+    if (waterOnly) {
+      if (hasWaterAt(quad_locations[e]) && h < lowest) lowest = h;
+    } else {
+      if (h < lowest) lowest = h;
+    }
   }
 
   return lowest;
@@ -482,26 +504,25 @@ bool C2MapFile::hasDangerTileAt(std::shared_ptr<C2MapRscFile> rsc, glm::vec2 til
   if (fog.danger == 1) {
     // Figure out the heights now to determine if standing on this tile would be dangerous
     // Note: Altitude doesnt appear used? At least not for danger calculation.
-    float fogHLimit = fog.hlimit * getHeightmapScale();
-    float tileH = getLowestHeight(tile.x, tile.y) * getHeightmapScale();
+    float scale = getHeightmapScale();
+    float fogHLimit = fog.hlimit * scale;
+    float tileH = getLowestHeight(tile.x, tile.y, false) * scale;
 
     // Hey we're in the danger smog
-    return tileH < fogHLimit;
+    // Note we're adjusting the size DOWN a bit since the C1 fogs appear to be oversized
+    return tileH < (fogHLimit / 8.f);
   }
   
   return false;
 }
 
-/*
- * fix flags, lava, etc
- */
 void C2MapFile::postProcess(std::weak_ptr<C2MapRscFile> rsc)
 {
   std::shared_ptr<C2MapRscFile> m_rsc = rsc.lock();
   if (!m_rsc) {
     std::cerr << "Cannot aquire reference to RSC for postProcess! RSC no longer loaded." << std::endl;
 
-    return false;
+    throw std::runtime_error("Lost reference to RSC file during map build!");
   }
 
   int w = (int)this->getWidth();
@@ -509,22 +530,17 @@ void C2MapFile::postProcess(std::weak_ptr<C2MapRscFile> rsc)
   
   for (int y = 1; y < w-1; y++)
     for (int x = 1; x < h-1; x++) {
-      int xy = (y * w) + x;
+      int xy = (y * w) + (x);
 
       if (this->getObjectAt(xy) == 254) {
         m_landings.push_back(glm::vec2(x, y));
       }
       
-      // Correct lava in C1
-      if (m_type == CEMapType::C1 && hasDangerTileAt(m_rsc, glm::vec2(x, y))) {
-        // Remove any water flags if present by forcing the water height into the ground
-        // HACK: yeah this isn't great but works for now
-        this->setWaterAt(x, y, 0);
+      if (m_type == CEMapType::C1) {
+        continue;
       }
 
-      if (m_type == CEMapType::C1 || m_rsc->getWaterCount() < 1) continue;
-
-      // Process water filling in C2
+      // Process water filling to handle gaps
       if (!this->hasOriginalWaterAt(xy)) {
         if (this->hasOriginalWaterAt(x+1, y)) this->fillWater(x, y, x+1, y);
         if (this->hasOriginalWaterAt(x, y+1)) this->fillWater(x, y, x, y+1);

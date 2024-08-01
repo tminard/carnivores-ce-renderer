@@ -56,7 +56,7 @@ CERemotePlayerController::CERemotePlayerController(std::shared_ptr<LocalAudioMan
   // the original geometry.
   m_geo = std::make_unique<CEGeometry>(m_loader->getVertices(), m_loader->getIndices(), carFile->getGeometry()->getTexture().lock(), "dinosaur");
   
-  Transform transform(glm::vec3(0.f), glm::vec3(0, 0, 0), glm::vec3(1.f));
+  Transform transform(glm::vec3(0.f), glm::vec3(0, glm::radians(90.f), 0), glm::vec3(1.f));
   std::vector<glm::mat4> model = { transform.GetStaticModel() };
   
   // Only ever ONE instance!
@@ -96,7 +96,7 @@ void CERemotePlayerController::update(double currentTime, Transform &baseTransfo
     if (m_geo->GetCurrentFrame() == 0) {
       auto audioSrc = m_car->getSoundForAnimation(m_current_animation);
       if (audioSrc) {
-        audioSrc->setPosition(m_camera.GetCurrentPos());
+        audioSrc->setPosition(m_camera.GetPosition());
         audioSrc->setLooped(false);
         audioSrc->setMaxDistance(m_map->getTileLength() * 60.f);
         audioSrc->setClampDistance(6);
@@ -117,16 +117,28 @@ void CERemotePlayerController::jump(double currentTime)
   // TODO: add jump
 }
 
+void CERemotePlayerController::uploadStateToHardware()
+{
+  auto position = m_camera.GetPosition();
+  // Calculate the direction vector from the object position to the lookAt target
+  glm::vec3 direction = glm::normalize(m_camera.GetLookAt() - position);
+
+  // Calculate the yaw rotation angle needed to face the target
+  float yaw = atan2(direction.z, direction.x);
+
+  glm::vec3 rotation(0, -yaw + glm::radians(90.f), 0);
+  Transform transform(position, rotation, glm::vec3(1.f));
+
+  // Update instance data
+  std::vector<glm::mat4> model = { transform.GetStaticModel() };
+  m_geo->UpdateInstances(model);
+}
+
 void CERemotePlayerController::setPosition(glm::vec3 position)
 {
   m_camera.SetPos(position);
   
-  // TODO: add lookAt
-  Transform transform(m_camera.GetPosition(), glm::vec3(0), glm::vec3(1.f));
-  std::vector<glm::mat4> model = { transform.GetStaticModel() };
-  
-  // Only ever ONE instance!
-  m_geo->UpdateInstances(model);
+  uploadStateToHardware();
 }
 
 void CERemotePlayerController::setElevation(float elevation)
@@ -137,6 +149,8 @@ void CERemotePlayerController::setElevation(float elevation)
 void CERemotePlayerController::lookAt(glm::vec3 direction)
 {
   this->m_camera.SetLookAt(direction);
+  
+  uploadStateToHardware();
 }
 
 Camera* CERemotePlayerController::getCamera()
@@ -147,10 +161,4 @@ Camera* CERemotePlayerController::getCamera()
 void CERemotePlayerController::move(double currentTime, double deltaTime, bool forwardPressed, bool backwardPressed, bool rightPressed, bool leftPressed)
 {
   // TODO: add movement processing
-  
-  Transform transform(m_camera.GetPosition(), m_camera.GetForward(), glm::vec3(1.f));
-  std::vector<glm::mat4> model = { transform.GetStaticModel() };
-  
-  // Only ever ONE instance!
-  m_geo->UpdateInstances(model);
 }

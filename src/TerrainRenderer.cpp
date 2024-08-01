@@ -828,7 +828,10 @@ void TerrainRenderer::RenderWater()
   this->m_water_shader->bindTexture("skyTexture", m_crsc_data_weak->getDaySky()->getTextureID(), 2);
 
   for (int w = 0; w < this->m_waters.size(); w++) {
-    this->m_crsc_data_weak->getTexture(this->m_waters[w].m_texture_id + 1)->use();
+    auto water = this->m_waters[w];
+    if (water.m_vertices.size() < 30) continue;
+
+    this->m_crsc_data_weak->getTexture(water.m_texture_id + 1)->use();
 
     glBindVertexArray(this->m_waters[w].m_vao);
 

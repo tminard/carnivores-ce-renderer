@@ -86,12 +86,7 @@ void C2MapRscFile::setWaterHeight(int i, int h_unscaled)
  */
 void C2MapRscFile::registerDynamicWater(const CEWaterEntity& water)
 {
-  for (int i = 0; i < m_num_waters; i++) {
-    if(m_waters[i].texture_id == water.texture_id && m_waters[i].water_level == water.water_level) {
-      // Already exists - do nothing
-      return;
-    }
-  }
+  if (findMatchingWater(water) >= 0) return;
   
   m_waters.push_back(water);
   m_num_waters = (int)m_waters.size();
@@ -101,6 +96,16 @@ int C2MapRscFile::findMatchingWater(const CEWaterEntity& water) const {
   for (int i = 0; i < m_num_waters; i++) {
     if(m_waters[i].texture_id == water.texture_id && m_waters[i].water_level == water.water_level) {
       return i;
+    }
+
+    // HACK: Group "close enough" waters to eliminate oddities
+    // Note some maps (like area 4) in C1 have hacks to hide map issues
+    // like painting water over spots that are too high for water.
+    // This helps eliminate most of them.
+    if(m_waters[i].texture_id == water.texture_id) {
+      if (abs(m_waters[i].water_level - water.water_level) < 8) {
+        return i;
+      }
     }
   }
   
@@ -447,13 +452,7 @@ void C2MapRscFile::load(const std::string &file_name, std::filesystem::path base
     }
 
     if (m_type == CEMapType::C1) {
-      CEWaterEntity wd;
-      wd.texture_id = 0;
-      wd.water_level = -1; // TODO: actually height map height, do this cleaner - currently use magic number to trigger calc in line
-      wd.transparency = 0.8f;
-
-      this->m_waters.push_back(wd);
-      
+      this->m_waters.resize(24);
       // C1 we are done here
       infile.close();
 

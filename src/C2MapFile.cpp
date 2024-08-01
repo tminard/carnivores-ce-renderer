@@ -260,8 +260,7 @@ bool C2MapFile::hasWaterAt(int xy)
     return false;
   } else {
     uint8_t flags = this->getFlagsAt(xy);
-    if (flags & 0x80) return true;
-    if (this->m_watermap_data.at(xy) != this->m_heightmap_data.at(xy) + 48) return true;
+    if (flags & 0x0080 || flags & 0x8000) return true;
 
     int id = int(this->m_texturec1_A_index_data.at(xy));
     int id_second = int(this->m_texturec1_B_index_data.at(xy));
@@ -269,6 +268,11 @@ bool C2MapFile::hasWaterAt(int xy)
       // Has a water texture, but not set to water in flag. Original engine did the same check.
       return true;
     }
+    
+    // Note some mountains in C1 have a slight delta and incorrectly add water....
+    if (this->m_watermap_data.at(xy) != this->m_heightmap_data.at(xy) + 48) {
+      return true;
+    };
 
     return false;
   }
@@ -284,12 +288,14 @@ bool C2MapFile::hasWaterAt(int x, int y)
 // true if the tile has water as specified in the original file flags
 bool C2MapFile::hasOriginalWaterAt(int xy)
 {
+  uint16_t flags = this->getFlagsAt(xy);
+
   if (m_type == CEMapType::C2) {
-    uint16_t flags = this->getFlagsAt(xy);
     if (flags & 0x0080) return true;
 
     return false;
   } else {
+    if (flags & 0x0080) return true;
     return (this->m_watermap_data.at(xy) != this->m_heightmap_data.at(xy) + 48);
   }
 }
@@ -335,7 +341,6 @@ void C2MapFile::setWaterAt(int x, int y, int water_height)
   } else {
     // meh?
     this->m_c1_flags_data[xy] |= 0x80;
-    this->m_watermap_data[xy] = this->m_heightmap_data.at(xy) + 48;
   }
 }
 
@@ -354,15 +359,30 @@ float C2MapFile::getLowestHeight(int x, int y, bool waterOnly)
   int width = (int)this->getWidth();
   int height = (int)this->getHeight();
   
-  std::array<int, 4> quad_locations = {
+  std::array<int, 9> quad_locations = {
     (y * width) + x,
-    (y * width) + std::min(x + 1, width - 1),
-    (std::min(y + 1, height - 1) * width) + (x),
-    (std::min(y + 1, height - 1) * width) + std::min(x + 1, width - 1)
+      // Top-left
+      (std::max(y - 1, 0) * width) + std::max(x - 1, 0),
+      // Top
+      (std::max(y - 1, 0) * width) + x,
+      // Top-right
+      (std::max(y - 1, 0) * width) + std::min(x + 1, width - 1),
+      // Left
+      (y * width) + std::max(x - 1, 0),
+      // Right
+      (y * width) + std::min(x + 1, width - 1),
+      // Bottom-left
+      (std::min(y + 1, height - 1) * width) + std::max(x - 1, 0),
+      // Bottom
+      (std::min(y + 1, height - 1) * width) + x,
+      // Bottom-right
+      (std::min(y + 1, height - 1) * width) + std::min(x + 1, width - 1)
   };
 
   uint8_t lowest = this->m_heightmap_data.at(quad_locations[0]);
 
+  // We have to do this for water since tiles can have HALF water and half land.
+  // For these, we want the water portion to be aligned with the neighboring water and not the land.
   for (int e=1; e < quad_locations.size(); e++) {
     uint8_t h = this->m_heightmap_data.at(quad_locations[e]);
 
@@ -496,9 +516,6 @@ bool C2MapFile::hasDangerTileAt(std::shared_ptr<C2MapRscFile> rsc, glm::vec2 til
   return false;
 }
 
-/*
- * fix flags, lava, etc
- */
 void C2MapFile::postProcess(std::weak_ptr<C2MapRscFile> rsc)
 {
   std::shared_ptr<C2MapRscFile> m_rsc = rsc.lock();
@@ -513,10 +530,14 @@ void C2MapFile::postProcess(std::weak_ptr<C2MapRscFile> rsc)
   
   for (int y = 1; y < w-1; y++)
     for (int x = 1; x < h-1; x++) {
-      int xy = (y * w) + x;
+      int xy = (y * w) + (x);
 
       if (this->getObjectAt(xy) == 254) {
         m_landings.push_back(glm::vec2(x, y));
+      }
+      
+      if (m_type == CEMapType::C1) {
+        continue;
       }
 
       // Process water filling to handle gaps

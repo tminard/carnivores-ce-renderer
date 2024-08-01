@@ -127,6 +127,7 @@ public:
       //this->right = glm::normalize(glm::cross(this->forward, this->up));
       //this->up = glm::normalize(glm::cross(this->right, this->forward));
 
+    lookAtTarget = fw;
       this->forward = glm::normalize(fw);
 
       updateViewProjection();
@@ -147,12 +148,18 @@ public:
     return this->forward;
   }
   
+  inline glm::vec3 GetLookAt() const
+  {
+    return this->lookAtTarget;
+  }
+  
 protected:
 private:
   float m_view_distance;
   glm::mat4 projection;
   glm::vec3 pos;
   glm::vec3 forward;
+  glm::vec3 lookAtTarget;
   glm::vec3 up;
   glm::vec3 right;
   glm::mat4 view_projection;

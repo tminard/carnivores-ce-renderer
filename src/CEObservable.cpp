@@ -9,7 +9,7 @@ CEObservable::CEObservable() : m_camera(glm::vec3(0.f), glm::radians(80.f), Aspe
 
 glm::vec3 CEObservable::getPosition()
 {
-    return getCamera()->GetCurrentPos();
+    return getCamera()->GetPosition();
 }
 
 Camera* CEObservable::getCamera()

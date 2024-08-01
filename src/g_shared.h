@@ -135,9 +135,9 @@ typedef struct TagObject {
 } TObject;
 
 struct FogData {
-  int32_t rgb;
+  int rgb;
   float altitude;
-  int32_t danger;
+  int danger;
   float transparency;
   float hlimit;
 };

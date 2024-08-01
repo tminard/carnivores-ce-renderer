@@ -25,6 +25,7 @@
 #include <fstream>
 
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include "g_shared.h"
 
@@ -36,6 +37,10 @@ class Vertex;
 
 struct Transform;
 struct Camera;
+
+struct SquareBoundingBox {
+    glm::vec3 corners[4];
+};
 
 const int objectPLACEWATER = 0x01;
 const int objectPLACEGROUND = 0x02;
@@ -59,6 +64,7 @@ private:
   std::string m_model_name;
 
   std::array<TBound, 8> m_bounding_box;
+  std::vector<SquareBoundingBox> m_bounding_rec;
 
   std::array<Vector3d, 6> m_far_vertices;
   std::unique_ptr<CESimpleGeometry> m_far_geometry;
@@ -98,5 +104,4 @@ public:
   const std::vector<Transform>& getTransforms() const;
   
   bool hasBoundingBox();
-  const std::array<TBound, 8>& getBoundingBox() const;
 };

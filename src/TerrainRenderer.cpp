@@ -422,25 +422,75 @@ void TerrainRenderer::loadWaterAt(int x, int y)
   int width = this->m_cmap_data_weak->getWidth();
   int height = this->m_cmap_data_weak->getHeight();
   int xy = (y*width) + x;
+  
+  _Water* water_object;
+  CEWaterEntity water_data;
 
-  int water_index = this->m_cmap_data_weak->getWaterAt(xy);
+  if (m_cmap_data_weak->m_type == CEMapType::C2) {
+    // This is expected to exist in C2
+    int water_index = this->m_cmap_data_weak->getWaterAt(xy);
 
-  CEWaterEntity water_data = this->m_crsc_data_weak->getWater(water_index);
-  if (water_index > this->m_waters.size()) {
-    printf("Attempted to access water_index `%i` at x: %i, y: %i, which is out of bounds\n", water_index, x, y);
-    water_index = 0;
-  }
-  _Water* water_object = &this->m_waters[water_index];
-
-  float wheight;
-  if (water_object->m_height <= 0) {
-    // Magic value used for C1 calculation - C1 will always use this method
-    wheight = this->m_cmap_data_weak->getWaterHeightAt(x, y);
+    if (water_index > this->m_waters.size()) {
+      printf("Attempted to access water_index `%i` at x: %i, y: %i, which is out of bounds\n", water_index, x, y);
+      water_index = 0;
+    }
+    water_object = &this->m_waters[water_index];
+    water_data = this->m_crsc_data_weak->getWater(water_index);
   } else {
-    // C2/Ice age will always use pre-set heights
-    wheight = water_object->m_height;
+    // C1 does not use persisted water entities. Instead, we need to construct ourselves
+    // based on what is considered a "distinct" body of water.
+    // Here we're distinct if the texID and height match.
+    int texID = m_cmap_data_weak->getWaterTextureIDAt(xy, 0);
+    if (texID == 255) {
+      // This is "default" water in C1, which is always the first texture
+      // Dont blame me for this
+      texID = 0;
+    }
+    int unscaledWHeight = (int)m_cmap_data_weak->getLowestHeight(x, y, true);
+    CEWaterEntity mWater;
+    mWater.fogRGB = 0;
+    mWater.texture_id = texID;
+    mWater.transparency = 1.0f;
+    mWater.water_level = unscaledWHeight + 48;
+    int water_index = m_crsc_data_weak->findMatchingWater(mWater);
+    if (water_index < 0) {
+      // Register the water and m_waters entry as new
+      m_crsc_data_weak->registerDynamicWater(mWater);
+      water_index = m_crsc_data_weak->findMatchingWater(mWater);
+      
+      if (water_index < 0) {
+        throw std::runtime_error("Error building dynamic water... expected water not found!");
+      }
+      
+      // now attempt to create the m_waters
+      _Water wd;
+      const CEWaterEntity& we = this->m_crsc_data_weak->getWater(water_index);
+
+      wd.m_height_unscaled = we.water_level;
+      wd.m_height = we.water_level * this->m_cmap_data_weak->getHeightmapScale();
+      wd.m_texture_id = we.texture_id;
+      wd.m_transparency = we.transparency;
+
+      glGenVertexArrays(1, &wd.m_vao);
+      glBindVertexArray(wd.m_vao);
+      
+      glGenBuffers(1, &wd.m_vab);
+
+      glBindVertexArray(0);
+
+      this->m_waters.push_back(wd);
+    }
+
+    if (water_index < 0 || water_index > this->m_waters.size()) {
+      std::cerr << printf("Attempted to access water_index `%i` at x: %i, y: %i, which is out of bounds\n", water_index, x, y) << std::endl;
+      water_index = 0;
+    }
+    
+    water_object = &this->m_waters[water_index];
+    water_data = this->m_crsc_data_weak->getWater(water_index);
   }
 
+  float wheight = water_object->m_height;
   glm::vec3 vpositionLL = this->calcWorldVertex(x, y, true, wheight);
   glm::vec3 vpositionLR = this->calcWorldVertex(fmin(x + 1, height - 1), y, true, wheight);
   glm::vec3 vpositionUL = this->calcWorldVertex(x, fmin(y + 1, width - 1), true, wheight);

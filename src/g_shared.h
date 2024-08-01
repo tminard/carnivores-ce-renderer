@@ -117,6 +117,8 @@ typedef struct _TBMPModel {
 
 typedef struct _TBound {
   float cx, cy, a, b,  y1, y2;
+  // y1 (add to object placement). The starting height of the bounding box in world space
+  // y2 The ending height of the bounding box in world space
 } TBound;
 
 typedef struct _VTLdata {

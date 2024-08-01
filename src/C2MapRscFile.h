@@ -28,8 +28,9 @@ using libAF2::Sound;
 class CETexture;
 class CEWorldModel;
 class C2Sky;
-class CEWaterEntity;
 class CEAudioSource;
+
+struct CEWaterEntity;
 
 class C2MapRscFile
 {
@@ -88,6 +89,9 @@ public:
   int getAtlasTilePadding();
 
   void setWaterHeight(int i, int h_unscaled);
+  
+  void registerDynamicWater(const CEWaterEntity& water);
+  int findMatchingWater(const CEWaterEntity& water) const;
 
   const CEWaterEntity& getWater(int i) const;
   const FogData& getFog(int i) const;

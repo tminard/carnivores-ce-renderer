@@ -253,18 +253,83 @@ void CELocalPlayerController::move(double currentTime, double deltaTime, bool fo
   float nextWorldHeight = m_map->getPlaceGroundHeight(worldPos.x, worldPos.y);
   
   // Apply object bounding box
-  int objectIndex = m_map->getObjectAt((worldPos.y * m_map->getWidth()) + worldPos.x);
-  if (objectIndex < m_rsc->getWorldModelCount()) {
-    auto obj = m_rsc->getWorldModel(objectIndex);
-    if (obj != nullptr && obj->hasBoundingBox()) {
-      //std::cout << "Obj at pos has bounding box" << std::endl;
-      // Determine height of box at exact position
-      // I dont know why there's 8 of these
-      auto& b = obj->getBoundingBox();
-      // It appears to be up to 8 boxes, with different angles and positions
-      // So we can loop through them to find the one that matches the player
-    }
-  }
+//  int objectIndex = m_map->getObjectAt((worldPos.y * m_map->getWidth()) + worldPos.x);
+//  if (objectIndex < m_rsc->getWorldModelCount()) {
+//    auto obj = m_rsc->getWorldModel(objectIndex);
+//    if (obj != nullptr && obj->hasBoundingBox()) {
+//      //std::cout << "Obj at pos has bounding box" << std::endl;
+//      // Determine height of box at exact position
+//      // I dont know why there's 8 of these
+//      auto& b = obj->getBoundingBox();
+//      // It appears to be up to 8 boxes, with different angles and positions
+//      // So we can loop through them to find the one that matches the player
+//      std::cout << "BOUNDING BOX" << std::endl
+//      << "-- 1" << std::endl
+//      << std::endl << "A: " << b[0].a
+//      << std::endl << "B: " << b[0].b
+//      << std::endl << "cx: " << b[0].cx
+//      << std::endl << "cy: " << b[0].cy
+//      << std::endl << "y1: " << b[0].y1
+//      << std::endl << "y2: " << b[0].y2
+//      << std::endl << std::endl
+//      << "-- 2" << std::endl
+//      << std::endl << "A: " << b[1].a
+//      << std::endl << "B: " << b[1].b
+//      << std::endl << "cx: " << b[1].cx
+//      << std::endl << "cy: " << b[1].cy
+//      << std::endl << "y1: " << b[1].y1
+//      << std::endl << "y2: " << b[1].y2
+//      << std::endl << std::endl
+//      << "-- 3" << std::endl
+//      << std::endl << "A: " << b[2].a
+//      << std::endl << "B: " << b[2].b
+//      << std::endl << "cx: " << b[2].cx
+//      << std::endl << "cy: " << b[2].cy
+//      << std::endl << "y1: " << b[2].y1
+//      << std::endl << "y2: " << b[2].y2
+//      << std::endl << std::endl
+//      << "-- 4" << std::endl
+//      << std::endl << "A: " << b[3].a
+//      << std::endl << "B: " << b[3].b
+//      << std::endl << "cx: " << b[3].cx
+//      << std::endl << "cy: " << b[3].cy
+//      << std::endl << "y1: " << b[3].y1
+//      << std::endl << "y2: " << b[3].y2
+//      << std::endl << std::endl
+//      << "-- 5" << std::endl
+//      << std::endl << "A: " << b[4].a
+//      << std::endl << "B: " << b[4].b
+//      << std::endl << "cx: " << b[4].cx
+//      << std::endl << "cy: " << b[4].cy
+//      << std::endl << "y1: " << b[4].y1
+//      << std::endl << "y2: " << b[4].y2
+//      << std::endl << std::endl
+//      << "-- 6" << std::endl
+//      << std::endl << "A: " << b[5].a
+//      << std::endl << "B: " << b[5].b
+//      << std::endl << "cx: " << b[5].cx
+//      << std::endl << "cy: " << b[5].cy
+//      << std::endl << "y1: " << b[5].y1
+//      << std::endl << "y2: " << b[5].y2
+//      << std::endl << std::endl
+//      << "-- 7" << std::endl
+//      << std::endl << "A: " << b[6].a
+//      << std::endl << "B: " << b[6].b
+//      << std::endl << "cx: " << b[6].cx
+//      << std::endl << "cy: " << b[6].cy
+//      << std::endl << "y1: " << b[6].y1
+//      << std::endl << "y2: " << b[6].y2
+//      << std::endl << std::endl
+//      << "-- 8" << std::endl
+//      << std::endl << "A: " << b[7].a
+//      << std::endl << "B: " << b[7].b
+//      << std::endl << "cx: " << b[7].cx
+//      << std::endl << "cy: " << b[7].cy
+//      << std::endl << "y1: " << b[7].y1
+//      << std::endl << "y2: " << b[7].y2
+//      << std::endl << std::endl << "=== DONE ===" << std::endl;
+//    }
+//  }
   
   // Apply head bobble effect
   float bobbleOffset = 0.f;

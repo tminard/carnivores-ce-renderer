@@ -78,6 +78,35 @@ void C2MapRscFile::setWaterHeight(int i, int h_unscaled)
   this->m_waters.at(i) = wd;
 }
 
+/*
+ Register a water entity for custom use.
+ Used by C1 to build on the fly since water is not pre-registered in the RSC.
+ 
+ We consider water the same body if the height and texture are the same.
+ */
+void C2MapRscFile::registerDynamicWater(const CEWaterEntity& water)
+{
+  for (int i = 0; i < m_num_waters; i++) {
+    if(m_waters[i].texture_id == water.texture_id && m_waters[i].water_level == water.water_level) {
+      // Already exists - do nothing
+      return;
+    }
+  }
+  
+  m_waters.push_back(water);
+  m_num_waters = (int)m_waters.size();
+}
+
+int C2MapRscFile::findMatchingWater(const CEWaterEntity& water) const {
+  for (int i = 0; i < m_num_waters; i++) {
+    if(m_waters[i].texture_id == water.texture_id && m_waters[i].water_level == water.water_level) {
+      return i;
+    }
+  }
+  
+  return -1;
+}
+
 float getRandomFloat(float min, float max) {
     std::random_device rd;
     std::mt19937 gen(rd());

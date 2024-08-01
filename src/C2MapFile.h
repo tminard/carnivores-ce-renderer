@@ -47,7 +47,6 @@ private:
   // Store computed ground level heights
   std::array<float, 1024 * 1024> m_ground_levels = {};
 
-  const CEMapType m_type;
   constexpr static const int SIZE = 1024;
   constexpr static const int SIZE_C1 = 512;
   constexpr static const float HEIGHT_SCALE = 64.f;
@@ -58,12 +57,14 @@ private:
   void copyWaterMap(int x, int y, int src_x, int src_y);
 
 public:
+  const CEMapType m_type;
+
   C2MapFile(const CEMapType map_type, const std::string& map_file_name, std::weak_ptr<C2MapRscFile> rsc);
   ~C2MapFile();
 
   int getWaterAt(int xy);
   float getHeightAt(int xy);
-  float getLowestHeight(int x, int y);
+  float getLowestHeight(int x, int y, bool waterOnly);
   float getObjectHeightAt(int xy);
   float getPlaceGroundHeight(int x, int y);
   float getWaterHeightAt(int x, int y);

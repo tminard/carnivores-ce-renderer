@@ -15,6 +15,24 @@
 #include "transform.h"
 #include "camera.h"
 
+SquareBoundingBox ConvertTBoundToSquareBoundingBox(const TBound& bound) {
+  SquareBoundingBox bbox;
+  
+  float halfWidth = (bound.a / 2.0f);
+  float halfHeight = (bound.b / 2.0f);
+  float halfSize = std::fmax(halfWidth, halfHeight);
+  
+  // Define the corners in local space (centered at the object's local origin), accounting for scaling
+  glm::vec3 localCorners[4] = {
+    {bound.cx - halfSize, bound.cy - halfHeight, 0},
+    {bound.cx + halfSize, bound.cy - halfHeight, 0},
+    {bound.cx + halfSize, bound.cy + halfHeight, 0},
+    {bound.cx - halfSize, bound.cy + halfHeight, 0}
+  };
+  
+  return bbox;
+}
+
 CEWorldModel::CEWorldModel(const CEMapType type, std::ifstream& instream)
 {
   this->m_old_object_info = std::unique_ptr<TObjInfo>(new TObjInfo());
@@ -37,7 +55,7 @@ CEWorldModel::CEWorldModel(const CEMapType type, std::ifstream& instream)
   instream.read(reinterpret_cast<char *>(&_fcount), 4);
   instream.read(reinterpret_cast<char *>(&_object_count), 4);
   instream.read(reinterpret_cast<char *>(&_tsize), 4);
-
+  
   texture_height = 256; // All c2 stock objects bitmaps are 256 px height
   
   spirit_texture_data.resize(128*128);
@@ -56,7 +74,7 @@ CEWorldModel::CEWorldModel(const CEMapType type, std::ifstream& instream)
     file_vertex_data[v].x *= 2.0f;
     file_vertex_data[v].y *= 2.0f;
   }
-
+  
   if (type == CEMapType::C2) instream.read(reinterpret_cast<char *>(spirit_texture_data.data()), 128*128*2);
   
   // load bmp model
@@ -105,7 +123,7 @@ CEWorldModel::CEWorldModel(const CEMapType type, std::ifstream& instream)
   // load the geo
   std::unique_ptr<CETexture> cTexture;
   if (type == CEMapType::C2) cTexture = std::unique_ptr<CETexture>(new CETexture(spirit_texture_data, 128*128*2, 128, 128));
-
+  
   std::unique_ptr<CETexture> mTexture = std::unique_ptr<CETexture>(new CETexture(texture_data, 256*256*2, 256, 256));
   
   std::unique_ptr<CEGeometry> mGeo = std::unique_ptr<CEGeometry>(new CEGeometry(m_loader->getVertices(), m_loader->getIndices(), std::move(mTexture), "basic_shader"));
@@ -141,7 +159,7 @@ CEWorldModel::CEWorldModel(const CEMapType type, std::ifstream& instream)
   }
   
   this->m_geometry = std::move(mGeo);
-
+  
   if (type == CEMapType::C2) {
     std::unique_ptr<CESimpleGeometry> cGeo = std::unique_ptr<CESimpleGeometry>(new CESimpleGeometry(cVertices, std::move(cTexture)));
     this->m_far_geometry = std::move(cGeo);
@@ -166,10 +184,10 @@ CEWorldModel::CEWorldModel(const CEMapType type, std::ifstream& instream)
     this->m_animation = std::move(mAni);
   }
   
-  if (m_old_object_info->flags & objectBOUND) {
-    std::vector<Vertex> vData = m_loader->getVertices();
-    this->_generateBoundingBox(vData);
-  }
+//  if (m_old_object_info->flags & objectBOUND) {
+//    std::vector<Vertex> vData = m_loader->getVertices();
+//    this->_generateBoundingBox(vData);
+//  }
 }
 
 CEGeometry* CEWorldModel::getGeometry() const
@@ -181,24 +199,26 @@ bool CEWorldModel::hasBoundingBox() {
   return m_old_object_info->flags & objectBOUND;
 }
 
-const std::array<TBound, 8>& CEWorldModel::getBoundingBox() const {
-  return m_bounding_box;
-}
-
 CESimpleGeometry* CEWorldModel::getFarGeometry()
 {
   return this->m_far_geometry.get();
 }
 
+/**
+ This is an implementation of the original logic, which generated _UP TO_ 8 bounding boxes.
+ These appear to be bounding boxes across _sections_ of geo. E.g., vertices marked with "owner" (parent).
+ */
 void CEWorldModel::_generateBoundingBox(std::vector<Vertex>& vertex_data)
 {
   float x1 = 0.0, x2=0.0, y1=0.0, y2=0.0, z1=0.0, z2=0.0;
   bool first;
   
+  m_bounding_rec.clear();
+  m_bounding_rec.resize(8);
   for (int o=0; o<8; o++) {
     first = true;
+    // Mark as skipped (e.g., (sub)object has no visible vertices)
     m_bounding_box[o].a = -1;
-    
     
     for (int v=0; v<(int)vertex_data.size(); v++) {
       Vertex p = vertex_data.at(v);
@@ -238,11 +258,10 @@ void CEWorldModel::_generateBoundingBox(std::vector<Vertex>& vertex_data)
     m_bounding_box[o].cx = (x1+x2) / 2;
     // Avg y (center, across Z axis)
     m_bounding_box[o].cy = (z1+z2) / 2;
-    // Center of delta between largest x pos and smallest?
     m_bounding_box[o].a  = (x2-x1) / 2;
-    // Center of delta between largests z pos and smallest?
     m_bounding_box[o].b  = (z2-z1) / 2;
     
+    m_bounding_rec.push_back(ConvertTBoundToSquareBoundingBox(m_bounding_box[o]));
   }
 }
 
@@ -299,5 +318,5 @@ void CEWorldModel::renderNearInstances()
 }
 
 const std::vector<Transform>& CEWorldModel::getTransforms() const {
-    return m_transforms;
+  return m_transforms;
 }

@@ -168,7 +168,7 @@ int main(int argc, const char * argv[])
 
   try {
       cMapRsc = std::make_shared<C2MapRscFile>(mapType, mapRscPath.string(), basePath.string());
-      cMap = std::make_shared<C2MapFile>(mapType, mapPath.string(), cMapRsc.get());
+      cMap = std::make_shared<C2MapFile>(mapType, mapPath.string(), cMapRsc);
   } catch (const std::exception& e) {
       std::cerr << "Error loading map files: " << e.what() << std::endl;
       return 1;

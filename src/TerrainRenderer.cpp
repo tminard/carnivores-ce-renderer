@@ -404,10 +404,10 @@ float TerrainRenderer::calcWaterAlpha(int tile_x, int tile_y, float water_height
   int width = this->m_cmap_data_weak->getWidth();
   int xy = (tile_y*width) + tile_x;
   float h_delta = water_height_scaled - this->m_cmap_data_weak->getHeightAt(xy);
-  float max_delta = this->m_cmap_data_weak->getTileLength() * 0.25f;
+  float max_delta = this->m_cmap_data_weak->getTileLength() * 0.5f;
 
   h_delta = fminf(h_delta, max_delta);
-  float trans = 0.99f * (h_delta / max_delta); // 0 = close, max .9
+  float trans = 1.f * (h_delta / max_delta); // 0 = close, max .9
 
   return trans;
 }

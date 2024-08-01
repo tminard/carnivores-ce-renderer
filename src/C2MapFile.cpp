@@ -16,7 +16,7 @@
 
 #include <math.h>
 
-C2MapFile::C2MapFile(const CEMapType type, const std::string& map_file_name, C2MapRscFile* crsc_weak) : m_type(type)
+C2MapFile::C2MapFile(const CEMapType type, const std::string& map_file_name, std::weak_ptr<C2MapRscFile> rsc) : m_type(type)
 {
   if (!std::filesystem::exists(map_file_name)) {
       throw std::runtime_error("File not found: " + map_file_name);
@@ -26,10 +26,10 @@ C2MapFile::C2MapFile(const CEMapType type, const std::string& map_file_name, C2M
   
   switch (m_type) {
   case CEMapType::C2:
-      this->load(map_file_name, crsc_weak);
+      this->load(map_file_name, rsc);
       break;
   case CEMapType::C1:
-      this->load_c1(map_file_name, crsc_weak);
+      this->load_c1(map_file_name, rsc);
   }
 
 }
@@ -41,6 +41,7 @@ C2MapFile::~C2MapFile()
 
 int C2MapFile::getAmbientAudioIDAt(int x, int y)
 {
+  // Covers a 4x4 zone area
   x = x>>1;
   y = y>>1;
   int w = (int)getWidth()>>1;
@@ -354,7 +355,7 @@ int C2MapFile::getWaterAt(int xy)
 float C2MapFile::getLowestHeight(int x, int y)
 {
   int width = (int)this->getWidth();
-
+  
   std::array<int, 4> quad_locations = {
     (y * width) + x,
     ((y+1) * width) + x,
@@ -382,31 +383,7 @@ float C2MapFile::getObjectHeightAt(int xy)
   return (scaled_height);
 }
 
-float C2MapFile::interpolateHeight(float x, float z)
-{
-  int x0 = static_cast<int>(floor(x));
-  int z0 = static_cast<int>(floor(z));
-  int x1 = x0 + 1;
-  int z1 = z0 + 1;
-
-  float Q11 = this->getHeightAt((this->getWidth() * z0) + x0);
-  float Q21 = this->getHeightAt((this->getWidth() * z0) + x1);
-  float Q12 = this->getHeightAt((this->getWidth() * z1) + x0);
-  float Q22 = this->getHeightAt((this->getWidth() * z1) + x1);
-
-  float xRatio = x - x0;
-  float zRatio = z - z0;
-
-  float R1 = Q11 * (1 - xRatio) + Q21 * xRatio;
-  float R2 = Q12 * (1 - xRatio) + Q22 * xRatio;
-
-  float interpolatedHeight = R1 * (1 - zRatio) + R2 * zRatio;
-
-  return interpolatedHeight;
-}
-
 float C2MapFile::getPlaceGroundHeight(int x, int y) {
-  // Original Carnivores implementation just returns the lowest height of the approximate quad but we memoize actual vertices during terrain build
   int xy = (y * this->getWidth()) + x;
   return m_ground_levels.at(xy) + 12.f;
 }
@@ -485,11 +462,48 @@ glm::vec3 C2MapFile::getRandomLanding()
   );
 }
 
-/*
- * fix flags, etc
- */
-void C2MapFile::postProcess(C2MapRscFile* crsc_weak)
+bool C2MapFile::hasDangerTileAt(std::shared_ptr<C2MapRscFile> rsc, glm::vec2 tile)
 {
+  // Read fog map and check for "lava" as best we can
+  // We can kind of conclude that there's lava if there's a mortal
+  // fog map at this location AND the tile height is < the mortal Y
+  int xy = (((int)tile.y >> 1) * (getWidth() >> 1)) + ((int)tile.x >> 1);
+  int fogIndex = m_fog_data.at(xy);
+  
+  // 0 = no fog
+  if (fogIndex < 1) {
+    return false;
+  }
+  
+  // index starts at 1
+  fogIndex--;
+
+  FogData fog = rsc->getFog(fogIndex);
+  if (fog.danger == 1) {
+    // Figure out the heights now to determine if standing on this tile would be dangerous
+    // Note: Altitude doesnt appear used? At least not for danger calculation.
+    float fogHLimit = fog.hlimit * getHeightmapScale();
+    float tileH = getLowestHeight(tile.x, tile.y) * getHeightmapScale();
+
+    // Hey we're in the danger smog
+    return tileH < fogHLimit;
+  }
+  
+  return false;
+}
+
+/*
+ * fix flags, lava, etc
+ */
+void C2MapFile::postProcess(std::weak_ptr<C2MapRscFile> rsc)
+{
+  std::shared_ptr<C2MapRscFile> m_rsc = rsc.lock();
+  if (!m_rsc) {
+    std::cerr << "Cannot aquire reference to RSC for postProcess! RSC no longer loaded." << std::endl;
+
+    return false;
+  }
+
   int w = (int)this->getWidth();
   int h = (int)this->getHeight();
   
@@ -500,9 +514,17 @@ void C2MapFile::postProcess(C2MapRscFile* crsc_weak)
       if (this->getObjectAt(xy) == 254) {
         m_landings.push_back(glm::vec2(x, y));
       }
+      
+      // Correct lava in C1
+      if (m_type == CEMapType::C1 && hasDangerTileAt(m_rsc, glm::vec2(x, y))) {
+        // Remove any water flags if present by forcing the water height into the ground
+        // HACK: yeah this isn't great but works for now
+        this->setWaterAt(x, y, 0);
+      }
 
-      if (m_type == CEMapType::C1 || crsc_weak->getWaterCount() < 1) continue;
+      if (m_type == CEMapType::C1 || m_rsc->getWaterCount() < 1) continue;
 
+      // Process water filling in C2
       if (!this->hasOriginalWaterAt(xy)) {
         if (this->hasOriginalWaterAt(x+1, y)) this->fillWater(x, y, x+1, y);
         if (this->hasOriginalWaterAt(x, y+1)) this->fillWater(x, y, x, y+1);
@@ -514,7 +536,7 @@ void C2MapFile::postProcess(C2MapRscFile* crsc_weak)
         if (this->hasOriginalWaterAt(x+1, y+1)) this->fillWater(x, y, x+1, y+1);
 
         if (this->hasDynamicWaterAt(xy)) {
-          if (this->m_heightmap_data.at(xy) == crsc_weak->getWater(this->m_watermap_data.at(xy)).water_level) {
+          if (this->m_heightmap_data.at(xy) == m_rsc->getWater(this->m_watermap_data.at(xy)).water_level) {
             this->m_heightmap_data.at(xy) += 1;
           }
         }
@@ -522,7 +544,7 @@ void C2MapFile::postProcess(C2MapRscFile* crsc_weak)
     }
 }
 
-void C2MapFile::load_c1(const std::string &file_name, C2MapRscFile* crsc_weak)
+void C2MapFile::load_c1(const std::string &file_name, std::weak_ptr<C2MapRscFile> rsc)
 {
   std::ifstream infile;
   infile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
@@ -545,7 +567,7 @@ void C2MapFile::load_c1(const std::string &file_name, C2MapRscFile* crsc_weak)
     infile.read(reinterpret_cast<char *>(this->m_soundfx_data.data()), 256*256);
 
     infile.close();
-    this->postProcess(crsc_weak);
+    this->postProcess(rsc);
   } catch (const std::ios_base::failure& e) {
     std::cerr << "I/O error: " << e.what() << std::endl;
     throw;
@@ -559,7 +581,7 @@ void C2MapFile::load_c1(const std::string &file_name, C2MapRscFile* crsc_weak)
   }
 }
 
-void C2MapFile::load(const std::string &file_name, C2MapRscFile* crsc_weak)
+void C2MapFile::load(const std::string &file_name, std::weak_ptr<C2MapRscFile> rsc)
 {
   std::ifstream infile;
   infile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
@@ -584,7 +606,7 @@ void C2MapFile::load(const std::string &file_name, C2MapRscFile* crsc_weak)
 
     infile.close();
     
-    this->postProcess(crsc_weak);
+    this->postProcess(rsc);
   } catch (const std::ios_base::failure& e) {
     std::cerr << "I/O error: " << e.what() << std::endl;
     throw;

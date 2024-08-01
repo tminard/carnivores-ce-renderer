@@ -1,9 +1,9 @@
 {
-  "basePath": "runtime\\cce\\",
+  "basePath": "../../runtime/cce/",
   "map": {
-    "type": "C1",
-    "map": "game\\c1\\area6.map",
-    "rsc": "game\\c1\\area6.rsc"
+    "type": "C2",
+    "map": "../game/c2/area3.map",
+    "rsc": "../game/c2/area3.rsc"
   },
   "video": {
     "fullscreen": false
@@ -12,62 +12,98 @@
     {
       "file": "../../runtime/cce/game/models/ANKY SEINFELD.CAR",
       "animation": "Ar_die",
-      "position": [32, 32]
+      "position": [
+        32,
+        32
+      ]
     },
     {
       "file": "../../runtime/cce/game/models/velo2.car",
       "animation": "Vel_eat",
-      "position": [256, 256]
+      "position": [
+        256,
+        256
+      ]
     },
     {
       "file": "../../runtime/cce/game/models/tirex.car",
       "animation": "Tx_see2",
-      "position": [200, 232]
+      "position": [
+        200,
+        232
+      ]
     },
     {
       "file": "../../runtime/cce/game/models/velo2.car",
       "animation": "Vel_run1",
-      "position": [136, 261]
+      "position": [
+        136,
+        261
+      ]
     },
     {
       "file": "../../runtime/cce/game/models/velo2.car",
       "animation": "Vel_run1",
-      "position": [25, 170]
+      "position": [
+        25,
+        170
+      ]
     },
     {
       "file": "../../runtime/cce/game/models/velo2.car",
       "animation": "Vel_run1",
-      "position": [186, 40]
+      "position": [
+        186,
+        40
+      ]
     },
     {
       "file": "../../runtime/cce/game/models/Bear.car",
       "animation": "Br_idle3",
-      "position": [250, 96]
+      "position": [
+        250,
+        96
+      ]
     },
     {
       "file": "../../runtime/cce/game/models/Bigfoot.car",
       "animation": "bf_idle3",
-      "position": [253, 96]
+      "position": [
+        253,
+        96
+      ]
     },
     {
       "file": "../../runtime/cce/game/models/Sship1.car",
       "animation": "Ship",
-      "position": [256, 96]
+      "position": [
+        256,
+        96
+      ]
     },
     {
       "file": "../../runtime/cce/game/models/Smilo.car",
       "animation": "Sn_idle1",
-      "position": [263, 96]
+      "position": [
+        263,
+        96
+      ]
     },
     {
       "file": "../../runtime/cce/game/models/stego.car",
       "animation": "Sr_idle1",
-      "position": [192, 46]
+      "position": [
+        192,
+        46
+      ]
     },
     {
       "file": "../../runtime/cce/game/models/pach.car",
       "animation": "Pac_idle2",
-      "position": [201, 211]
+      "position": [
+        201,
+        211
+      ]
     }
   ]
 }

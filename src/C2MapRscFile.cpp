@@ -94,8 +94,8 @@ std::shared_ptr<CEAudioSource> C2MapRscFile::getRandomAudio(int x, int y, int z)
   int rnd = rand() % (this->m_random_audio_sources.size()-1);
   std::shared_ptr<CEAudioSource> src = this->m_random_audio_sources.at(rnd);
     
-    float min = 128.0f * -32.f;
-    float max = 128.0f * 32.f;
+    float min = 256.0f * -32.f;
+    float max = 256.0f * 32.f;
 
     float randomX = x + getRandomFloat(min, max);
     float randomY = y + getRandomFloat(min, max);
@@ -351,19 +351,12 @@ void C2MapRscFile::load(const std::string &file_name, std::filesystem::path base
      * short: 2 bytes, LSB->MSB, -32768..32767
      * long: 4 bytes, LSB->MSB, -2147483648..2147483647
      * single: 4 bytes, LSB->MSB (IEEE single-precision floating point format) */
-    // Load fog data
-    struct FogData {
-      int32_t rgb;
-      float altitude;
-      int32_t danger;
-      float transparency;
-      float hlimit;
-    };
     
     int fog_count;
-    FogData fd[64];
     infile.read(reinterpret_cast<char *>(&fog_count), 4);
-    infile.read(reinterpret_cast<char *>(&fd), sizeof(FogData)*fog_count);
+    
+    m_fogs.resize(fog_count);
+    infile.read(reinterpret_cast<char*>(m_fogs.data()), sizeof(FogData)*fog_count);
 
     // Load rnd sounds
     infile.read(reinterpret_cast<char *>(&this->m_random_sounds_count), 4);
@@ -530,4 +523,14 @@ const CEWaterEntity& C2MapRscFile::getWater(int i) const
     i = 0;
   }
   return this->m_waters.at(i);
+}
+
+const FogData& C2MapRscFile::getFog(int i) const
+{
+  if (i > this->m_fogs.size()) {
+    printf("ERROR! Attempted to access fog index %i, which is invalid\n", i);
+
+    i = 0;
+  }
+  return this->m_fogs.at(i);
 }

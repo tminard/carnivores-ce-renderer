@@ -23,7 +23,7 @@ const float wave_scale = 0.02;
 
 void main()
 {
-    // ambient and fade
+    // Ambient and fade
     float min_distance = 256.0 * 6.0; // Start fog
     float max_distance = view_distance;
     float fogFactor = 0.0;
@@ -49,16 +49,22 @@ void main()
     float diffuse = max(dot(unitSurfaceNormal, unitToLightVector), 0.0);
     float brightness = ambientStrength + diffuse * diffuseStrength;
 
-    // Apply distortion to cloud texture coordinates
-    vec2 distortedCloudTexCoord = cloudTexCoord + vec2(sin(cloudTexCoord.x * 10.0 + time * wave_speed) * wave_scale,
-                                                       cos(cloudTexCoord.y * 10.0 + time * wave_speed) * wave_scale);
-    
-    // Sample the sky texture for cloud shadows using distorted cloud texture coordinates
-    vec4 cloudColor = texture(skyTexture, distortedCloudTexCoord);
+    // Sample the sky texture for cloud shadows
+    vec4 cloudColor = texture(skyTexture, cloudTexCoord);
     float cloudLuminance = (0.299 * cloudColor.b + 0.587 * cloudColor.g + 0.114 * cloudColor.r) * 2.0;
 
-    // Adjust brightness based on cloud luminance
-    brightness *= cloudLuminance;
+    // Calculate wave influence on shadow intensity
+    float waveInfluence = sin(10.0 + time * wave_speed) * wave_scale +
+                          cos(10.0 + time * wave_speed) * wave_scale;
+
+    // Modulate shadow intensity by vertex height (using surface normal y-component as proxy for height)
+    float heightFactor = surfaceNormal.y; // Assuming surfaceNormal.y correlates with wave height
+    heightFactor = clamp(heightFactor, 0.0, 1.0); // Ensure the factor is within [0, 1]
+
+    // Adjust brightness based on cloud luminance, wave influence, and height
+    float shadowIntensity = cloudLuminance + waveInfluence * heightFactor;
+
+    brightness *= shadowIntensity;
 
     // Apply the lighting to the texture color
     vec3 finalColor = vec3(sC.b, sC.g, sC.r) * brightness;
@@ -67,7 +73,7 @@ void main()
     finalColor = mix(finalColor, skyColor.rgb, fogFactor);
    
     // Ensure the alpha does not go below factor
-    float finalAlpha = max(alpha0, 0.15);
+    float finalAlpha = max(alpha0, 0.35);
 
     outputColor = mix(vec4(finalColor, finalAlpha), skyColor, 1.0 - EdgeFactor);
 }

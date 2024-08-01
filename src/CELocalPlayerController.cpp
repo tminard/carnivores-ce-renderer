@@ -168,28 +168,6 @@ void CELocalPlayerController::strafeLeft(double deltaTime) {
   this->m_camera.SetPos(pos);
 }
 
-float CELocalPlayerController::interpolateHeight(float x, float z) {
-  int x0 = static_cast<int>(floor(x));
-  int z0 = static_cast<int>(floor(z));
-  int x1 = x0 + 1;
-  int z1 = z0 + 1;
-
-  float Q11 = m_map->getHeightAt((m_map->getWidth() * z0) + x0);
-  float Q21 = m_map->getHeightAt((m_map->getWidth() * z0) + x1);
-  float Q12 = m_map->getHeightAt((m_map->getWidth() * z1) + x0);
-  float Q22 = m_map->getHeightAt((m_map->getWidth() * z1) + x1);
-
-  float xRatio = x - x0;
-  float zRatio = z - z0;
-
-  float R1 = Q11 * (1 - xRatio) + Q21 * xRatio;
-  float R2 = Q12 * (1 - xRatio) + Q22 * xRatio;
-
-  float interpolatedHeight = R1 * (1 - zRatio) + R2 * zRatio;
-
-  return interpolatedHeight;
-}
-
 float CELocalPlayerController::computeSlope(float x, float z) {
     int x0 = static_cast<int>(floor(x));
     int z0 = static_cast<int>(floor(z));
@@ -271,7 +249,7 @@ void CELocalPlayerController::move(double currentTime, double deltaTime, bool fo
     currentWorldPos = glm::vec2(int(floorf(currentPos.x / m_tile_size)), int(floorf(currentPos.z / m_tile_size)));
   }
   
-  float currentWorldHeight = m_map->getPlaceGroundHeight(currentWorldPos.x, currentWorldPos.y);// interpolateHeight(currentWorldPos.x, currentWorldPos.y);
+  float currentWorldHeight = m_map->getPlaceGroundHeight(currentWorldPos.x, currentWorldPos.y);
   float nextWorldHeight = m_map->getPlaceGroundHeight(worldPos.x, worldPos.y);
   
   // Apply object bounding box
@@ -341,7 +319,7 @@ void CELocalPlayerController::move(double currentTime, double deltaTime, bool fo
 
       // Check for landing
     worldPos = glm::vec2(int(floorf(pos.x / m_tile_size)), int(floorf(pos.z / m_tile_size)));
-      float groundHeight = interpolateHeight(worldPos.x, worldPos.y) + m_player_height;
+      float groundHeight = m_map->getPlaceGroundHeight(worldPos.x, worldPos.y) + m_player_height;
       if (pos.y <= groundHeight) {
           pos.y = groundHeight;
           m_is_jumping = false;

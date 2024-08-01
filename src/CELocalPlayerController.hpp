@@ -30,8 +30,7 @@ private:
   float m_bobble_speed;
   float m_bobble_amount;
   float m_bobble_time;
-  
-  float interpolateHeight(float x, float z);
+
   float computeSlope(float x, float z);
   glm::vec3 computeSlidingDirection(float x, float z);
   

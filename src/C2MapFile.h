@@ -53,17 +53,16 @@ private:
   constexpr static const float HEIGHT_SCALE = 64.f;
   constexpr static const float HEIGHT_SCALE_C1 = 32.f;
   
-  void postProcess(C2MapRscFile* crsc_weak);
+  void postProcess(std::weak_ptr<C2MapRscFile> rsc);
   void fillWater(int x, int y, int src_x, int src_y);
   void copyWaterMap(int x, int y, int src_x, int src_y);
 
 public:
-  C2MapFile(const CEMapType map_type, const std::string& map_file_name, C2MapRscFile* crsc_weak);
+  C2MapFile(const CEMapType map_type, const std::string& map_file_name, std::weak_ptr<C2MapRscFile> rsc);
   ~C2MapFile();
 
   int getWaterAt(int xy);
   float getHeightAt(int xy);
-  float interpolateHeight(float x, float z);
   float getLowestHeight(int x, int y);
   float getObjectHeightAt(int xy);
   float getPlaceGroundHeight(int x, int y);
@@ -101,14 +100,15 @@ public:
   bool hasOriginalWaterAt(int x, int y);
   bool hasDynamicWaterAt(int xy);
   bool hasDynamicWaterAt(int x, int y);
+  bool hasDangerTileAt(std::shared_ptr<C2MapRscFile> rsc, glm::vec2 tile);
 
   void setWaterAt(int x, int y); // for C2
   void setWaterAt(int x, int y, int water_height);// c1
   
   void setGroundLevelAt(int x, int y, float level);
 
-  void load(const std::string& file_name, C2MapRscFile* crsc_weak);
-  void load_c1(const std::string& file_name, C2MapRscFile* crsc_weak);
+  void load(const std::string& file_name, std::weak_ptr<C2MapRscFile> rsc);
+  void load_c1(const std::string& file_name, std::weak_ptr<C2MapRscFile> rsc);
 };
 
 #endif /* defined(__CE_Character_Lab__C2MapFile__) */

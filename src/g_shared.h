@@ -131,3 +131,11 @@ typedef struct TagObject {
   TModel  *model;
   TVTL    vtl;
 } TObject;
+
+struct FogData {
+  int32_t rgb;
+  float altitude;
+  int32_t danger;
+  float transparency;
+  float hlimit;
+};

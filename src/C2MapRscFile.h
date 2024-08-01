@@ -55,6 +55,7 @@ private:
   int m_texture_count;
   
   int m_random_sounds_count, m_ambient_sounds_count;
+  std::vector<FogData> m_fogs;
   std::vector<std::shared_ptr<Sound>> m_random_sounds;
   std::vector<std::shared_ptr<CEAudioSource>> m_random_audio_sources;
   std::vector<std::shared_ptr<Sound>> m_ambient_sounds;
@@ -89,6 +90,7 @@ public:
   void setWaterHeight(int i, int h_unscaled);
 
   const CEWaterEntity& getWater(int i) const;
+  const FogData& getFog(int i) const;
   CEWorldModel* getWorldModel(int i);
   CETexture* getTexture(int i);
   C2Sky* getDaySky();

@@ -20,8 +20,8 @@ uniform float tileWidth;
 uniform float time;
 uniform vec3 cameraPos;
 
-const float waveAmplitude = 6.0; // Increased amplitude for more pronounced waves
-const float waveFrequency = 5.0; // Increased frequency for more ripples
+const float waveAmplitude = 12.0; // Increased amplitude for more pronounced waves
+const float waveFrequency = 10.0; // Increased frequency for more ripples
 const float waveSpeed = 2.0;     // Increased speed for faster ripples
 const float maxDistance = 128.0 * 30.0; // Maximum distance for wave animation
 
@@ -31,7 +31,7 @@ void main()
     vec3 animatedPosition = position;
     vec3 lightPosition = vec3((tileWidth * terrainWidth * 0.5), (tileWidth * terrainHeight * 0.5), 20000.0);
 
-    if (alpha > 0.95) {
+    if (alpha > 0.90) {
         // Only animate the main body of the surface and not the edges or shallow pools
         animatedPosition.y += sin(position.x * waveFrequency + time * waveSpeed) * waveAmplitude;
         animatedPosition.y += cos(position.z * waveFrequency + time * waveSpeed) * waveAmplitude;
@@ -55,5 +55,5 @@ void main()
     alpha0 = alpha;
 
     // Calculate cloud texture coordinates
-    cloudTexCoord = vec2(1.0 - (position.z / (tileWidth * 128.0)) - (time * 0.008), 1.0 - (position.x / (tileWidth * 128.0)) - (time * 0.008));
+    cloudTexCoord = vec2(1.0 - (position.z / (tileWidth * 128.0)) - (time * 0.004), 1.0 - (position.x / (tileWidth * 128.0)) - (time * 0.004));
 }

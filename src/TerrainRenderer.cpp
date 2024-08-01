@@ -217,7 +217,7 @@ void TerrainRenderer::Update(Transform& transform, Camera& camera)
   this->m_water_shader->setMat4("view", camera.GetVM());
   this->m_water_shader->setMat4("projection", camera.GetProjection());
   this->m_water_shader->setFloat("time", (float)t);
-  this->m_water_shader->setVec3("cameraPos", camera.GetCurrentPos());
+  this->m_water_shader->setVec3("cameraPos", camera.GetPosition());
   
   for (int m = 0; m < this->m_crsc_data_weak->getWorldModelCount(); m++) {
     this->m_crsc_data_weak->getWorldModel(m)->getGeometry()->Update(transform, camera);

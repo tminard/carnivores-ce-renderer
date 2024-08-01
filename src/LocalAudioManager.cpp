@@ -161,7 +161,7 @@ void LocalAudioManager::update()
 {
   const Camera* camera = m_player_controller->getCamera();
 
-  glm::vec3 pos = camera->GetCurrentPos();
+  glm::vec3 pos = camera->GetPosition();
   glm::vec3 forward = camera->GetForward();
   glm::vec3 up = camera->GetUp();
 

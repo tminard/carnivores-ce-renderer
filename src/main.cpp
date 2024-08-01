@@ -282,6 +282,7 @@ int main(int argc, const char * argv[])
     for (const auto& character : characters) {
       if (character) {
         character->update(currentTime, g_terrain_transform, *camera, player_world_pos);
+        character->lookAt(g_player_controller->getPosition());
       } else {
         throw std::runtime_error("Character missing!!");
       }

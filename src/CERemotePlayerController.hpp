@@ -69,6 +69,8 @@ private:
   const double m_jump_cooldown = 0.25; // Cooldown period in seconds
   
   bool m_is_deployed;
+  
+  void uploadStateToHardware();
 
 public:
   CERemotePlayerController(std::shared_ptr<LocalAudioManager> audioManager, std::shared_ptr<C2CarFile> carFile, std::shared_ptr<C2MapFile> map, std::shared_ptr<C2MapRscFile> rsc, std::string initialAnimationName);

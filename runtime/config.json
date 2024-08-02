@@ -11,7 +11,7 @@
   "spawns": [
     {
       "file": "../../runtime/cce/game/models/ANKY SEINFELD.CAR",
-      "animation": "Ar_die",
+      "animation": "Ar_idle2",
       "position": [
         32,
         32
@@ -19,15 +19,30 @@
     },
     {
       "file": "../../runtime/cce/game/models/velo2.car",
-      "animation": "Vel_sld",
+      "animation": "Vel_wlk",
       "position": [
         256,
         256
-      ]
+      ],
+      "attachAI": {
+        "controller": "GenericAmbient",
+        "args": {
+          "animations": {
+            "WALK": "Vel_wlk",
+            "RUN": "Vel_run1",
+            "DIE": "Vel_die1",
+            "SLEEP": "Vel_slp"
+          },
+          "character": {
+            "walkSpeed": 3,
+            "runSpeed": 6
+          }
+        }
+      }
     },
     {
       "file": "../../runtime/cce/game/models/tirex.car",
-      "animation": "Tx_scr1",
+      "animation": "Tx_sml1",
       "position": [
         200,
         232
@@ -91,7 +106,7 @@
     },
     {
       "file": "../../runtime/cce/game/models/stego.car",
-      "animation": "Sr_idle1",
+      "animation": "Sr_wlk",
       "position": [
         192,
         46
@@ -99,7 +114,7 @@
     },
     {
       "file": "../../runtime/cce/game/models/pach.car",
-      "animation": "Pac_idle2",
+      "animation": "Pac_idle1",
       "position": [
         201,
         211

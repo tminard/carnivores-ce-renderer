@@ -76,6 +76,12 @@ glm::vec2 CERemotePlayerController::getWorldPosition() const
   return glm::vec2(int(floorf(pos.x / m_map->getTileLength())), int(floorf(pos.z / m_map->getTileLength())));
 }
 
+void CERemotePlayerController::setNextAnimation(std::string animationName)
+{
+  // TODO: track next animation so we can animation between them cleanly
+  m_current_animation = animationName;
+}
+
 void CERemotePlayerController::update(double currentTime, Transform &baseTransform, Camera &observerCamera, glm::vec2 observerWorldPosition)
 {
   auto worldPos = getWorldPosition();
@@ -124,15 +130,17 @@ void CERemotePlayerController::uploadStateToHardware()
   glm::vec3 direction = glm::normalize(m_camera.GetLookAt() - position);
 
   // Calculate the yaw rotation angle needed to face the target
-  float yaw = atan2(direction.z, direction.x);
+  float yaw = atan2(direction.x, direction.z);
 
-  glm::vec3 rotation(0, -yaw + glm::radians(90.f), 0);
+  // Set the rotation with the correct yaw angle
+  glm::vec3 rotation(0, yaw, 0);
   Transform transform(position, rotation, glm::vec3(1.f));
 
   // Update instance data
   std::vector<glm::mat4> model = { transform.GetStaticModel() };
   m_geo->UpdateInstances(model);
 }
+
 
 void CERemotePlayerController::setPosition(glm::vec3 position)
 {
@@ -149,13 +157,15 @@ void CERemotePlayerController::setElevation(float elevation)
 void CERemotePlayerController::lookAt(glm::vec3 direction)
 {
   this->m_camera.SetLookAt(direction);
-  
-  uploadStateToHardware();
 }
 
 Camera* CERemotePlayerController::getCamera()
 {
   return &this->m_camera;
+}
+
+const std::string CERemotePlayerController::getCurrentAnimation() const {
+  return m_current_animation;
 }
 
 void CERemotePlayerController::move(double currentTime, double deltaTime, bool forwardPressed, bool backwardPressed, bool rightPressed, bool leftPressed)

@@ -157,7 +157,7 @@ bool CEGeometry::SetAnimation(std::weak_ptr<CEAnimation> animation, double atTim
   for (size_t v = 0; v < numVertices; v++) {
     updatedVertices[v].x = (aniData[aniOffset + (v * 3 + 0)] * k1 + aniData[nextFrameOffset + (v * 3 + 0)] * k2) / 8.f;
     updatedVertices[v].y = (aniData[aniOffset + (v * 3 + 1)] * k1 + aniData[nextFrameOffset + (v * 3 + 1)] * k2) / 8.f;
-    updatedVertices[v].z = (-(aniData[aniOffset + (v * 3 + 2)] * k1 + aniData[nextFrameOffset + (v * 3 + 2)] * k2)) / 8.f;
+    updatedVertices[v].z = ((aniData[aniOffset + (v * 3 + 2)] * k1 + aniData[nextFrameOffset + (v * 3 + 2)] * k2)) / 8.f;
   }
   
   // Recompute vertex and index buffer using face data

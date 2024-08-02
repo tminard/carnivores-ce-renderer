@@ -188,7 +188,7 @@ void C2CarFile::load_file(std::string file_name)
 
     // data correction
   for (int v=0; v < _vcount; v++) {
-    _vertices[v].z *= -2.0f; // Original models need to be inverted across z axis
+    _vertices[v].z *= 2.0f; // Original models need to be inverted across z axis
     _vertices[v].y *= 2.0f;
     _vertices[v].x *= 2.0f;
   }

@@ -77,6 +77,9 @@ public:
 
   glm::vec3 getPosition() const;
   glm::vec2 getWorldPosition() const;
+  
+  void setNextAnimation(std::string animationName);
+  const std::string getCurrentAnimation() const;
 
   void setPosition(glm::vec3 position);
   void setElevation(float elevation);

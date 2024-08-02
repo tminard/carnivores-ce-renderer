@@ -1,7 +1,7 @@
 #ifndef CAMERA_INCLUDED_H
 #define CAMERA_INCLUDED_H
 
-#define GLM_ENABLE_EXPERIMENTAL
+#define GLM_ENABLE_EXPERIMENTAL 1
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
 

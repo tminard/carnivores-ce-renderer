@@ -25,13 +25,16 @@ class CEAIGenericAmbientManager {
 
     double m_last_process_time;
     double m_target_expire_time;
+  double m_last_stuck_time;
     glm::vec3 m_current_target;
+    glm::vec3 m_panic_look_target;
     glm::vec3 m_previous_position;
     double m_stuck_timer;
-
-    std::unordered_map<glm::ivec2, int, std::hash<glm::ivec2>> m_visit_map;
+  
+  bool m_invertedLookDirection; // New flag for tracking look direction inversion
 
     bool isTilePassable(glm::vec2 tile, const glm::vec3& currentForward, const glm::vec3& potentialForward);
+  bool isTileSafe(glm::vec2 tile);
     void chooseNewTarget(glm::vec3 currentPosition, bool getUnstuck, double timeDelta);
     float calculateEnergyCost(glm::vec3 currentPos, glm::vec3 targetPos);
   void updateLookAtDirection(glm::vec3 desiredLookAt, float deltaTime);

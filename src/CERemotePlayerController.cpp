@@ -30,11 +30,12 @@ CERemotePlayerController::CERemotePlayerController(std::shared_ptr<LocalAudioMan
   
   // TODO: make these configurable
   // Perhaps an attachable physics controller or something
-  m_walk_speed = 256.f * 10.f;
-  m_player_height = 256.f;
+  m_walk_speed = 228.f * 2.f;  // This seems reasonable for walk speed
+  m_player_height = 0.f;
 
-  m_acceleration = m_walk_speed * 10.f;
-  m_deceleration = m_walk_speed * 4.f;
+  // Adjusted acceleration and deceleration values
+  m_acceleration = m_walk_speed * 4.0f * 1.25f;  // Reduce to 1.0x walk speed for smoother acceleration
+  m_deceleration = m_walk_speed * 1.5f * 1.25f;  // Increase to 0.5x walk speed for less abrupt deceleration
   
   // Get an exclusive copy of the geometry by rebuilding from the first animation
   std::shared_ptr<CEAnimation> initialAni = carFile->getAnimationByName(m_current_animation).lock();
@@ -133,7 +134,7 @@ void CERemotePlayerController::uploadStateToHardware()
   float yaw = atan2(direction.x, direction.z);
 
   // Set the rotation with the correct yaw angle
-  glm::vec3 rotation(0, yaw, 0);
+  glm::vec3 rotation(0, yaw + glm::radians(180.f), 0);
   Transform transform(position, rotation, glm::vec3(1.f));
 
   // Update instance data
@@ -145,8 +146,6 @@ void CERemotePlayerController::uploadStateToHardware()
 void CERemotePlayerController::setPosition(glm::vec3 position)
 {
   m_camera.SetPos(position);
-  
-  uploadStateToHardware();
 }
 
 void CERemotePlayerController::setElevation(float elevation)
@@ -168,7 +167,58 @@ const std::string CERemotePlayerController::getCurrentAnimation() const {
   return m_current_animation;
 }
 
-void CERemotePlayerController::move(double currentTime, double deltaTime, bool forwardPressed, bool backwardPressed, bool rightPressed, bool leftPressed)
-{
-  // TODO: add movement processing
+void CERemotePlayerController::MoveTo(glm::vec3 targetPosition, double deltaTime) {
+    // Get the current position
+    glm::vec3 currentPosition = this->getPosition();
+    glm::vec3 currentLookAt = this->getCamera()->GetLookAt();
+    glm::vec3 direction = glm::normalize(currentLookAt - currentPosition);
+    float distance = glm::distance(currentPosition, targetPosition);
+
+    // Calculate the time delta
+    if (deltaTime <= 0.0) {
+        return; // Prevent division by zero or negative deltaTime
+    }
+
+    float dTime = static_cast<float>(deltaTime);
+    const float tileSize = 256.0f; // Size of one tile in the map
+
+    // Set the target speed based on the distance, taking tile size into account
+    if (distance > tileSize * 0.1f) { // A small threshold to avoid jittering
+        m_target_speed = m_walk_speed;
+    } else {
+        m_target_speed = 0.0f;
+    }
+
+    // Apply acceleration and deceleration to current speed
+    if (m_target_speed > m_current_speed) {
+        m_current_speed += m_acceleration * dTime;
+        if (m_current_speed > m_target_speed) {
+            m_current_speed = m_target_speed;
+        }
+    } else if (m_target_speed < m_current_speed) {
+        m_current_speed -= m_deceleration * dTime;
+        if (m_current_speed < m_target_speed) {
+            m_current_speed = m_target_speed;
+        }
+    }
+
+    // Calculate the new position based on the current speed and current lookAt direction
+    glm::vec3 newPosition = currentPosition + direction * (m_current_speed * dTime);
+    glm::vec2 worldPos = glm::vec2(int(floorf(newPosition.x / tileSize)), int(floorf(newPosition.z / tileSize)));
+  
+    // Ensure the new position is within the map bounds
+    if (worldPos.x < 0 || worldPos.x >= m_map->getWidth() || worldPos.y < 0 || worldPos.y >= m_map->getHeight()) {
+        return;
+    }
+
+    // Obtain terrain height at the new position to adjust the y-coordinate
+    float groundHeight = m_map->getPlaceGroundHeight(worldPos.x, worldPos.y) + m_player_height;
+    newPosition.y = groundHeight;
+
+    // Set the new position without changing the lookAt direction
+    setPosition(newPosition);
 }
+
+
+
+

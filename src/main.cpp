@@ -290,6 +290,12 @@ int main(int argc, const char * argv[])
     std::cerr << "OpenGL error at " << "entering render loop" << ": " << err << std::endl;
   }
   
+  for (const auto& character : characters) {
+    if (character) {
+      character->uploadStateToHardware();
+    }
+  }
+  
   while (!glfwWindowShouldClose(window) && !input_manager->GetShouldShutdown()) {
     glfwMakeContextCurrent(window);
     

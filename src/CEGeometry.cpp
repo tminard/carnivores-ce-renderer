@@ -98,10 +98,15 @@ void CEGeometry::loadObjectIntoMemoryBuffer(std::string shaderName)
   glBindVertexArray(0);
 }
 
-bool CEGeometry::SetAnimation(std::weak_ptr<CEAnimation> animation, double atTime, double startAt, double lastUpdateAt, bool deferUpdate, bool maxFPS, bool notVisible) {
+bool CEGeometry::SetAnimation(std::weak_ptr<CEAnimation> animation, double atTime, double startAt, double lastUpdateAt, bool deferUpdate, bool maxFPS, bool notVisible, float playbackSpeed) {
   std::shared_ptr<CEAnimation> ani = animation.lock();
   if (!ani) {
     // Handle the case where the animation is no longer available or doesn't exist
+    return false;
+  }
+  
+  const double minInterval = 1.0 / 30.0;
+  if (atTime - lastUpdateAt < minInterval) {
     return false;
   }
   
@@ -117,7 +122,7 @@ bool CEGeometry::SetAnimation(std::weak_ptr<CEAnimation> animation, double atTim
   
   // Optimization: do not update if time delta is < kps unless the player is very close
   // Also, run at minimum FPS unless very close
-  double maxUpdateThreshold = maxFPS ? timePerFrame / 4.0 : timePerFrame;
+  double maxUpdateThreshold = maxFPS ? timePerFrame / 16.0 : timePerFrame;
   if (lastUpdateDelta < maxUpdateThreshold) {
     return false;
   }
@@ -157,7 +162,7 @@ bool CEGeometry::SetAnimation(std::weak_ptr<CEAnimation> animation, double atTim
   for (size_t v = 0; v < numVertices; v++) {
     updatedVertices[v].x = (aniData[aniOffset + (v * 3 + 0)] * k1 + aniData[nextFrameOffset + (v * 3 + 0)] * k2) / 8.f;
     updatedVertices[v].y = (aniData[aniOffset + (v * 3 + 1)] * k1 + aniData[nextFrameOffset + (v * 3 + 1)] * k2) / 8.f;
-    updatedVertices[v].z = (-(aniData[aniOffset + (v * 3 + 2)] * k1 + aniData[nextFrameOffset + (v * 3 + 2)] * k2)) / 8.f;
+    updatedVertices[v].z = ((aniData[aniOffset + (v * 3 + 2)] * k1 + aniData[nextFrameOffset + (v * 3 + 2)] * k2)) / 8.f;
   }
   
   // Recompute vertex and index buffer using face data

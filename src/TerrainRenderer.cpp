@@ -23,7 +23,7 @@
 namespace fs = std::filesystem;
 using json = nlohmann::json;
 
-TerrainRenderer::TerrainRenderer(C2MapFile* c_map_weak, C2MapRscFile* c_rsc_weak)
+TerrainRenderer::TerrainRenderer(std::shared_ptr<C2MapFile> c_map_weak, std::shared_ptr<C2MapRscFile> c_rsc_weak)
 : m_cmap_data_weak(c_map_weak), m_crsc_data_weak(c_rsc_weak)
 {
   this->loadIntoHardwareMemory();
@@ -140,7 +140,7 @@ void TerrainRenderer::preloadObjectMap()
     // Update instances
     model->updateNearInstances();
     // Configure shader
-    model->getGeometry()->ConfigureShaderUniforms(m_cmap_data_weak, m_crsc_data_weak);
+    model->getGeometry()->ConfigureShaderUniforms(m_cmap_data_weak.get(), m_crsc_data_weak.get());
   }
 }
 
@@ -643,6 +643,8 @@ void TerrainRenderer::loadIntoHardwareMemory()
   std::vector<glm::vec3> vertexNormals(width * height, glm::vec3(0.0f));
   std::vector<int> normalCounts(width * height, 0);
   
+  std::cout << "Generating terrain normal map" << std::endl;
+  
   for (int y = 0; y < width; y++) {
       for (int x = 0; x < height; x++) {
           unsigned int base_index = (y * width) + x;
@@ -687,6 +689,7 @@ void TerrainRenderer::loadIntoHardwareMemory()
       vertexNormals[i] = glm::normalize(vertexNormals[i]);
   }
 
+  std::cout << "Building terrain mesh" << std::endl;
   for (int y=0; y < width; y++) {
     for (int x=0; x < height; x++) {
       unsigned int base_index = (y * width) + x;
@@ -732,6 +735,7 @@ void TerrainRenderer::loadIntoHardwareMemory()
       
       // Memoize the height
       float centerHeight;
+      glm::vec3 avgNormal;
       
       if (quad_reverse) {
         centerHeight = (vpositionLL.y + vpositionUL.y + vpositionUR.y + vpositionLR.y) / 4.0f;
@@ -743,6 +747,8 @@ void TerrainRenderer::loadIntoHardwareMemory()
         m_indices.push_back(lower_right); // Face 2
         m_indices.push_back(upper_left);
         m_indices.push_back(upper_right);
+        
+        avgNormal = glm::normalize(normalLL + normalUL + normalUR + normalLR);
       } else {
         centerHeight = (vpositionLL.y + vpositionLR.y + vpositionUL.y + vpositionUR.y) / 4.0f;
 
@@ -753,9 +759,44 @@ void TerrainRenderer::loadIntoHardwareMemory()
         m_indices.push_back(lower_left); // Face 2
         m_indices.push_back(upper_left);
         m_indices.push_back(upper_right);
+        
+        avgNormal = glm::normalize(normalLL + normalLR + normalUL + normalUR);
       }
       
-      m_cmap_data_weak->setGroundLevelAt(x, y, centerHeight);
+      float slopeAngle = glm::degrees(atan2(glm::length(glm::vec2(avgNormal.x, avgNormal.z)), avgNormal.y));
+
+      m_cmap_data_weak->setGroundLevelAt(x, y, centerHeight, slopeAngle);
+    }
+  }
+  
+  std::cout << "Generating AI walkability map from terrain data" << std::endl;
+  for (int y=0; y < width; y++) {
+    for (int x=0; x < height; x++) {
+      bool walkable = true;
+      int xy = (y * width) + x;
+      if (m_cmap_data_weak->hasWaterAt(x, y))
+      {
+        walkable = false;
+      } else if (m_cmap_data_weak->hasDangerTileAt(m_crsc_data_weak, glm::vec2(x, y))) {
+        walkable = false;
+      } else if (m_cmap_data_weak->getGroundAngleAt(x, y) > 45.f) {
+        walkable = false;
+      } else {
+        // 19.f is a bit more realistic
+        auto objectIdx = m_cmap_data_weak->getObjectAt(xy);
+        if (objectIdx < 254) {
+          auto obj = m_crsc_data_weak->getWorldModel(objectIdx);
+          if (obj->getObjectInfo()->Radius > 32.f) {
+            walkable = false;
+          }
+        }
+      }
+      
+      if (!walkable) {
+        m_cmap_data_weak->setWalkableFlagsAt(glm::vec2(x, y), 0x1);
+      } else {
+        m_cmap_data_weak->setWalkableFlagsAt(glm::vec2(x, y), 0x0);
+      }
     }
   }
   

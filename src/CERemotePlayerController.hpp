@@ -66,17 +66,24 @@ private:
   const float m_jump_speed = 12.f;
   const float m_gravity = 48.f;
   double m_last_jump_time = 0.0;
+  double m_start_turn_time = -1.0;
+  glm::vec3 m_start_turn_lookat = glm::vec3(0.f);
   const double m_jump_cooldown = 0.25; // Cooldown period in seconds
   
   bool m_is_deployed;
-  
-  void uploadStateToHardware();
 
 public:
+  void uploadStateToHardware();
   CERemotePlayerController(std::shared_ptr<LocalAudioManager> audioManager, std::shared_ptr<C2CarFile> carFile, std::shared_ptr<C2MapFile> map, std::shared_ptr<C2MapRscFile> rsc, std::string initialAnimationName);
 
   glm::vec3 getPosition() const;
   glm::vec2 getWorldPosition() const;
+  
+  void setNextAnimation(std::string animationName);
+  const std::string getCurrentAnimation() const;
+  
+  void setWalkSpeed(float speedFactor);
+  void setHeightOffset(float offset);
 
   void setPosition(glm::vec3 position);
   void setElevation(float elevation);
@@ -84,7 +91,10 @@ public:
 
   void update(double currentTime, Transform &baseTransform, Camera &observerCamera, glm::vec2 observerWorldPosition);
   
-  void move(double currentTime, double deltaTime, bool forwardPressed, bool backwardPressed, bool rightPressed, bool leftPressed);
+  void MoveTo(glm::vec3 targetPosition, double currentTime);
+  void UpdateLookAtDirection(glm::vec3 desiredLookAt, double currentTime);
+  
+  bool isTurning();
   
   void jump(double currentTime);
   

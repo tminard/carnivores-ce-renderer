@@ -39,6 +39,7 @@
 
 #include "CELocalPlayerController.hpp"
 #include "CERemotePlayerController.hpp"
+#include "CEAIGenericAmbientManager.hpp"
 
 #include "C2Sky.h"
 
@@ -56,9 +57,12 @@ namespace fs = std::filesystem;
 using json = nlohmann::json;
 
 struct ConfigSpawn {
-    std::string file;
-    std::string animation;
-    std::vector<int> position;
+  std::string file;
+  std::string animation;
+  std::vector<int> position;
+  bool isAmbient;
+  std::string ambientWalkAnim;
+  json data;
 };
 
 std::unique_ptr<LocalInputManager> input_manager(new LocalInputManager());
@@ -134,13 +138,25 @@ int main(int argc, const char * argv[])
   fs::path mapPath = constructPath(basePath, data["map"]["map"]);
 
   if (data.contains("spawns")) {
-      for (const auto& spawnJson : data["spawns"]) {
-          ConfigSpawn spawn;
-          spawn.file = spawnJson.value("file", "");
-          spawn.animation = spawnJson.value("animation", "");
-          spawn.position = spawnJson.value("position", std::vector<int>{});
-          spawns.push_back(spawn);
+    for (const auto& spawnJson : data["spawns"]) {
+      ConfigSpawn spawn;
+      spawn.data = spawnJson;
+      spawn.file = spawnJson.value("file", "");
+      spawn.animation = spawnJson.value("animation", "");
+      spawn.position = spawnJson.value("position", std::vector<int>{});
+      spawn.isAmbient = false;
+      spawn.ambientWalkAnim = "";
+      // TODO: temporary. Switch to generic controlled character class from direct remote controller.
+      if (spawnJson.contains("attachAI")) {
+        if (spawnJson["attachAI"].contains("controller")) {
+          if (spawnJson["attachAI"]["controller"] == "GenericAmbient") {
+            spawn.isAmbient = true;
+            spawn.ambientWalkAnim = spawnJson["attachAI"]["args"]["animations"]["WALK"];
+          }
+        }
       }
+      spawns.push_back(spawn);
+    }
   }
 
   if (data.contains("video") && data["video"].is_object()) {
@@ -175,17 +191,18 @@ int main(int argc, const char * argv[])
   }
   alDistanceModel(AL_LINEAR_DISTANCE);
   
-  std::unique_ptr<TerrainRenderer> terrain = std::make_unique<TerrainRenderer>(cMap.get(), cMapRsc.get());
+  std::unique_ptr<TerrainRenderer> terrain = std::make_unique<TerrainRenderer>(cMap, cMapRsc);
   
   // shared loader to minimize resource usage
   std::unique_ptr<C2CarFilePreloader> cFileLoad(new C2CarFilePreloader);
 
-  std::vector<std::unique_ptr<CERemotePlayerController>> characters = {};
+  std::vector<std::shared_ptr<CERemotePlayerController>> characters = {};
+  std::vector<std::unique_ptr<CEAIGenericAmbientManager>> ambients = {};
   
   int dCount = 0;
   for (const auto& spawn : spawns) {
     if (dCount < 512) {
-      auto character = std::make_unique<CERemotePlayerController>(
+      auto character = std::make_shared<CERemotePlayerController>(
                                                                   g_audio_manager,
                                                                   cFileLoad->fetch(spawn.file),
                                                                   cMap,
@@ -200,8 +217,24 @@ int main(int argc, const char * argv[])
       );
 
       character->setPosition(spawnPos);
+      
+      float walkSpeed = spawn.data["attachAI"]["args"]["character"]["walkSpeed"];
+      float heightOffset = spawn.data["attachAI"]["args"]["character"].contains("heightOffset") ? (float)spawn.data["attachAI"]["args"]["character"]["heightOffset"] : 0.f;
+  
+      character->setWalkSpeed(walkSpeed);
+      character->setHeightOffset(heightOffset);
 
-      characters.push_back(std::move(character));
+      characters.push_back(character);
+      if (spawn.isAmbient) {
+        AIGenericAmbientManagerConfig aiConfig;
+        aiConfig.WalkAnimName = spawn.ambientWalkAnim;
+        auto ambientMg = std::make_unique<CEAIGenericAmbientManager>(
+                                                                     aiConfig,
+                                                                     character,
+                                                                     cMap,
+                                                                     cMapRsc);
+        ambients.push_back(std::move(ambientMg));
+      }
       
       std::cout << "Spawned " << spawn.file << " # " << dCount << " @ [" << spawn.position[0] << "," << spawn.position[1] << "];" << std::endl;
     } else {
@@ -263,6 +296,12 @@ int main(int argc, const char * argv[])
     std::cerr << "OpenGL error at " << "entering render loop" << ": " << err << std::endl;
   }
   
+  for (const auto& character : characters) {
+    if (character) {
+      character->uploadStateToHardware();
+    }
+  }
+  
   while (!glfwWindowShouldClose(window) && !input_manager->GetShouldShutdown()) {
     glfwMakeContextCurrent(window);
     
@@ -282,9 +321,12 @@ int main(int argc, const char * argv[])
     for (const auto& character : characters) {
       if (character) {
         character->update(currentTime, g_terrain_transform, *camera, player_world_pos);
-        character->lookAt(g_player_controller->getPosition());
-      } else {
-        throw std::runtime_error("Character missing!!");
+      }
+    }
+    
+    for (const auto& ambient : ambients) {
+      if (ambient) {
+        ambient->Process(currentTime);
       }
     }
     
@@ -372,8 +414,6 @@ int main(int argc, const char * argv[])
       for (const auto& character : characters) {
         if (character) {
           character->Render();
-        } else {
-          throw std::runtime_error("Character missing!!");
         }
       }
       

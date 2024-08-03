@@ -66,6 +66,8 @@ private:
   const float m_jump_speed = 12.f;
   const float m_gravity = 48.f;
   double m_last_jump_time = 0.0;
+  double m_start_turn_time = -1.0;
+  glm::vec3 m_start_turn_lookat = glm::vec3(0.f);
   const double m_jump_cooldown = 0.25; // Cooldown period in seconds
   
   bool m_is_deployed;
@@ -87,6 +89,9 @@ public:
   void update(double currentTime, Transform &baseTransform, Camera &observerCamera, glm::vec2 observerWorldPosition);
   
   void MoveTo(glm::vec3 targetPosition, double currentTime);
+  void UpdateLookAtDirection(glm::vec3 desiredLookAt, double currentTime);
+  
+  bool isTurning();
   
   void jump(double currentTime);
   

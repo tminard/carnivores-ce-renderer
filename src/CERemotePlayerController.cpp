@@ -20,6 +20,9 @@
 #include "CEAnimation.h"
 #include "LocalAudioManager.hpp"
 
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/quaternion.hpp>
+
 CERemotePlayerController::CERemotePlayerController(std::shared_ptr<LocalAudioManager> audioManager, std::shared_ptr<C2CarFile> carFile, std::shared_ptr<C2MapFile> map, std::shared_ptr<C2MapRscFile> rsc, std::string initialAnimationName): m_map(map), m_rsc(rsc), m_car(carFile), m_current_animation(initialAnimationName), m_g_audio_manager(audioManager)
 {
   m_is_deployed = false;
@@ -30,7 +33,7 @@ CERemotePlayerController::CERemotePlayerController(std::shared_ptr<LocalAudioMan
   
   // TODO: make these configurable
   // Perhaps an attachable physics controller or something
-  m_walk_speed = 228.f * 2.f;  // This seems reasonable for walk speed
+  m_walk_speed = 228.f * 1.25f;  // This seems reasonable for walk speed
   m_player_height = 0.f;
 
   // Adjusted acceleration and deceleration values
@@ -158,6 +161,53 @@ void CERemotePlayerController::lookAt(glm::vec3 direction)
   this->m_camera.SetLookAt(direction);
 }
 
+bool CERemotePlayerController::isTurning() {
+  return m_start_turn_time > 0.0;
+}
+
+void CERemotePlayerController::UpdateLookAtDirection(glm::vec3 desiredLookAt, double currentTime) {
+    glm::vec3 currentPosition = getPosition();
+  glm::vec3 currentLookAt = m_camera.GetLookAt();
+  
+  glm::vec3 currentForward = glm::normalize(currentLookAt - currentPosition);
+  glm::vec3 desiredForward = glm::normalize(desiredLookAt - currentPosition);
+  
+  // Calculate the angle difference between the current and desired forward directions
+  float angleDifference = glm::degrees(glm::acos(glm::clamp(glm::dot(currentForward, desiredForward), -1.0f, 1.0f)));
+  const float angleThreshold = 5.0f; // Degrees
+  bool shouldTurn = angleDifference > angleThreshold;
+  
+  if (shouldTurn && m_start_turn_time < 0.0) {
+    m_start_turn_time = currentTime;
+    m_start_turn_lookat = currentLookAt;
+  }
+
+    // Set the camera to look at the new position
+  if (shouldTurn) {
+    // Calculate the starting and desired forward vectors
+    glm::vec3 startForward = glm::normalize(m_start_turn_lookat - currentPosition);
+
+    // Calculate the time elapsed since the turn started
+    float timeElapsed = static_cast<float>(currentTime - m_start_turn_time);
+    const float rotationDuration = 1.0f; // Duration in seconds to complete the rotation
+
+    // Ensure the elapsed time does not exceed the rotation duration
+    float t = glm::clamp(timeElapsed / rotationDuration, 0.0f, 1.0f);
+
+    // Interpolate between the start and desired forward vectors
+    glm::vec3 interpolatedForward = glm::normalize(glm::mix(startForward, desiredForward, t));
+
+    // Calculate the new lookAt position
+    glm::vec3 updatedLookAt = glm::mix(m_start_turn_lookat, desiredLookAt, t);
+    lookAt(updatedLookAt);
+  } else {
+    lookAt(desiredLookAt);
+    m_start_turn_time = -1.0;
+    m_start_turn_lookat = desiredLookAt;
+  }
+}
+
+
 Camera* CERemotePlayerController::getCamera()
 {
   return &this->m_camera;
@@ -180,11 +230,13 @@ void CERemotePlayerController::MoveTo(glm::vec3 targetPosition, double deltaTime
     }
 
     float dTime = static_cast<float>(deltaTime);
-    const float tileSize = 256.0f; // Size of one tile in the map
+    const float tileSize = m_map->getTileLength(); // Size of one tile in the map
 
     // Set the target speed based on the distance, taking tile size into account
-    if (distance > tileSize * 0.1f) { // A small threshold to avoid jittering
-        m_target_speed = m_walk_speed;
+  if (distance > tileSize && !isTurning()) { // A small threshold to avoid jittering
+    m_target_speed = m_walk_speed;
+  } else if (isTurning()) {
+    m_target_speed = m_walk_speed * 0.55f;
     } else {
         m_target_speed = 0.0f;
     }

@@ -279,6 +279,11 @@ void CERemotePlayerController::MoveTo(glm::vec3 targetPosition, double deltaTime
   setPosition(newPosition);
 }
 
+void CERemotePlayerController::setHeightOffset(float offset) { 
+  m_player_height = offset;
+}
+
+
 
 
 

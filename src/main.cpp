@@ -219,7 +219,10 @@ int main(int argc, const char * argv[])
       character->setPosition(spawnPos);
       
       float walkSpeed = spawn.data["attachAI"]["args"]["character"]["walkSpeed"];
+      float heightOffset = spawn.data["attachAI"]["args"]["character"].contains("heightOffset") ? (float)spawn.data["attachAI"]["args"]["character"]["heightOffset"] : 0.f;
+  
       character->setWalkSpeed(walkSpeed);
+      character->setHeightOffset(heightOffset);
 
       characters.push_back(character);
       if (spawn.isAmbient) {

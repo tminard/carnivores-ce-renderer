@@ -83,6 +83,7 @@ public:
   const std::string getCurrentAnimation() const;
   
   void setWalkSpeed(float speedFactor);
+  void setHeightOffset(float offset);
 
   void setPosition(glm::vec3 position);
   void setElevation(float elevation);

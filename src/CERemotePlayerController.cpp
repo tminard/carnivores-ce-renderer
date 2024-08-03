@@ -34,7 +34,7 @@ CERemotePlayerController::CERemotePlayerController(std::shared_ptr<LocalAudioMan
   
   // TODO: make these configurable
   // Perhaps an attachable physics controller or something
-  m_walk_speed = map->getTileLength() * 2.85f;
+  m_walk_speed = map->getTileLength() * 0.5f;
   m_player_height = 0.f;
   
   // Adjusted acceleration and deceleration values
@@ -72,6 +72,11 @@ CERemotePlayerController::CERemotePlayerController(std::shared_ptr<LocalAudioMan
 glm::vec3 CERemotePlayerController::getPosition() const
 {
   return this->m_camera.GetPosition();
+}
+
+void CERemotePlayerController::setWalkSpeed(float speedFactor)
+{
+  m_walk_speed = m_map->getTileLength() * speedFactor;
 }
 
 glm::vec2 CERemotePlayerController::getWorldPosition() const

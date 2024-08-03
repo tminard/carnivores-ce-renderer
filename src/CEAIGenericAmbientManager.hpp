@@ -29,6 +29,7 @@ class CEAIGenericAmbientManager {
 
     double m_last_process_time;
     double m_target_expire_time;
+    double m_last_upload_time = 0;
     glm::vec3 m_current_target;
   
     std::vector<glm::vec2> m_path_waypoints = {};

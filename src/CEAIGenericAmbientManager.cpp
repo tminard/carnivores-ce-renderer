@@ -148,8 +148,12 @@ void CEAIGenericAmbientManager::Process(double currentTime) {
   
   m_player_controller->MoveTo(m_current_target, deltaTime);
   m_player_controller->UpdateLookAtDirection(m_current_target, currentTime);
-  
-  m_player_controller->uploadStateToHardware();
+
+  const double minInterval = 1.0 / 30.0;
+  if (currentTime - m_last_upload_time >= minInterval) {
+      m_player_controller->uploadStateToHardware();
+      m_last_upload_time = currentTime;
+  }
   
   m_last_process_time = currentTime;
 }

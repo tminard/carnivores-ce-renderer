@@ -105,6 +105,11 @@ bool CEGeometry::SetAnimation(std::weak_ptr<CEAnimation> animation, double atTim
     return false;
   }
   
+  const double minInterval = 1.0 / 30.0;
+  if (atTime - lastUpdateAt < minInterval) {
+    return false;
+  }
+  
   double animationStartTime = startAt;
   int totalFrames = ani->m_number_of_frames;
   
@@ -117,7 +122,7 @@ bool CEGeometry::SetAnimation(std::weak_ptr<CEAnimation> animation, double atTim
   
   // Optimization: do not update if time delta is < kps unless the player is very close
   // Also, run at minimum FPS unless very close
-  double maxUpdateThreshold = maxFPS ? timePerFrame / 4.0 : timePerFrame;
+  double maxUpdateThreshold = maxFPS ? timePerFrame / 16.0 : timePerFrame;
   if (lastUpdateDelta < maxUpdateThreshold) {
     return false;
   }

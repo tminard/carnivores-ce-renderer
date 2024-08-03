@@ -217,6 +217,9 @@ int main(int argc, const char * argv[])
       );
 
       character->setPosition(spawnPos);
+      
+      float walkSpeed = spawn.data["attachAI"]["args"]["character"]["walkSpeed"];
+      character->setWalkSpeed(walkSpeed);
 
       characters.push_back(character);
       if (spawn.isAmbient) {

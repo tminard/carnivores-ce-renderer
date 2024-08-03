@@ -30,10 +30,11 @@ CERemotePlayerController::CERemotePlayerController(std::shared_ptr<LocalAudioMan
   m_target_speed = 0.f;
   m_animation_started_at = 0.0;
   m_animation_last_update_at = 0.0;
+  m_start_turn_time = -1.0;
   
   // TODO: make these configurable
   // Perhaps an attachable physics controller or something
-  m_walk_speed = 228.f * 1.25f;  // This seems reasonable for walk speed
+  m_walk_speed = map->getTileLength() * 2.5f * 1.25f;
   m_player_height = 0.f;
 
   // Adjusted acceleration and deceleration values

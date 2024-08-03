@@ -18,13 +18,16 @@ CEAIGenericAmbientManager::CEAIGenericAmbientManager(
       m_map(map),
       m_rsc(rsc),
       m_last_process_time(0),
-      m_target_expire_time(0),
-      m_stuck_timer(0)
+      m_target_expire_time(0)
 {
     m_current_target = glm::vec3(0.0f);
-    m_panic_look_target = glm::vec3(0.f);
-    m_previous_position = glm::vec3(0.0f);
-  m_last_stuck_time = 0.0;
+  
+  m_path_waypoints.resize(5);
+  m_path_waypoints.push_back(glm::vec2(256, 256));
+  m_path_waypoints.push_back(glm::vec2(128, 256));
+  m_path_waypoints.push_back(glm::vec2(64, 128));
+  m_path_waypoints.push_back(glm::vec2(64, 64));
+  m_path_waypoints.push_back(glm::vec2(38, 256));
 }
 
 bool CEAIGenericAmbientManager::isTilePassable(glm::vec2 tile, const glm::vec3& currentForward, const glm::vec3& potentialForward) {
@@ -58,7 +61,20 @@ bool CEAIGenericAmbientManager::isTileSafe(glm::vec2 tile) {
     return true;
 }
 
-void CEAIGenericAmbientManager::chooseNewTarget(glm::vec3 currentPosition, double currentTime, double timeDelta) {
+void CEAIGenericAmbientManager::chooseNewTarget(glm::vec3 currentPosition, double currentTime) {
+  if (!m_path_waypoints.empty()) {
+    glm::vec2 nextTarget = m_path_waypoints.back();
+    std::cout << "[" << currentTime << "] " << "Picked next target from queue: x: " << nextTarget.x << " y: " << nextTarget.y << std::endl;
+    m_current_target = m_map->getPositionAtCenterTile(nextTarget);
+    m_target_expire_time = currentTime + 45.0;
+    
+    m_path_waypoints.pop_back();
+    
+    bool isEmptyTarget = (nextTarget.x == 0 && nextTarget.y == 0);
+    
+    if (!isEmptyTarget) return;
+  }
+
     const float tileSize = m_map->getTileLength();
     glm::vec3 targetPosition;
     bool foundSafeTile = false;
@@ -78,15 +94,15 @@ void CEAIGenericAmbientManager::chooseNewTarget(glm::vec3 currentPosition, doubl
     // TODO: replace with A* pathfinding or similar. This is a temporary solution to finalize move and turn to specific point
     std::random_device rd;  // Random device for seeding
     std::mt19937 gen(rd()); // Mersenne Twister generator
-    std::uniform_int_distribution<> distrib(0, directions.size() - 1);
+    std::uniform_int_distribution<int> distrib(0, (int)directions.size() - 1);
 
     // Pick a random direction
     glm::vec3 direction = directions[distrib(gen)];
 
     targetPosition = currentPosition + direction * 23.0f * tileSize;
   
-  // Zero out height
-  targetPosition.y = currentPosition.y;
+    // Zero out height
+    targetPosition.y = currentPosition.y;
 
     glm::vec2 tileCoords = glm::vec2(targetPosition.x / tileSize, targetPosition.z / tileSize);
     if (isTileSafe(tileCoords)) {
@@ -106,7 +122,8 @@ void CEAIGenericAmbientManager::Process(double currentTime) {
   bool reachedTarget = glm::length(glm::vec2(currentPosition.x, currentPosition.z) - glm::vec2(m_current_target.x, m_current_target.z)) < m_map->getTileLength();
 
   if (reachedTarget || expired) {
-      chooseNewTarget(currentPosition, currentTime, deltaTime);
+    std::cout << "[ " << currentTime << "] Target expired or reached. Picking new" << std::endl;
+      chooseNewTarget(currentPosition, currentTime);
   }
 
   m_player_controller->MoveTo(m_current_target, deltaTime);

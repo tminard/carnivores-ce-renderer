@@ -251,11 +251,12 @@ float C2MapFile::getHeightAt(int xy)
   return (scaled_height);
 }
 
-void C2MapFile::setGroundLevelAt(int x, int y, float level)
+void C2MapFile::setGroundLevelAt(int x, int y, float level, float slopeDegrees)
 {
   int xy = (y * this->getWidth()) + x;
 
   m_ground_levels[xy] = level;
+  m_ground_angles[xy] = slopeDegrees;
 }
 
 int C2MapFile::getObjectAt(int xy)
@@ -435,6 +436,11 @@ float C2MapFile::getPlaceGroundHeight(int x, int y) {
   return m_ground_levels.at(xy) + 12.f;
 }
 
+float C2MapFile::getGroundAngleAt(int x, int y) {
+  int xy = (y * this->getWidth()) + x;
+  return m_ground_angles.at(xy);
+}
+
 /*
  * find the best/lowest height for a given location
  * Lifted from old source - not yet working properly
@@ -501,7 +507,7 @@ glm::vec3 C2MapFile::getRandomLanding()
     landing = glm::vec2((int)getWidth() / 2, (int)getHeight() / 2);
   }
 
-  int xy = (landing.y * getHeight()) + landing.x;
+  int xy = (landing.y * getWidth()) + landing.x;
   return glm::vec3(
     (landing.x * getTileLength()) + (getTileLength() / 2),
     getHeightAt(xy) + 1024.f,
@@ -660,3 +666,15 @@ void C2MapFile::load(const std::string &file_name, std::weak_ptr<C2MapRscFile> r
     throw;
   }
 }
+
+uint16_t C2MapFile::getWalkableFlagsAt(glm::vec2 tile) {
+  int xy = (tile.y * getWidth()) + tile.x;
+  return m_walkable_flags_data.at(xy);
+}
+
+
+void C2MapFile::setWalkableFlagsAt(glm::vec2 tile, uint16_t flags) {
+  int xy = (tile.y * getWidth()) + tile.x;
+  m_walkable_flags_data[xy] = flags;
+}
+

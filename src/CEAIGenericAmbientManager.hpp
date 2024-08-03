@@ -4,6 +4,8 @@
 #include <vector>
 #include <unordered_map>
 
+#include "CEWalkableTerrainPathFinder.hpp"
+
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include <glm/gtx/hash.hpp>
@@ -22,6 +24,8 @@ class CEAIGenericAmbientManager {
     std::shared_ptr<C2MapRscFile> m_rsc;
 
     AIGenericAmbientManagerConfig m_config;
+  
+    CEWalkableTerrainPathFinder m_path_finder;
 
     double m_last_process_time;
     double m_target_expire_time;

@@ -61,7 +61,7 @@ CERemotePlayerController::CERemotePlayerController(std::shared_ptr<LocalAudioMan
   // the original geometry.
   m_geo = std::make_unique<CEGeometry>(m_loader->getVertices(), m_loader->getIndices(), carFile->getGeometry()->getTexture().lock(), "dinosaur");
   
-  Transform transform(glm::vec3(0.f), glm::vec3(0, glm::radians(90.f), 0), glm::vec3(1.f));
+  Transform transform(glm::vec3(0.f), glm::vec3(0, glm::radians(180.f), 0), glm::vec3(1.f));
   std::vector<glm::mat4> model = { transform.GetStaticModel() };
   
   // Only ever ONE instance!
@@ -266,7 +266,9 @@ void CERemotePlayerController::MoveTo(glm::vec3 targetPosition, double deltaTime
 
     // Obtain terrain height at the new position to adjust the y-coordinate
     float groundHeight = m_map->getPlaceGroundHeight(worldPos.x, worldPos.y) + m_player_height;
-    newPosition.y = groundHeight;
+    float smoothedHeight = (groundHeight * 0.1f) + (m_previousHeight * 0.9f);
+    m_previousHeight = smoothedHeight;
+    newPosition.y = smoothedHeight;
 
     // Set the new position without changing the lookAt direction
     setPosition(newPosition);

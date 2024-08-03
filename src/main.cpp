@@ -191,7 +191,7 @@ int main(int argc, const char * argv[])
   }
   alDistanceModel(AL_LINEAR_DISTANCE);
   
-  std::unique_ptr<TerrainRenderer> terrain = std::make_unique<TerrainRenderer>(cMap.get(), cMapRsc.get());
+  std::unique_ptr<TerrainRenderer> terrain = std::make_unique<TerrainRenderer>(cMap, cMapRsc);
   
   // shared loader to minimize resource usage
   std::unique_ptr<C2CarFilePreloader> cFileLoad(new C2CarFilePreloader);

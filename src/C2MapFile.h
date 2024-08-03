@@ -46,6 +46,8 @@ private:
   
   // Store computed ground level heights
   std::array<float, 1024 * 1024> m_ground_levels = {};
+  std::array<float, 1024 * 1024> m_ground_angles = {};
+  std::array<uint16_t, 1024*1024> m_walkable_flags_data = {};
 
   constexpr static const int SIZE = 1024;
   constexpr static const int SIZE_C1 = 512;
@@ -67,6 +69,7 @@ public:
   float getLowestHeight(int x, int y, bool waterOnly);
   float getObjectHeightAt(int xy);
   float getPlaceGroundHeight(int x, int y);
+  float getGroundAngleAt(int x, int y);
   float getWaterHeightAt(int x, int y);
   int getObjectHeightForRadius(int x, int y, int R);
   int getObjectAt(int xy);
@@ -80,6 +83,8 @@ public:
   bool isQuadRotatedAt(int xy);
   uint16_t getFlagsAt(int xy);
   uint16_t getFlagsAt(int x, int y);
+  uint16_t getWalkableFlagsAt(glm::vec2 tile);
+  void setWalkableFlagsAt(glm::vec2 tile, uint16_t flags);
 
   glm::vec2 getXYAtWorldPosition(glm::vec2 pos);
   glm::vec3 getPositionAtCenterTile(glm::vec2 pos);
@@ -108,7 +113,7 @@ public:
   void setWaterAt(int x, int y); // for C2
   void setWaterAt(int x, int y, int water_height);// c1
   
-  void setGroundLevelAt(int x, int y, float level);
+  void setGroundLevelAt(int x, int y, float level, float angle);
 
   void load(const std::string& file_name, std::weak_ptr<C2MapRscFile> rsc);
   void load_c1(const std::string& file_name, std::weak_ptr<C2MapRscFile> rsc);

@@ -60,8 +60,8 @@ private:
   std::unique_ptr<ShaderProgram> m_shader;
   std::unique_ptr<ShaderProgram> m_water_shader;
   
-  C2MapFile* m_cmap_data_weak;
-  C2MapRscFile* m_crsc_data_weak;
+  std::shared_ptr<C2MapFile> m_cmap_data_weak;
+  std::shared_ptr<C2MapRscFile> m_crsc_data_weak;
   
   void preloadObjectMap();
   void loadShader();
@@ -84,7 +84,7 @@ public:
   constexpr static const float TCMAX = 255.5f;
   constexpr static const float TCMIN = 0.5f;
   constexpr static const float _ZSCALE = (16.f*65534.f); // MAX_UNSIGNED_SHORT*16 - original engine used this for scaling heights
-  TerrainRenderer(C2MapFile* cMapWeak, C2MapRscFile* cRscWeak);
+  TerrainRenderer(std::shared_ptr<C2MapFile> cMapWeak, std::shared_ptr<C2MapRscFile> cRscWeak);
   ~TerrainRenderer();
   
   void RenderObjects(Camera& camera);

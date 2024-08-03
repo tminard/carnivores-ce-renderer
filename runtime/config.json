@@ -6,7 +6,7 @@
     "rsc": "../game/c1/area6.rsc"
   },
   "video": {
-    "fullscreen": false
+    "fullscreen": true
   },
   "spawns": [
     {

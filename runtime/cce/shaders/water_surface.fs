@@ -15,6 +15,8 @@ uniform float time; // Time for wave animation
 uniform vec4 skyColor;
 uniform float view_distance;
 
+uniform vec3 cameraPos;
+
 uniform float ambientStrength = 0.45;
 uniform float diffuseStrength = 0.55;
 
@@ -27,12 +29,12 @@ void main()
     float min_distance = 256.0 * 6.0; // Start fog
     float max_distance = view_distance;
     float fogFactor = 0.0;
-    float distance = gl_FragCoord.z / gl_FragCoord.w;
+    float dist = gl_FragCoord.z / gl_FragCoord.w;
 
     vec4 sC = texture(basic_texture, texCoord0);
 
-    if (distance > min_distance) {
-        fogFactor = clamp((distance - min_distance) / (max_distance - min_distance), 0.0, 1.0);
+    if (dist > min_distance) {
+        fogFactor = clamp((dist - min_distance) / (max_distance - min_distance), 0.0, 1.0);
         fogFactor = min(fogFactor, 0.65); // Limit the max fill so we keep things visible
     }
 
@@ -65,9 +67,11 @@ void main()
 
     // Mix in the sky color
     finalColor = mix(finalColor, skyColor.rgb, fogFactor);
-   
-    // Ensure the alpha does not go below factor
-    float finalAlpha = max(alpha0, 0.35);
+
+    float finalAlpha = 0.65;
+    if (dist > 200.0) {
+      finalAlpha = clamp((dist - 200.0) / (512.0 - 200.0), 0.65, 1.0);
+    }
 
     outputColor = mix(vec4(finalColor, finalAlpha), skyColor, 1.0 - EdgeFactor);
 }

@@ -364,44 +364,36 @@ int main(int argc, const char * argv[])
     
     // Render the terrain
     terrain->Update(g_terrain_transform, *camera);
-    checkGLError("After terrain->Update (terrain)");
     
     if (render_terrain) {
       glDepthFunc(GL_LESS); // Depth test for terrain
-      checkGLError("After glDepthFunc (terrain)");
-      
       glEnable(GL_CULL_FACE);
-      checkGLError("After glEnable(GL_CULL_FACE) (terrain)");
-      
       glCullFace(GL_BACK); // Cull back faces
-      checkGLError("After glCullFace (terrain)");
       
       cMapRsc->getTexture(0)->use();
-      checkGLError("After getTexture(0)->use (terrain)");
       
       terrain->Render();
-      checkGLError("After terrain->Render (terrain)");
       
       glDisable(GL_CULL_FACE);
-      checkGLError("After glDisable(GL_CULL_FACE) (terrain)");
+      
+      // Render the water
+      if (render_water) {
+        glDepthFunc(GL_LESS);
+        terrain->RenderWater();
+      }
     }
     
     // Render the terrain objects
     if (render_objects) {
       glDepthFunc(GL_LESS); // Depth test for objects
-      checkGLError("After glDepthFunc (objects)");
       
       glDisable(GL_CULL_FACE);
-      checkGLError("After glDisable(GL_CULL_FACE) (objects)");
       
       glEnable(GL_DEPTH_TEST);
-      checkGLError("After glEnable(GL_DEPTH_TEST) (objects)");
 
       terrain->RenderObjects(*camera);
-      checkGLError("After terrain->RenderObjects (objects)");
       
       glEnable(GL_CULL_FACE);
-      checkGLError("After glEnable(GL_CULL_FACE) (objects)");
     }
     
     // Render models
@@ -420,42 +412,24 @@ int main(int argc, const char * argv[])
       glEnable(GL_CULL_FACE);
     }
     
-    // Render the water
-    if (render_water) {
-      glDepthFunc(GL_LESS);
-      checkGLError("After glDepthFunc (water)");
-      
-      cMapRsc->getTexture(0)->use();
-      terrain->RenderWater();
-      checkGLError("After terrain->RenderWater (water)");
-    }
-    
     // Render the sky
     if (render_sky) {
       glDepthFunc(GL_LESS);
-      checkGLError("After glDepthFunc (sky)");
       
       glDisable(GL_CULL_FACE);
-      checkGLError("After glDisable(GL_CULL_FACE) (sky)");
       
       glDepthMask(GL_FALSE); // Disable depth writes
-      checkGLError("After glDepthMask(GL_FALSE) (sky)");
       
       cMapRsc->getDaySky()->Render(window, *camera);
-      checkGLError("After getDaySky()->Render (sky)");
       
       glDepthMask(GL_TRUE); // Re-enable depth writes
-      checkGLError("After glDepthMask(GL_TRUE) (sky)");
       
       glEnable(GL_CULL_FACE);
-      checkGLError("After glEnable(GL_CULL_FACE) (sky)");
     }
     
     glfwSwapBuffers(window);
     glfwPollEvents();
-    
-    checkGLError("End of frame");
-    
+
     // CalculateFrameRate();
     
     auto frameEnd = std::chrono::high_resolution_clock::now();

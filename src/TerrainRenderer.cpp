@@ -80,6 +80,8 @@ void TerrainRenderer::preloadObjectMap()
   int map_square_size = this->m_cmap_data_weak->getHeight();
   float map_tile_length = this->m_cmap_data_weak->getTileLength();
   
+  std::cout << "Precalculating world object transforms" << std::endl;
+  
   for (int y = 0; y < map_square_size; y++) {
     for (int x = 0; x < map_square_size; x++) {
       int xy = (y*map_square_size)+x;
@@ -90,7 +92,7 @@ void TerrainRenderer::preloadObjectMap()
       float object_height;
       CEWorldModel* w_obj = this->m_crsc_data_weak->getWorldModel(obj_id);
       if (w_obj == nullptr) {
-          printf("Invalid object referenced\n");
+          printf("Invalid object referenced: %d not found in RSC\n", obj_id);
           continue;
       }
       
@@ -189,16 +191,6 @@ void TerrainRenderer::loadShader()
   this->m_water_shader->setVec2("atlasSize", glm::vec2(atlas_square_size));
 }
 
-//      /*
-//       * WTF Guide:
-//       * even y: (xev)0-1 (xod)1-1 0-1 1-1
-//       * odd y   (xev)0-0 (xod)1-0 0-0 1-0
-//       *
-//       * We basically need to map the uv coords properly based on the position of the
-//       * tile.
-//       *
-//       */
-
 void TerrainRenderer::Update(Transform& transform, Camera& camera)
 {
   glm::mat4 MVP = transform.GetMVP(camera);
@@ -212,6 +204,7 @@ void TerrainRenderer::Update(Transform& transform, Camera& camera)
   this->m_shader->setMat4("projection", camera.GetProjection());
   this->m_shader->setFloat("time", (float)t);
 
+  // TODO: use UBO
   this->m_water_shader->use();
   this->m_water_shader->setMat4("MVP", MVP);
   this->m_water_shader->setMat4("model", model);

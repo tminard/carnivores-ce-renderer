@@ -425,6 +425,7 @@ int main(int argc, const char * argv[])
       glDepthFunc(GL_LESS);
       checkGLError("After glDepthFunc (water)");
       
+      cMapRsc->getTexture(0)->use();
       terrain->RenderWater();
       checkGLError("After terrain->RenderWater (water)");
     }

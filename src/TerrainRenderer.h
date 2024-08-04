@@ -76,7 +76,6 @@ private:
   glm::vec4 getScaledAtlasUVQuad(glm::vec2 atlas_uv, int texture_id_1, int texture_id_2);
 
   glm::vec3 calcWorldVertex(int tile_x, int tile_y, bool water, float water_height_scaled);
-  float calcWaterAlpha(int tile_x, int tile_y, float water_height_scaled);
 
   std::array<glm::vec2, 4> calcUVMapForQuad(int x, int y, bool quad_reversed, int rotation_code);
   void updateUnderwaterStateTexture(const std::vector<float>& data);

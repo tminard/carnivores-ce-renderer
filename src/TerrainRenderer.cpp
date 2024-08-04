@@ -34,6 +34,7 @@ TerrainRenderer::TerrainRenderer(std::shared_ptr<C2MapFile> c_map_weak, std::sha
 
 TerrainRenderer::~TerrainRenderer()
 {
+  glDeleteTextures(1, &this->underwaterStateTexture);
   glDeleteBuffers(1, &this->m_vertex_array_buffer);
   glDeleteBuffers(1, &this->m_indices_array_buffer);
   glDeleteVertexArrays(1, &this->m_vertex_array_object);
@@ -269,12 +270,14 @@ std::array<glm::vec2, 4> TerrainRenderer::calcUVMapForQuad(int x, int y, bool qu
   std::array<glm::vec2, 4> vertex_uv_mapping;
   x = 0; y = 0;
 
-  // This is called "half pixel correction" - a niave implementation. See https://gamedev.stackexchange.com/questions/46963/how-to-avoid-texture-bleeding-in-a-texture-atlas for something better. Note this doesn't solve mipmaps issue
+  // This is called "half pixel correction" - a naive implementation. See https://gamedev.stackexchange.com/questions/46963/how-to-avoid-texture-bleeding-in-a-texture-atlas for something better. Note this doesn't solve mipmaps issue
   // For solution, see answer here: https://gamedev.stackexchange.com/questions/46963/how-to-avoid-texture-bleeding-in-a-texture-atlas
   float max_tc = 1.f;
   float tu, tv;
   float i = 1.f;
-  tu = 0.f; tv = 0.f;
+  tu = 0.0f; tv = 0.0f;
+  
+  // See https://github.com/carnivores-cpe/carnivores_original/blob/022cc1761ddd294df8aa0b8035edceecb84ecafb/Carnivores%202/Render3DFX.cpp#L1050
   
   if (!quad_reversed) {
     switch (rotation_code) {
@@ -398,20 +401,6 @@ glm::vec4 TerrainRenderer::getScaledAtlasUVQuad(glm::vec2 atlas_uv, int texture_
   return glm::vec4(this->scaleAtlasUV(atlas_uv, texture_id_2), this->scaleAtlasUV(atlas_uv, texture_id_1));
 }
 
-  // TODO: alpha should be dependent on the angle of viewer, and thus handled in a shader. This calculation is based on a precalculated 90 degree view
-float TerrainRenderer::calcWaterAlpha(int tile_x, int tile_y, float water_height_scaled)
-{
-  int width = this->m_cmap_data_weak->getWidth();
-  int xy = (tile_y*width) + tile_x;
-  float h_delta = water_height_scaled - this->m_cmap_data_weak->getHeightAt(xy);
-  float max_delta = this->m_cmap_data_weak->getTileLength() * 0.5f;
-
-  h_delta = fminf(h_delta, max_delta);
-  float trans = 1.f * (h_delta / max_delta); // 0 = close, max .9
-
-  return trans;
-}
-
 /*
  * add to water VBO at given location
  */
@@ -496,15 +485,16 @@ void TerrainRenderer::loadWaterAt(int x, int y)
   glm::vec3 vpositionUL = this->calcWorldVertex(x, fmin(y + 1, width - 1), true, wheight);
   glm::vec3 vpositionUR = this->calcWorldVertex(fmin(x + 1, height - 1), fmin(y + 1, width - 1), true, wheight);
 
-  bool quad_reverse = this->m_cmap_data_weak->isQuadRotatedAt(xy);
+  // bool quad_reverse = this->m_cmap_data_weak->isQuadRotatedAt(xy);
+  bool quad_reverse = false;
   int texture_id = this->m_cmap_data_weak->getWaterTextureIDAt(xy, water_data.texture_id);
 
-  std::array<glm::vec2, 4> vertex_uv_mapping = this->calcUVMapForQuad(x, y, quad_reverse, 0);
+  std::array<glm::vec2, 4> vertex_uv_mapping = this->calcUVMapForQuad(x, y, false, 0);
 
-  Vertex v1(vpositionLL, vertex_uv_mapping[0], glm::vec3(0.0, 1.0, 0.0), false, calcWaterAlpha(x, y, wheight), texture_id, 0);
-  Vertex v2(vpositionLR, vertex_uv_mapping[1], glm::vec3(0.0, 1.0, 0.0), false, calcWaterAlpha(fmin(x+1, height-1), y, wheight), texture_id, 0);
-  Vertex v3(vpositionUL, vertex_uv_mapping[2], glm::vec3(0.0, 1.0, 0.0), false, calcWaterAlpha(x, fmin(y+1, width-1), wheight), texture_id, 0);
-  Vertex v4(vpositionUR, vertex_uv_mapping[3], glm::vec3(0.0, 1.0, 0.0), false, calcWaterAlpha(fmin(x+1, height-1), fmin(y+1, width-1), wheight), texture_id, 0);
+  Vertex v1(vpositionLL, scaleAtlasUV(vertex_uv_mapping[0], texture_id), glm::vec3(0.0, 1.0, 0.0), false, water_object->m_transparency, texture_id, 0);
+  Vertex v2(vpositionLR, scaleAtlasUV(vertex_uv_mapping[1], texture_id), glm::vec3(0.0, 1.0, 0.0), false, water_object->m_transparency, texture_id, 0);
+  Vertex v3(vpositionUL, scaleAtlasUV(vertex_uv_mapping[2], texture_id), glm::vec3(0.0, 1.0, 0.0), false, water_object->m_transparency, texture_id, 0);
+  Vertex v4(vpositionUR, scaleAtlasUV(vertex_uv_mapping[3], texture_id), glm::vec3(0.0, 1.0, 0.0), false, water_object->m_transparency, texture_id, 0);
 
   water_object->m_vertices.push_back(v1);
   water_object->m_vertices.push_back(v2);
@@ -817,7 +807,7 @@ void TerrainRenderer::loadIntoHardwareMemory()
   glEnableVertexAttribArray(1); // normal
   glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(CETerrainVertex), (void*)sizeof(glm::vec3));
 
-  glEnableVertexAttribArray(2); // txture coords
+  glEnableVertexAttribArray(2); // texture coords
   glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(CETerrainVertex), (void*)(sizeof(glm::vec3)+sizeof(glm::vec3)));
 
   glEnableVertexAttribArray(3); // brightness
@@ -869,8 +859,8 @@ void TerrainRenderer::RenderWater()
   this->m_water_shader->bindTexture("skyTexture", m_crsc_data_weak->getDaySky()->getTextureID(), 2);
 
   for (int w = 0; w < this->m_waters.size(); w++) {
-    if (this->m_waters[w].m_vertices.size() < 30) continue;
-    this->m_crsc_data_weak->getTexture(this->m_waters[w].m_texture_id + 1)->use();
+    // if (this->m_waters[w].m_vertices.size() < 30) continue;
+    //this->m_crsc_data_weak->getTexture(this->m_waters[w].m_texture_id + 1)->use();
 
     glBindVertexArray(this->m_waters[w].m_vao);
 

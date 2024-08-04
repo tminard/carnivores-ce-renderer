@@ -1,9 +1,9 @@
 {
   "basePath": "../../runtime/cce/",
   "map": {
-    "type": "C1",
-    "map": "../game/c1/area6.map",
-    "rsc": "../game/c1/area6.rsc"
+    "type": "C2",
+    "map": "../game/ice/area2.map",
+    "rsc": "../game/ice/area2.rsc"
   },
   "video": {
     "fullscreen": true
@@ -20,14 +20,10 @@
         "controller": "GenericAmbient",
         "args": {
           "animations": {
-            "WALK": "Tx_walk",
-            "RUN": "Vel_run1",
-            "DIE": "Vel_die1",
-            "SLEEP": "Vel_slp"
+            "WALK": "Tx_walk"
           },
           "character": {
-            "walkSpeed": 2.85,
-            "runSpeed": 6
+            "walkSpeed": 2.85
           }
         }
       }
@@ -43,14 +39,10 @@
         "controller": "GenericAmbient",
         "args": {
           "animations": {
-            "WALK": "Tx_walk",
-            "RUN": "Vel_run1",
-            "DIE": "Vel_die1",
-            "SLEEP": "Vel_slp"
+            "WALK": "Tx_walk"
           },
           "character": {
-            "walkSpeed": 2.85,
-            "runSpeed": 6
+            "walkSpeed": 2.85
           }
         }
       }
@@ -66,14 +58,10 @@
         "controller": "GenericAmbient",
         "args": {
           "animations": {
-            "WALK": "Tx_walk",
-            "RUN": "Vel_run1",
-            "DIE": "Vel_die1",
-            "SLEEP": "Vel_slp"
+            "WALK": "Tx_walk"
           },
           "character": {
-            "walkSpeed": 2.85,
-            "runSpeed": 6
+            "walkSpeed": 2.85
           }
         }
       }
@@ -89,14 +77,10 @@
         "controller": "GenericAmbient",
         "args": {
           "animations": {
-            "WALK": "Tx_walk",
-            "RUN": "Vel_run1",
-            "DIE": "Vel_die1",
-            "SLEEP": "Vel_slp"
+            "WALK": "Tx_walk"
           },
           "character": {
-            "walkSpeed": 2.85,
-            "runSpeed": 6
+            "walkSpeed": 2.85
           }
         }
       }
@@ -112,14 +96,10 @@
         "controller": "GenericAmbient",
         "args": {
           "animations": {
-            "WALK": "Tx_walk",
-            "RUN": "Vel_run1",
-            "DIE": "Vel_die1",
-            "SLEEP": "Vel_slp"
+            "WALK": "Tx_walk"
           },
           "character": {
-            "walkSpeed": 2.85,
-            "runSpeed": 6
+            "walkSpeed": 2.85
           }
         }
       }
@@ -135,14 +115,10 @@
         "controller": "GenericAmbient",
         "args": {
           "animations": {
-            "WALK": "Tx_walk",
-            "RUN": "Vel_run1",
-            "DIE": "Vel_die1",
-            "SLEEP": "Vel_slp"
+            "WALK": "Tx_walk"
           },
           "character": {
-            "walkSpeed": 2.85,
-            "runSpeed": 6
+            "walkSpeed": 2.85
           }
         }
       }

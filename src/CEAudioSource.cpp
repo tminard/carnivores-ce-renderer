@@ -87,7 +87,7 @@ void CEAudioSource::setNoDistance(float gain)
 {
     alSourcef(m_audio_source, AL_GAIN, gain);
     alSourcei(m_audio_source, AL_SOURCE_RELATIVE, AL_TRUE); // true means the below pos is an offset against the current listener position
-    alSource3f(m_audio_source, AL_POSITION, 0.0, -1.0, 0.0); // TODO: make this an enum of "at, behind, right" etc
+    alSource3f(m_audio_source, AL_POSITION, 0.0, 1.0, 0.0); // TODO: make this an enum of "at, behind, right" etc
 }
 
 void CEAudioSource::setMaxDistance(int distance)
@@ -113,6 +113,11 @@ void CEAudioSource::setPosition(glm::vec3 position)
 {
     alSource3f(m_audio_source, AL_POSITION, position.x, position.y, position.z);
 }
+
+void CEAudioSource::setGain(float gain) { 
+  alSourcef(m_audio_source, AL_GAIN, gain);
+}
+
 
 
 

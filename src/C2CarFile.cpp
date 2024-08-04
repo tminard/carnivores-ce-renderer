@@ -140,9 +140,8 @@ void C2CarFile::load_file(std::string file_name)
       std::unique_ptr<CEAudioSource> src(new CEAudioSource(snd));
 
       // TODO: use tile length
-      //src->setClampDistance((256*2));
-      //src->setMaxDistance((256*200));
-      src->setLooped(true);
+      src->setGain(1.1f);
+      src->setLooped(false);
       
       std::cout << "Loaded audio " << sndName << std::endl;
 

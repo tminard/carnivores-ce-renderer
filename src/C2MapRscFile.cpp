@@ -415,6 +415,7 @@ void C2MapRscFile::load(const std::string &file_name, std::filesystem::path base
       // TODO: use tile length
       src->setClampDistance((256*2));
       src->setMaxDistance((256*200));
+      src->setGain(1.f);
       src->setLooped(false);
 
       this->m_random_audio_sources.push_back(std::move(src));
@@ -439,7 +440,7 @@ void C2MapRscFile::load(const std::string &file_name, std::filesystem::path base
       this->m_ambient_sounds.push_back(snd);
       std::unique_ptr<CEAudioSource> src(new CEAudioSource(snd));
 
-      src->setNoDistance(1.f);
+      src->setNoDistance(0.9f);
       src->setLooped(false);
 
       this->m_ambient_audio_sources.push_back(std::move(src));

@@ -53,11 +53,12 @@ class CEAIGenericAmbientManager {
   double m_target_expire_time;
   double m_last_upload_time = 0;
   double m_last_idle_time = 0;
+  double m_path_search_started_at = -1.0;
   
   AIGenericMood m_mood = CURIOUS;
   
   glm::vec3 m_current_target;
-  glm::vec3 m_tracked_target;
+  glm::vec2 m_tracked_target;
   
   std::vector<glm::vec2> m_path_waypoints = {};
   
@@ -66,6 +67,8 @@ class CEAIGenericAmbientManager {
   
   bool isIdleAnimation(std::string animationName);
   std::string chooseIdleAnimation();
+  
+  void updateInflightPathsearch(double currentTime);
   
 public:
   CEAIGenericAmbientManager(json jsonConfig, std::shared_ptr<CERemotePlayerController> playerController, std::shared_ptr<C2MapFile> map, std::shared_ptr<C2MapRscFile> rsc);

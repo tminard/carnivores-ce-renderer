@@ -124,10 +124,47 @@ void CEAIGenericAmbientManager::chooseNewTarget(glm::vec3 currentPosition, doubl
   }
 }
 
+void CEAIGenericAmbientManager::updateInflightPathsearch(double currentTime)
+{
+  if (m_path_search_started_at < 0) return;
+
+  JPS::PathVector path = {};
+  auto res = m_path_search_instance->findPathStep(32);
+
+  if (res == JPS_FOUND_PATH) {
+    // We found a path. Update planned route
+    res = m_path_search_instance->findPathFinish(path, 1);
+    if (res == JPS_FOUND_PATH) {
+      for (auto p : path) {
+        m_path_waypoints.push_back(glm::vec2(p.x, p.y));
+      }
+      
+      popNextTarget(currentTime);
+    } else {
+      // Some memory issue or something - invalidate target
+      m_target_expire_time = currentTime - 1.0;
+    }
+  
+    m_path_search_started_at = -1.0;
+
+    return;
+  } else if (res == JPS_NEED_MORE_STEPS) {
+    // Keep trying
+    return;
+  }
+  
+  // Mark target expired so we pick a new one
+  m_target_expire_time = currentTime - 1.0;
+}
+
 void CEAIGenericAmbientManager::Process(double currentTime) {
   // Update pathfinding
   double deltaTime = currentTime - m_last_process_time;
   
+  // Update in-flight pathfinding first if needed
+  updateInflightPathsearch(currentTime);
+  
+  // Check route following and target state
   glm::vec3 currentPosition = m_player_controller->getPosition();
   glm::vec3 currentForward = m_player_controller->getCamera()->GetForward();
   glm::vec3 forward = glm::normalize(m_current_target - currentPosition);
@@ -233,52 +270,38 @@ void CEAIGenericAmbientManager::ReportNotableEvent(glm::vec3 position, std::stri
   }
 }
 
-//bool CEAIGenericAmbientManager::SetCurrentTarget(glm::vec3 targetPosition, double currentTime) {
-//  // TODO: GREATLY improve this.
-//  if (m_tracked_target.x == (int)(targetPosition.x / 1024.f) && m_tracked_target.y == (int)(targetPosition.z / 1024.f)) return;
-//
-//  float tileSize = m_map->getTileLength();
-//  glm::vec2 tileCoords = glm::vec2(int(targetPosition.x / tileSize), int(targetPosition.z / tileSize));
-//  // TODO: use incremental pathfinding here (w/ cache) since this updates every frame
-//  // std::cout << "Finding path to [" << tileCoords.x << ", " << tileCoords.y << "]" << std::endl;
-//  JPS::PathVector path = {};
-//  auto worldPos = m_player_controller->getWorldPosition();
-//  bool found = JPS::findPath(path, m_path_finder, worldPos.x, worldPos.y, tileCoords.x, tileCoords.y, 1);
-//  if (found) {
-//    for (auto p : path) {
-//      m_path_waypoints.push_back(glm::vec2(p.x, p.y));
-//    }
-//
-//    popNextTarget(currentTime);
-//  }
-//  
-//  m_tracked_target.x = (int)(targetPosition.x / 1024.f);
-//  m_tracked_target.y = (int)(targetPosition.z / 1024.f);
-//  
-//  return found;
-//}
-
 bool CEAIGenericAmbientManager::SetCurrentTarget(glm::vec3 targetPosition, double currentTime) {
-  // TODO: GREATLY improve this.
-  if (m_tracked_target.x == (int)(targetPosition.x / 1024.f) && m_tracked_target.y == (int)(targetPosition.z / 1024.f)) return;
-
   float tileSize = m_map->getTileLength();
   glm::vec2 tileCoords = glm::vec2(int(targetPosition.x / tileSize), int(targetPosition.z / tileSize));
-  // TODO: use incremental pathfinding here (w/ cache) since this updates every frame
-  // std::cout << "Finding path to [" << tileCoords.x << ", " << tileCoords.y << "]" << std::endl;
-  JPS::PathVector path = {};
+  
+  if (m_tracked_target == tileCoords) return true;
+  
   auto worldPos = m_player_controller->getWorldPosition();
-  bool found = JPS::findPath(path, m_path_finder, worldPos.x, worldPos.y, tileCoords.x, tileCoords.y, 1);
-  if (found) {
-    for (auto p : path) {
-      m_path_waypoints.push_back(glm::vec2(p.x, p.y));
-    }
 
-    popNextTarget(currentTime);
+  JPS::PathVector path = {};
+  // WARNING: init will abort any active search
+  auto res = m_path_search_instance->findPathInit(JPS::Pos(worldPos.x, worldPos.y), JPS::Pos(tileCoords.x, tileCoords.y));
+  
+  bool found = false;
+  if (res == JPS_FOUND_PATH) {
+    // Greedy algo already found a path
+    res = m_path_search_instance->findPathFinish(path, 1);
+    if (res == JPS_FOUND_PATH) {
+      for (auto p : path) {
+        m_path_waypoints.push_back(glm::vec2(p.x, p.y));
+      }
+
+      popNextTarget(currentTime);
+      found = true;
+    }
+    m_path_search_started_at = -1.0;
+  } else if (res == JPS_NEED_MORE_STEPS) {
+    // Otherwise, defer to future frames
+    m_path_search_started_at = currentTime;
+    found = true;
   }
   
-  m_tracked_target.x = (int)(targetPosition.x / 1024.f);
-  m_tracked_target.y = (int)(targetPosition.z / 1024.f);
+  m_tracked_target = tileCoords;
   
   return found;
 }

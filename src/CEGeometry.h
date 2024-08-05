@@ -31,8 +31,6 @@ private:
   int m_texture_height;
   
   bool m_transparency;
-
-  float m_vertice_light[4][1024];
   
   int m_current_frame;
 

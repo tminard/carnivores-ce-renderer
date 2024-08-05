@@ -85,15 +85,6 @@ else()
     target_link_libraries(${PROJECT_NAME} glad ${GLFW3_LIBRARY} OpenAL32.lib OpenGL32.lib ${LIBS})
 endif()
 
-if(APPLE)
-    find_library(GLFW3_LIBRARY glfw3 PATHS /usr/local/lib /opt/homebrew/lib)
-    if (NOT GLFW3_LIBRARY)
-        message(FATAL_ERROR "Could not find glfw3 library")
-    endif()
-    message(STATUS "GLFW3 found: ${GLFW3_LIBRARY}")
-    link_directories("/usr/local/lib" "/opt/homebrew/lib")
-endif()
-
 # Create virtual folders to make it look nicer in VS
 if(MSVC_IDE)
 	# Macro to preserve source files hierarchy in the IDE

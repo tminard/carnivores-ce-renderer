@@ -261,6 +261,11 @@ int main(int argc, const char * argv[])
   render_terrain = true;
   
   glfwMakeContextCurrent(window);
+  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+      std::cerr << "Failed to initialize GLAD" << std::endl;
+      return -1;
+  }
+  
   int width, height;
   glfwGetFramebufferSize(window, &width, &height);
   

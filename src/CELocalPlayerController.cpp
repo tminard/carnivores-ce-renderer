@@ -238,8 +238,8 @@ void CELocalPlayerController::move(double currentTime, double deltaTime, bool fo
 
   glm::vec3 pos = m_camera.GetPosition() + movement * (m_current_speed * dTime);
   glm::vec2 worldPos = glm::vec2(int(floorf(pos.x / m_tile_size)), int(floorf(pos.z / m_tile_size)));
-  bool outOfBounds = worldPos.x < 0 || worldPos.x > m_map->getWidth() || worldPos.y < 0 || worldPos.y > m_map->getHeight();
-  
+  bool outOfBounds = worldPos.x < 0 || worldPos.x > m_map->getHeight() || worldPos.y < 0 || worldPos.y > m_map->getWidth();
+
   // If we are currently out of bounds then do something about it
   if (outOfBounds) {
     pos = m_map->getRandomLanding();

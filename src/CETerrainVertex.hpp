@@ -14,11 +14,10 @@ struct CETerrainVertex {
   vec3 m_position;
   vec3 m_normal;
   vec4 m_texture_coords;
-  float m_brightness;
 
-  CETerrainVertex(const glm::vec3& position, const glm::vec4& texture_coords, const glm::vec3& normal, float brightness);
+  CETerrainVertex(const glm::vec3& position, const glm::vec4& texture_coords, const glm::vec3& normal);
 };
 
-CETerrainVertex::CETerrainVertex(const glm::vec3& position, const glm::vec4& texture_coords, const glm::vec3& normal, const float brightness) : m_position(position), m_normal(normal), m_brightness(brightness), m_texture_coords(texture_coords)
+CETerrainVertex::CETerrainVertex(const glm::vec3& position, const glm::vec4& texture_coords, const glm::vec3& normal) : m_position(position), m_normal(normal), m_texture_coords(texture_coords)
 {
 }

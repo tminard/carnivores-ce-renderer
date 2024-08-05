@@ -698,10 +698,10 @@ void TerrainRenderer::loadIntoHardwareMemory()
       glm::vec3 normalUL = (y + 1 < height) ? vertexNormals[(y + 1) * width + x] : normalLL;
       glm::vec3 normalUR = (y + 1 < height && x + 1 < width) ? vertexNormals[(y + 1) * width + (x + 1)] : normalLL;
 
-      CETerrainVertex v1(vpositionLL, this->getScaledAtlasUVQuad(vertex_uv_mapping[0], texID, texID2), normalLL, this->m_cmap_data_weak->getBrightnessAt(x, y));
-      CETerrainVertex v2(vpositionLR, this->getScaledAtlasUVQuad(vertex_uv_mapping[1], texID, texID2), normalLR, this->m_cmap_data_weak->getBrightnessAt(fmin(x + 1, width - 1), y));
-      CETerrainVertex v3(vpositionUL, this->getScaledAtlasUVQuad(vertex_uv_mapping[2], texID, texID2), normalUL, this->m_cmap_data_weak->getBrightnessAt(x, fmin(y + 1, height - 1)));
-      CETerrainVertex v4(vpositionUR, this->getScaledAtlasUVQuad(vertex_uv_mapping[3], texID, texID2), normalUR, this->m_cmap_data_weak->getBrightnessAt(fmin(x + 1, width - 1), fmin(y + 1, height - 1)));
+      CETerrainVertex v1(vpositionLL, this->getScaledAtlasUVQuad(vertex_uv_mapping[0], texID, texID2), normalLL);
+      CETerrainVertex v2(vpositionLR, this->getScaledAtlasUVQuad(vertex_uv_mapping[1], texID, texID2), normalLR);
+      CETerrainVertex v3(vpositionUL, this->getScaledAtlasUVQuad(vertex_uv_mapping[2], texID, texID2), normalUL);
+      CETerrainVertex v4(vpositionUR, this->getScaledAtlasUVQuad(vertex_uv_mapping[3], texID, texID2), normalUR);
       
       m_vertices.push_back(v1);
       m_vertices.push_back(v2);
@@ -762,7 +762,7 @@ void TerrainRenderer::loadIntoHardwareMemory()
         walkable = false;
       } else if (m_cmap_data_weak->hasDangerTileAt(m_crsc_data_weak, glm::vec2(x, y))) {
         walkable = false;
-      } else if (m_cmap_data_weak->getGroundAngleAt(x, y) > 45.f) {
+      } else if (m_cmap_data_weak->getGroundAngleAt(x, y) > 25.f) {
         walkable = false;
       } else {
         // 19.f is a bit more realistic

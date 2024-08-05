@@ -57,12 +57,11 @@ namespace fs = std::filesystem;
 using json = nlohmann::json;
 
 struct ConfigSpawn {
+  json data;
   std::string file;
   std::string animation;
   std::vector<int> position;
-  bool isAmbient;
-  std::string ambientWalkAnim;
-  json data;
+  std::string aiControllerName;
 };
 
 std::unique_ptr<LocalInputManager> input_manager(new LocalInputManager());
@@ -144,15 +143,10 @@ int main(int argc, const char * argv[])
       spawn.file = spawnJson.value("file", "");
       spawn.animation = spawnJson.value("animation", "");
       spawn.position = spawnJson.value("position", std::vector<int>{});
-      spawn.isAmbient = false;
-      spawn.ambientWalkAnim = "";
       // TODO: temporary. Switch to generic controlled character class from direct remote controller.
       if (spawnJson.contains("attachAI")) {
         if (spawnJson["attachAI"].contains("controller")) {
-          if (spawnJson["attachAI"]["controller"] == "GenericAmbient") {
-            spawn.isAmbient = true;
-            spawn.ambientWalkAnim = spawnJson["attachAI"]["args"]["animations"]["WALK"];
-          }
+          spawn.aiControllerName = spawnJson["attachAI"]["controller"];
         }
       }
       spawns.push_back(spawn);
@@ -217,24 +211,18 @@ int main(int argc, const char * argv[])
       );
 
       character->setPosition(spawnPos);
-      
-      float walkSpeed = spawn.data["attachAI"]["args"]["character"]["walkSpeed"];
-      float heightOffset = spawn.data["attachAI"]["args"]["character"].contains("heightOffset") ? (float)spawn.data["attachAI"]["args"]["character"]["heightOffset"] : 0.f;
-  
-      character->setWalkSpeed(walkSpeed);
-      character->setHeightOffset(heightOffset);
 
-      characters.push_back(character);
-      if (spawn.isAmbient) {
-        AIGenericAmbientManagerConfig aiConfig;
-        aiConfig.WalkAnimName = spawn.ambientWalkAnim;
+      if (spawn.aiControllerName == "GenericAmbient") {
+        auto aiArgs = spawn.data["attachAI"]["args"];
         auto ambientMg = std::make_unique<CEAIGenericAmbientManager>(
-                                                                     aiConfig,
+                                                                     aiArgs,
                                                                      character,
                                                                      cMap,
                                                                      cMapRsc);
         ambients.push_back(std::move(ambientMg));
       }
+      
+      characters.push_back(character);
       
       std::cout << "Spawned " << spawn.file << " # " << dCount << " @ [" << spawn.position[0] << "," << spawn.position[1] << "];" << std::endl;
     } else {
@@ -329,12 +317,6 @@ int main(int argc, const char * argv[])
       }
     }
     
-    for (const auto& ambient : ambients) {
-      if (ambient) {
-        ambient->Process(currentTime);
-      }
-    }
-    
     // Clear color, depth, and stencil buffers at the beginning of each frame
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     checkGLError("After glClear");
@@ -347,6 +329,13 @@ int main(int argc, const char * argv[])
       if (m_random_ambient) {
         g_audio_manager->play(std::move(m_random_ambient));
         lastRndAudioTime = currentTime;
+      }
+    }
+    
+    for (const auto& ambient : ambients) {
+      if (ambient) {
+        ambient->Process(currentTime);
+        ambient->ReportNotableEvent(currentPosition, "PLAYER_SPOTTED", currentTime);
       }
     }
     

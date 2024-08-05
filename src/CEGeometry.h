@@ -61,7 +61,7 @@ public:
 
   void saveTextureAsBMP(const std::string& file_name );
   void Update(Transform& transform, Camera& camera);
-  bool SetAnimation(std::weak_ptr<CEAnimation> animation, double atTime, double startAt, double lastUpdateAt, bool deferUpdate, bool maxFPS, bool notVisible, float playbackSpeed);
+  bool SetAnimation(std::weak_ptr<CEAnimation> animation, double atTime, double startAt, double lastUpdateAt, bool deferUpdate, bool maxFPS, bool notVisible, float playbackSpeed, bool loop);
   void Draw();
   
   void ConfigureShaderUniforms(C2MapFile* map, C2MapRscFile* rsc);

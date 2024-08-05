@@ -3,7 +3,6 @@
 layout(location = 0) in vec3 position;
 layout(location = 1) in vec3 normal;
 layout(location = 2) in vec4 texCoords;
-layout(location = 3) in float brightness; // 0 = max bright; 55 = max dark
 
 out highp vec2 texCoord0;
 out highp vec2 texCoord1;

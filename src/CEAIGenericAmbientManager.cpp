@@ -228,7 +228,8 @@ void CEAIGenericAmbientManager::Process(double currentTime) {
     m_player_controller->MoveTo(m_current_target, deltaTime);
   } else if (invalidTarget) {
     m_player_controller->StopMovement();
-    std::cout << m_config.AiName << " cannot move; invalid target" << std::endl;
+    std::cout << m_config.AiName << " cannot move; invalid target. Redeploying." << std::endl;
+    m_player_controller->setPosition(m_map->getRandomLanding());
   }
   
   m_player_controller->UpdateLookAtDirection(m_current_target, currentTime);

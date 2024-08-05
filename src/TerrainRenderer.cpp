@@ -762,18 +762,18 @@ void TerrainRenderer::loadIntoHardwareMemory()
         walkable = false;
       } else if (m_cmap_data_weak->hasDangerTileAt(m_crsc_data_weak, glm::vec2(x, y))) {
         walkable = false;
-      } else if (m_cmap_data_weak->getGroundAngleAt(x, y) > 25.f) {
+      } else if (m_cmap_data_weak->getGroundAngleAt(x, y) > 35.f) {
         walkable = false;
-      } else {
-        // 19.f is a bit more realistic
-        auto objectIdx = m_cmap_data_weak->getObjectAt(xy);
-        if (objectIdx < 254) {
-          auto obj = m_crsc_data_weak->getWorldModel(objectIdx);
-          if (obj->getObjectInfo()->Radius > 32.f) {
-            walkable = false;
-          }
-        }
       }
+//      } else {
+//        auto objectIdx = m_cmap_data_weak->getObjectAt(xy);
+//        if (objectIdx < 254) {
+//          auto obj = m_crsc_data_weak->getWorldModel(objectIdx);
+//          if (obj->getObjectInfo()->Radius > 32.f) {
+//            walkable = false;
+//          }
+//        }
+//      }
       
       if (!walkable) {
         m_cmap_data_weak->setWalkableFlagsAt(glm::vec2(x, y), 0x1);

@@ -44,6 +44,8 @@ class CEAIGenericAmbientManager {
   std::shared_ptr<C2MapFile> m_map;
   std::shared_ptr<C2MapRscFile> m_rsc;
   
+  std::shared_ptr<CERemotePlayerController> m_victim;
+  
   AIGenericAmbientManagerConfig m_config;
   
   CEWalkableTerrainPathFinder m_path_finder;

@@ -3,7 +3,6 @@
 layout(location = 0) in vec3 position;
 layout(location = 1) in vec3 normal;
 layout(location = 2) in vec4 texCoords;
-layout(location = 3) in float brightness; // 0 = max bright; 55 = max dark
 
 out highp vec2 texCoord0;
 out highp vec2 texCoord1;
@@ -25,7 +24,7 @@ uniform highp float time;
 void main()
 {
     vec4 worldPosition = model * vec4(position, 1.0);
-    vec3 lightPosition = vec3((tileWidth * terrainWidth * 0.5), (tileWidth * terrainHeight * 0.5), 20000.0);
+    vec3 lightPosition = vec3((tileWidth * terrainWidth * 0.5), (tileWidth * terrainHeight * 0.35), 10000.0);
 
     // Calculate quad coordinates for sampling water height texture
     quadCoord = vec2(position.x / tileWidth, position.z / tileWidth) / vec2(terrainWidth, terrainHeight);

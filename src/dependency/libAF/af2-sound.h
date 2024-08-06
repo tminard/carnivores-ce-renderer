@@ -18,6 +18,7 @@ namespace libAF2 {
 	public:
 
 		Sound();
+    Sound(const std::string sourceFile);
 		Sound(const Sound& sound);
 		~Sound();
 

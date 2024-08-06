@@ -27,6 +27,8 @@ public:
   const bool isPlaying() const;
 
   void setLooped(bool looped);
+  
+  void setGain(float gain);
 
   /*
    * The position of the source in world space
@@ -45,8 +47,6 @@ public:
   void setClampDistance(int distance);
 
   void setNoDistance(float gain);
-
-  // void setDropoff(int dropoff) - or an enum of QUIET, LOUD, VERY_LOUD? Maybe we abstract this a bit and instead make this API declaritive (ie "this is a loud sound that will carry far" etc)
 
 private:
   ALuint m_audio_buffer, m_audio_source;

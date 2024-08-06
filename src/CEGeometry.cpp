@@ -98,7 +98,7 @@ void CEGeometry::loadObjectIntoMemoryBuffer(std::string shaderName)
   glBindVertexArray(0);
 }
 
-bool CEGeometry::SetAnimation(std::weak_ptr<CEAnimation> animation, double atTime, double startAt, double lastUpdateAt, bool deferUpdate, bool maxFPS, bool notVisible, float playbackSpeed) {
+bool CEGeometry::SetAnimation(std::weak_ptr<CEAnimation> animation, double atTime, double startAt, double lastUpdateAt, bool deferUpdate, bool maxFPS, bool notVisible, float playbackSpeed, bool loop) {
   std::shared_ptr<CEAnimation> ani = animation.lock();
   if (!ani) {
     // Handle the case where the animation is no longer available or doesn't exist
@@ -135,6 +135,10 @@ bool CEGeometry::SetAnimation(std::weak_ptr<CEAnimation> animation, double atTim
   // Calculate the total time for the animation cycle
   double totalTime = totalFrames * timePerFrame;
   
+  if (!loop && (elapsedTime * 1000.0) >= ani->m_total_time) {
+    return false;
+  }
+
   // Wrap the elapsed time around the total animation time
   double currentTime = fmod(elapsedTime, totalTime);
   

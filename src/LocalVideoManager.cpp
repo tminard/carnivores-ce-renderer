@@ -11,17 +11,16 @@
 LocalVideoManager::LocalVideoManager(bool fullscreen)
 {
   initGLFW(fullscreen);
-  initGL();
 }
 
 void LocalVideoManager::printStats()
 {
   int major, minor, rev;
   glfwGetVersion(&major, &minor, &rev);
-  std::cout << "OpenGL - " << major << "." << minor << "." << rev << std::endl;
+  std::cout << "GLFW - " << major << "." << minor << "." << rev << std::endl;
   std::cout << glfwGetVersionString() << std::endl;
   const GLubyte* renderer = glGetString(GL_RENDERER);
-  std::cout << renderer << " : " << glGetString(GL_VERSION) << std::endl;
+  std::cout << renderer << " : Using OpenGL v: " << glGetString(GL_VERSION) << std::endl;
   
   std::cout << "=== Supported Extensions ===" << std::endl;
 
@@ -45,7 +44,7 @@ void LocalVideoManager::initGLFW(bool fullscreen)
 
   glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 4 );
   glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 1 );
-  glfwWindowHint( GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE );
+  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // Required on macOS
   glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );
   glfwWindowHint( GLFW_SAMPLES, 4 );
   glfwWindowHint( GLFW_OPENGL_DEBUG_CONTEXT, GL_FALSE );

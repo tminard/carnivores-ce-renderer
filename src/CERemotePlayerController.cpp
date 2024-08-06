@@ -25,7 +25,6 @@
 
 CERemotePlayerController::CERemotePlayerController(std::shared_ptr<LocalAudioManager> audioManager, std::shared_ptr<C2CarFile> carFile, std::shared_ptr<C2MapFile> map, std::shared_ptr<C2MapRscFile> rsc, std::string initialAnimationName): m_map(map), m_rsc(rsc), m_car(carFile), m_current_animation(initialAnimationName), m_g_audio_manager(audioManager)
 {
-  m_is_deployed = false;
   m_current_speed = 0.f;
   m_target_speed = 0.f;
   m_animation_started_at = 0.0;
@@ -86,10 +85,21 @@ glm::vec2 CERemotePlayerController::getWorldPosition() const
   return glm::vec2(int(floorf(pos.x / m_map->getTileLength())), int(floorf(pos.z / m_map->getTileLength())));
 }
 
-void CERemotePlayerController::setNextAnimation(std::string animationName)
+void CERemotePlayerController::setNextAnimation(std::string animationName, bool loop)
 {
   // TODO: track next animation so we can animation between them cleanly
   m_current_animation = animationName;
+  m_animation_started_at = glfwGetTime();
+  m_is_looping_anim = loop;
+}
+
+bool CERemotePlayerController::isAnimPlaying(double currentTime) {
+  if (m_current_animation == "") return false;
+  if (m_is_looping_anim) return true;
+  
+  auto ani = m_car->getAnimationByName(m_current_animation).lock();
+  
+  return ((currentTime - m_animation_started_at) * 1000.0) < ani->m_total_time;
 }
 
 void CERemotePlayerController::update(double currentTime, Transform &baseTransform, Camera &observerCamera, glm::vec2 observerWorldPosition)
@@ -106,7 +116,7 @@ void CERemotePlayerController::update(double currentTime, Transform &baseTransfo
   bool notVisible = dist > 128.f;
   
   m_geo->Update(baseTransform, observerCamera);
-  bool didUpdate = m_geo->SetAnimation(anim, currentTime, m_animation_started_at, m_animation_last_update_at, deferUpdate, maxFPS, notVisible, 1.f);
+  bool didUpdate = m_geo->SetAnimation(anim, currentTime, m_animation_started_at, m_animation_last_update_at, deferUpdate, maxFPS, notVisible, 1.f, m_is_looping_anim);
   
   if (didUpdate) {
     if (m_geo->GetCurrentFrame() == 0) {
@@ -126,6 +136,12 @@ void CERemotePlayerController::update(double currentTime, Transform &baseTransfo
 void CERemotePlayerController::Render()
 {
   m_geo->DrawInstances();
+}
+
+void CERemotePlayerController::StopMovement()
+{
+  m_current_speed = 0.0;
+  m_target_speed = 0.0;
 }
 
 void CERemotePlayerController::jump(double currentTime)
@@ -238,15 +254,6 @@ void CERemotePlayerController::MoveTo(glm::vec3 targetPosition, double deltaTime
   float dTime = static_cast<float>(deltaTime);
   const float tileSize = m_map->getTileLength(); // Size of one tile in the map
   
-  // Set the target speed based on the distance, taking tile size into account
-  if (distance > tileSize && !isTurning()) { // A small threshold to avoid jittering
-    m_target_speed = m_walk_speed;
-  } else if (isTurning()) {
-    m_target_speed = (m_walk_speed * 0.55f);
-  } else {
-    m_target_speed = 0.0f;
-  }
-  
   // Apply acceleration and deceleration to current speed
   if (m_target_speed > m_current_speed) {
     m_current_speed += m_acceleration * dTime;
@@ -283,7 +290,6 @@ void CERemotePlayerController::setHeightOffset(float offset) {
   m_player_height = offset;
 }
 
-
-
-
-
+void CERemotePlayerController::setTargetSpeed(float targetSpeed) { 
+  m_target_speed = m_map->getTileLength() * targetSpeed;
+}

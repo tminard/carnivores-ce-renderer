@@ -31,8 +31,6 @@ private:
   int m_texture_height;
   
   bool m_transparency;
-
-  float m_vertice_light[4][1024];
   
   int m_current_frame;
 
@@ -63,7 +61,7 @@ public:
 
   void saveTextureAsBMP(const std::string& file_name );
   void Update(Transform& transform, Camera& camera);
-  bool SetAnimation(std::weak_ptr<CEAnimation> animation, double atTime, double startAt, double lastUpdateAt, bool deferUpdate, bool maxFPS, bool notVisible, float playbackSpeed);
+  bool SetAnimation(std::weak_ptr<CEAnimation> animation, double atTime, double startAt, double lastUpdateAt, bool deferUpdate, bool maxFPS, bool notVisible, float playbackSpeed, bool loop);
   void Draw();
   
   void ConfigureShaderUniforms(C2MapFile* map, C2MapRscFile* rsc);

@@ -26,11 +26,24 @@ CELocalPlayerController::CELocalPlayerController(float world_width, float world_
 
 void CELocalPlayerController::lookAt(glm::vec3 direction)
 {
+  if (m_dead) return;
   this->m_camera.SetLookAt(direction);
 }
 
-void CELocalPlayerController::update(double deltaTime)
+void CELocalPlayerController::update(double deltaTime, double currentTime)
 {
+  if (m_dead) {
+    if (currentTime - m_died_at > 8.0) {
+      m_dead = false;
+      setPosition(m_map->getRandomLanding());
+      glm::vec3 direction = glm::normalize(m_body_at - m_camera.GetPosition());
+      m_camera.SetLookAt(direction);
+    } else {
+      panAroundBody(currentTime);
+      return;
+    }
+  }
+
   float dTime = static_cast<float>(deltaTime);
   if (m_target_speed < m_current_speed) {
       m_current_speed -= m_deceleration * dTime;
@@ -192,7 +205,24 @@ float CELocalPlayerController::computeSlope(float x, float z) {
     return slopeAngle;
 }
 
+void CELocalPlayerController::panAroundBody(double currentTime) {
+    float angle = (currentTime - m_died_at) * 0.5f;
+    float radius = 10.0f;
+    glm::vec3 bodyPosition = getPosition();
+    float x = bodyPosition.x + radius * cos(angle);
+    float z = bodyPosition.z + radius * sin(angle);
+    float y = bodyPosition.y + 5.0f;
+
+    glm::vec3 cameraPosition = glm::vec3(x, y, z);
+    setPosition(cameraPosition);
+  
+    glm::vec3 direction = glm::normalize(m_body_at - cameraPosition);
+    m_camera.SetLookAt(direction);
+}
+
 void CELocalPlayerController::move(double currentTime, double deltaTime, bool forwardPressed, bool backwardPressed, bool rightPressed, bool leftPressed) {
+  if (m_dead) return;
+
   float dTime = static_cast<float>(deltaTime);
   glm::vec3 movement(0.0f);
 
@@ -238,8 +268,8 @@ void CELocalPlayerController::move(double currentTime, double deltaTime, bool fo
 
   glm::vec3 pos = m_camera.GetPosition() + movement * (m_current_speed * dTime);
   glm::vec2 worldPos = glm::vec2(int(floorf(pos.x / m_tile_size)), int(floorf(pos.z / m_tile_size)));
-  bool outOfBounds = worldPos.x < 0 || worldPos.x > m_map->getWidth() || worldPos.y < 0 || worldPos.y > m_map->getHeight();
-  
+  bool outOfBounds = worldPos.x < 0 || worldPos.x > m_map->getHeight() || worldPos.y < 0 || worldPos.y > m_map->getWidth();
+
   // If we are currently out of bounds then do something about it
   if (outOfBounds) {
     pos = m_map->getRandomLanding();
@@ -336,8 +366,39 @@ glm::vec3 CELocalPlayerController::computeSlidingDirection(float x, float z) {
 }
 
 void CELocalPlayerController::jump(double currentTime) {
-  if (!m_is_jumping && (currentTime - m_last_jump_time) >= m_jump_cooldown) {
-      m_is_jumping = true;
-      m_vertical_speed = m_jump_speed;
-  }
+    if (!m_is_jumping && (currentTime - m_last_jump_time) >= m_jump_cooldown) {
+        m_is_jumping = true;
+
+        // Influence of forward speed on jump
+        glm::vec3 forward = m_camera.GetForward();
+        float forwardSpeedFactor = glm::dot(forward, glm::normalize(forward));
+        
+        // Calculate horizontal speed contribution to the jump
+        float horizontalSpeedContribution = glm::length(forward) * forwardSpeedFactor;
+        
+        // Reduce the vertical speed slightly if moving forward
+        float adjustedVerticalSpeed = m_jump_speed - (horizontalSpeedContribution * 0.2f);
+
+        // Set the vertical speed with the reduced factor
+        m_vertical_speed = adjustedVerticalSpeed;
+        
+        // Add a small forward boost if the player is moving forward
+        if (horizontalSpeedContribution > 0) {
+            m_camera.SetPos(m_camera.GetPosition() + forward * horizontalSpeedContribution * 0.5f);
+        }
+    }
 }
+
+bool CELocalPlayerController::isAlive(double currentTime)
+{
+  return (currentTime - m_died_at > 15.0);
+}
+
+void CELocalPlayerController::kill(double killedAt) { 
+  m_died_at = killedAt;
+  m_body_at = getPosition();
+  m_dead = true;
+  m_target_speed = 0.0;
+  m_current_speed = 0.0;
+}
+

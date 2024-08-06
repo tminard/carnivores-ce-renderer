@@ -21,6 +21,7 @@ file(GLOB_RECURSE SOURCE_FILES
 # Add header files
 file(GLOB_RECURSE HEADER_FILES 
 	${CMAKE_SOURCE_DIR}/src/*.h
+	${CMAKE_SOURCE_DIR}/thirdparty/wave/*.h
 	${CMAKE_SOURCE_DIR}/src/*.hpp)
 
 # Configure assets header file
@@ -61,6 +62,7 @@ include_directories(
 	"${CMAKE_SOURCE_DIR}/src"
 	"${CMAKE_SOURCE_DIR}/include"
 	${GLAD_INCLUDE_DIR}
+	"${CMAKE_SOURCE_DIR}/thirdparty/wave"
 )
 
 # Define the path to your runtime folder
@@ -83,15 +85,6 @@ if(APPLE)
     target_link_libraries(${PROJECT_NAME} glad ${GLFW3_LIBRARY} "-framework OpenAL" "-framework OpenGL" "-framework CoreFoundation" "-framework IOKit" "-framework CoreGraphics" "-framework AppKit" ${LIBS})
 else()
     target_link_libraries(${PROJECT_NAME} glad ${GLFW3_LIBRARY} OpenAL32.lib OpenGL32.lib ${LIBS})
-endif()
-
-if(APPLE)
-    find_library(GLFW3_LIBRARY glfw3 PATHS /usr/local/lib /opt/homebrew/lib)
-    if (NOT GLFW3_LIBRARY)
-        message(FATAL_ERROR "Could not find glfw3 library")
-    endif()
-    message(STATUS "GLFW3 found: ${GLFW3_LIBRARY}")
-    link_directories("/usr/local/lib" "/opt/homebrew/lib")
 endif()
 
 # Create virtual folders to make it look nicer in VS

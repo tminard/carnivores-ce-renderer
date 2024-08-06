@@ -45,9 +45,9 @@ private:
   std::unique_ptr<CEGeometry> m_geo;
   
   std::string m_current_animation;
-  // Currently always 0, but eventually marks the start of an ani
+
+  bool m_is_looping_anim = false;
   double m_animation_started_at;
-  
   double m_animation_last_update_at;
   
   float m_walk_speed;
@@ -69,8 +69,6 @@ private:
   double m_start_turn_time = -1.0;
   glm::vec3 m_start_turn_lookat = glm::vec3(0.f);
   const double m_jump_cooldown = 0.25; // Cooldown period in seconds
-  
-  bool m_is_deployed;
 
 public:
   void uploadStateToHardware();
@@ -79,8 +77,9 @@ public:
   glm::vec3 getPosition() const;
   glm::vec2 getWorldPosition() const;
   
-  void setNextAnimation(std::string animationName);
+  void setNextAnimation(std::string animationName, bool loop = true);
   const std::string getCurrentAnimation() const;
+  bool isAnimPlaying(double currentTime);
   
   void setWalkSpeed(float speedFactor);
   void setHeightOffset(float offset);
@@ -88,9 +87,11 @@ public:
   void setPosition(glm::vec3 position);
   void setElevation(float elevation);
   void lookAt(glm::vec3 direction);
+  void setTargetSpeed(float targetSpeed);
 
   void update(double currentTime, Transform &baseTransform, Camera &observerCamera, glm::vec2 observerWorldPosition);
   
+  void StopMovement();
   void MoveTo(glm::vec3 targetPosition, double currentTime);
   void UpdateLookAtDirection(glm::vec3 desiredLookAt, double currentTime);
   

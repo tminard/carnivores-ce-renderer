@@ -4,9 +4,12 @@
 #include <exception>
 #include <stdexcept>
 #include <cstring>
+#include <string>
+#include <memory>
+
+#include "AudioFile.h"
 
 using namespace libAF2;
-
 
 Sound::Sound()
 {
@@ -14,6 +17,20 @@ Sound::Sound()
 	m_channels = 0;
 	m_length = 0;
 	m_frequency = 0;
+}
+
+Sound::Sound(const std::string file)
+{
+  std::unique_ptr<AudioFile<int16_t>> audioFile = std::make_unique<AudioFile<int16_t>>();
+  audioFile->load(file);
+  
+  m_bitdepth = audioFile->getBitDepth();
+  m_channels = audioFile->getNumChannels();
+  m_length = audioFile->getNumSamplesPerChannel() * (audioFile->getNumChannels() * m_bitdepth / 8);
+  m_frequency = audioFile->getSampleRate();
+  
+  // Copy the data
+  m_data = audioFile->samples[0];
 }
 
 Sound::Sound(const Sound& other)

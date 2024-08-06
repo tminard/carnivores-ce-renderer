@@ -57,12 +57,11 @@ namespace fs = std::filesystem;
 using json = nlohmann::json;
 
 struct ConfigSpawn {
+  json data;
   std::string file;
   std::string animation;
   std::vector<int> position;
-  bool isAmbient;
-  std::string ambientWalkAnim;
-  json data;
+  std::string aiControllerName;
 };
 
 std::unique_ptr<LocalInputManager> input_manager(new LocalInputManager());
@@ -144,15 +143,10 @@ int main(int argc, const char * argv[])
       spawn.file = spawnJson.value("file", "");
       spawn.animation = spawnJson.value("animation", "");
       spawn.position = spawnJson.value("position", std::vector<int>{});
-      spawn.isAmbient = false;
-      spawn.ambientWalkAnim = "";
       // TODO: temporary. Switch to generic controlled character class from direct remote controller.
       if (spawnJson.contains("attachAI")) {
         if (spawnJson["attachAI"].contains("controller")) {
-          if (spawnJson["attachAI"]["controller"] == "GenericAmbient") {
-            spawn.isAmbient = true;
-            spawn.ambientWalkAnim = spawnJson["attachAI"]["args"]["animations"]["WALK"];
-          }
+          spawn.aiControllerName = spawnJson["attachAI"]["controller"];
         }
       }
       spawns.push_back(spawn);
@@ -193,6 +187,13 @@ int main(int argc, const char * argv[])
   
   std::unique_ptr<TerrainRenderer> terrain = std::make_unique<TerrainRenderer>(cMap, cMapRsc);
   
+  // Load audio assets
+  std::shared_ptr<Sound> die = std::make_shared<Sound>(basePath / "game" / "SOUNDFX" / "HUM_DIE1.WAV");
+  std::shared_ptr<CEAudioSource> dieAudioSrc = std::make_shared<CEAudioSource>(die);
+  dieAudioSrc->setLooped(false);
+  dieAudioSrc->setGain(2.0f);
+  dieAudioSrc->setClampDistance(4048.f);
+
   // shared loader to minimize resource usage
   std::unique_ptr<C2CarFilePreloader> cFileLoad(new C2CarFilePreloader);
 
@@ -217,24 +218,18 @@ int main(int argc, const char * argv[])
       );
 
       character->setPosition(spawnPos);
-      
-      float walkSpeed = spawn.data["attachAI"]["args"]["character"]["walkSpeed"];
-      float heightOffset = spawn.data["attachAI"]["args"]["character"].contains("heightOffset") ? (float)spawn.data["attachAI"]["args"]["character"]["heightOffset"] : 0.f;
-  
-      character->setWalkSpeed(walkSpeed);
-      character->setHeightOffset(heightOffset);
 
-      characters.push_back(character);
-      if (spawn.isAmbient) {
-        AIGenericAmbientManagerConfig aiConfig;
-        aiConfig.WalkAnimName = spawn.ambientWalkAnim;
+      if (spawn.aiControllerName == "GenericAmbient") {
+        auto aiArgs = spawn.data["attachAI"]["args"];
         auto ambientMg = std::make_unique<CEAIGenericAmbientManager>(
-                                                                     aiConfig,
+                                                                     aiArgs,
                                                                      character,
                                                                      cMap,
                                                                      cMapRsc);
         ambients.push_back(std::move(ambientMg));
       }
+      
+      characters.push_back(character);
       
       std::cout << "Spawned " << spawn.file << " # " << dCount << " @ [" << spawn.position[0] << "," << spawn.position[1] << "];" << std::endl;
     } else {
@@ -261,6 +256,11 @@ int main(int argc, const char * argv[])
   render_terrain = true;
   
   glfwMakeContextCurrent(window);
+  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+      std::cerr << "Failed to initialize GLAD" << std::endl;
+      return -1;
+  }
+  
   int width, height;
   glfwGetFramebufferSize(window, &width, &height);
   
@@ -312,7 +312,7 @@ int main(int argc, const char * argv[])
     lastTime = currentTime;
     
     input_manager->ProcessLocalInput(window, timeDelta);
-    g_player_controller->update(timeDelta);
+    g_player_controller->update(timeDelta, currentTime);
     
     Camera* camera = g_player_controller->getCamera();
     
@@ -321,20 +321,49 @@ int main(int argc, const char * argv[])
     for (const auto& character : characters) {
       if (character) {
         character->update(currentTime, g_terrain_transform, *camera, player_world_pos);
+        // TODO: totally change this for multi-player
+        auto contactDist = glm::distance(character->getWorldPosition(), player_world_pos);
+        if (contactDist < 2.0 && g_player_controller->isAlive(currentTime)) {
+          g_player_controller->kill(currentTime);
+          auto body = std::make_shared<CERemotePlayerController>(
+                                                                      g_audio_manager,
+                                                                      cFileLoad->fetch(basePath / "DEAD.CAR"),
+                                                                      cMap,
+                                                                      cMapRsc,
+                                                                      "Hr_dead1"
+                                                                      );
+          auto bodyPos = g_player_controller->getPosition();
+          bodyPos.y = cMap->getPlaceGroundHeight(player_world_pos.x, player_world_pos.y) + 12.f;
+          body->setPosition(bodyPos);
+          body->setNextAnimation("Hr_dead1");
+          body->StopMovement();
+          body->uploadStateToHardware();
+          characters.push_back(body);
+          
+          dieAudioSrc->setPosition(bodyPos);
+          g_audio_manager->play(dieAudioSrc);
+        }
       }
     }
+    
+    glm::vec3 currentPosition = g_player_controller->getPosition();
     
     for (const auto& ambient : ambients) {
       if (ambient) {
         ambient->Process(currentTime);
+        // TODO: only every so often
+        if (g_player_controller->isAlive(currentTime)) {
+          ambient->ReportNotableEvent(currentPosition, "PLAYER_SPOTTED", currentTime);
+        } else {
+          ambient->Reset(currentTime);
+        }
       }
     }
-    
+
     // Clear color, depth, and stencil buffers at the beginning of each frame
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     checkGLError("After glClear");
-    
-    glm::vec3 currentPosition = g_player_controller->getPosition();
+
     double rnTimeDelta = currentTime - lastRndAudioTime;
     
     if (rnTimeDelta >= 32.0) {
@@ -344,7 +373,7 @@ int main(int argc, const char * argv[])
         lastRndAudioTime = currentTime;
       }
     }
-    
+
     glm::vec2 next_world_pos = g_player_controller->getWorldPosition();
     if (next_world_pos != current_world_pos) {
       bool outOfBounds = next_world_pos.x < 0 || next_world_pos.x > cMap->getWidth() || next_world_pos.y < 0 || next_world_pos.y > cMap->getHeight();
@@ -364,44 +393,36 @@ int main(int argc, const char * argv[])
     
     // Render the terrain
     terrain->Update(g_terrain_transform, *camera);
-    checkGLError("After terrain->Update (terrain)");
     
     if (render_terrain) {
       glDepthFunc(GL_LESS); // Depth test for terrain
-      checkGLError("After glDepthFunc (terrain)");
-      
       glEnable(GL_CULL_FACE);
-      checkGLError("After glEnable(GL_CULL_FACE) (terrain)");
-      
       glCullFace(GL_BACK); // Cull back faces
-      checkGLError("After glCullFace (terrain)");
       
       cMapRsc->getTexture(0)->use();
-      checkGLError("After getTexture(0)->use (terrain)");
       
       terrain->Render();
-      checkGLError("After terrain->Render (terrain)");
       
       glDisable(GL_CULL_FACE);
-      checkGLError("After glDisable(GL_CULL_FACE) (terrain)");
+      
+      // Render the water
+      if (render_water) {
+        glDepthFunc(GL_LESS);
+        terrain->RenderWater();
+      }
     }
     
     // Render the terrain objects
     if (render_objects) {
       glDepthFunc(GL_LESS); // Depth test for objects
-      checkGLError("After glDepthFunc (objects)");
       
       glDisable(GL_CULL_FACE);
-      checkGLError("After glDisable(GL_CULL_FACE) (objects)");
       
       glEnable(GL_DEPTH_TEST);
-      checkGLError("After glEnable(GL_DEPTH_TEST) (objects)");
 
       terrain->RenderObjects(*camera);
-      checkGLError("After terrain->RenderObjects (objects)");
       
       glEnable(GL_CULL_FACE);
-      checkGLError("After glEnable(GL_CULL_FACE) (objects)");
     }
     
     // Render models
@@ -416,45 +437,28 @@ int main(int argc, const char * argv[])
           character->Render();
         }
       }
-      
+
       glEnable(GL_CULL_FACE);
-    }
-    
-    // Render the water
-    if (render_water) {
-      glDepthFunc(GL_LESS);
-      checkGLError("After glDepthFunc (water)");
-      
-      terrain->RenderWater();
-      checkGLError("After terrain->RenderWater (water)");
     }
     
     // Render the sky
     if (render_sky) {
       glDepthFunc(GL_LESS);
-      checkGLError("After glDepthFunc (sky)");
       
       glDisable(GL_CULL_FACE);
-      checkGLError("After glDisable(GL_CULL_FACE) (sky)");
       
       glDepthMask(GL_FALSE); // Disable depth writes
-      checkGLError("After glDepthMask(GL_FALSE) (sky)");
       
       cMapRsc->getDaySky()->Render(window, *camera);
-      checkGLError("After getDaySky()->Render (sky)");
       
       glDepthMask(GL_TRUE); // Re-enable depth writes
-      checkGLError("After glDepthMask(GL_TRUE) (sky)");
       
       glEnable(GL_CULL_FACE);
-      checkGLError("After glEnable(GL_CULL_FACE) (sky)");
     }
     
     glfwSwapBuffers(window);
     glfwPollEvents();
-    
-    checkGLError("End of frame");
-    
+
     // CalculateFrameRate();
     
     auto frameEnd = std::chrono::high_resolution_clock::now();

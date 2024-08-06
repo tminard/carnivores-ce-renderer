@@ -87,11 +87,8 @@ void LocalInputManager::ProcessLocalInput(GLFWwindow* window, float deltaTime)
       m_player_controller->getCamera()->MoveUp(100.f);
     }
     
-    if (!noclip && glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && this->m_last_key_state[GLFW_KEY_SPACE] != GLFW_PRESS) {
-      this->m_last_key_state[GLFW_KEY_SPACE] = GLFW_PRESS;
+    if (!noclip && glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
       m_player_controller->jump(currentTime);
-    } else if (!noclip && glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_RELEASE) {
-      this->m_last_key_state[GLFW_KEY_SPACE] = GLFW_RELEASE;
     }
     if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS && this->m_last_key_state[GLFW_KEY_O] != GLFW_PRESS) {
       this->m_last_key_state[GLFW_KEY_O] = GLFW_PRESS;

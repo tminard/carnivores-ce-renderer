@@ -366,10 +366,27 @@ glm::vec3 CELocalPlayerController::computeSlidingDirection(float x, float z) {
 }
 
 void CELocalPlayerController::jump(double currentTime) {
-  if (!m_is_jumping && (currentTime - m_last_jump_time) >= m_jump_cooldown) {
-      m_is_jumping = true;
-      m_vertical_speed = m_jump_speed;
-  }
+    if (!m_is_jumping && (currentTime - m_last_jump_time) >= m_jump_cooldown) {
+        m_is_jumping = true;
+
+        // Influence of forward speed on jump
+        glm::vec3 forward = m_camera.GetForward();
+        float forwardSpeedFactor = glm::dot(forward, glm::normalize(forward));
+        
+        // Calculate horizontal speed contribution to the jump
+        float horizontalSpeedContribution = glm::length(forward) * forwardSpeedFactor;
+        
+        // Reduce the vertical speed slightly if moving forward
+        float adjustedVerticalSpeed = m_jump_speed - (horizontalSpeedContribution * 0.2f);
+
+        // Set the vertical speed with the reduced factor
+        m_vertical_speed = adjustedVerticalSpeed;
+        
+        // Add a small forward boost if the player is moving forward
+        if (horizontalSpeedContribution > 0) {
+            m_camera.SetPos(m_camera.GetPosition() + forward * horizontalSpeedContribution * 0.5f);
+        }
+    }
 }
 
 bool CELocalPlayerController::isAlive(double currentTime)

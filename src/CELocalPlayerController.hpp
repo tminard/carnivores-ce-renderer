@@ -42,7 +42,7 @@ private:
   const float m_jump_speed = 12.f;
   const float m_gravity = 48.f;
   double m_last_jump_time = 0.0;
-  const double m_jump_cooldown = 0.25; // Cooldown period in seconds
+  const double m_jump_cooldown = 0.15; // Cooldown period in seconds
   double m_died_at = 0.0;
   bool m_dead = false;
   glm::vec3 m_body_at;

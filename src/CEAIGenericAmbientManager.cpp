@@ -88,6 +88,8 @@ void CEAIGenericAmbientManager::chooseNewTarget(glm::vec3 currentPosition, doubl
   glm::vec3 targetPosition;
   bool foundSafeTile = false;
   
+  // No target - pick a random direction
+  
   // Predefined directions for cardinal and intercardinal directions
   std::vector<glm::vec3> directions = {
     glm::vec3(1, 0, 0),   // East
@@ -102,25 +104,48 @@ void CEAIGenericAmbientManager::chooseNewTarget(glm::vec3 currentPosition, doubl
   
   int tries = 0;
   float dist = m_config.m_pf_range;
-  while (tries < 6) {
-    // TODO: replace with A* pathfinding or similar. This is a temporary solution to finalize move and turn to specific point
-    std::random_device rd;  // Random device for seeding
-    std::mt19937 gen(rd()); // Mersenne Twister generator
-    std::uniform_int_distribution<int> distrib(0, (int)directions.size() - 1);
-    
-    // Pick a random direction
-    glm::vec3 direction = directions[distrib(gen)];
-    
-    targetPosition = currentPosition + direction * dist * tileSize;
-    
-    // Zero out height
-    targetPosition.y = currentPosition.y;
-    
-    bool found = SetCurrentTarget(targetPosition, currentTime);
-    if (found) return;
-    
+  while (tries < 12 && dist > 1) {
+    if (m_mood == CURIOUS) {
+      std::random_device rd;  // Random device for seeding
+      std::mt19937 gen(rd()); // Mersenne Twister generator
+      std::uniform_int_distribution<int> distrib(0, (int)directions.size() - 1);
+      
+      // Pick a random direction
+      glm::vec3 direction = directions[distrib(gen)];
+      targetPosition = currentPosition + direction * dist * tileSize;
+      
+      // Zero out height
+      targetPosition.y = currentPosition.y;
+      
+      bool found = SetCurrentTarget(targetPosition, currentTime);
+      if (found) return;
+
+      dist /= 2;
+    } else if (m_tracked_target.x > 0.f && m_tracked_target.y > 0.f) {
+      // Try to get "close enough" by moving a few tiles towards target
+      // Find a point in direction of target
+      // Note we do a one-way short distance JPS search to avoid resetting any in-flight
+      glm::vec2 worldPos = m_player_controller->getWorldPosition();
+      glm::vec2 direction = glm::normalize(m_tracked_target - worldPos);
+      
+      glm::vec2 targetPos = worldPos + direction * 6.f;
+
+      // Run an inline search
+      // TODO: improve performance of this!
+      JPS::PathVector path = {};
+      bool found = JPS::findPath(path, m_path_finder, worldPos.x, worldPos.y, targetPos.x, targetPos.y, 1);
+       if (found) {
+         for (auto p : path) {
+           m_path_waypoints.push_back(glm::vec2(p.x, p.y));
+         }
+     
+         popNextTarget(currentTime);
+       }
+
+      return;
+    }
+
     tries++;
-    dist /= 2;
   }
 }
 
@@ -135,6 +160,11 @@ void CEAIGenericAmbientManager::updateInflightPathsearch(double currentTime)
     // We found a path. Update planned route
     res = m_path_search_instance->findPathFinish(path, 1);
     if (res == JPS_FOUND_PATH) {
+      // If I'm angry or afriad then clear eveything and focus on this
+      if (m_mood == ANGRY || m_mood == FEAR) {
+        m_path_waypoints.clear();
+      }
+
       for (auto p : path) {
         m_path_waypoints.push_back(glm::vec2(p.x, p.y));
       }

@@ -2,13 +2,35 @@
   "basePath": "../../runtime/cce/",
   "map": {
     "type": "C1",
-    "map": "../game/c1/area3.map",
-    "rsc": "../game/c1/area3.rsc"
+    "map": "../game/c1/area2.map",
+    "rsc": "../game/c1/area2.rsc"
   },
   "video": {
     "fullscreen": true
   },
   "spawns": [
+  {
+    "file": "../../runtime/cce/game/models/SPINO.CAR",
+    "animation": "So_wlk",
+    "position": [
+      128,
+      204
+    ],
+    "attachAI": {
+      "controller": "GenericAmbient",
+      "args": {
+        "name": "Spino1",
+        "animations": {
+          "WALK": "So_wlk",
+          "IDLE": ["So_idle1", "So_idle2"],
+          "RUN": "So_run"
+        },
+        "character": {
+          "walkSpeed": 2.75
+        }
+      }
+    }
+  },
     {
       "file": "../../runtime/cce/game/models/TIREX.CAR",
       "animation": "Tx_walk",

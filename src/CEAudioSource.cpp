@@ -50,7 +50,7 @@ void CEAudioSource::upload()
     alGenBuffers(1, &m_audio_buffer);
 
     // Use MONO since channels is always 1 and bits is always 16. TODO: change this when this is no longer the case.
-    alBufferData(m_audio_buffer, AL_FORMAT_MONO16, (ALvoid*)this->m_original_audio->getWaveData().data(), (ALsizei)this->m_original_audio->getLength(), (ALsizei)this->m_original_audio->getFrequency());
+    alBufferData(m_audio_buffer, AL_FORMAT_MONO16, (ALvoid*)this->m_original_audio->getWaveDataInternal().data(), (ALsizei)this->m_original_audio->getLength(), (ALsizei)this->m_original_audio->getFrequency());
 
     if (alGetError() != AL_NO_ERROR) {
         throw std::runtime_error("Failed to buffer audio source from wav data. FATAL.");

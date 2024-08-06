@@ -122,12 +122,11 @@ public:
   }
   
   void SetLookAt(glm::vec3 fw) {
-      //this->forward = glm::normalize(fw);
-      // Update the right and up vectors based on the new forward vector
-      //this->right = glm::normalize(glm::cross(this->forward, this->up));
-      //this->up = glm::normalize(glm::cross(this->right, this->forward));
-
-    lookAtTarget = fw;
+//      this->forward = glm::normalize(fw);
+//       Update the right and up vectors based on the new forward vector
+//      this->right = glm::normalize(glm::cross(this->forward, this->up));
+//      this->up = glm::normalize(glm::cross(this->right, this->forward));
+      lookAtTarget = fw;
       this->forward = glm::normalize(fw);
 
       updateViewProjection();

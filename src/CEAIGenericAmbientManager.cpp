@@ -211,6 +211,8 @@ void CEAIGenericAmbientManager::Process(double currentTime) {
       m_last_idle_time = currentTime;
     } else if (isIdle && !m_player_controller->isAnimPlaying(currentTime)) {
       m_player_controller->setNextAnimation(m_config.WalkAnimName, true);
+    } else if (!isIdle && currentAnimation != m_config.WalkAnimName) {
+      m_player_controller->setNextAnimation(m_config.WalkAnimName, true);
     }
 
     if (isIdle) {
@@ -261,6 +263,17 @@ std::string CEAIGenericAmbientManager::chooseIdleAnimation() {
 bool CEAIGenericAmbientManager::isIdleAnimation(std::string animationName) {
   // TODO: this is a linear search. Likely fine as usually this is 1-3 items max
   return std::find(m_config.IdleAnimNames.begin(), m_config.IdleAnimNames.end(), animationName) != m_config.IdleAnimNames.end();
+}
+
+void CEAIGenericAmbientManager::Reset(double currentTime)
+{
+  if (m_mood == ANGRY) {
+    // Completely forget what we were after
+    m_path_waypoints.clear();
+    chooseNewTarget(m_player_controller->getPosition(), currentTime);
+  }
+  
+  m_mood = CURIOUS;
 }
 
 void CEAIGenericAmbientManager::ReportNotableEvent(glm::vec3 position, std::string eventType, double currentTime) {

@@ -21,6 +21,7 @@ file(GLOB_RECURSE SOURCE_FILES
 # Add header files
 file(GLOB_RECURSE HEADER_FILES 
 	${CMAKE_SOURCE_DIR}/src/*.h
+	${CMAKE_SOURCE_DIR}/thirdparty/wave/*.h
 	${CMAKE_SOURCE_DIR}/src/*.hpp)
 
 # Configure assets header file
@@ -61,6 +62,7 @@ include_directories(
 	"${CMAKE_SOURCE_DIR}/src"
 	"${CMAKE_SOURCE_DIR}/include"
 	${GLAD_INCLUDE_DIR}
+	"${CMAKE_SOURCE_DIR}/thirdparty/wave"
 )
 
 # Define the path to your runtime folder

@@ -43,6 +43,9 @@ private:
   const float m_gravity = 48.f;
   double m_last_jump_time = 0.0;
   const double m_jump_cooldown = 0.25; // Cooldown period in seconds
+  double m_died_at = 0.0;
+  bool m_dead = false;
+  glm::vec3 m_body_at;
 
 public:
   CELocalPlayerController(float world_width, float world_height, float tile_size, std::shared_ptr<C2MapFile> map, std::shared_ptr<C2MapRscFile> rsc);
@@ -52,10 +55,13 @@ public:
 
   void setPosition(glm::vec3 position);
   void setElevation(float elevation);
+  
+  void kill(double killedAt);
+  void panAroundBody(double currentTime);
 
   void lookAt(glm::vec3 direction);
 
-  void update(double timeDelta);
+  void update(double timeDelta, double currentTime);
 
   void moveForward(double timeDelta);
   void moveBackward(double timeDelta);
@@ -67,6 +73,8 @@ public:
   void jump(double currentTime);
 
   void DBG_printLocationInformation() const;
+  
+  bool isAlive(double currentTime);
 
   Camera* getCamera();
 };

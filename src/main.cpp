@@ -187,6 +187,13 @@ int main(int argc, const char * argv[])
   
   std::unique_ptr<TerrainRenderer> terrain = std::make_unique<TerrainRenderer>(cMap, cMapRsc);
   
+  // Load audio assets
+  std::shared_ptr<Sound> die = std::make_shared<Sound>(basePath / "game" / "SOUNDFX" / "HUM_DIE1.WAV");
+  std::shared_ptr<CEAudioSource> dieAudioSrc = std::make_shared<CEAudioSource>(die);
+  dieAudioSrc->setLooped(false);
+  dieAudioSrc->setGain(2.0f);
+  dieAudioSrc->setClampDistance(4048.f);
+
   // shared loader to minimize resource usage
   std::unique_ptr<C2CarFilePreloader> cFileLoad(new C2CarFilePreloader);
 
@@ -305,7 +312,7 @@ int main(int argc, const char * argv[])
     lastTime = currentTime;
     
     input_manager->ProcessLocalInput(window, timeDelta);
-    g_player_controller->update(timeDelta);
+    g_player_controller->update(timeDelta, currentTime);
     
     Camera* camera = g_player_controller->getCamera();
     
@@ -314,14 +321,49 @@ int main(int argc, const char * argv[])
     for (const auto& character : characters) {
       if (character) {
         character->update(currentTime, g_terrain_transform, *camera, player_world_pos);
+        // TODO: totally change this for multi-player
+        auto contactDist = glm::distance(character->getWorldPosition(), player_world_pos);
+        if (contactDist < 2.0 && g_player_controller->isAlive(currentTime)) {
+          g_player_controller->kill(currentTime);
+          auto body = std::make_shared<CERemotePlayerController>(
+                                                                      g_audio_manager,
+                                                                      cFileLoad->fetch(basePath / "DEAD.CAR"),
+                                                                      cMap,
+                                                                      cMapRsc,
+                                                                      "Hr_dead1"
+                                                                      );
+          auto bodyPos = g_player_controller->getPosition();
+          bodyPos.y = cMap->getPlaceGroundHeight(player_world_pos.x, player_world_pos.y) + 12.f;
+          body->setPosition(bodyPos);
+          body->setNextAnimation("Hr_dead1");
+          body->StopMovement();
+          body->uploadStateToHardware();
+          characters.push_back(body);
+          
+          dieAudioSrc->setPosition(bodyPos);
+          g_audio_manager->play(dieAudioSrc);
+        }
       }
     }
     
+    glm::vec3 currentPosition = g_player_controller->getPosition();
+    
+    for (const auto& ambient : ambients) {
+      if (ambient) {
+        ambient->Process(currentTime);
+        // TODO: only every so often
+        if (g_player_controller->isAlive(currentTime)) {
+          ambient->ReportNotableEvent(currentPosition, "PLAYER_SPOTTED", currentTime);
+        } else {
+          ambient->Reset(currentTime);
+        }
+      }
+    }
+
     // Clear color, depth, and stencil buffers at the beginning of each frame
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     checkGLError("After glClear");
-    
-    glm::vec3 currentPosition = g_player_controller->getPosition();
+
     double rnTimeDelta = currentTime - lastRndAudioTime;
     
     if (rnTimeDelta >= 32.0) {
@@ -331,14 +373,7 @@ int main(int argc, const char * argv[])
         lastRndAudioTime = currentTime;
       }
     }
-    
-    for (const auto& ambient : ambients) {
-      if (ambient) {
-        ambient->Process(currentTime);
-        ambient->ReportNotableEvent(currentPosition, "PLAYER_SPOTTED", currentTime);
-      }
-    }
-    
+
     glm::vec2 next_world_pos = g_player_controller->getWorldPosition();
     if (next_world_pos != current_world_pos) {
       bool outOfBounds = next_world_pos.x < 0 || next_world_pos.x > cMap->getWidth() || next_world_pos.y < 0 || next_world_pos.y > cMap->getHeight();
@@ -402,7 +437,7 @@ int main(int argc, const char * argv[])
           character->Render();
         }
       }
-      
+
       glEnable(GL_CULL_FACE);
     }
     

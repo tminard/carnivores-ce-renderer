@@ -26,11 +26,24 @@ CELocalPlayerController::CELocalPlayerController(float world_width, float world_
 
 void CELocalPlayerController::lookAt(glm::vec3 direction)
 {
+  if (m_dead) return;
   this->m_camera.SetLookAt(direction);
 }
 
-void CELocalPlayerController::update(double deltaTime)
+void CELocalPlayerController::update(double deltaTime, double currentTime)
 {
+  if (m_dead) {
+    if (currentTime - m_died_at > 8.0) {
+      m_dead = false;
+      setPosition(m_map->getRandomLanding());
+      glm::vec3 direction = glm::normalize(m_body_at - m_camera.GetPosition());
+      m_camera.SetLookAt(direction);
+    } else {
+      panAroundBody(currentTime);
+      return;
+    }
+  }
+
   float dTime = static_cast<float>(deltaTime);
   if (m_target_speed < m_current_speed) {
       m_current_speed -= m_deceleration * dTime;
@@ -192,7 +205,24 @@ float CELocalPlayerController::computeSlope(float x, float z) {
     return slopeAngle;
 }
 
+void CELocalPlayerController::panAroundBody(double currentTime) {
+    float angle = (currentTime - m_died_at) * 0.5f;
+    float radius = 10.0f;
+    glm::vec3 bodyPosition = getPosition();
+    float x = bodyPosition.x + radius * cos(angle);
+    float z = bodyPosition.z + radius * sin(angle);
+    float y = bodyPosition.y + 5.0f;
+
+    glm::vec3 cameraPosition = glm::vec3(x, y, z);
+    setPosition(cameraPosition);
+  
+    glm::vec3 direction = glm::normalize(m_body_at - cameraPosition);
+    m_camera.SetLookAt(direction);
+}
+
 void CELocalPlayerController::move(double currentTime, double deltaTime, bool forwardPressed, bool backwardPressed, bool rightPressed, bool leftPressed) {
+  if (m_dead) return;
+
   float dTime = static_cast<float>(deltaTime);
   glm::vec3 movement(0.0f);
 
@@ -341,3 +371,17 @@ void CELocalPlayerController::jump(double currentTime) {
       m_vertical_speed = m_jump_speed;
   }
 }
+
+bool CELocalPlayerController::isAlive(double currentTime)
+{
+  return (currentTime - m_died_at > 15.0);
+}
+
+void CELocalPlayerController::kill(double killedAt) { 
+  m_died_at = killedAt;
+  m_body_at = getPosition();
+  m_dead = true;
+  m_target_speed = 0.0;
+  m_current_speed = 0.0;
+}
+

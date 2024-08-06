@@ -44,8 +44,6 @@ class CEAIGenericAmbientManager {
   std::shared_ptr<C2MapFile> m_map;
   std::shared_ptr<C2MapRscFile> m_rsc;
   
-  std::shared_ptr<CERemotePlayerController> m_victim;
-  
   AIGenericAmbientManagerConfig m_config;
   
   CEWalkableTerrainPathFinder m_path_finder;
@@ -76,5 +74,6 @@ public:
   CEAIGenericAmbientManager(json jsonConfig, std::shared_ptr<CERemotePlayerController> playerController, std::shared_ptr<C2MapFile> map, std::shared_ptr<C2MapRscFile> rsc);
   void Process(double currentTime);
   bool SetCurrentTarget(glm::vec3 position, double currentTime);
+  void Reset(double currentTime);
   void ReportNotableEvent(glm::vec3 position, std::string eventType, double currentTime);
 };

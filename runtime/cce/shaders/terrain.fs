@@ -15,8 +15,8 @@ uniform sampler2D skyTexture;
 uniform float view_distance;
 uniform vec4 distanceColor;
 
-uniform float ambientStrength = 0.25;
-uniform float diffuseStrength = 0.75;
+uniform float ambientStrength = 0.05;
+uniform float diffuseStrength = 0.95;
 
 void main()
 {
@@ -49,7 +49,7 @@ void main()
     vec4 cloudColor = texture(skyTexture, out_textCoord_clouds);
     float cloudLuminance = (0.299 * cloudColor.b + 0.587 * cloudColor.g + 0.114 * cloudColor.r) * 2.0;
 
-    float brightness = (ambientStrength + diffuse * diffuseStrength) * (cloudLuminance);
+    float brightness = (ambientStrength + pow(diffuse, 1.0) * diffuseStrength) * pow(cloudLuminance, 1.75);
 
     // Apply the lighting to the texture color
     vec3 finalColor = vec3(sC.b, sC.g, sC.r) * brightness;

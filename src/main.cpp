@@ -352,10 +352,12 @@ int main(int argc, const char * argv[])
       if (ambient) {
         ambient->Process(currentTime);
         // TODO: only every so often
-        if (g_player_controller->isAlive(currentTime)) {
-          ambient->ReportNotableEvent(currentPosition, "PLAYER_SPOTTED", currentTime);
-        } else {
-          ambient->Reset(currentTime);
+        if (ambient->NoticesLocalPlayer(g_player_controller)) {
+          if (g_player_controller->isAlive(currentTime)) {
+            ambient->ReportNotableEvent(currentPosition, "PLAYER_SPOTTED", currentTime);
+          } else {
+            ambient->Reset(currentTime);
+          }
         }
       }
     }

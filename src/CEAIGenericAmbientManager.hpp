@@ -15,6 +15,7 @@
 #include "jps.hpp"
 
 class CERemotePlayerController;
+class CELocalPlayerController;
 class C2MapFile;
 class C2MapRscFile;
 
@@ -53,6 +54,7 @@ class CEAIGenericAmbientManager {
   double m_target_expire_time;
   double m_last_upload_time = 0;
   double m_last_idle_time = 0;
+  double m_fear_time = 0;
   double m_path_search_started_at = -1.0;
   
   AIGenericMood m_mood = CURIOUS;
@@ -76,4 +78,5 @@ public:
   bool SetCurrentTarget(glm::vec3 position, double currentTime);
   void Reset(double currentTime);
   void ReportNotableEvent(glm::vec3 position, std::string eventType, double currentTime);
+  bool NoticesLocalPlayer(std::shared_ptr<CELocalPlayerController> localPlayer);
 };

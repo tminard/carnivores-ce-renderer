@@ -1,5 +1,6 @@
 #include "CEAIGenericAmbientManager.hpp"
 #include "CERemotePlayerController.hpp"
+#include "CELocalPlayerController.hpp"
 #include "C2MapFile.h"
 #include "C2MapRscFile.h"
 #include <glm/glm.hpp>
@@ -88,10 +89,10 @@ void CEAIGenericAmbientManager::chooseNewTarget(glm::vec3 currentPosition, doubl
   glm::vec3 targetPosition;
   bool foundSafeTile = false;
   
-  // No target - pick a random direction
+  // No planned waypoint available - pick a suitable direction instead
   
   // Predefined directions for cardinal and intercardinal directions
-  std::vector<glm::vec3> directions = {
+  const std::vector<glm::vec3> directions = {
     glm::vec3(1, 0, 0),   // East
     glm::vec3(1, 0, 1),   // Northeast
     glm::vec3(0, 0, 1),   // North
@@ -128,7 +129,10 @@ void CEAIGenericAmbientManager::chooseNewTarget(glm::vec3 currentPosition, doubl
       glm::vec2 worldPos = m_player_controller->getWorldPosition();
       glm::vec2 direction = glm::normalize(m_tracked_target - worldPos);
       
-      glm::vec2 targetPos = worldPos + direction * 6.f;
+      float factor = m_mood == ANGRY ? 1.0 : -1.0; // move towards OR away
+      
+      // Try a fixed distance
+      glm::vec2 targetPos = worldPos + (direction * factor) * 6.f;
 
       // Run an inline search
       // TODO: improve performance of this!
@@ -142,7 +146,16 @@ void CEAIGenericAmbientManager::chooseNewTarget(glm::vec3 currentPosition, doubl
          popNextTarget(currentTime);
        }
 
+      // Just try once
       return;
+    } else if (m_mood == ANGRY) {
+      m_mood = FEAR;
+      m_path_waypoints.clear();
+      
+      glm::vec2 safePos = m_map->getRandomLanding();
+      SetCurrentTarget(glm::vec3(safePos.x * m_map->getTileLength(), 0, safePos.y * m_map->getTileLength()), currentTime);
+      m_path_waypoints.push_back(safePos);
+      popNextTarget(currentTime);
     }
 
     tries++;
@@ -215,6 +228,7 @@ void CEAIGenericAmbientManager::Process(double currentTime) {
 
   // Apply movement
   if (m_mood == FEAR) {
+    m_fear_time += deltaTime;
     // Set run animation if needed
     if (m_player_controller->getCurrentAnimation() != m_config.RunAnimName) {
       m_player_controller->setNextAnimation(m_config.RunAnimName, true);
@@ -222,6 +236,9 @@ void CEAIGenericAmbientManager::Process(double currentTime) {
     // Run
     m_player_controller->setTargetSpeed(m_config.m_walk_speed * 1.75f);
     // choose a safe target AWAY from threat source direction (physical body, sound, smell, etc)
+    if (m_fear_time > 13.0) {
+      m_mood = CURIOUS;
+    }
   } else if (m_mood == ANGRY) {
     // Set run animation
     if (m_player_controller->getCurrentAnimation() != m_config.RunAnimName) {
@@ -231,6 +248,14 @@ void CEAIGenericAmbientManager::Process(double currentTime) {
     m_player_controller->setTargetSpeed(m_config.m_walk_speed * 1.75f);
     // Decide on attack pattern if needed
     // Move towards the target with attack pattern
+    if (m_tracked_target.x > 0 && m_tracked_target.y > 0) {
+      float targetDistance = glm::distance(m_tracked_target, m_player_controller->getWorldPosition());
+      if (targetDistance <= 1.0) {
+        // TODO: check if threat is nearby
+        m_mood = CURIOUS;
+        Reset(currentTime);
+      }
+    }
   } else if (m_mood == CURIOUS) {
     bool hasIdleAnim = !m_config.IdleAnimNames.empty();
     bool isIdle = hasIdleAnim && isIdleAnimation(currentAnimation);
@@ -303,12 +328,14 @@ void CEAIGenericAmbientManager::Reset(double currentTime)
     chooseNewTarget(m_player_controller->getPosition(), currentTime);
   }
   
+  m_fear_time = 0.0;
+  
   m_mood = CURIOUS;
 }
 
 void CEAIGenericAmbientManager::ReportNotableEvent(glm::vec3 position, std::string eventType, double currentTime) {
   // TODO: add to an attention queue with x ms delay in processing and finite space
-  if (eventType == "PLAYER_SPOTTED") {
+  if (eventType == "PLAYER_SPOTTED" && (m_mood == CURIOUS || m_mood == ANGRY)) {
     m_mood = ANGRY;
     SetCurrentTarget(position, currentTime);
   }
@@ -349,3 +376,11 @@ bool CEAIGenericAmbientManager::SetCurrentTarget(glm::vec3 targetPosition, doubl
   
   return found;
 }
+
+bool CEAIGenericAmbientManager::NoticesLocalPlayer(std::shared_ptr<CELocalPlayerController> localPlayer) { 
+  float dist = glm::distance(localPlayer->getPosition(), m_player_controller->getPosition());
+  if (dist > 20.f * m_map->getTileLength()) return false;
+  
+  return true;
+}
+

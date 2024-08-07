@@ -36,8 +36,12 @@ struct AIGenericAmbientManagerConfig {
 
 enum AIGenericMood {
   CURIOUS,
-  FEAR,
   ANGRY
+};
+
+enum AIAttackDecision {
+  ESCAPE,
+  ATTACK
 };
 
 class CEAIGenericAmbientManager {
@@ -46,6 +50,18 @@ class CEAIGenericAmbientManager {
   const float DEFAULT_MAX_ATTACK = 1.f;
   const float DEFAULT_IS_DANGER = true;
   const double DEFAULT_LOST_TARGET_GIVEUP_TIME = 3.0;
+  
+  // Predefined directions for cardinal and intercardinal directions
+  const std::vector<glm::vec3> directions = {
+    glm::vec3(1, 0, 0),   // East
+    glm::vec3(1, 0, 1),   // Northeast
+    glm::vec3(0, 0, 1),   // North
+    glm::vec3(-1, 0, 1),  // Northwest
+    glm::vec3(-1, 0, 0),  // West
+    glm::vec3(-1, 0, -1), // Southwest
+    glm::vec3(0, 0, -1),  // South
+    glm::vec3(1, 0, -1)   // Southeast
+  };
 
   std::shared_ptr<CERemotePlayerController> m_player_controller;
   std::shared_ptr<C2MapFile> m_map;
@@ -60,7 +76,6 @@ class CEAIGenericAmbientManager {
   double m_target_expire_time;
   double m_last_upload_time = 0;
   double m_last_idle_time = 0;
-  double m_fear_time = 0;
   double m_path_search_started_at = -1.0;
   
   float m_view_range = DEFAULT_VIEW_RANGE;
@@ -73,10 +88,13 @@ class CEAIGenericAmbientManager {
   bool m_is_dangerous = DEFAULT_IS_DANGER;
   
   AIGenericMood m_mood = CURIOUS;
+  AIAttackDecision m_mood_decision = ESCAPE;
+  double m_last_attack_decision_at = 0.0;
   
   glm::vec3 m_current_target;
   glm::vec2 m_tracked_target;
   double m_danger_last_spotted_at = 0.0;
+  bool m_debug = false;
   
   std::vector<glm::vec2> m_path_waypoints = {};
   
@@ -88,6 +106,8 @@ class CEAIGenericAmbientManager {
   
   void updateInflightPathsearch(double currentTime);
   float CalculateAttackChance(float distance, float maxDist, float minAttackChance, float maxAttackChance);
+  
+  glm::vec3 findSafeTarget(glm::vec3 direction);
 
 public:
   CEAIGenericAmbientManager(json jsonConfig, std::shared_ptr<CERemotePlayerController> playerController, std::shared_ptr<C2MapFile> map, std::shared_ptr<C2MapRscFile> rsc);

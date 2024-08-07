@@ -19,6 +19,7 @@
     "attachAI": {
       "controller": "GenericAmbient",
       "args": {
+        "DEBUG": false,
         "name": "Bigfoot",
         "animations": {
           "WALK": "Bf_wlk",
@@ -27,12 +28,12 @@
         },
         "behavior": {
           "vision": 30.0,
-          "maxAttackChance": 0.0,
-          "minAttackChance": 0.0,
+          "maxAttackChance": 0.25,
+          "minAttackChance": 1.0,
           "damageOnContact": true
         },
         "character": {
-          "walkSpeed": 2.85
+          "walkSpeed": 2.25
         }
       }
     }

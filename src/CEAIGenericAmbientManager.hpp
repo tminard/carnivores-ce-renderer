@@ -90,6 +90,7 @@ class CEAIGenericAmbientManager {
   AIGenericMood m_mood = CURIOUS;
   AIAttackDecision m_mood_decision = ESCAPE;
   double m_last_attack_decision_at = 0.0;
+  double m_last_safe_target_calculation = 0.0;
   
   glm::vec3 m_current_target;
   glm::vec2 m_tracked_target;

@@ -386,8 +386,9 @@ void CEAIGenericAmbientManager::ReportNotableEvent(glm::vec3 position, std::stri
     if (m_debug) std::cout << m_config.AiName << " DEBUG: " << " - ReportNotableEvent() - DECIDED: " << m_mood << std::endl;
     if (m_mood_decision == ATTACK) {
       SetCurrentTarget(position, currentTime);
-    } else {
+    } else if (currentTime - m_last_safe_target_calculation > 3.0) {
       SetCurrentTarget(findSafeTarget(position), currentTime);
+      m_last_safe_target_calculation = currentTime;
     }
   }
   
@@ -411,8 +412,9 @@ void CEAIGenericAmbientManager::ReportNotableEvent(glm::vec3 position, std::stri
 
     if (m_mood_decision == ATTACK) {
       SetCurrentTarget(position, currentTime);
-    } else {
+    } else if (currentTime - m_last_safe_target_calculation > 3.0) {
       SetCurrentTarget(findSafeTarget(position), currentTime);
+      m_last_safe_target_calculation = currentTime;
     }
   }
 }

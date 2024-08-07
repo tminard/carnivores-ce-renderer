@@ -119,15 +119,14 @@ void CERemotePlayerController::update(double currentTime, Transform &baseTransfo
   bool didUpdate = m_geo->SetAnimation(anim, currentTime, m_animation_started_at, m_animation_last_update_at, deferUpdate, maxFPS, notVisible, 1.f, m_is_looping_anim);
   
   if (didUpdate) {
-    if (m_geo->GetCurrentFrame() == 0) {
-      auto audioSrc = m_car->getSoundForAnimation(m_current_animation);
-      if (audioSrc) {
-        audioSrc->setPosition(m_camera.GetPosition());
-        audioSrc->setLooped(false);
-        audioSrc->setMaxDistance(m_map->getTileLength() * 60.f);
-        audioSrc->setClampDistance(6);
-        m_g_audio_manager->play(audioSrc);
-      }
+    auto audioSrc = m_car->getSoundForAnimation(m_current_animation);
+    if (audioSrc != nullptr && m_geo->GetCurrentFrame() == 0 && !audioSrc->isPlaying()) {
+      audioSrc->setPosition(m_camera.GetPosition());
+      audioSrc->setLooped(false);
+      audioSrc->setMaxDistance(256*60);
+      audioSrc->setGain(2.f);
+      audioSrc->setClampDistance(256*6);
+      m_g_audio_manager->play(audioSrc);
     }
     m_animation_last_update_at = currentTime;
   }

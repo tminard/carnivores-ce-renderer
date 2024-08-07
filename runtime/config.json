@@ -2,335 +2,40 @@
   "basePath": "../../runtime/cce/",
   "map": {
     "type": "C1",
-    "map": "../game/c1/area2.map",
-    "rsc": "../game/c1/area2.rsc"
+    "map": "../game/c1/area5.map",
+    "rsc": "../game/c1/area5.rsc"
   },
   "video": {
-    "fullscreen": true
+    "fullscreen": false
   },
   "spawns": [
   {
-    "file": "../../runtime/cce/game/models/SPINO.CAR",
-    "animation": "So_wlk",
+    "file": "../../runtime/cce/game/models/Bigfoot.car",
+    "animation": "Bf_wlk",
     "position": [
-      128,
-      204
+      256,
+      256
     ],
     "attachAI": {
       "controller": "GenericAmbient",
       "args": {
-        "name": "Spino1",
+        "name": "Bigfoot",
         "animations": {
-          "WALK": "So_wlk",
-          "IDLE": ["So_idle1", "So_idle2"],
-          "RUN": "So_run"
+          "WALK": "Bf_wlk",
+          "IDLE": ["Bf_idle1", "Bf_idle2", "bf_idle3", "Bf_hero"],
+          "RUN": "Bf_run"
+        },
+        "behavior": {
+          "vision": 30.0,
+          "maxAttackChance": 0.0,
+          "minAttackChance": 0.0,
+          "damageOnContact": true
         },
         "character": {
-          "walkSpeed": 2.75
+          "walkSpeed": 2.85
         }
       }
     }
-  },
-    {
-      "file": "../../runtime/cce/game/models/TIREX.CAR",
-      "animation": "Tx_walk",
-      "position": [
-        359,
-        100
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "name": "Rex1",
-          "animations": {
-            "WALK": "Tx_walk",
-            "IDLE": ["Tx_sml1", "Tx_sml2"],
-            "RUN": "Tx_run1"
-          },
-          "character": {
-            "walkSpeed": 2.85
-          }
-        }
-      }
-    },
-    {
-      "file": "../../runtime/cce/game/models/TIREX.CAR",
-      "animation": "Tx_walk",
-      "position": [
-        210,
-        102
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "name": "Rex2",
-          "animations": {
-            "WALK": "Tx_walk",
-            "IDLE": ["Tx_sml1", "Tx_sml2"],
-            "RUN": "Tx_run1"
-          },
-          "character": {
-            "walkSpeed": 2.85
-          }
-        }
-      }
-    },
-    {
-      "file": "../../runtime/cce/game/models/TIREX.CAR",
-      "animation": "Tx_walk",
-      "position": [
-        122,
-        276
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "name": "Rex4",
-          "animations": {
-            "WALK": "Tx_walk",
-            "IDLE": ["Tx_sml1", "Tx_sml2"],
-            "RUN": "Tx_run1"
-          },
-          "character": {
-            "walkSpeed": 2.85
-          }
-        }
-      }
-    },
-    {
-      "file": "../../runtime/cce/game/models/TIREX.CAR",
-      "animation": "Tx_walk",
-      "position": [
-        216,
-        216
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "name": "Rex5",
-          "animations": {
-            "WALK": "Tx_walk",
-            "IDLE": ["Tx_sml1", "Tx_sml2"],
-            "RUN": "Tx_run1"
-          },
-          "character": {
-            "walkSpeed": 2.85
-          }
-        }
-      }
-    },
-    {
-      "file": "../../runtime/cce/game/models/GALL.CAR",
-      "animation": "Gall_wlk",
-      "position": [
-        256,
-        256
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "name": "Gal1",
-          "animations": {
-            "WALK": "Gall_wlk",
-            "IDLE": ["Gall_idle1", "Gall_idle2"],
-            "RUN": "Gall_run1"
-          },
-          "character": {
-            "walkSpeed": 1,
-            "roamRange": 12.0,
-            "idleOdds": 0.7
-          }
-        }
-      }
-    },
-    {
-      "file": "../../runtime/cce/game/models/GALL.CAR",
-      "animation": "Gall_wlk",
-      "position": [
-        256,
-        256
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "name": "Gal2",
-          "animations": {
-            "WALK": "Gall_wlk",
-            "IDLE": ["Gall_idle1", "Gall_idle2"],
-            "RUN": "Gall_run1"
-          },
-          "character": {
-            "walkSpeed": 1,
-            "roamRange": 12.0,
-            "idleOdds": 0.7
-          }
-        }
-      }
-    },
-    {
-      "file": "../../runtime/cce/game/models/GALL.CAR",
-      "animation": "Gall_wlk",
-      "position": [
-        256,
-        256
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "name": "Gal3",
-          "animations": {
-            "WALK": "Gall_wlk",
-            "IDLE": ["Gall_idle1", "Gall_idle2"],
-            "RUN": "Gall_run1"
-          },
-          "character": {
-            "walkSpeed": 1,
-            "roamRange": 12.0,
-            "idleOdds": 0.7
-          }
-        }
-      }
-    },
-    {
-      "file": "../../runtime/cce/game/models/GALL.CAR",
-      "animation": "Gall_wlk",
-      "position": [
-        256,
-        256
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "name": "Gal4",
-          "animations": {
-            "WALK": "Gall_wlk",
-            "IDLE": ["Gall_idle1", "Gall_idle2"],
-            "RUN": "Gall_run1"
-          },
-          "character": {
-            "walkSpeed": 1,
-            "roamRange": 12.0,
-            "idleOdds": 0.7
-          }
-        }
-      }
-    },
-    {
-      "file": "../../runtime/cce/game/models/GALL.CAR",
-      "animation": "Gall_wlk",
-      "position": [
-        256,
-        256
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "name": "Gal5",
-          "animations": {
-            "WALK": "Gall_wlk",
-            "IDLE": ["Gall_idle1", "Gall_idle2"],
-            "RUN": "Gall_run1"
-          },
-          "character": {
-            "walkSpeed": 1,
-            "roamRange": 12.0,
-            "idleOdds": 0.7
-          }
-        }
-      }
-    },
-    {
-      "file": "../../runtime/cce/game/models/STEGO.CAR",
-      "animation": "Sr_wlk",
-      "position": [
-        256,
-        256
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "animations": {
-            "WALK": "Sr_wlk",
-            "IDLE": ["Sr_idle1", "Sr_idle2"],
-            "RUN": "Sr_run"
-          },
-          "character": {
-            "walkSpeed": 0.8,
-            "roamRange": 32.0,
-            "idleOdds": 0.5,
-            "runSpeed": 6
-          }
-        }
-      }
-    },
-    {
-      "file": "../../runtime/cce/game/models/STEGO.CAR",
-      "animation": "Sr_wlk",
-      "position": [
-        256,
-        256
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "animations": {
-            "WALK": "Sr_wlk",
-            "IDLE": ["Sr_idle1", "Sr_idle2"]
-          },
-          "character": {
-            "walkSpeed": 0.8,
-            "roamRange": 32.0,
-            "idleOdds": 0.5,
-            "runSpeed": 6
-          }
-        }
-      }
-    },
-    {
-      "file": "../../runtime/cce/game/models/STEGO.CAR",
-      "animation": "Sr_wlk",
-      "position": [
-        256,
-        256
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "animations": {
-            "WALK": "Sr_wlk",
-            "IDLE": ["Sr_idle1", "Sr_idle2"]
-          },
-          "character": {
-            "walkSpeed": 0.8,
-            "roamRange": 32.0,
-            "idleOdds": 0.5,
-            "runSpeed": 6
-          }
-        }
-      }
-    },
-    {
-      "file": "../../runtime/cce/game/models/STEGO.CAR",
-      "animation": "Sr_wlk",
-      "position": [
-        256,
-        256
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "animations": {
-            "WALK": "Sr_wlk",
-            "IDLE": ["Sr_idle1", "Sr_idle2"]
-          },
-          "character": {
-            "walkSpeed": 0.8,
-            "roamRange": 32.0,
-            "idleOdds": 0.5,
-            "runSpeed": 6
-          }
-        }
-      }
-    }
+  }
   ]
 }

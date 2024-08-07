@@ -58,6 +58,13 @@ m_target_expire_time(0)
     m_config.IdleAnimNames = jsonConfig["animations"]["IDLE"];
   }
   
+  if (jsonConfig.contains("behavior") && jsonConfig["behavior"].is_object()) {
+    m_view_range = jsonConfig["behavior"].value("vision", DEFAULT_VIEW_RANGE);
+    m_is_dangerous = jsonConfig["behavior"].value("damageOnContact", DEFAULT_IS_DANGER);
+    m_min_attack_chance = jsonConfig["behavior"].value("minAttackChance", DEFAULT_MIN_ATTACK);
+    m_max_attack_chance = jsonConfig["behavior"].value("maxAttackChance", DEFAULT_MAX_ATTACK);
+  }
+  
   m_player_controller->setNextAnimation(m_config.WalkAnimName, true);
   m_player_controller->setWalkSpeed(walkSpeed);
   m_player_controller->setHeightOffset(heightOffset);
@@ -80,16 +87,21 @@ glm::vec2 CEAIGenericAmbientManager::popNextTarget(double currentTime)
 }
 
 void CEAIGenericAmbientManager::chooseNewTarget(glm::vec3 currentPosition, double currentTime) {
+  std::cout << currentTime << ":" << "CEAIGenericAmbientManager::chooseNewTarget" << ": called." << std::endl;
   glm::vec2 nextTarget = popNextTarget(currentTime);
   bool isEmptyTarget = (nextTarget.x == 0 && nextTarget.y == 0);
   
-  if (!isEmptyTarget) return;
+  if (!isEmptyTarget) {
+    std::cout << currentTime << ":" << "CEAIGenericAmbientManager::chooseNewTarget" << ": target queue not empty. Using next location. Queue: " << m_path_waypoints.size() << std::endl;
+    return;
+  }
   
   const float tileSize = m_map->getTileLength();
   glm::vec3 targetPosition;
   bool foundSafeTile = false;
   
   // No planned waypoint available - pick a suitable direction instead
+  std::cout << currentTime << ":" << "CEAIGenericAmbientManager::chooseNewTarget" << ": Queue empty. Deciding on next route. Mood: " << m_mood << std::endl;
   
   // Predefined directions for cardinal and intercardinal directions
   const std::vector<glm::vec3> directions = {
@@ -105,20 +117,20 @@ void CEAIGenericAmbientManager::chooseNewTarget(glm::vec3 currentPosition, doubl
   
   int tries = 0;
   float dist = m_config.m_pf_range;
+  std::random_device rd;  // Random device for seeding
+  std::mt19937 gen(rd()); // Mersenne Twister generator
+  std::uniform_int_distribution<int> distrib(0, (int)directions.size() - 1);
+
   while (tries < 12 && dist > 1) {
     if (m_mood == CURIOUS) {
-      std::random_device rd;  // Random device for seeding
-      std::mt19937 gen(rd()); // Mersenne Twister generator
-      std::uniform_int_distribution<int> distrib(0, (int)directions.size() - 1);
-      
       // Pick a random direction
       glm::vec3 direction = directions[distrib(gen)];
       targetPosition = currentPosition + direction * dist * tileSize;
-      
-      // Zero out height
       targetPosition.y = currentPosition.y;
       
       bool found = SetCurrentTarget(targetPosition, currentTime);
+      std::cout << currentTime << ":" << "CEAIGenericAmbientManager::chooseNewTarget" << ": Mood curious. Next rando spot selected? Found: " << found << std::endl;
+
       if (found) return;
 
       dist /= 2;
@@ -127,34 +139,54 @@ void CEAIGenericAmbientManager::chooseNewTarget(glm::vec3 currentPosition, doubl
       // Find a point in direction of target
       // Note we do a one-way short distance JPS search to avoid resetting any in-flight
       glm::vec2 worldPos = m_player_controller->getWorldPosition();
-      glm::vec2 direction = glm::normalize(m_tracked_target - worldPos);
+      glm::vec2 direction;
       
       float factor = m_mood == ANGRY ? 1.0 : -1.0; // move towards OR away
+      std::cout << currentTime << ":" << "CEAIGenericAmbientManager::chooseNewTarget" << ": Tracked target available. Attempting to move: " << factor << std::endl;
       
+      if (factor > 0.0) {
+        direction = glm::normalize(m_tracked_target - worldPos);
+      } else {
+        direction = glm::normalize(worldPos - m_tracked_target);
+      }
+
       // Try a fixed distance
-      glm::vec2 targetPos = worldPos + (direction * factor) * 6.f;
+      glm::vec2 targetPos = worldPos + direction * (6.f);
 
       // Run an inline search
       // TODO: improve performance of this!
       JPS::PathVector path = {};
       bool found = JPS::findPath(path, m_path_finder, worldPos.x, worldPos.y, targetPos.x, targetPos.y, 1);
        if (found) {
+         std::cout << currentTime << ":" << "CEAIGenericAmbientManager::chooseNewTarget" << ": Found path to tracked target. Queuing: " << path.size() << std::endl;
+
          for (auto p : path) {
            m_path_waypoints.push_back(glm::vec2(p.x, p.y));
          }
      
          popNextTarget(currentTime);
+       } else {
+         std::cout << currentTime << ":" << "CEAIGenericAmbientManager::chooseNewTarget" << ": FAILED to find tracked target path... Queue: " << m_path_waypoints.size() << std::endl;
+         
+         if (m_path_waypoints.empty()) {
+           std::cout << currentTime << ":" << "CEAIGenericAmbientManager::chooseNewTarget" << ": Queue empty! No where to go. Run to landing." << std::endl;
+
+           glm::vec2 safePos = m_map->getRandomLanding();
+           m_current_target = glm::vec3(safePos.x * m_map->getTileLength(), 0, safePos.y * m_map->getTileLength());
+           m_target_expire_time = currentTime + 1.0;
+         }
        }
 
       // Just try once
       return;
     } else if (m_mood == ANGRY) {
+      std::cout << currentTime << ":" << "CEAIGenericAmbientManager::chooseNewTarget" << ": Mood is angry! Clearing existing route and setting to FEAR. Route to landing." << std::endl;
+
       m_mood = FEAR;
       m_path_waypoints.clear();
       
       glm::vec2 safePos = m_map->getRandomLanding();
       SetCurrentTarget(glm::vec3(safePos.x * m_map->getTileLength(), 0, safePos.y * m_map->getTileLength()), currentTime);
-      m_path_waypoints.push_back(safePos);
       popNextTarget(currentTime);
     }
 
@@ -165,14 +197,20 @@ void CEAIGenericAmbientManager::chooseNewTarget(glm::vec3 currentPosition, doubl
 void CEAIGenericAmbientManager::updateInflightPathsearch(double currentTime)
 {
   if (m_path_search_started_at < 0) return;
+  
+  std::cout << currentTime << " - updateInflightPathsearch() invoked" << std::endl;
 
   JPS::PathVector path = {};
-  auto res = m_path_search_instance->findPathStep(32);
+  auto res = m_path_search_instance->findPathStep(12);
 
   if (res == JPS_FOUND_PATH) {
+    std::cout << currentTime << " - updateInflightPathsearch() JPS_FOUND_PATH" << std::endl;
+
     // We found a path. Update planned route
     res = m_path_search_instance->findPathFinish(path, 1);
     if (res == JPS_FOUND_PATH) {
+      std::cout << currentTime << " - updateInflightPathsearch() JPS_FOUND_PATH received. Mood: " << m_mood << "; points: " << path.size() << std::endl;
+
       // If I'm angry or afriad then clear eveything and focus on this
       if (m_mood == ANGRY || m_mood == FEAR) {
         m_path_waypoints.clear();
@@ -185,7 +223,7 @@ void CEAIGenericAmbientManager::updateInflightPathsearch(double currentTime)
       popNextTarget(currentTime);
     } else {
       // Some memory issue or something - invalidate target
-      m_target_expire_time = currentTime - 1.0;
+      std::cout << currentTime << " - updateInflightPathsearch() FAILED to find path or some error returned. Keeping existing planned route." << std::endl;
     }
   
     m_path_search_started_at = -1.0;
@@ -193,11 +231,13 @@ void CEAIGenericAmbientManager::updateInflightPathsearch(double currentTime)
     return;
   } else if (res == JPS_NEED_MORE_STEPS) {
     // Keep trying
+    std::cout << currentTime << " - updateInflightPathsearch() JPS_NEED_MORE_STEPS. Deferring..." << std::endl;
+
     return;
   }
   
   // Mark target expired so we pick a new one
-  m_target_expire_time = currentTime - 1.0;
+  std::cout << currentTime << " - updateInflightPathsearch() No path to target found? Keeping existing in case we find target" << std::endl;
 }
 
 void CEAIGenericAmbientManager::Process(double currentTime) {
@@ -213,11 +253,17 @@ void CEAIGenericAmbientManager::Process(double currentTime) {
   glm::vec3 forward = glm::normalize(m_current_target - currentPosition);
   glm::vec2 target = m_map->getWorldTilePosition(m_current_target);
   
+  bool lostTarget = (m_mood == ANGRY && currentTime - m_danger_last_spotted_at > DEFAULT_LOST_TARGET_GIVEUP_TIME);
+  bool angryAndNoRoute = (m_mood == ANGRY && m_path_waypoints.empty());
   bool invalidTarget = (target.x == 0 && target.y == 0);
   bool expired = currentTime > m_target_expire_time;
-  bool reachedTarget = glm::length(glm::vec2(currentPosition.x, currentPosition.z) - glm::vec2(m_current_target.x, m_current_target.z)) < m_map->getTileLength();
-  
-  if (reachedTarget || expired || invalidTarget) {
+  bool reachedTarget = glm::length(glm::vec2(currentPosition.x, currentPosition.z) - glm::vec2(m_current_target.x, m_current_target.z)) < (m_map->getTileLength() / 2.f);
+
+  if (lostTarget || angryAndNoRoute) {
+    Reset(currentTime);
+    target = m_map->getWorldTilePosition(m_current_target);
+    invalidTarget = (target.x == 0 && target.y == 0);
+  } else if (reachedTarget || expired || invalidTarget) {
     chooseNewTarget(currentPosition, currentTime);
     target = m_map->getWorldTilePosition(m_current_target);
     invalidTarget = (target.x == 0 && target.y == 0);
@@ -248,14 +294,7 @@ void CEAIGenericAmbientManager::Process(double currentTime) {
     m_player_controller->setTargetSpeed(m_config.m_walk_speed * 1.75f);
     // Decide on attack pattern if needed
     // Move towards the target with attack pattern
-    if (m_tracked_target.x > 0 && m_tracked_target.y > 0) {
-      float targetDistance = glm::distance(m_tracked_target, m_player_controller->getWorldPosition());
-      if (targetDistance <= 1.0) {
-        // TODO: check if threat is nearby
-        m_mood = CURIOUS;
-        Reset(currentTime);
-      }
-    }
+    // Decide when to give up on our feelings and return to curious or fear state
   } else if (m_mood == CURIOUS) {
     bool hasIdleAnim = !m_config.IdleAnimNames.empty();
     bool isIdle = hasIdleAnim && isIdleAnimation(currentAnimation);
@@ -322,6 +361,8 @@ bool CEAIGenericAmbientManager::isIdleAnimation(std::string animationName) {
 
 void CEAIGenericAmbientManager::Reset(double currentTime)
 {
+  std::cout << currentTime << " - CEAIGenericAmbientManager::Reset() - Reset called. Mood: " << m_mood << std::endl;
+
   if (m_mood == ANGRY) {
     // Completely forget what we were after
     m_path_waypoints.clear();
@@ -329,28 +370,97 @@ void CEAIGenericAmbientManager::Reset(double currentTime)
   }
   
   m_fear_time = 0.0;
+  m_danger_last_spotted_at = 0.0;
   
   m_mood = CURIOUS;
 }
 
 void CEAIGenericAmbientManager::ReportNotableEvent(glm::vec3 position, std::string eventType, double currentTime) {
+  if (eventType == "PLAYER_ELIMINATED") {
+    std::cout << currentTime << " - ReportNotableEvent() - I killed a player. Rejoice and reset." << std::endl;
+
+    Reset(currentTime);
+    return;
+  }
+
+  float dist = glm::distance(position, m_player_controller->getPosition()) / m_map->getTileLength();
+  if (eventType == "PLAYER_SPOTTED" && dist > m_view_range / 2.f && randomIf(0.35)) {
+    std::cout << currentTime << " - ReportNotableEvent() - player spotted. Decided to ignore it. Dist: " << dist << std::endl;
+    return;
+  };
+
   // TODO: add to an attention queue with x ms delay in processing and finite space
-  if (eventType == "PLAYER_SPOTTED" && (m_mood == CURIOUS || m_mood == ANGRY)) {
+  if (eventType == "PLAYER_SPOTTED" && (m_mood == CURIOUS)) {
+    std::cout << currentTime << " - ReportNotableEvent() - player spotted. Mode is curious. Deciding what to do.." << std::endl;
+    // Decide if we are afraid or angry about this
+    if (m_max_attack_chance > 0.f || m_min_attack_chance > 0.f) {
+      if (dist > m_view_range) {
+        m_mood = FEAR;
+      } else {
+        float attackChance = CalculateAttackChance(dist, m_view_range, m_min_attack_chance, m_max_attack_chance);
+        m_mood = randomIf(attackChance) ? ANGRY : FEAR;
+      }
+    } else {
+      // No option but fear
+      std::cout << currentTime << "\tReportNotableEvent(): no option but FEAR" << std::endl;
+      m_mood = FEAR;
+    }
+    
+    std::cout << currentTime << " - ReportNotableEvent() - DECIDED: " << m_mood << std::endl;
+    
+    // If fear, forget everything else
+    if (m_mood == FEAR) {
+      std::cout << currentTime << " - ReportNotableEvent() - In fear mode; clearing existing route" << std::endl;
+      m_fear_time = 0;
+      m_path_waypoints.clear();
+    }
+    
+    SetCurrentTarget(position, currentTime);
+  }
+  
+  if (eventType == "PLAYER_SPOTTED" && m_mood == ANGRY)
+  {
+    std::cout << currentTime << " - ReportNotableEvent() Already angry. Updating angry target." << std::endl;
+    // Ensure we stay angry and focused but do not reset any paths
     m_mood = ANGRY;
+    m_danger_last_spotted_at = currentTime;
     SetCurrentTarget(position, currentTime);
   }
 }
 
+bool CEAIGenericAmbientManager::IsDangerous()
+{
+  return m_is_dangerous;
+}
+
 bool CEAIGenericAmbientManager::SetCurrentTarget(glm::vec3 targetPosition, double currentTime) {
+  std::cout << currentTime << " [" << m_mood << "] SetCurrentTarget invoked." << std::endl;
   float tileSize = m_map->getTileLength();
+  
+  if (m_mood == FEAR) {
+    // We need to get AWAY from the target
+    std::cout << currentTime << " [" << m_mood << "]" << " - SetCurrentTarget choosing target AWAY from target" << std::endl;
+    glm::vec3 currentPosition = m_player_controller->getPosition();
+    glm::vec3 direction = glm::normalize(targetPosition - currentPosition) * m_view_range * 2.f;
+    direction.y = 0;
+
+    targetPosition = currentPosition + direction;
+  }
+
   glm::vec2 tileCoords = glm::vec2(int(targetPosition.x / tileSize), int(targetPosition.z / tileSize));
   
-  if (m_tracked_target == tileCoords) return true;
+  if (m_tracked_target == tileCoords) {
+    std::cout << currentTime << " - CEAIGenericAmbientManager::SetCurrentTarget - Already tracked target matched given target. Returning TRUE" << std::endl;
+    return true;
+  } else {
+    std::cout << currentTime << " - CEAIGenericAmbientManager::SetCurrentTarget: current tracked target differs from new" << std::endl;
+  }
   
   auto worldPos = m_player_controller->getWorldPosition();
 
   JPS::PathVector path = {};
   // WARNING: init will abort any active search
+  std::cout << currentTime << "- SetCurrentTarget() - Aborting any inflight search to find new target" << std::endl;
   auto res = m_path_search_instance->findPathInit(JPS::Pos(worldPos.x, worldPos.y), JPS::Pos(tileCoords.x, tileCoords.y));
   
   bool found = false;
@@ -358,6 +468,8 @@ bool CEAIGenericAmbientManager::SetCurrentTarget(glm::vec3 targetPosition, doubl
     // Greedy algo already found a path
     res = m_path_search_instance->findPathFinish(path, 1);
     if (res == JPS_FOUND_PATH) {
+      std::cout << currentTime << "- SetCurrentTarget(): GREEDY Found path to target. Updating with waypoints: " << path.size() << std::endl;
+
       for (auto p : path) {
         m_path_waypoints.push_back(glm::vec2(p.x, p.y));
       }
@@ -368,6 +480,7 @@ bool CEAIGenericAmbientManager::SetCurrentTarget(glm::vec3 targetPosition, doubl
     m_path_search_started_at = -1.0;
   } else if (res == JPS_NEED_MORE_STEPS) {
     // Otherwise, defer to future frames
+    std::cout << currentTime << "- SetCurrentTarget(): JPS_NEED_MORE_STEPS. Deferring to furture frames" << std::endl;
     m_path_search_started_at = currentTime;
     found = true;
   }
@@ -379,8 +492,22 @@ bool CEAIGenericAmbientManager::SetCurrentTarget(glm::vec3 targetPosition, doubl
 
 bool CEAIGenericAmbientManager::NoticesLocalPlayer(std::shared_ptr<CELocalPlayerController> localPlayer) { 
   float dist = glm::distance(localPlayer->getPosition(), m_player_controller->getPosition());
-  if (dist > 20.f * m_map->getTileLength()) return false;
+  if (dist < m_view_range * m_map->getTileLength()) return true;
   
-  return true;
+  return false;
 }
 
+std::shared_ptr<CERemotePlayerController> CEAIGenericAmbientManager::GetPlayerController()
+{
+  return m_player_controller;
+}
+
+float CEAIGenericAmbientManager::CalculateAttackChance(float distance, float maxDist, float minAttackChance, float maxAttackChance) {
+    if (distance > maxDist) {
+        return 0.0f; // No chance of attack if out of range, indicating FEAR.
+    }
+
+    // Linear interpolation between min and max attack chance
+    float attackChance = minAttackChance + (maxAttackChance - minAttackChance) * (distance / maxDist);
+    return attackChance;
+}

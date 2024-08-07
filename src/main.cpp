@@ -192,7 +192,8 @@ int main(int argc, const char * argv[])
   std::shared_ptr<CEAudioSource> dieAudioSrc = std::make_shared<CEAudioSource>(die);
   dieAudioSrc->setLooped(false);
   dieAudioSrc->setGain(2.0f);
-  dieAudioSrc->setClampDistance(4048.f);
+  dieAudioSrc->setClampDistance(256*6);
+  dieAudioSrc->setMaxDistance(256*80);
 
   // shared loader to minimize resource usage
   std::unique_ptr<C2CarFilePreloader> cFileLoad(new C2CarFilePreloader);
@@ -321,28 +322,6 @@ int main(int argc, const char * argv[])
     for (const auto& character : characters) {
       if (character) {
         character->update(currentTime, g_terrain_transform, *camera, player_world_pos);
-        // TODO: totally change this for multi-player
-        auto contactDist = glm::distance(character->getWorldPosition(), player_world_pos);
-        if (contactDist < 2.0 && g_player_controller->isAlive(currentTime)) {
-          g_player_controller->kill(currentTime);
-          auto body = std::make_shared<CERemotePlayerController>(
-                                                                      g_audio_manager,
-                                                                      cFileLoad->fetch(basePath / "DEAD.CAR"),
-                                                                      cMap,
-                                                                      cMapRsc,
-                                                                      "Hr_dead1"
-                                                                      );
-          auto bodyPos = g_player_controller->getPosition();
-          bodyPos.y = cMap->getPlaceGroundHeight(player_world_pos.x, player_world_pos.y) + 12.f;
-          body->setPosition(bodyPos);
-          body->setNextAnimation("Hr_dead1");
-          body->StopMovement();
-          body->uploadStateToHardware();
-          characters.push_back(body);
-          
-          dieAudioSrc->setPosition(bodyPos);
-          g_audio_manager->play(dieAudioSrc);
-        }
       }
     }
     
@@ -351,12 +330,38 @@ int main(int argc, const char * argv[])
     for (const auto& ambient : ambients) {
       if (ambient) {
         ambient->Process(currentTime);
+
+        // TODO: totally change this for multi-player
+        if (ambient->IsDangerous()) {
+          auto character = ambient->GetPlayerController();
+          auto contactDist = glm::distance(character->getPosition(), g_player_controller->getPosition());
+          if (contactDist < cMap->getTileLength() && g_player_controller->isAlive(currentTime)) {
+            g_player_controller->kill(currentTime);
+            auto body = std::make_shared<CERemotePlayerController>(
+                                                                   g_audio_manager,
+                                                                   cFileLoad->fetch(basePath / "DEAD.CAR"),
+                                                                   cMap,
+                                                                   cMapRsc,
+                                                                   "Hr_dead1"
+                                                                   );
+            auto bodyPos = g_player_controller->getPosition();
+            bodyPos.y = cMap->getPlaceGroundHeight(player_world_pos.x, player_world_pos.y) + 12.f;
+            body->setPosition(bodyPos);
+            body->setNextAnimation("Hr_dead1");
+            body->StopMovement();
+            body->uploadStateToHardware();
+            characters.push_back(body);
+            
+            dieAudioSrc->setPosition(bodyPos);
+            g_audio_manager->play(dieAudioSrc);
+            ambient->ReportNotableEvent(currentPosition, "PLAYER_ELIMINATED", currentTime);
+          }
+        }
+
         // TODO: only every so often
         if (ambient->NoticesLocalPlayer(g_player_controller)) {
           if (g_player_controller->isAlive(currentTime)) {
             ambient->ReportNotableEvent(currentPosition, "PLAYER_SPOTTED", currentTime);
-          } else {
-            ambient->Reset(currentTime);
           }
         }
       }

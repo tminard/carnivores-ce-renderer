@@ -41,6 +41,12 @@ enum AIGenericMood {
 };
 
 class CEAIGenericAmbientManager {
+  const float DEFAULT_VIEW_RANGE = 60.f;
+  const float DEFAULT_MIN_ATTACK = 0.3f;
+  const float DEFAULT_MAX_ATTACK = 1.f;
+  const float DEFAULT_IS_DANGER = true;
+  const double DEFAULT_LOST_TARGET_GIVEUP_TIME = 3.0;
+
   std::shared_ptr<CERemotePlayerController> m_player_controller;
   std::shared_ptr<C2MapFile> m_map;
   std::shared_ptr<C2MapRscFile> m_rsc;
@@ -57,10 +63,20 @@ class CEAIGenericAmbientManager {
   double m_fear_time = 0;
   double m_path_search_started_at = -1.0;
   
+  float m_view_range = DEFAULT_VIEW_RANGE;
+  
+  // Chance of attack behavior the closer to get to max view range
+  float m_max_attack_chance = DEFAULT_MAX_ATTACK;
+  // Chance of attack behavior the closer you get to the target
+  float m_min_attack_chance = DEFAULT_MIN_ATTACK;
+  
+  bool m_is_dangerous = DEFAULT_IS_DANGER;
+  
   AIGenericMood m_mood = CURIOUS;
   
   glm::vec3 m_current_target;
   glm::vec2 m_tracked_target;
+  double m_danger_last_spotted_at = 0.0;
   
   std::vector<glm::vec2> m_path_waypoints = {};
   
@@ -71,7 +87,8 @@ class CEAIGenericAmbientManager {
   std::string chooseIdleAnimation();
   
   void updateInflightPathsearch(double currentTime);
-  
+  float CalculateAttackChance(float distance, float maxDist, float minAttackChance, float maxAttackChance);
+
 public:
   CEAIGenericAmbientManager(json jsonConfig, std::shared_ptr<CERemotePlayerController> playerController, std::shared_ptr<C2MapFile> map, std::shared_ptr<C2MapRscFile> rsc);
   void Process(double currentTime);
@@ -79,4 +96,6 @@ public:
   void Reset(double currentTime);
   void ReportNotableEvent(glm::vec3 position, std::string eventType, double currentTime);
   bool NoticesLocalPlayer(std::shared_ptr<CELocalPlayerController> localPlayer);
+  bool IsDangerous();
+  std::shared_ptr<CERemotePlayerController> GetPlayerController();
 };

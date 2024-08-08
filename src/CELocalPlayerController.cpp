@@ -336,8 +336,7 @@ void CELocalPlayerController::move(double currentTime, double deltaTime, bool fo
       // Check for landing
     worldPos = glm::vec2(int(floorf(pos.x / m_tile_size)), int(floorf(pos.z / m_tile_size)));
       float groundHeight = m_map->getPlaceGroundHeight(worldPos.x, worldPos.y) + m_player_height;
-      if (pos.y <= groundHeight) {
-          pos.y = groundHeight;
+      if (pos.y <= groundHeight - 24.f) {
           m_is_jumping = false;
           m_vertical_speed = 0.0f;
           m_last_jump_time = currentTime;
@@ -391,7 +390,7 @@ void CELocalPlayerController::jump(double currentTime) {
 
 bool CELocalPlayerController::isAlive(double currentTime)
 {
-  return (currentTime - m_died_at > 15.0);
+  return (currentTime - m_died_at > 10.0);
 }
 
 void CELocalPlayerController::kill(double killedAt) { 

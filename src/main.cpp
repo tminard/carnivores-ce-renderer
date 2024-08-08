@@ -116,7 +116,7 @@ void CalculateFrameRate() {
   }
 }
 
-const int FPS = 80;
+const int FPS = 90;
 const int frameDelay = 1000 / FPS;
 
 int main(int argc, const char * argv[])
@@ -466,7 +466,7 @@ int main(int argc, const char * argv[])
     glfwSwapBuffers(window);
     glfwPollEvents();
 
-    // CalculateFrameRate();
+    CalculateFrameRate();
     
     auto frameEnd = std::chrono::high_resolution_clock::now();
     std::chrono::duration<float, std::milli> frameDuration = frameEnd - frameStart;

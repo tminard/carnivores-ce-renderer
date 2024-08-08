@@ -98,12 +98,12 @@ glm::vec2 CEAIGenericAmbientManager::popNextTarget(double currentTime)
 }
 
 void CEAIGenericAmbientManager::chooseNewTarget(glm::vec3 currentPosition, double currentTime) {
-  if (m_debug) std::cout << m_config.AiName << " DEBUG: " << currentTime << ":" << "CEAIGenericAmbientManager::chooseNewTarget" << ": called." << std::endl;
+  if (m_debug) std::cout << currentTime << " " << m_config.AiName << " DEBUG: " << currentTime << ":" << "CEAIGenericAmbientManager::chooseNewTarget" << ": called." << std::endl;
   glm::vec2 nextTarget = popNextTarget(currentTime);
   bool isEmptyTarget = (nextTarget.x == 0 && nextTarget.y == 0);
   
   if (!isEmptyTarget) {
-    if (m_debug) std::cout << m_config.AiName << " DEBUG: " << ":" << "CEAIGenericAmbientManager::chooseNewTarget" << ": target queue not empty. Using next location. Queue: " << m_path_waypoints.size() << std::endl;
+    if (m_debug) std::cout << currentTime << " " << m_config.AiName << " DEBUG: " << ":" << "CEAIGenericAmbientManager::chooseNewTarget" << ": target queue not empty. Using next location. Queue: " << m_path_waypoints.size() << std::endl;
     return;
   }
   
@@ -112,7 +112,7 @@ void CEAIGenericAmbientManager::chooseNewTarget(glm::vec3 currentPosition, doubl
   bool foundSafeTile = false;
   
   // No planned waypoint available - pick a suitable direction instead
-  if (m_debug) std::cout << m_config.AiName << " DEBUG: " << ":" << "CEAIGenericAmbientManager::chooseNewTarget" << ": Queue empty. Deciding on next route. Mood: " << m_mood << std::endl;
+  if (m_debug) std::cout << currentTime << " " << m_config.AiName << " DEBUG: " << ":" << "CEAIGenericAmbientManager::chooseNewTarget" << ": Queue empty. Deciding on next route. Mood: " << m_mood << std::endl;
   
   int tries = 0;
   float dist = m_config.m_pf_range;
@@ -128,7 +128,7 @@ void CEAIGenericAmbientManager::chooseNewTarget(glm::vec3 currentPosition, doubl
       targetPosition.y = currentPosition.y;
       
       bool found = SetCurrentTarget(targetPosition, currentTime);
-      if (m_debug) std::cout << m_config.AiName << " DEBUG: " << ":" << "CEAIGenericAmbientManager::chooseNewTarget" << ": Mood curious. Next rando spot selected? Found: " << found << std::endl;
+      if (m_debug) std::cout << currentTime << " " << m_config.AiName << " DEBUG: " << ":" << "CEAIGenericAmbientManager::chooseNewTarget" << ": Mood curious. Next rando spot selected? Found: " << found << std::endl;
 
       if (found) return;
 
@@ -141,7 +141,7 @@ void CEAIGenericAmbientManager::chooseNewTarget(glm::vec3 currentPosition, doubl
       glm::vec2 direction;
       
       float factor = m_mood == ANGRY ? 1.0 : -1.0; // move towards OR away
-      if (m_debug) std::cout << m_config.AiName << " DEBUG: " << ":" << "CEAIGenericAmbientManager::chooseNewTarget" << ": Tracked target available. Attempting to move: " << factor << std::endl;
+      if (m_debug) std::cout << currentTime << " " << m_config.AiName << " DEBUG: " << ":" << "CEAIGenericAmbientManager::chooseNewTarget" << ": Tracked target available. Attempting to move: " << factor << std::endl;
       
       if (factor > 0.0) {
         direction = glm::normalize(m_tracked_target - worldPos);
@@ -157,7 +157,7 @@ void CEAIGenericAmbientManager::chooseNewTarget(glm::vec3 currentPosition, doubl
       JPS::PathVector path = {};
       bool found = JPS::findPath(path, m_path_finder, worldPos.x, worldPos.y, targetPos.x, targetPos.y, 1);
        if (found) {
-         if (m_debug) std::cout << m_config.AiName << " DEBUG: " << ":" << "CEAIGenericAmbientManager::chooseNewTarget" << ": Found path to tracked target. Queuing: " << path.size() << std::endl;
+         if (m_debug) std::cout << currentTime << " " << m_config.AiName << " DEBUG: " << ":" << "CEAIGenericAmbientManager::chooseNewTarget" << ": Found path to tracked target. Queuing: " << path.size() << std::endl;
 
          for (auto p : path) {
            m_path_waypoints.push_back(glm::vec2(p.x, p.y));
@@ -165,10 +165,10 @@ void CEAIGenericAmbientManager::chooseNewTarget(glm::vec3 currentPosition, doubl
      
          popNextTarget(currentTime);
        } else {
-         if (m_debug) std::cout << m_config.AiName << " DEBUG: " << ":" << "CEAIGenericAmbientManager::chooseNewTarget" << ": FAILED to find tracked target path... Queue: " << m_path_waypoints.size() << std::endl;
+         if (m_debug) std::cout << currentTime << " " << m_config.AiName << " DEBUG: " << ":" << "CEAIGenericAmbientManager::chooseNewTarget" << ": FAILED to find tracked target path... Queue: " << m_path_waypoints.size() << std::endl;
          
          if (m_path_waypoints.empty()) {
-           if (m_debug) std::cout << m_config.AiName << " DEBUG: " << ":" << "CEAIGenericAmbientManager::chooseNewTarget" << ": Queue empty! No where to go. Run to landing." << std::endl;
+           if (m_debug) std::cout << currentTime << " " << m_config.AiName << " DEBUG: " << ":" << "CEAIGenericAmbientManager::chooseNewTarget" << ": Queue empty! No where to go. Run to landing." << std::endl;
 
            glm::vec2 safePos = m_map->getRandomLanding();
            m_current_target = glm::vec3(safePos.x * m_map->getTileLength(), 0, safePos.y * m_map->getTileLength());
@@ -188,18 +188,18 @@ void CEAIGenericAmbientManager::updateInflightPathsearch(double currentTime)
 {
   if (m_path_search_started_at < 0) return;
   
-  if (m_debug) std::cout << m_config.AiName << " DEBUG: " << " - updateInflightPathsearch() invoked" << std::endl;
+  if (m_debug) std::cout << currentTime << " " << m_config.AiName << " DEBUG: " << " - updateInflightPathsearch() invoked" << std::endl;
 
   JPS::PathVector path = {};
   auto res = m_path_search_instance->findPathStep(12);
 
   if (res == JPS_FOUND_PATH) {
-    if (m_debug) std::cout << m_config.AiName << " DEBUG: " << " - updateInflightPathsearch() JPS_FOUND_PATH" << std::endl;
+    if (m_debug) std::cout << currentTime << " " << m_config.AiName << " DEBUG: " << " - updateInflightPathsearch() JPS_FOUND_PATH" << std::endl;
 
     // We found a path. Update planned route
     res = m_path_search_instance->findPathFinish(path, 1);
     if (res == JPS_FOUND_PATH) {
-      if (m_debug) std::cout << m_config.AiName << " DEBUG: " << " - updateInflightPathsearch() JPS_FOUND_PATH received. Mood: " << m_mood << "; points: " << path.size() << std::endl;
+      if (m_debug) std::cout << currentTime << " " << m_config.AiName << " DEBUG: " << " - updateInflightPathsearch() JPS_FOUND_PATH received. Mood: " << m_mood << "; points: " << path.size() << std::endl;
 
       // If I'm angry or afriad then clear eveything and focus on this
       if (m_mood == ANGRY) {
@@ -213,7 +213,7 @@ void CEAIGenericAmbientManager::updateInflightPathsearch(double currentTime)
       popNextTarget(currentTime);
     } else {
       // Some memory issue or something - invalidate target
-      if (m_debug) std::cout << m_config.AiName << " DEBUG: " << " - updateInflightPathsearch() FAILED to find path or some error returned. Keeping existing planned route." << std::endl;
+      if (m_debug) std::cout << currentTime << " " << m_config.AiName << " DEBUG: " << " - updateInflightPathsearch() FAILED to find path or some error returned. Keeping existing planned route." << std::endl;
     }
   
     m_path_search_started_at = -1.0;
@@ -221,13 +221,13 @@ void CEAIGenericAmbientManager::updateInflightPathsearch(double currentTime)
     return;
   } else if (res == JPS_NEED_MORE_STEPS) {
     // Keep trying
-    if (m_debug) std::cout << m_config.AiName << " DEBUG: " << " - updateInflightPathsearch() JPS_NEED_MORE_STEPS. Deferring..." << std::endl;
+    if (m_debug) std::cout << currentTime << " " << m_config.AiName << " DEBUG: " << " - updateInflightPathsearch() JPS_NEED_MORE_STEPS. Deferring..." << std::endl;
 
     return;
   }
   
   // Mark target expired so we pick a new one
-  if (m_debug) std::cout << m_config.AiName << " DEBUG: " << " - updateInflightPathsearch() No path to target found? Keeping existing in case we find target" << std::endl;
+  if (m_debug) std::cout << currentTime << " " << m_config.AiName << " DEBUG: " << " - updateInflightPathsearch() No path to target found? Keeping existing in case we find target" << std::endl;
 }
 
 void CEAIGenericAmbientManager::Process(double currentTime) {
@@ -302,7 +302,7 @@ void CEAIGenericAmbientManager::Process(double currentTime) {
     m_player_controller->MoveTo(m_current_target, deltaTime);
   } else if (invalidTarget) {
     m_player_controller->StopMovement();
-    if (m_debug) std::cout << m_config.AiName << " DEBUG: " << " cannot move; invalid target. Redeploying." << std::endl;
+    if (m_debug) std::cout << currentTime << " " << m_config.AiName << " DEBUG: " << " cannot move; invalid target. Redeploying." << std::endl;
     m_player_controller->setPosition(m_map->getRandomLanding());
   }
   
@@ -339,7 +339,7 @@ bool CEAIGenericAmbientManager::isIdleAnimation(std::string animationName) {
 
 void CEAIGenericAmbientManager::Reset(double currentTime)
 {
-  if (m_debug) std::cout << m_config.AiName << " DEBUG: " << " - CEAIGenericAmbientManager::Reset() - Reset called. Mood: " << m_mood << std::endl;
+  if (m_debug) std::cout << currentTime << " " << m_config.AiName << " DEBUG: " << " - CEAIGenericAmbientManager::Reset() - Reset called. Mood: " << m_mood << std::endl;
 
   if (m_mood == ANGRY) {
     // Completely forget what we were after
@@ -354,21 +354,21 @@ void CEAIGenericAmbientManager::Reset(double currentTime)
 
 void CEAIGenericAmbientManager::ReportNotableEvent(glm::vec3 position, std::string eventType, double currentTime) {
   if (eventType == "PLAYER_ELIMINATED") {
-    if (m_debug) std::cout << m_config.AiName << " DEBUG: " << " - ReportNotableEvent() - I killed a player. Rejoice and reset." << std::endl;
+    if (m_debug) std::cout << currentTime << " " << m_config.AiName << " DEBUG: " << " - ReportNotableEvent() - I killed a player. Rejoice and reset." << std::endl;
 
     Reset(currentTime);
     return;
   }
 
   float dist = glm::distance(position, m_player_controller->getPosition()) / m_map->getTileLength();
-  if (eventType == "PLAYER_SPOTTED" && dist > m_view_range / 2.f && randomIf(0.1)) {
-    if (m_debug) std::cout << m_config.AiName << " DEBUG: " << " - ReportNotableEvent() - player spotted. Decided to ignore it. Dist: " << dist << std::endl;
-    return;
-  };
+//  if (eventType == "PLAYER_SPOTTED" && dist > m_view_range / 2.f && randomIf(0.1)) {
+//    if (m_debug) std::cout << currentTime << " " << m_config.AiName << " DEBUG: " << " - ReportNotableEvent() - player spotted. Decided to ignore it. Dist: " << dist << std::endl;
+//    return;
+//  };
 
   // TODO: add to an attention queue with x ms delay in processing and finite space
   if (eventType == "PLAYER_SPOTTED" && (m_mood == CURIOUS)) {
-    if (m_debug) std::cout << m_config.AiName << " DEBUG: " << " - ReportNotableEvent() - player spotted. Mode is curious. Deciding what to do.." << std::endl;
+    if (m_debug) std::cout << currentTime << " " << m_config.AiName << " DEBUG: " << " - ReportNotableEvent() - player spotted. Mode is curious. Deciding what to do.." << std::endl;
     //Decide if we are afraid or angry about this
     if (m_max_attack_chance > 0.f || m_min_attack_chance > 0.f) {
       if (dist > m_view_range) {
@@ -383,10 +383,10 @@ void CEAIGenericAmbientManager::ReportNotableEvent(glm::vec3 position, std::stri
     }
     
     m_mood = ANGRY;
-    if (m_debug) std::cout << m_config.AiName << " DEBUG: " << " - ReportNotableEvent() - DECIDED: " << m_mood << std::endl;
+    if (m_debug) std::cout << currentTime << " " << m_config.AiName << " DEBUG: " << " - ReportNotableEvent() - DECIDED: " << m_mood << std::endl;
     if (m_mood_decision == ATTACK) {
       SetCurrentTarget(position, currentTime);
-    } else if (currentTime - m_last_safe_target_calculation > 3.0) {
+    } else if (currentTime - m_last_safe_target_calculation > 12.0) {
       SetCurrentTarget(findSafeTarget(position), currentTime);
       m_last_safe_target_calculation = currentTime;
     }
@@ -394,7 +394,8 @@ void CEAIGenericAmbientManager::ReportNotableEvent(glm::vec3 position, std::stri
   
   if (eventType == "PLAYER_SPOTTED" && m_mood == ANGRY)
   {
-    if (m_debug) std::cout << m_config.AiName << " DEBUG: " << " - ReportNotableEvent() Already angry. Updating angry target." << std::endl;
+    if (currentTime - m_danger_last_spotted_at < 2.0 && m_mood_decision == ESCAPE) return;
+    if (m_debug) std::cout << currentTime << " " << m_config.AiName << " DEBUG: " << " - ReportNotableEvent() Already angry. Updating angry target." << std::endl;
     // Ensure we stay angry and focused but do not reset any paths
     m_mood = ANGRY;
     m_danger_last_spotted_at = currentTime;
@@ -406,6 +407,8 @@ void CEAIGenericAmbientManager::ReportNotableEvent(glm::vec3 position, std::stri
       } else {
         float attackChance = CalculateAttackChance(dist, m_view_range, m_min_attack_chance, m_max_attack_chance);
         m_mood_decision = randomIf(attackChance) ? ATTACK : ESCAPE;
+        // If we were in escape mode but decide to attack then clear the current plan
+        if (m_mood_decision == ATTACK) m_path_waypoints.clear();
       }
       m_last_attack_decision_at = currentTime;
     }
@@ -426,7 +429,7 @@ bool CEAIGenericAmbientManager::IsDangerous()
 
 glm::vec3 CEAIGenericAmbientManager::findSafeTarget(glm::vec3 direction)
 {
-  if (m_debug) std::cout << m_config.AiName << " DEBUG: " << " [" << m_mood << "] findSafeTarget invoked." << std::endl;
+  if (m_debug) std::cout << glfwGetTime() << " " << m_config.AiName << " DEBUG: " << " [" << m_mood << "] findSafeTarget invoked." << std::endl;
 
   int tries = 0;
   glm::vec2 curPos = m_player_controller->getWorldPosition();
@@ -447,43 +450,44 @@ glm::vec3 CEAIGenericAmbientManager::findSafeTarget(glm::vec3 direction)
     JPS::PathVector path = {};
     bool found = JPS::findPath(path, m_path_finder, curPos.x, curPos.y, check.x, check.y, 1);
     if (found && !path.empty()) {
-      if (m_debug) std::cout << m_config.AiName << " DEBUG: " << " [" << m_mood << "] findSafeTarget found safe target" << std::endl;
+      if (m_debug) std::cout << glfwGetTime() << " " << m_config.AiName << " DEBUG: " << " [" << m_mood << "] findSafeTarget found safe target" << std::endl;
 
       pos.x = path.back().x * m_map->getTileLength();
       pos.y = 0.f;
       pos.z = path.back().y * m_map->getTileLength();
       
-      if (m_debug) std::cout << m_config.AiName << " DEBUG: " << " [" << m_mood << "] findSafeTarget SAFE: " << pos.x << ", " << pos.y << ", " << pos.z << std::endl;
+      if (m_debug) std::cout << glfwGetTime() << " " << m_config.AiName << " DEBUG: " << " [" << m_mood << "] findSafeTarget SAFE: " << pos.x << ", " << pos.y << ", " << pos.z << std::endl;
 
       return pos;
     }
     tries++;
   }
 
-  if (m_debug) std::cout << m_config.AiName << " DEBUG: " << " [" << m_mood << "] findSafeTarget. No target found." << std::endl;
+  if (m_debug) std::cout << glfwGetTime() << " " << m_config.AiName << " DEBUG: " << " [" << m_mood << "] findSafeTarget. No target found." << std::endl;
 
   return direction; // Return the original position if no safe target is found
 }
 
 
 bool CEAIGenericAmbientManager::SetCurrentTarget(glm::vec3 targetPosition, double currentTime) {
-  if (m_debug) std::cout << m_config.AiName << " DEBUG: " << " [" << m_mood << "] SetCurrentTarget invoked." << std::endl;
+  if (m_debug) std::cout << currentTime << " " << m_config.AiName << " DEBUG: " << " [" << m_mood << "] SetCurrentTarget invoked." << std::endl;
   float tileSize = m_map->getTileLength();
 
   glm::vec2 tileCoords = glm::vec2(int(targetPosition.x / tileSize), int(targetPosition.z / tileSize));
+  auto distMoved = glm::distance(m_tracked_target, tileCoords);
   
-  if (m_tracked_target == tileCoords) {
-    if (m_debug) std::cout << m_config.AiName << " DEBUG: " << " - CEAIGenericAmbientManager::SetCurrentTarget - Already tracked target matched given target. Returning TRUE" << std::endl;
+  if (distMoved < 2) {
+    if (m_debug) std::cout << currentTime << " " << m_config.AiName << " DEBUG: " << " - CEAIGenericAmbientManager::SetCurrentTarget - Already tracked target matched given target. Returning TRUE" << std::endl;
     return true;
   } else {
-    if (m_debug) std::cout << m_config.AiName << " DEBUG: " << " - CEAIGenericAmbientManager::SetCurrentTarget: current tracked target differs from new" << std::endl;
+    if (m_debug) std::cout << currentTime << " " << m_config.AiName << " DEBUG: " << " - CEAIGenericAmbientManager::SetCurrentTarget: current tracked target differs from new" << std::endl;
   }
   
   auto worldPos = m_player_controller->getWorldPosition();
 
   JPS::PathVector path = {};
   // WARNING: init will abort any active search
-  if (m_debug) std::cout << m_config.AiName << " DEBUG: " << "- SetCurrentTarget() - Aborting any inflight search to find new target" << std::endl;
+  if (m_debug) std::cout << currentTime << " " << m_config.AiName << " DEBUG: " << "- SetCurrentTarget() - Aborting any inflight search to find new target" << std::endl;
   auto res = m_path_search_instance->findPathInit(JPS::Pos(worldPos.x, worldPos.y), JPS::Pos(tileCoords.x, tileCoords.y));
   
   bool found = false;
@@ -491,7 +495,7 @@ bool CEAIGenericAmbientManager::SetCurrentTarget(glm::vec3 targetPosition, doubl
     // Greedy algo already found a path
     res = m_path_search_instance->findPathFinish(path, 1);
     if (res == JPS_FOUND_PATH) {
-      if (m_debug) std::cout << m_config.AiName << " DEBUG: " << "- SetCurrentTarget(): GREEDY Found path to target. Updating with waypoints: " << path.size() << std::endl;
+      if (m_debug) std::cout << currentTime << " " << m_config.AiName << " DEBUG: " << "- SetCurrentTarget(): GREEDY Found path to target. Updating with waypoints: " << path.size() << std::endl;
 
       for (auto p : path) {
         m_path_waypoints.push_back(glm::vec2(p.x, p.y));
@@ -503,7 +507,7 @@ bool CEAIGenericAmbientManager::SetCurrentTarget(glm::vec3 targetPosition, doubl
     m_path_search_started_at = -1.0;
   } else if (res == JPS_NEED_MORE_STEPS) {
     // Otherwise, defer to future frames
-    if (m_debug) std::cout << m_config.AiName << " DEBUG: " << "- SetCurrentTarget(): JPS_NEED_MORE_STEPS. Deferring to furture frames" << std::endl;
+    if (m_debug) std::cout << currentTime << " " << m_config.AiName << " DEBUG: " << "- SetCurrentTarget(): JPS_NEED_MORE_STEPS. Deferring to furture frames" << std::endl;
     m_path_search_started_at = currentTime;
     found = true;
   }

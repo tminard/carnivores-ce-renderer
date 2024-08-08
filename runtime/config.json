@@ -20,7 +20,7 @@
       "controller": "GenericAmbient",
       "args": {
         "DEBUG": false,
-        "name": "Bigfoot",
+        "name": "Bigfoot1",
         "animations": {
           "WALK": "Bf_wlk",
           "IDLE": ["Bf_idle1", "Bf_idle2", "bf_idle3", "Bf_hero"],
@@ -29,11 +29,98 @@
         "behavior": {
           "vision": 30.0,
           "maxAttackChance": 0.25,
-          "minAttackChance": 1.0,
+          "minAttackChance": 0.75,
           "damageOnContact": true
         },
         "character": {
           "walkSpeed": 2.25
+        }
+      }
+    }
+  },
+  {
+    "file": "../../runtime/cce/game/models/SPINO.CAR",
+    "animation": "So_wlk",
+    "position": [
+      128,
+      204
+    ],
+    "attachAI": {
+      "controller": "GenericAmbient",
+      "args": {
+        "name": "Spino1",
+        "animations": {
+          "WALK": "So_wlk",
+          "IDLE": ["So_idle1", "So_idle2"],
+          "RUN": "So_run"
+        },
+        "behavior": {
+          "vision": 35.0,
+          "maxAttackChance": 0.65,
+          "minAttackChance": 0.95,
+          "damageOnContact": true
+        },
+        "character": {
+          "walkSpeed": 2.65,
+          "roamRange": 24.0
+        }
+      }
+    }
+  },
+  {
+    "file": "../../runtime/cce/game/models/TIREX.CAR",
+    "animation": "Tx_walk",
+    "position": [
+      359,
+      100
+    ],
+    "attachAI": {
+      "controller": "GenericAmbient",
+      "args": {
+        "name": "Rex1",
+        "animations": {
+          "WALK": "Tx_walk",
+          "IDLE": ["Tx_sml1", "Tx_sml2"],
+          "RUN": "Tx_run1"
+        },
+        "behavior": {
+          "vision": 65.0,
+          "maxAttackChance": 0.99,
+          "minAttackChance": 0.99,
+          "damageOnContact": true
+        },
+        "character": {
+          "walkSpeed": 2.85,
+          "roamRange": 64.0
+        }
+      }
+    }
+  },
+  {
+    "file": "../../runtime/cce/game/models/STEGO.CAR",
+    "animation": "Sr_wlk",
+    "position": [
+      256,
+      256
+    ],
+    "attachAI": {
+      "controller": "GenericAmbient",
+      "args": {
+        "animations": {
+          "WALK": "Sr_wlk",
+          "RUN": "Sr_run",
+          "IDLE": ["Sr_idle1", "Sr_idle2"]
+        },
+        "behavior": {
+          "vision": 20.0,
+          "maxAttackChance": 0.0,
+          "minAttackChance": 0.0,
+          "damageOnContact": true
+        },
+        "character": {
+          "walkSpeed": 0.8,
+          "roamRange": 12.0,
+          "idleOdds": 0.5
         }
       }
     }

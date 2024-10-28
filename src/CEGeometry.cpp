@@ -158,7 +158,8 @@ bool CEGeometry::SetAnimation(std::weak_ptr<CEAnimation> animation, double atTim
   size_t numVertices = origVData->size();
   
   // We need to copy original vertices to updatedVertices for modification
-  std::vector<TPoint3d> updatedVertices = *origVData;
+  std::vector<TPoint3d> updatedVertices;
+  updatedVertices.resize(numVertices);
   
   int aniOffset = currentFrame * (int)numVertices * 3;
   int nextFrameOffset = nextFrame * (int)numVertices * 3;

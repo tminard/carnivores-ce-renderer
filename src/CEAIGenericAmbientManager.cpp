@@ -517,7 +517,9 @@ bool CEAIGenericAmbientManager::SetCurrentTarget(glm::vec3 targetPosition, doubl
   return found;
 }
 
-bool CEAIGenericAmbientManager::NoticesLocalPlayer(std::shared_ptr<CELocalPlayerController> localPlayer) { 
+bool CEAIGenericAmbientManager::NoticesLocalPlayer(std::shared_ptr<CELocalPlayerController> localPlayer) {
+  if (m_view_range <= 0.f) return false;
+
   float dist = glm::distance(localPlayer->getPosition(), m_player_controller->getPosition());
   if (dist < m_view_range * m_map->getTileLength()) return true;
   

@@ -317,7 +317,7 @@ int main(int argc, const char * argv[])
     
     Camera* camera = g_player_controller->getCamera();
     
-    // Process AI
+    // Process AI for deployed characters
     glm::vec2 player_world_pos = g_player_controller->getWorldPosition();
     for (const auto& character : characters) {
       if (character) {
@@ -331,7 +331,8 @@ int main(int argc, const char * argv[])
       if (ambient) {
         ambient->Process(currentTime);
 
-        // TODO: totally change this for multi-player
+        // TODO: totally change this for multi-player?
+        // For now, it's only enabled if you spawn GenericAmbients, but we'd probably want to update it to track all "players" or entities.
         if (ambient->IsDangerous()) {
           auto character = ambient->GetPlayerController();
           auto contactDist = glm::distance(character->getPosition(), g_player_controller->getPosition());
@@ -358,7 +359,6 @@ int main(int argc, const char * argv[])
           }
         }
 
-        // TODO: only every so often
         if (ambient->NoticesLocalPlayer(g_player_controller)) {
           if (g_player_controller->isAlive(currentTime)) {
             ambient->ReportNotableEvent(currentPosition, "PLAYER_SPOTTED", currentTime);
@@ -397,7 +397,7 @@ int main(int argc, const char * argv[])
       
       current_world_pos = next_world_pos;
     }
-    
+
     // Render the terrain
     terrain->Update(g_terrain_transform, *camera);
     
@@ -466,7 +466,7 @@ int main(int argc, const char * argv[])
     glfwSwapBuffers(window);
     glfwPollEvents();
 
-    CalculateFrameRate();
+    // CalculateFrameRate();
     
     auto frameEnd = std::chrono::high_resolution_clock::now();
     std::chrono::duration<float, std::milli> frameDuration = frameEnd - frameStart;

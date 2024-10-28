@@ -225,9 +225,118 @@ float C2MapFile::getWaterHeightAt(int x, int y)
   return (scaled_height);
 }
 
+int C2MapFile::XY(glm::vec2 tilePos)
+{
+  int xy = (tilePos.y * this->getWidth()) + tilePos.x;
+
+  return xy;
+}
+
+float C2MapFile::GetLandHeightAt(glm::vec3 position)
+{
+  int tileLength = static_cast<int>(getTileLength());
+  float tileLengthf = getTileLength();
+  bool isC2Style = m_type == CEMapType::C2;
+
+  glm::vec2 tilePosition = glm::vec2(static_cast<int>(position.x) / tileLength, static_cast<int>(position.z) / tileLength);
+  glm::vec2 quadOffset = glm::vec2(static_cast<int>(position.x) % tileLength, static_cast<int>(position.z) % tileLength);
+  
+  std::array<int, 4> unscaledHeights = {
+    isC2Style ? m_heightmap_data.at(XY(tilePosition)) : m_watermap_data.at(XY(tilePosition)),
+    isC2Style ? m_heightmap_data.at(XY(tilePosition + glm::vec2(1, 0))) : m_watermap_data.at(XY(tilePosition + glm::vec2(1, 0))),
+    isC2Style ? m_heightmap_data.at(XY(tilePosition + glm::vec2(1, 1))) : m_watermap_data.at(XY(tilePosition + glm::vec2(1, 1))),
+    isC2Style ? m_heightmap_data.at(XY(tilePosition + glm::vec2(0, 1))) : m_watermap_data.at(XY(tilePosition + glm::vec2(0, 1)))
+  };
+  
+  if (isQuadRotatedAt(XY(tilePosition))) {
+    if (tileLength - quadOffset.x > quadOffset.y) {
+      unscaledHeights.at(2) = unscaledHeights.at(1) + unscaledHeights.at(3) - unscaledHeights.at(0);
+    } else {
+      unscaledHeights.at(0) = unscaledHeights.at(1) + unscaledHeights.at(3) - unscaledHeights.at(2);
+    }
+  } else {
+    if (quadOffset.x > quadOffset.y) {
+      unscaledHeights.at(3) = unscaledHeights.at(0) + unscaledHeights.at(2) - unscaledHeights.at(1);
+    } else {
+      unscaledHeights.at(1) = unscaledHeights.at(0) + unscaledHeights.at(2) - unscaledHeights.at(3);
+    }
+  }
+  
+  float unscaledHeight = (float)
+       (unscaledHeights.at(0)   * (256-quadOffset.x) + unscaledHeights.at(1) * quadOffset.x) * (256-quadOffset.y) +
+       (unscaledHeights.at(3)   * (256-quadOffset.x) + unscaledHeights.at(2) * quadOffset.x) * quadOffset.y;
+  
+  if (isC2Style) {
+    return (unscaledHeight / tileLengthf / tileLengthf) * getHeightmapScale();
+  }
+  
+  return (unscaledHeight / tileLengthf / tileLengthf - 48.f) * getHeightmapScale();
+}
+
+// C1 code for land height at exact position
+//float GetLandH(float x, float y)
+//{
+//   int CX = (int)x / 256;
+//   int CY = (int)y / 256;
+//   
+//   int dx = (int)x % 256;
+//   int dy = (int)y % 256;
+//
+//   int h1 = HMap2[CY][CX];
+//   int h2 = HMap2[CY][CX+1];
+//   int h3 = HMap2[CY+1][CX+1];
+//   int h4 = HMap2[CY+1][CX];
+//
+//
+//   if (FMap[CY][CX] & fmReverse) {
+//     if (256-dx>dy) h3 = h2+h4-h1;
+//               else h1 = h2+h4-h3;
+//   } else {
+//     if (dx>dy) h4 = h1+h3-h2;
+//           else h2 = h1+h3-h4;
+//   }
+//
+//   float h = (float)
+//     (h1   * (256-dx) + h2 * dx) * (256-dy) +
+//     (h4   * (256-dx) + h3 * dx) * dy;
+//
+//   return  (h / 256.f / 256.f - 48) * ctHScale;
+//}
+//
+//// C2 code for land height at exact position
+//float GetLandH(float x, float y)
+//{
+//   int CX = (int)x / 256;
+//   int CY = (int)y / 256;
+//   
+//   int dx = (int)x % 256;
+//   int dy = (int)y % 256;
+//
+//   int h1 = HMap[CY][CX];
+//   int h2 = HMap[CY][CX+1];
+//   int h3 = HMap[CY+1][CX+1];
+//   int h4 = HMap[CY+1][CX];
+//
+//
+//   if (FMap[CY][CX] & fmReverse) {
+//     if (256-dx>dy) h3 = h2+h4-h1;
+//               else h1 = h2+h4-h3;
+//   } else {
+//     if (dx>dy) h4 = h1+h3-h2;
+//           else h2 = h1+h3-h4;
+//   }
+//
+//   float h = (float)
+//     (h1   * (256-dx) + h2 * dx) * (256-dy) +
+//     (h4   * (256-dx) + h3 * dx) * dy;
+//
+//   return  (h / 256.f / 256.f) * ctHScale;
+//}
+
 float C2MapFile::getHeightAt(int xy)
 {
   float scaled_height;
+  auto isUnderwater = 0x80;
   
   if (xy < 0 || xy >= m_heightmap_data.size()) {
     std::cerr << "OOB height requested for heightmap! Returning -1" << std::endl;
@@ -240,10 +349,12 @@ float C2MapFile::getHeightAt(int xy)
       auto c1WaterHeight = this->m_watermap_data.at(xy);
       auto c1LandHeight = this->m_heightmap_data.at(xy);
       uint8_t flags = this->getFlagsAt(xy);
-      if (flags & 0x80) {
+      if (flags & isUnderwater) {
+          // If water is here, use the water height
           scaled_height = (c1WaterHeight) * this->getHeightmapScale();
       }
       else {
+          // Otherwise, land height
           scaled_height = (c1LandHeight + 48) * this->getHeightmapScale();
       }
   }
@@ -432,8 +543,7 @@ float C2MapFile::getObjectHeightAt(int xy)
 }
 
 float C2MapFile::getPlaceGroundHeight(int x, int y) {
-  int xy = (y * this->getWidth()) + x;
-  return m_ground_levels.at(xy) + 12.f;
+  return m_ground_levels.at(XY(glm::vec2(x, y)));
 }
 
 float C2MapFile::getGroundAngleAt(int x, int y) {

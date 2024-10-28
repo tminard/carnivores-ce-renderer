@@ -57,6 +57,8 @@ private:
   void postProcess(std::weak_ptr<C2MapRscFile> rsc);
   void fillWater(int x, int y, int src_x, int src_y);
   void copyWaterMap(int x, int y, int src_x, int src_y);
+  
+  int XY(glm::vec2 tilePos);
 
 public:
   const CEMapType m_type;
@@ -68,6 +70,7 @@ public:
   float getHeightAt(int xy);
   float getLowestHeight(int x, int y, bool waterOnly);
   float getObjectHeightAt(int xy);
+  float GetLandHeightAt(glm::vec3 position);
   float getPlaceGroundHeight(int x, int y);
   float getGroundAngleAt(int x, int y);
   float getWaterHeightAt(int x, int y);

@@ -22,6 +22,7 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include <glm/gtc/constants.hpp>
 
 CERemotePlayerController::CERemotePlayerController(std::shared_ptr<LocalAudioManager> audioManager, std::shared_ptr<C2CarFile> carFile, std::shared_ptr<C2MapFile> map, std::shared_ptr<C2MapRscFile> rsc, std::string initialAnimationName): m_map(map), m_rsc(rsc), m_car(carFile), m_current_animation(initialAnimationName), m_g_audio_manager(audioManager)
 {
@@ -39,7 +40,7 @@ CERemotePlayerController::CERemotePlayerController(std::shared_ptr<LocalAudioMan
   // Adjusted acceleration and deceleration values
   m_acceleration = m_walk_speed * 4.0f * 1.25f;  // Reduce to 1.0x walk speed for smoother acceleration
   m_deceleration = m_walk_speed * 1.5f * 1.25f;  // Increase to 0.5x walk speed for less abrupt deceleration
-  
+
   // Get an exclusive copy of the geometry by rebuilding from the first animation
   std::shared_ptr<CEAnimation> initialAni = carFile->getAnimationByName(m_current_animation).lock();
   if (!initialAni) {
@@ -186,6 +187,47 @@ bool CERemotePlayerController::isTurning() {
   return m_start_turn_time > 0.0;
 }
 
+float FindVectorAlpha(glm::vec3 vec) {
+  float vx = vec.x;
+  float vy = vec.z;
+    float adx = glm::abs(vx);
+    float ady = glm::abs(vy);
+
+    float alpha = glm::pi<float>() / 4.f;
+    float dalpha = glm::pi<float>() / 8.f;
+
+    for (int i = 1; i <= 10; i++) {
+        glm::vec2 vec(adx, ady);
+        glm::vec2 rotVec = glm::vec2(glm::cos(alpha), glm::sin(alpha));
+
+        // Sign of the dot product
+        float dotProduct = glm::dot(vec, rotVec);
+        alpha = alpha - dalpha * glm::sign(dotProduct);
+        dalpha /= 2.f;
+    }
+
+    if (vx < 0) {
+        if (vy < 0) {
+            alpha += glm::pi<float>();
+        } else {
+            alpha = glm::pi<float>() - alpha;
+        }
+    } else if (vy < 0) {
+        alpha = 2.f * glm::pi<float>() - alpha;
+    }
+
+    return alpha;
+}
+
+float AngleDifference(float a, float b) {
+    a -= b;
+    a = glm::abs(a);
+    if (a > glm::pi<float>()) {
+        a = 2.0f * glm::pi<float>() - a;
+    }
+    return a;
+}
+
 void CERemotePlayerController::UpdateLookAtDirection(glm::vec3 desiredLookAt, double currentTime) {
   glm::vec3 currentPosition = getPosition();
   glm::vec3 currentLookAt = m_camera.GetLookAt();
@@ -194,8 +236,9 @@ void CERemotePlayerController::UpdateLookAtDirection(glm::vec3 desiredLookAt, do
   glm::vec3 desiredForward = glm::normalize(desiredLookAt - currentPosition);
   
   // Calculate the angle difference between the current and desired forward directions
-  float angleDifference = glm::degrees(glm::acos(glm::clamp(glm::dot(currentForward, desiredForward), -1.0f, 1.0f)));
-  const float angleThreshold = 5.0f; // Degrees
+  float angleDifference = AngleDifference(FindVectorAlpha(currentLookAt), FindVectorAlpha(desiredLookAt));
+  
+  const float angleThreshold = glm::radians(5.0f);
   bool shouldTurn = angleDifference > angleThreshold;
   
   if (shouldTurn && m_start_turn_time < 0.0) {
@@ -207,7 +250,6 @@ void CERemotePlayerController::UpdateLookAtDirection(glm::vec3 desiredLookAt, do
   if (shouldTurn) {
     // Calculate the starting and desired forward vectors
     glm::vec3 startForward = glm::normalize(m_start_turn_lookat - currentPosition);
-    
     // Calculate the time elapsed since the turn started
     float timeElapsed = static_cast<float>(currentTime - m_start_turn_time);
     const float rotationDuration = 1.0f; // Duration in seconds to complete the rotation
@@ -219,12 +261,11 @@ void CERemotePlayerController::UpdateLookAtDirection(glm::vec3 desiredLookAt, do
     glm::vec3 interpolatedForward = glm::normalize(glm::mix(startForward, desiredForward, t));
     
     // Calculate the new lookAt position
-    glm::vec3 updatedLookAt = glm::mix(m_start_turn_lookat, desiredLookAt, t);
+    glm::vec3 updatedLookAt = currentPosition + interpolatedForward;
     lookAt(updatedLookAt);
   } else {
     lookAt(desiredLookAt);
     m_start_turn_time = -1.0;
-    m_start_turn_lookat = desiredLookAt;
   }
 }
 

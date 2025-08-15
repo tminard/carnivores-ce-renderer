@@ -423,17 +423,24 @@ bool C2MapFile::hasWaterAt(int xy)
     uint8_t flags = this->getFlagsAt(xy);
     if (flags & 0x0080 || flags & 0x8000) return true;
 
-    int id = int(this->m_texturec1_A_index_data.at(xy));
-    int id_second = int(this->m_texturec1_B_index_data.at(xy));
-    if (!id || !id_second) {
-      // Has a water texture, but not set to water in flag. Original engine did the same check.
+    // Check height delta first (strict 48 delta test)
+    if (this->m_watermap_data.at(xy) != this->m_heightmap_data.at(xy) + 48) {
       return true;
     }
     
-    // Note some mountains in C1 have a slight delta and incorrectly add water....
-    if (this->m_watermap_data.at(xy) != this->m_heightmap_data.at(xy) + 48) {
+    // Even if height delta is exactly 48 (no water), check if texture matches known water entities
+    // This catches edge cases where water texture is used but height wasn't modified
+    int id = int(this->m_texturec1_A_index_data.at(xy));
+    int id_second = int(this->m_texturec1_B_index_data.at(xy));
+    if (!id || !id_second) {
+      // Texture ID 0 is always water
       return true;
-    };
+    }
+    
+    // Check if either texture ID is used by any known water entity
+    // Note: This requires access to water entities, which we don't have in C2MapFile
+    // This check should ideally be done at the TerrainRenderer level where we have access to water entities
+    // For now, keep the existing logic
 
     return false;
   }

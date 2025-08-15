@@ -754,6 +754,52 @@ void TerrainRenderer::loadIntoHardwareMemory()
     for (int x = 0; x < height; x++) {
       unsigned int base_index = (y * width) + x;
       bool hasWater = this->m_cmap_data_weak->hasWaterAt(base_index);
+      
+      // For C1 maps, also check if either quad texture matches any water entity texture
+      // BUT only if adjacent to explicitly marked water (to avoid false positives on muddy ground)
+      if (!hasWater && this->m_cmap_data_weak->m_type == CEMapType::C1) {
+        // Check texture A
+        int texID_A = this->m_cmap_data_weak->getTextureIDAt(base_index);
+        if (texID_A == 255) texID_A = 0; // Default water texture
+        
+        // Check texture B  
+        int texID_B = this->m_cmap_data_weak->getSecondaryTextureIDAt(base_index);
+        if (texID_B == 255) texID_B = 0; // Default water texture
+        
+        // Check if either texture ID is used by any existing water entity
+        bool hasWaterTexture = false;
+        for (int i = 0; i < this->m_crsc_data_weak->getWaterCount(); i++) {
+          const CEWaterEntity& waterEntity = this->m_crsc_data_weak->getWater(i);
+          if (waterEntity.texture_id == texID_A || waterEntity.texture_id == texID_B) {
+            hasWaterTexture = true;
+            break;
+          }
+        }
+        
+        // If has water texture, check if adjacent to explicitly marked water
+        if (hasWaterTexture) {
+          // Check 8 adjacent tiles (including diagonals)
+          for (int dy = -1; dy <= 1; dy++) {
+            for (int dx = -1; dx <= 1; dx++) {
+              if (dx == 0 && dy == 0) continue; // Skip center tile
+              
+              int adj_x = x + dx;
+              int adj_y = y + dy;
+              
+              // Check bounds
+              if (adj_x >= 0 && adj_x < height && adj_y >= 0 && adj_y < width) {
+                int adj_index = (adj_y * width) + adj_x;
+                if (this->m_cmap_data_weak->hasWaterAt(adj_index)) {
+                  hasWater = true;
+                  break;
+                }
+              }
+            }
+            if (hasWater) break;
+          }
+        }
+      }
+      
       if (hasWater) {
         waterTileCount++;
         if (waterTileCount < 10) { // Show first 10

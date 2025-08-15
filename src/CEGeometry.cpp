@@ -282,3 +282,19 @@ const std::vector<Vertex>& CEGeometry::GetVertices() const {
 const int CEGeometry::GetCurrentFrame() const {
   return m_current_frame;
 }
+
+void CEGeometry::setShader(std::string shaderName)
+{
+  std::ifstream f("config.json");
+  json data = json::parse(f);
+  
+  fs::path basePath = fs::path(data["basePath"].get<std::string>());
+  fs::path shaderPath = basePath / "shaders";
+  
+  // Replace the current shader with a new one
+  this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram((shaderPath / (shaderName + ".vs")).string(), (shaderPath / (shaderName + ".fs")).string()));
+  this->m_shader->use();
+  this->m_shader->setBool("enable_transparency", true);
+  
+  std::cout << "Switched geometry shader to: " << shaderName << std::endl;
+}

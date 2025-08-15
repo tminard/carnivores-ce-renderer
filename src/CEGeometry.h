@@ -76,6 +76,7 @@ public:
   void DrawInstancesWithShader(ShaderProgram* externalShader);
   
   ShaderProgram* getShader() { return m_shader.get(); }
+  void setShader(std::string shaderName);
   
   // Methods for shadow rendering that need direct access to OpenGL objects
   GLuint GetVAO() const { return m_vertexArrayObject; }

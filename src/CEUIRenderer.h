@@ -14,16 +14,17 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "shader_program.h"
 #include "C2CarFile.h"
+#include "Camera.h"
+#include "Transform.h"
 
 class CEUIRenderer
 {
 private:
-    std::unique_ptr<ShaderProgram> m_uiShader;
-    glm::mat4 m_projectionMatrix;
+    std::unique_ptr<Camera> m_ui2DCamera;
     int m_screenWidth, m_screenHeight;
     
-    void initializeShaders();
-    void renderCompassGeometry(C2CarFile* compass);
+    void initializeUI2DCamera();
+    void renderCompassGeometry(C2CarFile* compass, Transform& uiTransform);
     void renderTestSquare();
     
 public:
@@ -41,9 +42,6 @@ public:
     
     // Restore 3D rendering state
     void end2DRendering();
-    
-    // Create transformation matrix for UI element positioning
-    glm::mat4 createUITransform(const glm::vec2& position, const glm::vec2& scale, float rotation) const;
 };
 
 #endif /* defined(__CE_Character_Lab__CEUIRenderer__) */

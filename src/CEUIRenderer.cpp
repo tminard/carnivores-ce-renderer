@@ -14,6 +14,7 @@
 #include <nlohmann/json.hpp>
 #include <filesystem>
 
+
 namespace fs = std::filesystem;
 using json = nlohmann::json;
 
@@ -21,7 +22,7 @@ CEUIRenderer::CEUIRenderer(int screenWidth, int screenHeight)
     : m_screenWidth(screenWidth), m_screenHeight(screenHeight)
 {
     setScreenSize(screenWidth, screenHeight);
-    initializeShaders();
+    initializeUI2DCamera();
 }
 
 CEUIRenderer::~CEUIRenderer()
@@ -29,23 +30,17 @@ CEUIRenderer::~CEUIRenderer()
     // Smart pointers handle cleanup
 }
 
-void CEUIRenderer::initializeShaders()
+void CEUIRenderer::initializeUI2DCamera()
 {
-    try {
-        std::ifstream f("config.json");
-        json data = json::parse(f);
-        
-        fs::path basePath = fs::path(data["basePath"].get<std::string>());
-        fs::path shaderPath = basePath / "shaders";
-        
-        m_uiShader = std::make_unique<ShaderProgram>(
-            (shaderPath / "ui.vs").string(),
-            (shaderPath / "ui.fs").string()
-        );
-        std::cout << "UI shader initialized successfully" << std::endl;
-    } catch (const std::exception& e) {
-        std::cerr << "Failed to initialize UI shader: " << e.what() << std::endl;
-    }
+    // For now, keep using perspective camera but we'll override the projection in rendering
+    glm::vec3 cameraPos(0.0f, 0.0f, 100.0f);
+    float aspectRatio = static_cast<float>(m_screenWidth) / static_cast<float>(m_screenHeight);
+    m_ui2DCamera = std::make_unique<Camera>(cameraPos, glm::radians(60.0f), aspectRatio, 0.1f, 1000.0f);
+    
+    // Point camera towards negative Z to look at the 2D plane
+    m_ui2DCamera->SetLookAt(glm::vec3(0.0f, 0.0f, -1.0f));
+    
+    std::cout << "UI 2D camera initialized (will use orthographic projection manually)" << std::endl;
 }
 
 void CEUIRenderer::setScreenSize(int width, int height)
@@ -53,12 +48,10 @@ void CEUIRenderer::setScreenSize(int width, int height)
     m_screenWidth = width;
     m_screenHeight = height;
     
-    // Create orthographic projection matrix for 2D rendering
-    // Left, Right, Bottom, Top, Near, Far
-    // Flip Y-axis so (0,0) is top-left like typical UI coordinates
-    m_projectionMatrix = glm::ortho(0.0f, static_cast<float>(width), 
-                                   static_cast<float>(height), 0.0f, 
-                                   -10.0f, 100.0f);
+    // Recreate the 2D camera with new dimensions
+    if (m_ui2DCamera) {
+        initializeUI2DCamera();
+    }
 }
 
 void CEUIRenderer::begin2DRendering()
@@ -78,89 +71,47 @@ void CEUIRenderer::end2DRendering()
     glEnable(GL_CULL_FACE);  // Re-enable face culling
 }
 
-glm::mat4 CEUIRenderer::createUITransform(const glm::vec2& position, const glm::vec2& scale, float rotation) const
-{
-    glm::mat4 transform = glm::mat4(1.0f);
-    
-    // Apply transformations in order: Scale, Rotate, Translate
-    transform = glm::translate(transform, glm::vec3(position, 0.0f));
-    
-    if (rotation != 0.0f) {
-        transform = glm::rotate(transform, rotation, glm::vec3(0.0f, 0.0f, 1.0f));
-    }
-    
-    transform = glm::scale(transform, glm::vec3(scale, 1.0f));
-    
-    return transform;
-}
 
 void CEUIRenderer::renderCompass(C2CarFile* compass, float rotation)
 {
-    if (!compass || !m_uiShader) {
+    if (!compass || !m_ui2DCamera) {
         std::cerr << "Failed compass render check: compass=" << (compass ? "valid" : "null") 
-                  << " shader=" << (m_uiShader ? "valid" : "null") << std::endl;
+                  << " camera=" << (m_ui2DCamera ? "valid" : "null") << std::endl;
         return;
     }
     
-    std::cout << "Rendering compass with CAR file" << std::endl;
+    std::cout << "Rendering compass with CAR file using 2D camera and Update/Draw pattern" << std::endl;
     
-    // Position compass in lower-left corner
-    // Size it appropriately for UI display
-    float compassSize = 90.0f;  // 80 pixels - reasonable UI size
-    float margin = 20.0f;       // Standard UI margin
+    // Position compass in lower-left corner using screen coordinates
+    float compassSize = 80.0f;   // Size in screen pixels
+    float margin = 20.0f;        // Margin in screen pixels
     
-    // Position compass center accounting for its size
-    // Lower-left corner with proper offset for center-based positioning
-    glm::vec2 position(margin + compassSize/2.0f, 1000.f);
-    glm::vec2 scale(1.f, 1.f);
+    // Try positioning near camera center first for testing
+    glm::vec3 position(m_screenWidth/2.0f, m_screenHeight/2.0f, 0.0f);
     
-    // Create model matrix for compass positioning and rotation
-    glm::mat4 model = createUITransform(position, scale, rotation);
+    // Original lower-left positioning (commented for debugging):
+    // glm::vec3 position(margin + compassSize/2.0f, m_screenHeight - margin - compassSize/2.0f, 0.0f);
+    glm::vec3 rotationVec(0.0f, 0.0f, rotation);
+    glm::vec3 scale(1.f, 1.f, 1.f);  // Heavy scaling to reduce CAR geometry to UI size
     
-    // Create MVP matrix (Model-View-Projection)
-    glm::mat4 mvp = m_projectionMatrix * model;
+    // Create Transform for the UI element
+    Transform uiTransform(position, rotationVec, scale);
     
-    std::cout << "Compass position: " << position.x << "," << position.y 
-              << " scale: " << scale.x << "," << scale.y << std::endl;
-    std::cout << "Screen size: " << m_screenWidth << "x" << m_screenHeight << std::endl;
-    
-    // Check current viewport
-    GLint viewport[4];
-    glGetIntegerv(GL_VIEWPORT, viewport);
-    std::cout << "Current viewport: " << viewport[0] << "," << viewport[1] 
-              << " " << viewport[2] << "x" << viewport[3] << std::endl;
+    std::cout << "DEBUG: Screen height: " << m_screenHeight << std::endl;
+    std::cout << "DEBUG: Calculated position: (" << position.x << ", " << position.y << ")" << std::endl;
+    std::cout << "DEBUG: Scale vector: (" << scale.x << ", " << scale.y << ")" << std::endl;
     
     // Set up 2D rendering
     begin2DRendering();
     
-    // Use UI shader and set uniforms
-    m_uiShader->use();
-    
-    // Check for OpenGL errors after shader use
-    GLenum error = glGetError();
-    if (error != GL_NO_ERROR) {
-        std::cerr << "OpenGL error after shader use: " << error << std::endl;
-    }
-    
-    m_uiShader->setMat4("mvp", mvp);
-    m_uiShader->setInt("basic_texture", 0);  // Bind texture to unit 0
-    
-    error = glGetError();
-    if (error != GL_NO_ERROR) {
-        std::cerr << "OpenGL error after setting uniforms: " << error << std::endl;
-    }
-    
-    // Create simple geometry from 3DF data for immediate rendering
-    // This is a simplified approach - in production you'd cache this
-    
-    // Now render the actual compass geometry
-    renderCompassGeometry(compass);
+    // Now render the actual compass geometry using proper Update/Draw pattern
+    renderCompassGeometry(compass, uiTransform);
     
     // Restore 3D state
     end2DRendering();
 }
 
-void CEUIRenderer::renderCompassGeometry(C2CarFile* compass)
+void CEUIRenderer::renderCompassGeometry(C2CarFile* compass, Transform& uiTransform)
 {
     // Get the CAR file's geometry directly
     auto geometry = compass->getGeometry();
@@ -169,10 +120,50 @@ void CEUIRenderer::renderCompassGeometry(C2CarFile* compass)
         return;
     }
 
-    std::cout << "Using standard CEGeometry rendering for compass" << std::endl;
+    std::cout << "Using CEGeometry Update/Draw pattern for compass with 2D camera" << std::endl;
     
-    // Use the standard CEGeometry Draw() method - it handles everything properly
-    geometry->DrawNaked();
+    // Debug: Check geometry state
+    std::cout << "DEBUG: Geometry has " << geometry->GetVertices().size() << " vertices" << std::endl;
+    std::cout << "DEBUG: Geometry has " << geometry->GetIndexCount() << " indices" << std::endl;
+    std::cout << "DEBUG: VAO ID: " << geometry->GetVAO() << std::endl;
+    
+    // Switch to UI shader for UI rendering (avoids instanced rendering issues)
+    geometry->setShader("ui");
+    
+    // Don't use Camera's Update - we'll set our own orthographic MVP
+    auto position = uiTransform.GetPos();
+    
+    // Create orthographic projection matrix for UI
+    // Left, Right, Bottom, Top, Near, Far
+    glm::mat4 orthoProjection = glm::ortho(0.0f, (float)m_screenWidth, 0.0f, (float)m_screenHeight, -100.0f, 100.0f);
+    
+    // Create view matrix (identity for orthographic UI)
+    glm::mat4 view = glm::mat4(1.0f);
+    
+    // Get model matrix from transform
+    glm::mat4 model = uiTransform.GetStaticModel();
+    
+    // Calculate MVP manually
+    glm::mat4 mvp = orthoProjection * view * model;
+    
+    std::cout << "DEBUG: Object pos: (" << position->x << ", " << position->y << ", " << position->z << ")" << std::endl;
+    std::cout << "DEBUG: Using orthographic projection for UI" << std::endl;
+    
+    // Set the orthographic MVP matrix manually
+    auto shader = geometry->getShader();
+    if (shader) {
+        shader->use();
+        shader->setMat4("MVP", mvp);
+        std::cout << "DEBUG: UI shader is ready with orthographic MVP" << std::endl;
+    } else {
+        std::cerr << "ERROR: Geometry has no shader!" << std::endl;
+        return;
+    }
+    
+    // Then call Draw() which will use the standard shader system
+    std::cout << "DEBUG: About to call geometry->Draw()" << std::endl;
+    geometry->Draw();
+    std::cout << "DEBUG: geometry->Draw() completed" << std::endl;
 }
 
 void CEUIRenderer::renderTestSquare()

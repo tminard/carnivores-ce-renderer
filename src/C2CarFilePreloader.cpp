@@ -12,16 +12,16 @@
 
 #include <iostream>
 
-const std::shared_ptr<C2CarFile>& C2CarFilePreloader::fetch(std::string file_name) {
+const std::shared_ptr<C2CarFile>& C2CarFilePreloader::fetch(std::filesystem::path file_name) {
   std::map<std::string, std::shared_ptr<C2CarFile>>::iterator it;
   
-  it = _files.find(file_name);
+  it = _files.find(file_name.string());
 
   if (it != _files.end()) {
     return it->second;
   } else {
-    _files[file_name] = std::shared_ptr<C2CarFile>(new C2CarFile(file_name));
+    _files[file_name.string()] = std::shared_ptr<C2CarFile>(new C2CarFile(file_name));
 
-    return _files[file_name];
+    return _files[file_name.string()];
   }
 }

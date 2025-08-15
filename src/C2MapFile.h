@@ -80,6 +80,9 @@ public:
   float getWaterHeightAt(int x, int y);
   int getObjectHeightForRadius(int x, int y, int R);
   int getObjectAt(int xy);
+  
+  // Get terrain height (excluding water) for depth calculations
+  float getTerrainHeightAt(int xy);
 
   int getTextureIDAt(int xy);
   int getSecondaryTextureIDAt(int xy);

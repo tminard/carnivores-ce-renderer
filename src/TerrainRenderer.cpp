@@ -36,6 +36,7 @@ TerrainRenderer::TerrainRenderer(std::shared_ptr<C2MapFile> c_map_weak, std::sha
 TerrainRenderer::~TerrainRenderer()
 {
   glDeleteTextures(1, &this->underwaterStateTexture);
+  glDeleteTextures(1, &this->heightmapTexture);
   glDeleteBuffers(1, &this->m_vertex_array_buffer);
   glDeleteBuffers(1, &this->m_indices_array_buffer);
   glDeleteVertexArrays(1, &this->m_vertex_array_object);
@@ -213,6 +214,8 @@ void TerrainRenderer::Update(Transform& transform, Camera& camera)
   this->m_water_shader->setMat4("projection", camera.GetProjection());
   this->m_water_shader->setFloat("time", (float)t);
   this->m_water_shader->setVec3("cameraPos", camera.GetPosition());
+  
+  // Water level is now set per water plane during rendering
   
   for (int m = 0; m < this->m_crsc_data_weak->getWorldModelCount(); m++) {
     this->m_crsc_data_weak->getWorldModel(m)->getGeometry()->Update(transform, camera);
@@ -502,7 +505,10 @@ glm::vec4 TerrainRenderer::getScaledAtlasUVQuad(glm::vec2 atlas_uv, int texture_
  */
 void TerrainRenderer::loadWaterAt(int x, int y)
 {
-    if (m_crsc_data_weak->getWaterCount() < 1) return; // Some community maps do not have any waters defined
+  if (m_crsc_data_weak->getWaterCount() < 1) {
+      std::cout << "No water entities defined in map" << std::endl;
+      return;
+  }
 
   int width = this->m_cmap_data_weak->getWidth();
   int height = this->m_cmap_data_weak->getHeight();
@@ -539,7 +545,7 @@ void TerrainRenderer::loadWaterAt(int x, int y)
     mWater.water_level = unscaledWHeight + 48;
     int water_index = m_crsc_data_weak->findMatchingWater(mWater);
     if (water_index < 0) {
-      // Register the water and m_waters entry as new
+      // Register the water and create corresponding m_waters entry
       m_crsc_data_weak->registerDynamicWater(mWater);
       water_index = m_crsc_data_weak->findMatchingWater(mWater);
       
@@ -547,27 +553,28 @@ void TerrainRenderer::loadWaterAt(int x, int y)
         throw std::runtime_error("Error building dynamic water... expected water not found!");
       }
       
-      // now attempt to create the m_waters
-      _Water wd;
-      const CEWaterEntity& we = this->m_crsc_data_weak->getWater(water_index);
-
-      wd.m_height_unscaled = we.water_level;
-      wd.m_height = we.water_level * this->m_cmap_data_weak->getHeightmapScale();
-      wd.m_texture_id = we.texture_id;
-      wd.m_transparency = we.transparency;
-
-      glGenVertexArrays(1, &wd.m_vao);
-      glBindVertexArray(wd.m_vao);
-      
-      glGenBuffers(1, &wd.m_vab);
-
-      glBindVertexArray(0);
-
-      this->m_waters.push_back(wd);
+      // Expand m_waters vector if needed
+      while (water_index >= this->m_waters.size()) {
+        _Water wd;
+        const CEWaterEntity& we = this->m_crsc_data_weak->getWater(this->m_waters.size());
+        
+        wd.m_height_unscaled = we.water_level;
+        wd.m_height = we.water_level * this->m_cmap_data_weak->getHeightmapScale();
+        wd.m_texture_id = we.texture_id;
+        wd.m_transparency = we.transparency;
+        
+        glGenVertexArrays(1, &wd.m_vao);
+        glBindVertexArray(wd.m_vao);
+        glGenBuffers(1, &wd.m_vab);
+        glBindVertexArray(0);
+        
+        this->m_waters.push_back(wd);
+        std::cout << "Created m_waters[" << (this->m_waters.size()-1) << "] for dynamic water" << std::endl;
+      }
     }
 
-    if (water_index < 0 || water_index > this->m_waters.size()) {
-      std::cerr << printf("Attempted to access water_index `%i` at x: %i, y: %i, which is out of bounds\n", water_index, x, y) << std::endl;
+    if (water_index < 0 || water_index >= this->m_waters.size()) {
+      std::cout << "Water index " << water_index << " out of bounds (size=" << this->m_waters.size() << "), using 0" << std::endl;
       water_index = 0;
     }
     
@@ -620,16 +627,24 @@ void TerrainRenderer::loadWaterAt(int x, int y)
     water_object->m_indices.push_back(upper_left);
     water_object->m_indices.push_back(upper_right);
   }
+  
+  static int addCount = 0;
+  addCount++;
+  if (addCount < 10) {
+    std::cout << "Added vertices to water " << water_object << ": now has " << water_object->m_vertices.size() << " vertices, " << water_object->m_indices.size() << " indices" << std::endl;
+  }
 }
 
 void TerrainRenderer::loadWaterIntoMemory()
 {
+    std::cout << "=== Starting loadWaterIntoMemory ===" << std::endl;
     std::vector<float> underwaterStateData(m_cmap_data_weak->getWidth() * m_cmap_data_weak->getHeight(), 0);
     auto width = m_cmap_data_weak->getWidth();
     auto height = m_cmap_data_weak->getHeight();
+    std::cout << "Map dimensions: " << width << "x" << height << " tiles" << std::endl;
     auto tileL = m_cmap_data_weak->getTileLength();
 
-    for (int w = 0; w < this->m_crsc_data_weak->getWaterCount(); w++)
+    for (int w = 0; w < this->m_waters.size(); w++)
     {
         _Water* water_object = &this->m_waters[w];
         water_object->m_vertex_count = (int)water_object->m_vertices.size();
@@ -679,6 +694,9 @@ void TerrainRenderer::loadWaterIntoMemory()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
     glBindTexture(GL_TEXTURE_2D, 0);
+
+    // Create the heightmap texture for depth-based water rendering
+    createHeightmapTexture();
   
   GLenum err;
   while ((err = glGetError()) != GL_NO_ERROR) {
@@ -715,6 +733,9 @@ void TerrainRenderer::loadIntoHardwareMemory()
     wd.m_height = we.water_level * this->m_cmap_data_weak->getHeightmapScale();
     wd.m_texture_id = we.texture_id;
     wd.m_transparency = we.transparency;
+    
+    std::cout << "Water " << w << ": unscaled=" << we.water_level << ", scaled=" << wd.m_height 
+              << ", scale=" << this->m_cmap_data_weak->getHeightmapScale() << std::endl;
 
     glGenVertexArrays(1, &wd.m_vao);
     glBindVertexArray(wd.m_vao);
@@ -724,6 +745,28 @@ void TerrainRenderer::loadIntoHardwareMemory()
     glBindVertexArray(0);
 
     this->m_waters.push_back(wd);
+  }
+  
+  // Generate water geometry AFTER water objects are created
+  std::cout << "Generating water geometry for " << width << "x" << height << " tiles" << std::endl;
+  int waterTileCount = 0;
+  for (int y = 0; y < width; y++) {
+    for (int x = 0; x < height; x++) {
+      unsigned int base_index = (y * width) + x;
+      bool hasWater = this->m_cmap_data_weak->hasWaterAt(base_index);
+      if (hasWater) {
+        waterTileCount++;
+        if (waterTileCount < 10) { // Show first 10
+          std::cout << "Found water at tile (" << x << "," << y << ") - calling loadWaterAt" << std::endl;
+        }
+        loadWaterAt(x, y);
+      }
+    }
+  }
+  std::cout << "Water generation complete - found " << waterTileCount << " water tiles" << std::endl;
+  std::cout << "m_waters vector size: " << this->m_waters.size() << std::endl;
+  for (int i = 0; i < std::min(5, (int)this->m_waters.size()); i++) {
+    std::cout << "m_waters[" << i << "] addr=" << &this->m_waters[i] << " vertices=" << this->m_waters[i].m_vertices.size() << std::endl;
   }
   
   // Structures to store accumulated normals and counts for averaging
@@ -785,7 +828,7 @@ void TerrainRenderer::loadIntoHardwareMemory()
       int texID2 = this->m_cmap_data_weak->getSecondaryTextureIDAt(base_index);
       uint16_t flags = this->m_cmap_data_weak->getFlagsAt(x, y);
 
-      if (this->m_cmap_data_weak->hasWaterAt(base_index)) loadWaterAt(x, y);
+      // Water generation moved to after water objects are created
 
       glm::vec3 vpositionLL = this->calcWorldVertex(x, y, false, 0.f);
       glm::vec3 vpositionLR = this->calcWorldVertex(fmin(x + 1, height - 1), y, false, 0.f);
@@ -954,10 +997,29 @@ void TerrainRenderer::RenderWater()
 {
   this->m_water_shader->use();
   this->m_water_shader->bindTexture("skyTexture", m_crsc_data_weak->getDaySky()->getTextureID(), 2);
+  this->m_water_shader->bindTexture("heightmapTexture", heightmapTexture, 3);
 
   for (int w = 0; w < this->m_waters.size(); w++) {
-    // if (this->m_waters[w].m_vertices.size() < 30) continue;
-    //this->m_crsc_data_weak->getTexture(this->m_waters[w].m_texture_id + 1)->use();
+    // Skip empty water planes (original logic)
+    if (this->m_waters[w].m_vertices.size() < 30) continue;
+    
+    // Set the correct water level for this specific water plane
+    float waterHeight = this->m_waters[w].m_height;
+
+    // If stored height is 0, try to get it from vertex data
+    if (waterHeight == 0.0f && !this->m_waters[w].m_vertices.empty()) {
+        // Sample a few vertices to get a good water height (some might be at edges)
+        float totalHeight = 0.0f;
+        int maxSamples = std::min(10, (int)this->m_waters[w].m_vertices.size());
+        
+        for (int i = 0; i < maxSamples; i++) {
+            float vertexY = this->m_waters[w].m_vertices[i].getPos().y;
+            totalHeight += vertexY;
+        }
+    }
+    
+    this->m_water_shader->setFloat("waterLevel", waterHeight);
+    this->m_water_shader->setFloat("heightmapScale", this->m_cmap_data_weak->getHeightmapScale());
 
     glBindVertexArray(this->m_waters[w].m_vao);
 
@@ -965,4 +1027,46 @@ void TerrainRenderer::RenderWater()
   }
 
   glBindVertexArray(0);
+}
+
+void TerrainRenderer::createHeightmapTexture()
+{
+    int width = m_cmap_data_weak->getWidth();
+    int height = m_cmap_data_weak->getHeight();
+    
+    // Create heightmap data - get the actual terrain height, not water height
+    std::vector<float> heightmapData(width * height);
+    float minHeight = 999999.0f, maxHeight = -999999.0f;
+    
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            int index = y * width + x;
+            // Use the new method that correctly handles C1 vs C2 terrain height
+            float terrainHeight = m_cmap_data_weak->getTerrainHeightAt(index);
+            heightmapData[index] = terrainHeight;
+            
+            minHeight = std::min(minHeight, terrainHeight);
+            maxHeight = std::max(maxHeight, terrainHeight);
+        }
+    }
+    
+    std::cout << "Terrain height range: " << minHeight << " to " << maxHeight << std::endl;
+    
+    // Generate and bind the heightmap texture
+    glGenTextures(1, &heightmapTexture);
+    std::cout << "Generated heightmapTexture ID: " << heightmapTexture << std::endl;
+    glBindTexture(GL_TEXTURE_2D, heightmapTexture);
+    
+    // Initialize the texture with the height data
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, width, height, 0, GL_RED, GL_FLOAT, heightmapData.data());
+    
+    // Set texture parameters for smooth interpolation
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    
+    glBindTexture(GL_TEXTURE_2D, 0);
+    
+    std::cout << "Created heightmap texture with " << width << "x" << height << " resolution" << std::endl;
 }

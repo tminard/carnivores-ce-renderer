@@ -57,6 +57,7 @@ private:
   GLuint m_indices_array_buffer;
   
   GLuint underwaterStateTexture;
+  GLuint heightmapTexture;
   
   std::unique_ptr<ShaderProgram> m_shader;
   std::unique_ptr<ShaderProgram> m_water_shader;
@@ -80,6 +81,7 @@ private:
 
   std::array<glm::vec2, 4> calcUVMapForQuad(int x, int y, bool quad_reversed, int rotation_code);
   void updateUnderwaterStateTexture(const std::vector<float>& data);
+  void createHeightmapTexture();
 public:
   constexpr static const float TCMAX = 255.5f;
   constexpr static const float TCMIN = 0.5f;

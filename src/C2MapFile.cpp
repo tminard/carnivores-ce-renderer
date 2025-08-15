@@ -363,6 +363,29 @@ float C2MapFile::getHeightAt(int xy)
   return (scaled_height);
 }
 
+float C2MapFile::getTerrainHeightAt(int xy)
+{
+  if (xy < 0 || xy >= m_heightmap_data.size()) {
+    std::cerr << "OOB terrain height requested! Returning -1" << std::endl;
+    return -1.f;
+  }
+
+  float scaled_height;
+  
+  if (m_type == CEMapType::C2) {
+    // For C2, heightmap contains terrain height directly
+    scaled_height = this->m_heightmap_data.at(xy) * this->getHeightmapScale();
+  } else {
+    // For C1, we need the actual ground height for depth calculations
+    // m_watermap contains the ground level, m_heightmap contains surface level
+    // For terrain height (ground), use watermap value directly
+    auto c1GroundHeight = this->m_watermap_data.at(xy);
+    scaled_height = c1GroundHeight * this->getHeightmapScale();
+  }
+
+  return scaled_height;
+}
+
 void C2MapFile::setGroundLevelAt(int x, int y, float level, float slopeDegrees)
 {
   int xy = (y * this->getWidth()) + x;

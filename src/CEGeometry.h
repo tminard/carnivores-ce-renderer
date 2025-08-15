@@ -72,5 +72,12 @@ public:
 
   void UpdateInstances(std::vector<glm::mat4> transforms);
   void DrawInstances();
+  void DrawInstancesWithShader(ShaderProgram* externalShader);
+  
+  ShaderProgram* getShader() { return m_shader.get(); }
+  
+  // Methods for shadow rendering that need direct access to OpenGL objects
+  GLuint GetVAO() const { return m_vertexArrayObject; }
+  size_t GetIndexCount() const { return m_indices.size(); }
 };
 

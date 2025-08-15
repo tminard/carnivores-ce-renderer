@@ -52,6 +52,7 @@
 #include <nlohmann/json.hpp>
 
 #include "CEAnimation.h"
+#include "CEShadowManager.h"
 
 namespace fs = std::filesystem;
 using json = nlohmann::json;
@@ -187,6 +188,9 @@ int main(int argc, const char * argv[])
   
   std::unique_ptr<TerrainRenderer> terrain = std::make_unique<TerrainRenderer>(cMap, cMapRsc);
   
+  // Initialize shadow manager
+  std::unique_ptr<CEShadowManager> shadowManager(new CEShadowManager());
+  
   // Load audio assets
   std::shared_ptr<Sound> die = std::make_shared<Sound>(basePath / "game" / "SOUNDFX" / "HUM_DIE1.WAV");
   std::shared_ptr<CEAudioSource> dieAudioSrc = std::make_shared<CEAudioSource>(die);
@@ -262,6 +266,13 @@ int main(int argc, const char * argv[])
       return -1;
   }
   
+  // Initialize shadow manager after OpenGL context is ready
+  shadowManager->initialize();
+  
+  // Set light direction to be extremely vertical (like sun directly overhead)
+  // Almost perfectly straight down
+  shadowManager->setLightDirection(glm::vec3(0.05f, -1.0f, 0.02f));
+  
   int width, height;
   glfwGetFramebufferSize(window, &width, &height);
   
@@ -303,6 +314,34 @@ int main(int argc, const char * argv[])
     }
   }
   
+  // Prepare shadow-casting models (do this once at startup)
+  // Prepare shadow-casting models (debug output removed for performance)
+  std::vector<CEWorldModel*> allModels;
+  for (int i = 0; i < cMapRsc->getWorldModelCount(); i++) {
+    CEWorldModel* model = cMapRsc->getWorldModel(i);
+    if (model && CEShadowManager::shouldCastShadow(model)) {
+      allModels.push_back(model);
+    }
+  }
+  
+  // Found models that should cast shadows (debug output removed for performance)
+  
+  // Get basic map info for shadow calculations
+  float tileLength = cMap->getTileLength();
+  float mapWidth = cMap->getWidth() * tileLength;
+  float mapHeight = cMap->getHeight() * tileLength;
+  
+  std::cout << "Map dimensions: " << cMap->getWidth() << "x" << cMap->getHeight() << " tiles" << std::endl;
+  std::cout << "Tile length: " << tileLength << std::endl;
+  
+  // Shadow system state for optimization
+  glm::vec3 lastShadowCenter(0, 0, 0);
+  float shadowUpdateDistance = tileLength * 185.0f;
+  bool shadowsGenerated = false;
+  
+  // grab a character
+  auto charac = characters.at(1);
+  
   while (!glfwWindowShouldClose(window) && !input_manager->GetShouldShutdown()) {
     glfwMakeContextCurrent(window);
     
@@ -314,14 +353,43 @@ int main(int argc, const char * argv[])
     
     input_manager->ProcessLocalInput(window, timeDelta);
     g_player_controller->update(timeDelta, currentTime);
-    
+
     Camera* camera = g_player_controller->getCamera();
+    
+    // Generate shadows around player position (only when player moves significantly)
+    glm::vec3 playerPos = g_player_controller->getPosition();
+    glm::vec2 playerWorldPos = g_player_controller->getWorldPosition();
+    
+    // Get ground height at player position
+    float playerGroundHeight = cMap->getPlaceGroundHeight((int)playerWorldPos.x, (int)playerWorldPos.y);
+    
+    // Create scene center around player position
+    glm::vec3 sceneCenter(
+      playerPos.x,  // Use actual player X coordinate
+      playerGroundHeight,  // Ground height at player location
+      playerPos.z   // Use actual player Z coordinate  
+    );
+    
+    // Only regenerate shadows if player moved significantly or first time
+    float distanceFromLastShadow = glm::distance(sceneCenter, lastShadowCenter);
+    if (!shadowsGenerated || distanceFromLastShadow > shadowUpdateDistance) {
+      // Use a much larger shadow radius to cover more of the map
+      float sceneRadius = tileLength * 200.0f; // Large radius to cover entire visible map area
+      
+      // Generate shadows for this area (this will use cache if available)
+      // Light matrices are calculated once during generation and remain stable
+      shadowManager->generateShadowMap(allModels, sceneCenter, sceneRadius);
+      
+      lastShadowCenter = sceneCenter;
+      shadowsGenerated = true;
+    }
+    // No recalculation needed - shadows remain stable until player moves significantly
     
     // Process AI for deployed characters
     glm::vec2 player_world_pos = g_player_controller->getWorldPosition();
     for (const auto& character : characters) {
       if (character) {
-        character->update(currentTime, g_terrain_transform, *camera, player_world_pos);
+        character->updateWithObserver(currentTime, g_terrain_transform, *camera, player_world_pos);
       }
     }
     
@@ -368,6 +436,12 @@ int main(int argc, const char * argv[])
     }
 
     // Clear color, depth, and stencil buffers at the beginning of each frame
+    // Check framebuffer status before clearing
+    GLenum framebufferStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    if (framebufferStatus != GL_FRAMEBUFFER_COMPLETE) {
+        std::cerr << "Framebuffer not complete before clear: " << framebufferStatus << std::endl;
+    }
+    
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     checkGLError("After glClear");
 
@@ -408,7 +482,8 @@ int main(int argc, const char * argv[])
       
       cMapRsc->getTexture(0)->use();
       
-      terrain->Render();
+      // Enable shadows on terrain to receive object shadows
+      terrain->RenderWithShadows(*camera, shadowManager.get());
       
       glDisable(GL_CULL_FACE);
       
@@ -427,7 +502,7 @@ int main(int argc, const char * argv[])
       
       glEnable(GL_DEPTH_TEST);
 
-      terrain->RenderObjects(*camera);
+      terrain->RenderObjectsWithShadows(*camera, shadowManager.get());
       
       glEnable(GL_CULL_FACE);
     }

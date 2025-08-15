@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <cmath>
 #include <iostream>
+#include <algorithm>
 
 #include "CEWalkableTerrainPathFinder.hpp"
 
@@ -15,11 +16,9 @@
 
 #include <random>
 
-bool randomIf(double probability) {
-  std::random_device rd;
-  std::mt19937 gen(rd());
-  std::bernoulli_distribution d(probability);
-  
+bool randomIf(double p) {
+  thread_local std::mt19937 gen(std::random_device{}());
+  std::bernoulli_distribution d(p);
   return d(gen);
 }
 
@@ -46,6 +45,10 @@ m_target_expire_time(0)
 {
   m_current_target = glm::vec3(0.f);
   m_tracked_target = glm::vec3(0.f);
+  m_interpolated_target = glm::vec3(0.f);
+  m_previous_target = glm::vec3(0.f);
+  m_last_attack_target_position = glm::vec3(0.f);
+  m_current_speed_multiplier = 1.0f;
   
   m_path_finder = CEWalkableTerrainPathFinder();
   m_path_finder.map = map;
@@ -86,7 +89,10 @@ glm::vec2 CEAIGenericAmbientManager::popNextTarget(double currentTime)
 {
   if (!m_path_waypoints.empty()) {
     glm::vec2 nextTarget = m_path_waypoints.back();
-    m_current_target = m_map->getPositionAtCenterTile(nextTarget);
+    glm::vec3 newTarget = m_map->getPositionAtCenterTile(nextTarget);
+    
+    // Use the helper method for consistent transition handling
+    initiateTargetTransition(newTarget, currentTime);
     m_target_expire_time = currentTime + 20.0;
     
     m_path_waypoints.pop_back();
@@ -95,6 +101,183 @@ glm::vec2 CEAIGenericAmbientManager::popNextTarget(double currentTime)
   }
   
   return glm::vec2(0);
+}
+
+void CEAIGenericAmbientManager::initiateTargetTransition(glm::vec3 newTarget, double currentTime, bool forceImmediate) {
+  if (forceImmediate) {
+    // Emergency or forced immediate transition
+    m_previous_target = m_current_target;
+    m_current_target = newTarget;
+    m_interpolated_target = newTarget;
+    m_is_transitioning = false;
+    return;
+  }
+  
+  // Calculate angle difference to determine if smooth transition is needed
+  glm::vec3 currentPos = m_player_controller->getPosition();
+  if (glm::length(m_current_target) > 0.0f) {
+    glm::vec3 currentDirection = glm::normalize(m_current_target - currentPos);
+    glm::vec3 newDirection = glm::normalize(newTarget - currentPos);
+    
+    float angleDifference = acos(glm::clamp(glm::dot(currentDirection, newDirection), -1.0f, 1.0f));
+    
+    // Only initiate smooth transition for significant direction changes
+    if (angleDifference > glm::radians(15.0f)) {
+      m_previous_target = m_current_target;
+      m_is_transitioning = true;
+      m_target_transition_start = currentTime;
+      
+      // Adaptive transition duration
+      float maxAngle = glm::pi<float>();
+      float normalizedAngle = angleDifference / maxAngle;
+      m_target_transition_duration = 0.3f + (normalizedAngle * 0.7f);
+      
+      m_interpolated_target = m_previous_target;
+      
+      if (m_debug) {
+        std::cout << currentTime << " " << m_config.AiName << " DEBUG: Initiating target transition. Angle: " 
+                  << glm::degrees(angleDifference) << "°, Duration: " << m_target_transition_duration << "s" << std::endl;
+      }
+    } else {
+      // Small angle change, no transition needed
+      m_is_transitioning = false;
+      m_interpolated_target = newTarget;
+    }
+  } else {
+    // No previous target, no transition needed
+    m_is_transitioning = false;
+    m_interpolated_target = newTarget;
+  }
+  
+  m_current_target = newTarget;
+}
+
+bool CEAIGenericAmbientManager::shouldUpdateAttackTarget(glm::vec3 playerPosition, double currentTime) {
+  // Check cooldown period
+  if (currentTime - m_last_attack_target_update < m_attack_target_update_cooldown) {
+    return false;
+  }
+  
+  // Check if player has moved significantly
+  float distanceMoved = glm::length(playerPosition - m_last_attack_target_position);
+  if (distanceMoved < m_attack_target_distance_threshold * m_map->getTileLength()) {
+    return false;
+  }
+  
+  return true;
+}
+
+float CEAIGenericAmbientManager::calculateTerrainDifficulty(glm::vec3 position) {
+  float tileSize = m_map->getTileLength();
+  glm::vec2 tilePos = glm::vec2(int(position.x / tileSize), int(position.z / tileSize));
+  
+  // Clamp to map bounds
+  int width = m_map->getWidth();
+  int height = m_map->getHeight();
+  int x = std::max(0, std::min((int)tilePos.x, width - 1));
+  int z = std::max(0, std::min((int)tilePos.y, height - 1));
+  
+  // Calculate slope at current position (reusing existing logic from CERemotePlayerController)
+  int x0 = x;
+  int z0 = z;
+  int x1 = std::min(x0 + 1, width - 1);
+  int z1 = std::min(z0 + 1, height - 1);
+  
+  float Q11 = m_map->getHeightAt((width * z0) + x0);
+  float Q21 = m_map->getHeightAt((width * z0) + x1);
+  float Q12 = m_map->getHeightAt((width * z1) + x0);
+  float Q22 = m_map->getHeightAt((width * z1) + x1);
+  
+  // Calculate gradient magnitude
+  float dx = ((Q21 - Q11) + (Q22 - Q12)) / (2.0f * tileSize);
+  float dz = ((Q12 - Q11) + (Q22 - Q21)) / (2.0f * tileSize);
+  float gradientMagnitude = sqrt(dx * dx + dz * dz);
+  
+  // Convert to slope angle in degrees
+  float slopeAngle = atan(gradientMagnitude) * (180.0f / 3.14159f);
+  
+  // Calculate difficulty multiplier based on slope
+  // Flat terrain = 1.0, steep terrain = 0.3-0.7 (slower movement)
+  float maxSlopeForNormalSpeed = 15.0f; // degrees
+  float maxSlopeForSlowSpeed = 45.0f;   // degrees
+  
+  if (slopeAngle <= maxSlopeForNormalSpeed) {
+    return 1.0f; // Normal speed on flat/gentle terrain
+  } else if (slopeAngle >= maxSlopeForSlowSpeed) {
+    return 0.3f; // Very slow on extremely steep terrain
+  } else {
+    // Linear interpolation between normal and slow speed
+    float factor = (slopeAngle - maxSlopeForNormalSpeed) / (maxSlopeForSlowSpeed - maxSlopeForNormalSpeed);
+    return 1.0f - (factor * 0.7f); // 1.0 down to 0.3
+  }
+}
+
+float CEAIGenericAmbientManager::calculateUrgencyMultiplier(double currentTime) {
+  float urgencyMultiplier = 1.0f;
+  
+  // Base urgency on mood
+  switch (m_mood) {
+    case CURIOUS:
+      urgencyMultiplier = 0.8f; // Relaxed, casual movement
+      break;
+    case ANGRY:
+      if (m_mood_decision == ATTACK) {
+        urgencyMultiplier = 1.4f; // Fast, aggressive movement
+      } else { // ESCAPE
+        urgencyMultiplier = 1.2f; // Quick escape movement
+      }
+      break;
+  }
+  
+  // Modify urgency based on how long we've been in angry state
+  if (m_mood == ANGRY) {
+    double timeInAngryState = currentTime - m_danger_last_spotted_at;
+    if (timeInAngryState > 5.0) {
+      // Gradually reduce urgency if we've been angry for a while (fatigue effect)
+      float fatigueReduction = std::min(0.3f, (float)(timeInAngryState - 5.0) * 0.05f);
+      urgencyMultiplier = std::max(0.9f, urgencyMultiplier - fatigueReduction);
+    }
+  }
+  
+  // Add slight urgency if we're turning (need to slow down for precision)
+  if (m_is_transitioning || m_player_controller->isTurning()) {
+    urgencyMultiplier *= 0.85f;
+  }
+  
+  return urgencyMultiplier;
+}
+
+void CEAIGenericAmbientManager::updateDynamicSpeed(double currentTime) {
+  // Only update speed calculations periodically for performance
+  if (currentTime - m_last_speed_update < m_speed_update_interval) {
+    return;
+  }
+  
+  glm::vec3 currentPosition = m_player_controller->getPosition();
+  
+  // Calculate terrain difficulty at current position
+  float terrainDifficulty = calculateTerrainDifficulty(currentPosition);
+  
+  // Calculate urgency based on emotional state
+  float urgencyMultiplier = calculateUrgencyMultiplier(currentTime);
+  
+  // Combine factors for final speed multiplier
+  float targetSpeedMultiplier = terrainDifficulty * urgencyMultiplier;
+  
+  // Smooth the speed multiplier changes to avoid jerky movement
+  float smoothingFactor = 0.15f; // How quickly speed adapts to changes
+  m_current_speed_multiplier = glm::mix(m_current_speed_multiplier, targetSpeedMultiplier, smoothingFactor);
+  
+  // Clamp to reasonable bounds
+  m_current_speed_multiplier = std::max(0.2f, std::min(1.8f, m_current_speed_multiplier));
+  
+  m_last_speed_update = currentTime;
+  
+  if (m_debug && abs(targetSpeedMultiplier - m_current_speed_multiplier) > 0.1f) {
+    std::cout << currentTime << " " << m_config.AiName << " DEBUG: Speed multiplier: " 
+              << m_current_speed_multiplier << " (terrain: " << terrainDifficulty 
+              << ", urgency: " << urgencyMultiplier << ")" << std::endl;
+  }
 }
 
 void CEAIGenericAmbientManager::chooseNewTarget(glm::vec3 currentPosition, double currentTime) {
@@ -162,8 +345,15 @@ void CEAIGenericAmbientManager::chooseNewTarget(glm::vec3 currentPosition, doubl
          for (auto p : path) {
            m_path_waypoints.push_back(glm::vec2(p.x, p.y));
          }
-     
-         popNextTarget(currentTime);
+         
+         // Use smooth transition when setting the first target from inline pathfinding
+         if (!m_path_waypoints.empty()) {
+           glm::vec2 nextWaypoint = m_path_waypoints.back();
+           glm::vec3 nextTarget = m_map->getPositionAtCenterTile(nextWaypoint);
+           initiateTargetTransition(nextTarget, currentTime);
+           m_target_expire_time = currentTime + 20.0;
+           m_path_waypoints.pop_back();
+         }
        } else {
          if (m_debug) std::cout << currentTime << " " << m_config.AiName << " DEBUG: " << ":" << "CEAIGenericAmbientManager::chooseNewTarget" << ": FAILED to find tracked target path... Queue: " << m_path_waypoints.size() << std::endl;
          
@@ -171,7 +361,10 @@ void CEAIGenericAmbientManager::chooseNewTarget(glm::vec3 currentPosition, doubl
            if (m_debug) std::cout << currentTime << " " << m_config.AiName << " DEBUG: " << ":" << "CEAIGenericAmbientManager::chooseNewTarget" << ": Queue empty! No where to go. Run to landing." << std::endl;
 
            glm::vec2 safePos = m_map->getRandomLanding();
-           m_current_target = glm::vec3(safePos.x * m_map->getTileLength(), 0, safePos.y * m_map->getTileLength());
+           glm::vec3 newTarget = glm::vec3(safePos.x * m_map->getTileLength(), 0, safePos.y * m_map->getTileLength());
+           
+           // Handle emergency landings - still use smooth transition but with shorter duration
+           initiateTargetTransition(newTarget, currentTime);
            m_target_expire_time = currentTime + 1.0;
          }
        }
@@ -210,7 +403,14 @@ void CEAIGenericAmbientManager::updateInflightPathsearch(double currentTime)
         m_path_waypoints.push_back(glm::vec2(p.x, p.y));
       }
       
-      popNextTarget(currentTime);
+      // Use smooth transition for inflight pathfinding results
+      if (!m_path_waypoints.empty()) {
+        glm::vec2 nextWaypoint = m_path_waypoints.back();
+        glm::vec3 nextTarget = m_map->getPositionAtCenterTile(nextWaypoint);
+        initiateTargetTransition(nextTarget, currentTime);
+        m_target_expire_time = currentTime + 20.0;
+        m_path_waypoints.pop_back();
+      }
     } else {
       // Some memory issue or something - invalidate target
       if (m_debug) std::cout << currentTime << " " << m_config.AiName << " DEBUG: " << " - updateInflightPathsearch() FAILED to find path or some error returned. Keeping existing planned route." << std::endl;
@@ -233,6 +433,9 @@ void CEAIGenericAmbientManager::updateInflightPathsearch(double currentTime)
 void CEAIGenericAmbientManager::Process(double currentTime) {
   // Update pathfinding
   double deltaTime = currentTime - m_last_process_time;
+  
+  // Update dynamic speed calculations
+  updateDynamicSpeed(currentTime);
   
   // Update in-flight pathfinding first if needed
   updateInflightPathsearch(currentTime);
@@ -268,8 +471,9 @@ void CEAIGenericAmbientManager::Process(double currentTime) {
     if (m_player_controller->getCurrentAnimation() != m_config.RunAnimName) {
       m_player_controller->setNextAnimation(m_config.RunAnimName, true);
     }
-    // Speed
-    m_player_controller->setTargetSpeed(m_config.m_walk_speed * 1.75f);
+    // Speed - apply dynamic speed multiplier to run speed
+    float baseRunSpeed = m_config.m_walk_speed * 1.75f;
+    m_player_controller->setTargetSpeed(baseRunSpeed * m_current_speed_multiplier);
     // Decide on attack pattern if needed
     // Move towards the target with attack pattern
     // Decide when to give up on our feelings and return to curious or fear state
@@ -290,12 +494,51 @@ void CEAIGenericAmbientManager::Process(double currentTime) {
     if (isIdle) {
       m_player_controller->setTargetSpeed(0.f);
       m_player_controller->StopMovement();
-    } else if (m_player_controller->isTurning()) {
-      // TODO: base on turning angle
-      m_player_controller->setTargetSpeed(m_config.m_walk_speed * 0.65f);
+    } else if (m_player_controller->isTurning() || m_is_transitioning) {
+      // Calculate speed reduction based on turning angle
+      float speedReduction = 0.65f; // Default reduction
+      
+      if (m_is_transitioning) {
+        // Calculate current turning angle for more precise speed adjustment
+        glm::vec3 currentPos = m_player_controller->getPosition();
+        glm::vec3 currentDir = glm::normalize(m_interpolated_target - currentPos);
+        glm::vec3 targetDir = glm::normalize(m_current_target - currentPos);
+        
+        float remainingAngle = acos(glm::clamp(glm::dot(currentDir, targetDir), -1.0f, 1.0f));
+        float normalizedAngle = remainingAngle / glm::pi<float>();
+        
+        // More dramatic speed reduction for sharper turns
+        speedReduction = 0.85f - (normalizedAngle * 0.4f); // 0.85 to 0.45
+        speedReduction = std::max(0.35f, speedReduction);
+      }
+      
+      float baseTurnSpeed = m_config.m_walk_speed * speedReduction;
+      m_player_controller->setTargetSpeed(baseTurnSpeed * m_current_speed_multiplier);
     } else if (m_player_controller->getCurrentAnimation() == m_config.WalkAnimName) {
-      m_player_controller->setTargetSpeed(m_config.m_walk_speed);
+      float baseWalkSpeed = m_config.m_walk_speed;
+      m_player_controller->setTargetSpeed(baseWalkSpeed * m_current_speed_multiplier);
     }
+  }
+
+  // Update target interpolation for smooth turning
+  if (m_is_transitioning && m_target_transition_start > 0.0) {
+    float elapsedTime = static_cast<float>(currentTime - m_target_transition_start);
+    float t = std::min(elapsedTime / static_cast<float>(m_target_transition_duration), 1.0f);
+    
+    // Use smoothstep for natural easing
+    t = t * t * (3.0f - 2.0f * t);
+    
+    m_interpolated_target = glm::mix(m_previous_target, m_current_target, t);
+    
+    if (t >= 1.0f) {
+      m_is_transitioning = false;
+      m_interpolated_target = m_current_target;
+      if (m_debug) {
+        std::cout << currentTime << " " << m_config.AiName << " DEBUG: Transition complete" << std::endl;
+      }
+    }
+  } else {
+    m_interpolated_target = m_current_target;
   }
 
   if (!invalidTarget) {
@@ -306,7 +549,8 @@ void CEAIGenericAmbientManager::Process(double currentTime) {
     m_player_controller->setPosition(m_map->getRandomLanding());
   }
   
-  m_player_controller->UpdateLookAtDirection(m_current_target, currentTime);
+  // Use interpolated target for smooth look-at direction
+  m_player_controller->UpdateLookAtDirection(m_interpolated_target, currentTime);
   
   const double minInterval = 1.0 / 30.0;
   if (currentTime - m_last_upload_time >= minInterval) {
@@ -385,7 +629,11 @@ void CEAIGenericAmbientManager::ReportNotableEvent(glm::vec3 position, std::stri
     m_mood = ANGRY;
     if (m_debug) std::cout << currentTime << " " << m_config.AiName << " DEBUG: " << " - ReportNotableEvent() - DECIDED: " << m_mood << std::endl;
     if (m_mood_decision == ATTACK) {
+      // Always set target on initial attack decision
       SetCurrentTarget(position, currentTime);
+      m_last_attack_target_position = position;
+      m_last_attack_target_update = currentTime;
+      if (m_debug) std::cout << currentTime << " " << m_config.AiName << " DEBUG: Initial attack target set" << std::endl;
     } else if (currentTime - m_last_safe_target_calculation > 12.0) {
       SetCurrentTarget(findSafeTarget(position), currentTime);
       m_last_safe_target_calculation = currentTime;
@@ -406,15 +654,26 @@ void CEAIGenericAmbientManager::ReportNotableEvent(glm::vec3 position, std::stri
         m_mood_decision = ESCAPE;
       } else {
         float attackChance = CalculateAttackChance(dist, m_view_range, m_min_attack_chance, m_max_attack_chance);
-        m_mood_decision = randomIf(attackChance) ? ATTACK : ESCAPE;
-        // If we were in escape mode but decide to attack then clear the current plan
-        if (m_mood_decision == ATTACK) m_path_waypoints.clear();
+        AIAttackDecision newDecision = randomIf(attackChance) ? ATTACK : ESCAPE;
+        // If we were in escape mode but decide to attack, handle transition smoothly
+        if (curDec == ESCAPE && newDecision == ATTACK) {
+          // Clear waypoints but mark transition for smooth handling
+          m_path_waypoints.clear();
+          if (m_debug) std::cout << currentTime << " " << m_config.AiName << " DEBUG: Switching from ESCAPE to ATTACK mode" << std::endl;
+        }
+        m_mood_decision = newDecision;
       }
       m_last_attack_decision_at = currentTime;
     }
 
     if (m_mood_decision == ATTACK) {
-      SetCurrentTarget(position, currentTime);
+      // Only update attack target if player has moved significantly or enough time has passed
+      if (shouldUpdateAttackTarget(position, currentTime)) {
+        SetCurrentTarget(position, currentTime);
+        m_last_attack_target_position = position;
+        m_last_attack_target_update = currentTime;
+        if (m_debug) std::cout << currentTime << " " << m_config.AiName << " DEBUG: Attack target updated due to significant player movement" << std::endl;
+      }
     } else if (currentTime - m_last_safe_target_calculation > 3.0) {
       SetCurrentTarget(findSafeTarget(position), currentTime);
       m_last_safe_target_calculation = currentTime;
@@ -465,7 +724,7 @@ glm::vec3 CEAIGenericAmbientManager::findSafeTarget(glm::vec3 direction)
 
   if (m_debug) std::cout << glfwGetTime() << " " << m_config.AiName << " DEBUG: " << " [" << m_mood << "] findSafeTarget. No target found." << std::endl;
 
-  return direction; // Return the original position if no safe target is found
+  return m_map->getPositionAtCenterTile(m_player_controller->getWorldPosition());
 }
 
 
@@ -501,7 +760,14 @@ bool CEAIGenericAmbientManager::SetCurrentTarget(glm::vec3 targetPosition, doubl
         m_path_waypoints.push_back(glm::vec2(p.x, p.y));
       }
 
-      popNextTarget(currentTime);
+      // Use smooth transition for SetCurrentTarget pathfinding results
+      if (!m_path_waypoints.empty()) {
+        glm::vec2 nextWaypoint = m_path_waypoints.back();
+        glm::vec3 nextTarget = m_map->getPositionAtCenterTile(nextWaypoint);
+        initiateTargetTransition(nextTarget, currentTime);
+        m_target_expire_time = currentTime + 20.0;
+        m_path_waypoints.pop_back();
+      }
       found = true;
     }
     m_path_search_started_at = -1.0;
@@ -529,6 +795,38 @@ bool CEAIGenericAmbientManager::NoticesLocalPlayer(std::shared_ptr<CELocalPlayer
 std::shared_ptr<CERemotePlayerController> CEAIGenericAmbientManager::GetPlayerController()
 {
   return m_player_controller;
+}
+
+bool CEAIGenericAmbientManager::NoticesPlayerFromSensory(double currentTime) {
+  if (!m_player_controller) return false;
+  
+  // Get current sensory data from the AI controller
+  const SensoryData& sensoryData = m_player_controller->getSensoryData(currentTime);
+  
+  // Check for any visible local players
+  for (const auto& contact : sensoryData.visualContacts) {
+    if (contact.entityType == "local_player" && contact.currentlyVisible) {
+      // Update tracking information based on sensory data
+      glm::vec3 contactPosition = contact.position;
+      m_tracked_target = glm::vec2(contactPosition.x, contactPosition.z);
+      m_danger_last_spotted_at = currentTime;
+      
+      return true;
+    }
+  }
+  
+  // Check remembered positions if no current visual contact
+  if (!sensoryData.rememberedPlayerPositions.empty()) {
+    // Use most recent remembered position if it's recent enough
+    double timeSinceLastSeen = currentTime - sensoryData.rememberedPlayerTimes.back();
+    if (timeSinceLastSeen < 5.0) { // Remember for 5 seconds
+      glm::vec3 lastKnownPos = sensoryData.rememberedPlayerPositions.back();
+      m_tracked_target = glm::vec2(lastKnownPos.x, lastKnownPos.z);
+      return true;
+    }
+  }
+  
+  return false;
 }
 
 float CEAIGenericAmbientManager::CalculateAttackChance(float distance, float maxDist, float minAttackChance, float maxAttackChance) {

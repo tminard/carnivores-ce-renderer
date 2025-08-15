@@ -1,30 +1,22 @@
 {
   "basePath": "../../runtime/cce/",
   "map": {
-    "type": "C1",
-    "map": "../game/c1/area2.map",
-    "rsc": "../game/c1/area2.rsc"
+    "type": "C2",
+    "map": "../game/lost/area2.map",
+    "rsc": "../game/lost/area2.rsc"
   },
   "video": {
     "fullscreen": false
   },
-  "avatar": {
-    "file": "../../runtime/cce/game/models/Bigfoot.car",
-    "animations": {
-      "WALK": "Bf_wlk",
-      "RUN": "Bf_run",
-      "CUSTOM": {
-        "scratch": {
-          "tracks": ["Bf_idle1", "Bf_idle2", "bf_idle3"],
-          "allowMovement": false
-        },
-        "yell": {
-          "tracks": ["Bf_hero"],
-          "allowMovement": false
-        }
-      }
-    }
+  "debug": {
+    "shadowDebug": false,
+    "renderDebug": false
   },
+  "weapons": [
+  {
+    "file": "../../runtime/cce/game/models/rifle.car"
+  }
+  ],
   "spawns": [
   {
     "file": "../../runtime/cce/game/models/Bigfoot.car",
@@ -44,10 +36,10 @@
           "RUN": "Bf_run"
         },
         "behavior": {
-          "vision": 0.0,
-          "maxAttackChance": 0.0,
-          "minAttackChance": 0.0,
-          "damageOnContact": false
+          "vision": 40.0,
+          "maxAttackChance": 90.0,
+          "minAttackChance": 20.0,
+          "damageOnContact": true
         },
         "character": {
           "walkSpeed": 2.25
@@ -72,10 +64,10 @@
           "RUN": "So_run"
         },
         "behavior": {
-          "vision": 0.0,
-          "maxAttackChance": 0.0,
-          "minAttackChance": 0.0,
-          "damageOnContact": false
+          "vision": 20.0,
+          "maxAttackChance": 60.0,
+          "minAttackChance": 20.0,
+          "damageOnContact": true
         },
         "character": {
           "walkSpeed": 2.65,
@@ -101,13 +93,13 @@
           "RUN": "Tx_run1"
         },
         "behavior": {
-          "vision": 0.0,
-          "maxAttackChance": 0.0,
-          "minAttackChance": 0.0,
-          "damageOnContact": false
+          "vision": 20.0,
+          "maxAttackChance": 100.0,
+          "minAttackChance": 100.0,
+          "damageOnContact": true
         },
         "character": {
-          "walkSpeed": 2.85,
+          "walkSpeed": 2.65,
           "roamRange": 64.0
         }
       }
@@ -129,13 +121,13 @@
           "IDLE": ["Sr_idle1", "Sr_idle2"]
         },
         "behavior": {
-          "vision": 0.0,
+          "vision": 6.0,
           "maxAttackChance": 0.0,
           "minAttackChance": 0.0,
           "damageOnContact": false
         },
         "character": {
-          "walkSpeed": 2.0,
+          "walkSpeed": 1.0,
           "roamRange": 12.0,
           "idleOdds": 0.5
         }

@@ -7,10 +7,10 @@
 #include <iostream>
 #include <string>
 
-CELocalPlayerController::CELocalPlayerController(float world_width, float world_height, float tile_size, std::shared_ptr<C2MapFile> map, std::shared_ptr<C2MapRscFile> rsc) : m_world_width(world_width), m_world_height(world_height), m_tile_size(tile_size), m_map(map), m_rsc(rsc) {
+CELocalPlayerController::CELocalPlayerController(float world_width, float world_height, float tile_size, std::shared_ptr<C2MapFile> map, std::shared_ptr<C2MapRscFile> rsc) : CEBasePlayerController(map, rsc), m_world_width(world_width), m_world_height(world_height), m_tile_size(tile_size) {
   
-  m_walk_speed = m_tile_size * 2.2f;
-  m_player_height = m_tile_size * 0.85f;
+  m_walk_speed = m_tile_size * 2.8f;
+  m_player_height = m_tile_size * 1.25f;
 
   m_current_speed = 0.0f;
   m_target_speed = 0.0f;
@@ -22,6 +22,9 @@ CELocalPlayerController::CELocalPlayerController(float world_width, float world_
   m_bobble_speed = 0.1f * 1.25f;
   m_bobble_amount = m_player_height * 0.1f;
   m_bobble_time = 0.f;
+  
+  // Configure sensory capabilities for local player (god view enabled)
+  setSensoryCapabilities(1000.0f, 1000.0f, 1000.0f, true);
 }
 
 void CELocalPlayerController::lookAt(glm::vec3 direction)
@@ -30,7 +33,7 @@ void CELocalPlayerController::lookAt(glm::vec3 direction)
   this->m_camera.SetLookAt(direction);
 }
 
-void CELocalPlayerController::update(double deltaTime, double currentTime)
+void CELocalPlayerController::update(double currentTime, double deltaTime)
 {
   if (m_dead) {
     if (currentTime - m_died_at > 8.0) {
@@ -284,8 +287,18 @@ void CELocalPlayerController::move(double currentTime, double deltaTime, bool fo
     currentWorldPos = glm::vec2(int(floorf(currentPos.x / m_tile_size)), int(floorf(currentPos.z / m_tile_size)));
   }
   
-  float currentWorldHeight = m_map->getPlaceGroundHeight(currentWorldPos.x, currentWorldPos.y);
-  float nextWorldHeight = m_map->getPlaceGroundHeight(worldPos.x, worldPos.y);
+  // Use enhanced interpolated height sampling with predictive sampling
+  glm::vec3 currentWorldPosVec(currentPos.x, currentPos.y, currentPos.z);
+  glm::vec3 nextWorldPosVec(pos.x, pos.y, pos.z);
+  
+  float currentWorldHeight = m_map->getHeightAtWorldPosition(currentWorldPosVec);
+  float nextWorldHeight = m_map->getHeightAtWorldPosition(nextWorldPosVec);
+  
+  // Use predictive height sampling for smoother movement over varying terrain
+  float predictiveHeight = nextWorldHeight;
+  if (glm::length(movement) > 0.0f) {
+      predictiveHeight = getPredictiveHeight(nextWorldPosVec, movement, m_current_speed, dTime);
+  }
   
   // Apply head bobble effect
   float bobbleOffset = 0.f;
@@ -293,12 +306,20 @@ void CELocalPlayerController::move(double currentTime, double deltaTime, bool fo
       bobbleOffset = m_bobble_amount * sin(m_bobble_speed * m_bobble_time);
   }
   
-  // Apply low-pass filter for smoother height transitions
-    float smoothedHeight = (nextWorldHeight * 0.1f) + (m_previousHeight * 0.9f);
+  // Calculate slope angle once for both smoothing and movement validation
+  float slopeAngle = computeSlope(worldPos.x, worldPos.y);
+  
+  // Apply adaptive low-pass filter for smoother height transitions
+    float targetHeight = predictiveHeight;
+    float heightDifference = targetHeight - m_previousHeight;
+    
+    // Calculate adaptive smoothing factor based on terrain conditions and movement
+    float adaptiveFactor = getAdaptiveSmoothingFactor(heightDifference, m_current_speed, slopeAngle);
+    
+    float smoothedHeight = (targetHeight * adaptiveFactor) + (m_previousHeight * (1.0f - adaptiveFactor));
     m_previousHeight = smoothedHeight;
   
   // Check if movement is allowed or out of bounds
-  float slopeAngle = computeSlope(worldPos.x, worldPos.y);
   float maxClimbHeight = m_player_height / 4.0f;
   
   if (m_is_jumping) {
@@ -306,8 +327,8 @@ void CELocalPlayerController::move(double currentTime, double deltaTime, bool fo
   }
 
   if ((slopeAngle <= maxSlopeAngle ||
-      nextWorldHeight < currentWorldHeight ||
-      abs(nextWorldHeight - currentWorldHeight) < maxClimbHeight) && !outOfBounds) {
+      predictiveHeight < currentWorldHeight ||
+      abs(predictiveHeight - currentWorldHeight) < maxClimbHeight) && !outOfBounds) {
     
     if (!m_is_jumping) {
       pos.y = smoothedHeight + m_player_height + bobbleOffset;
@@ -333,9 +354,9 @@ void CELocalPlayerController::move(double currentTime, double deltaTime, bool fo
       pos = m_camera.GetPosition();
       pos.y += (m_vertical_speed * m_tile_size) * dTime;
 
-      // Check for landing
-    worldPos = glm::vec2(int(floorf(pos.x / m_tile_size)), int(floorf(pos.z / m_tile_size)));
-      float groundHeight = m_map->getPlaceGroundHeight(worldPos.x, worldPos.y) + m_player_height;
+      // Check for landing using interpolated height
+      glm::vec3 jumpWorldPos(pos.x, pos.y, pos.z);
+      float groundHeight = m_map->getHeightAtWorldPosition(jumpWorldPos) + m_player_height;
       if (pos.y <= groundHeight - 24.f) {
           m_is_jumping = false;
           m_vertical_speed = 0.0f;
@@ -362,6 +383,51 @@ glm::vec3 CELocalPlayerController::computeSlidingDirection(float x, float z) {
 
     glm::vec3 slidingDirection(-dx, 0.0f, -dz);
     return glm::normalize(slidingDirection);
+}
+
+float CELocalPlayerController::getPredictiveHeight(const glm::vec3& currentPos, const glm::vec3& movementDir, float speed, float deltaTime) {
+    // Calculate predictive position ahead of movement
+    float predictiveDistanceWorld = m_predictiveDistance * m_tile_size;
+    glm::vec3 predictivePos = currentPos + (movementDir * predictiveDistanceWorld);
+    
+    // Sample multiple points ahead for smoother prediction
+    float currentHeight = m_map->getHeightAtWorldPosition(currentPos);
+    float nearHeight = m_map->getHeightAtWorldPosition(currentPos + (movementDir * predictiveDistanceWorld * 0.5f));
+    float farHeight = m_map->getHeightAtWorldPosition(predictivePos);
+    
+    // Weighted average based on movement speed and direction
+    float speedFactor = std::min(speed / m_walk_speed, 1.0f);
+    
+    // Blend heights: more weight on near prediction when moving slowly, far prediction when moving fast
+    float blendedHeight = currentHeight * (1.0f - speedFactor * 0.4f) + 
+                         nearHeight * (speedFactor * 0.3f) + 
+                         farHeight * (speedFactor * 0.1f);
+    
+    return blendedHeight;
+}
+
+float CELocalPlayerController::getAdaptiveSmoothingFactor(float heightDifference, float speed, float slopeAngle) {
+    // Base smoothing factor
+    float smoothingFactor = m_baseSmoothingFactor;
+    
+    // Adjust based on height difference - larger changes need more smoothing
+    float heightFactor = std::min(std::abs(heightDifference) / (m_player_height * 2.0f), 1.0f);
+    
+    // Adjust based on movement speed - faster movement needs less smoothing for responsiveness
+    float speedFactor = std::min(speed / m_walk_speed, 1.0f);
+    
+    // Adjust based on slope - steeper terrain needs more smoothing
+    float slopeFactor = std::min(slopeAngle / maxSlopeAngle, 1.0f);
+    
+    // Combine factors: more smoothing for large height changes and steep slopes,
+    // less smoothing for fast movement
+    smoothingFactor = m_baseSmoothingFactor + 
+                      (heightFactor * 0.1f) +     // Increase smoothing for large height changes
+                      (slopeFactor * 0.05f) -     // Increase smoothing for steep slopes  
+                      (speedFactor * 0.05f);      // Decrease smoothing for fast movement
+    
+    // Clamp to reasonable bounds
+    return std::max(m_minSmoothingFactor, std::min(m_maxSmoothingFactor, smoothingFactor));
 }
 
 void CELocalPlayerController::jump(double currentTime) {

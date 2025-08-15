@@ -248,6 +248,21 @@ void CEGeometry::DrawInstances()
   glBindVertexArray(0);
 }
 
+void CEGeometry::DrawInstancesWithShader(ShaderProgram* externalShader)
+{
+  if (externalShader) {
+    externalShader->use();
+  } else {
+    this->m_shader->use();
+  }
+  this->m_texture->use();
+  glBindVertexArray(this->m_vertexArrayObject);
+  
+  glDrawElementsInstancedBaseVertex(GL_TRIANGLES, (int)this->m_indices.size(), GL_UNSIGNED_INT, 0, this->m_num_instances, 0);
+  
+  glBindVertexArray(0);
+}
+
 void CEGeometry::UpdateInstances(std::vector<glm::mat4> transforms)
 {
   this->m_num_instances = (int)transforms.size();

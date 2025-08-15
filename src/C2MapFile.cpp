@@ -9,6 +9,7 @@
 #include "C2MapFile.h"
 #include <iostream>
 #include <fstream>
+#include <algorithm>
 
   // TODO: DRY this up and remove interdeps
 #include "C2MapRscFile.h"
@@ -549,6 +550,50 @@ float C2MapFile::getPlaceGroundHeight(int x, int y) {
 float C2MapFile::getGroundAngleAt(int x, int y) {
   int xy = (y * this->getWidth()) + x;
   return m_ground_angles.at(xy);
+}
+
+float C2MapFile::getInterpolatedGroundHeight(float world_x, float world_z) {
+    // Convert world coordinates to tile coordinates
+    float tile_size = getTileLength();
+    float tile_x = world_x / tile_size;
+    float tile_z = world_z / tile_size;
+    
+    // Get the integer tile coordinates for the 4 surrounding tiles
+    int x0 = (int)floor(tile_x);
+    int z0 = (int)floor(tile_z);
+    int x1 = x0 + 1;
+    int z1 = z0 + 1;
+    
+    // Clamp to map bounds
+    int width = getWidth();
+    int height = getHeight();
+    x0 = std::max(0, std::min(x0, width - 1));
+    x1 = std::max(0, std::min(x1, width - 1));
+    z0 = std::max(0, std::min(z0, height - 1));
+    z1 = std::max(0, std::min(z1, height - 1));
+    
+    // Get heights at the 4 corner vertices using the raw heightmap data
+    // This accesses the actual vertex heights, not the precomputed center heights
+    float h00 = getHeightAt((z0 * width) + x0); // Bottom-left
+    float h10 = getHeightAt((z0 * width) + x1); // Bottom-right
+    float h01 = getHeightAt((z1 * width) + x0); // Top-left
+    float h11 = getHeightAt((z1 * width) + x1); // Top-right
+    
+    // Calculate interpolation weights
+    float fx = tile_x - x0; // Fractional part in X
+    float fz = tile_z - z0; // Fractional part in Z
+    
+    // Bilinear interpolation
+    float h0 = h00 * (1.0f - fx) + h10 * fx; // Interpolate bottom edge
+    float h1 = h01 * (1.0f - fx) + h11 * fx; // Interpolate top edge
+    float interpolatedHeight = h0 * (1.0f - fz) + h1 * fz; // Final interpolation
+    
+    return interpolatedHeight;
+}
+
+float C2MapFile::getHeightAtWorldPosition(const glm::vec3& worldPos) {
+    // Use the enhanced interpolated height sampling
+    return getInterpolatedGroundHeight(worldPos.x, worldPos.z);
 }
 
 /*

@@ -73,6 +73,10 @@ public:
   float GetLandHeightAt(glm::vec3 position);
   float getPlaceGroundHeight(int x, int y);
   float getGroundAngleAt(int x, int y);
+  
+  // Enhanced height sampling with sub-tile precision
+  float getInterpolatedGroundHeight(float world_x, float world_z);
+  float getHeightAtWorldPosition(const glm::vec3& worldPos);
   float getWaterHeightAt(int x, int y);
   int getObjectHeightForRadius(int x, int y, int R);
   int getObjectAt(int xy);

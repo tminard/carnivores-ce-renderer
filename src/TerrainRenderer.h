@@ -24,6 +24,7 @@ class ShaderProgram;
 struct CETerrainVertex;
 struct Transform;
 struct Camera;
+class CEShadowManager;
 
 class TerrainRenderer
 {
@@ -87,7 +88,9 @@ public:
   ~TerrainRenderer();
   
   void RenderObjects(Camera& camera);
+  void RenderObjectsWithShadows(Camera& camera, CEShadowManager* shadowManager);
   void Render();
+  void RenderWithShadows(Camera& camera, CEShadowManager* shadowManager);
   void Update(Transform& transform, Camera& camera);
   void RenderWater();
 };

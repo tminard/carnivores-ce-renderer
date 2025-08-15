@@ -12,6 +12,7 @@
 #include "camera.h"
 #include "transform.h"
 #include "C2Sky.h"
+#include "CEShadowManager.h"
 
 #include "CEWaterEntity.h"
 
@@ -225,6 +226,108 @@ void TerrainRenderer::RenderObjects(Camera& camera)
   for (int m = 0; m < this->m_crsc_data_weak->getWorldModelCount(); m++) {
     this->m_crsc_data_weak->getWorldModel(m)->getGeometry()->DrawInstances();
   }
+}
+
+void TerrainRenderer::RenderObjectsWithShadows(Camera& camera, CEShadowManager* shadowManager)
+{
+  if (!shadowManager) {
+    // Fallback to regular rendering if no shadow system
+    RenderObjects(camera);
+    return;
+  }
+
+  int totalModels = 0;
+  int shadowModels = 0;
+  int regularModels = 0;
+  int totalShadowInstances = 0;
+  int totalRegularInstances = 0;
+
+  // Enable shadows in the existing simple_geo shaders
+  for (int m = 0; m < this->m_crsc_data_weak->getWorldModelCount(); m++) {
+    CEWorldModel* model = this->m_crsc_data_weak->getWorldModel(m);
+    if (!model) continue;
+    
+    totalModels++;
+    CEGeometry* geometry = model->getGeometry();
+    if (!geometry) continue;
+    
+    // Check if this object should cast shadows based on metadata
+    if (!CEShadowManager::shouldCastShadow(model)) {
+      // Render without shadows for objects that shouldn't cast them
+      geometry->DrawInstances();
+      regularModels++;
+      totalRegularInstances += model->getTransforms().size();
+      continue;
+    }
+    
+    // Get the shader from the geometry (the simple_geo shader)
+    ShaderProgram* shader = geometry->getShader();
+    if (!shader) {
+      geometry->DrawInstances();
+      regularModels++;
+      totalRegularInstances += model->getTransforms().size();
+      continue;
+    }
+    
+    // Use the geometry's own shader but enable shadows
+    shader->use();
+    
+    // Set camera matrices (required for instanced rendering)
+    glm::mat4 projection_view = camera.getProjectionMatrix() * camera.getViewMatrix();
+    shader->setMat4("projection_view", projection_view);
+    shader->setMat4("view", camera.getViewMatrix());
+    shader->setMat4("projection", camera.getProjectionMatrix());
+    shader->setFloat("time", (float)glfwGetTime());
+    
+    // Enable shadows
+    shader->setBool("enableShadows", true);
+    
+    // Set shadow/light uniforms
+    shader->setMat4("lightSpaceMatrix", shadowManager->getLightSpaceMatrix());
+    shader->setVec3("lightDirection", shadowManager->getLightDirection());
+    
+    // Bind shadow map texture to texture unit 1
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, shadowManager->getShadowMapTexture());
+    shader->setInt("shadowMap", 1);
+    
+    // Reset to texture unit 0 for the geometry's texture
+    glActiveTexture(GL_TEXTURE0);
+    
+    // Now draw the instances with shadows enabled (keep our shader active)
+    geometry->DrawInstancesWithShader(shader);
+    shadowModels++;
+    totalShadowInstances += model->getTransforms().size();
+  }
+}
+
+void TerrainRenderer::RenderWithShadows(Camera& camera, CEShadowManager* shadowManager)
+{
+  if (!shadowManager) {
+    // Fallback to regular rendering if no shadow system
+    Render();
+    return;
+  }
+
+  // Enable shadows in the terrain shader
+  this->m_shader->use();
+  
+  // Set shadow uniforms
+  this->m_shader->setBool("enableShadows", true);
+  this->m_shader->setMat4("lightSpaceMatrix", shadowManager->getLightSpaceMatrix());
+  this->m_shader->setVec3("lightDirection", shadowManager->getLightDirection());
+  
+  // Bind shadow map texture to texture unit 3 (units 1 and 2 are used by other textures)
+  glActiveTexture(GL_TEXTURE3);
+  unsigned int shadowTexId = shadowManager->getShadowMapTexture();
+  glBindTexture(GL_TEXTURE_2D, shadowTexId);
+  this->m_shader->setInt("shadowMap", 3);
+  
+  // Reset to texture unit 0 for terrain texture
+  glActiveTexture(GL_TEXTURE0);
+  
+  // Call the normal render method
+  Render();
 }
 
 glm::vec3 TerrainRenderer::calcWorldVertex(int tile_x, int tile_y, bool water, float water_height_scaled)
@@ -565,6 +668,7 @@ void TerrainRenderer::loadWaterIntoMemory()
 
     // Generate and bind the underwater state texture
     glGenTextures(1, &underwaterStateTexture);
+    std::cout << "Generated underwaterStateTexture ID: " << underwaterStateTexture << std::endl;
     glBindTexture(GL_TEXTURE_2D, underwaterStateTexture);
 
     // Initialize the texture with the data

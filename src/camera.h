@@ -79,6 +79,17 @@ public:
     return view_projection;
   }
   
+  // Shadow system compatibility methods
+  inline glm::mat4 getViewMatrix() const
+  {
+    return GetVM();
+  }
+  
+  inline glm::mat4 getProjectionMatrix() const  
+  {
+    return GetProjection();
+  }
+  
   inline float GetViewDistance() const
   {
     return this->m_view_distance;

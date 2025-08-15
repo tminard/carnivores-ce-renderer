@@ -5,16 +5,14 @@
 
 #include <glm/vec3.hpp>
 #include "CEObservable.hpp"
+#include "CEBasePlayerController.hpp"
 
 class C2MapFile;
 class C2MapRscFile;
 
-class CELocalPlayerController : CEObservable
+class CELocalPlayerController : public CEBasePlayerController, public CEObservable
 {
 private:
-  std::shared_ptr<C2MapFile> m_map;
-  std::shared_ptr<C2MapRscFile> m_rsc;
-
   float m_world_width;
   float m_world_height;
   float m_tile_size;
@@ -33,9 +31,19 @@ private:
 
   float computeSlope(float x, float z);
   glm::vec3 computeSlidingDirection(float x, float z);
+  float getPredictiveHeight(const glm::vec3& currentPos, const glm::vec3& movementDir, float speed, float deltaTime);
+  float getAdaptiveSmoothingFactor(float heightDifference, float speed, float slopeAngle);
   
   const float maxSlopeAngle = 45.0f;
   float m_previousHeight = 0.0f;
+  
+  // Predictive height sampling parameters
+  float m_predictiveDistance = 1.5f; // Distance ahead to sample (in tiles)
+  
+  // Adaptive smoothing parameters
+  float m_baseSmoothingFactor = 0.15f;
+  float m_minSmoothingFactor = 0.05f;
+  float m_maxSmoothingFactor = 0.25f;
   
   bool m_is_jumping = false;
   float m_vertical_speed = 0.0f;
@@ -50,18 +58,20 @@ private:
 public:
   CELocalPlayerController(float world_width, float world_height, float tile_size, std::shared_ptr<C2MapFile> map, std::shared_ptr<C2MapRscFile> rsc);
 
-  glm::vec3 getPosition() const;
-  glm::vec2 getWorldPosition() const;
-
-  void setPosition(glm::vec3 position);
-  void setElevation(float elevation);
+  // CEBasePlayerController interface implementation
+  glm::vec3 getPosition() const override;
+  glm::vec2 getWorldPosition() const override;
+  void setPosition(glm::vec3 position) override;
+  void setElevation(float elevation) override;
+  void lookAt(glm::vec3 direction) override;
+  Camera* getCamera() override;
+  void update(double currentTime, double deltaTime) override;
+  std::string getControllerType() const override { return "local_player"; }
   
   void kill(double killedAt);
   void panAroundBody(double currentTime);
 
-  void lookAt(glm::vec3 direction);
-
-  void update(double timeDelta, double currentTime);
+  // Local player specific methods
 
   void moveForward(double timeDelta);
   void moveBackward(double timeDelta);
@@ -75,6 +85,4 @@ public:
   void DBG_printLocationInformation() const;
   
   bool isAlive(double currentTime);
-
-  Camera* getCamera();
 };

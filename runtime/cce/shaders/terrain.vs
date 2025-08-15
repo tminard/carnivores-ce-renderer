@@ -11,6 +11,8 @@ out vec3 toLightVector;
 out vec2 quadCoord;
 out float wetness;
 out highp vec2 out_textCoord_clouds;
+out vec3 FragPos;
+out vec4 FragPosLightSpace;
 
 uniform mat4 model;
 uniform mat4 view;
@@ -20,6 +22,8 @@ uniform float terrainHeight;
 uniform float tileWidth;
 uniform sampler2D underwaterStateTexture;
 uniform highp float time;
+uniform mat4 lightSpaceMatrix;
+uniform bool enableShadows = false;
 
 void main()
 {
@@ -44,6 +48,12 @@ void main()
 
     // Calculate cloud texture coordinates
     out_textCoord_clouds = vec2(1.0 - (position.z / (tileWidth * 128.0)) - (time * 0.008), 1.0 - (position.x / (tileWidth * 128.0)) - (time * 0.008));
+
+    FragPos = worldPosition.xyz;
+    
+    if (enableShadows) {
+        FragPosLightSpace = lightSpaceMatrix * worldPosition;
+    }
 
     gl_Position = projectedPosition;
 }

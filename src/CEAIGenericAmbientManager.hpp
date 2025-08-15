@@ -97,10 +97,34 @@ class CEAIGenericAmbientManager {
   double m_danger_last_spotted_at = 0.0;
   bool m_debug = false;
   
+  // Smooth target transition variables
+  glm::vec3 m_interpolated_target;
+  glm::vec3 m_previous_target;
+  double m_target_transition_start = -1.0;
+  double m_target_transition_duration = 0.8f;  // Default transition time
+  bool m_is_transitioning = false;
+  
+  // Attack target smoothing variables
+  glm::vec3 m_last_attack_target_position = glm::vec3(0.f);
+  double m_last_attack_target_update = 0.0;
+  const double m_attack_target_update_cooldown = 0.5; // Minimum time between attack target updates
+  const float m_attack_target_distance_threshold = 3.0f; // Minimum distance player must move to update target
+  
+  // Dynamic speed variation variables
+  float m_current_speed_multiplier = 1.0f;
+  float m_base_urgency = 1.0f;
+  double m_last_speed_update = 0.0;
+  const double m_speed_update_interval = 0.1; // Update speed calculations every 100ms
+  
   std::vector<glm::vec2> m_path_waypoints = {};
   
   void chooseNewTarget(glm::vec3 currentPosition, double currentTime);
   glm::vec2 popNextTarget(double currentTime);
+  void initiateTargetTransition(glm::vec3 newTarget, double currentTime, bool forceImmediate = false);
+  bool shouldUpdateAttackTarget(glm::vec3 playerPosition, double currentTime);
+  float calculateTerrainDifficulty(glm::vec3 position);
+  float calculateUrgencyMultiplier(double currentTime);
+  void updateDynamicSpeed(double currentTime);
   
   bool isIdleAnimation(std::string animationName);
   std::string chooseIdleAnimation();
@@ -117,6 +141,7 @@ public:
   void Reset(double currentTime);
   void ReportNotableEvent(glm::vec3 position, std::string eventType, double currentTime);
   bool NoticesLocalPlayer(std::shared_ptr<CELocalPlayerController> localPlayer);
+  bool NoticesPlayerFromSensory(double currentTime);
   bool IsDangerous();
   std::shared_ptr<CERemotePlayerController> GetPlayerController();
 };

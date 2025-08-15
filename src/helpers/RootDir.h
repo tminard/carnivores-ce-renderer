@@ -1,2 +1,2 @@
 #pragma once
-#define ROOT_DIR "C:/src/carnivores-ce-renderer/"
+#define ROOT_DIR "/Users/tminard/source/carnivores/carnivores-ce-renderer/"

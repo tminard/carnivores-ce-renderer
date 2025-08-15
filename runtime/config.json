@@ -18,7 +18,7 @@
   }
   ],
   "ui": {
-    "compass": "game/models/poacher.car"
+    "compass": "game/models/compas.car"
   },
   "spawns": [
   {

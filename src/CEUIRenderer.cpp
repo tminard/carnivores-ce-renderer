@@ -87,12 +87,13 @@ void CEUIRenderer::renderCompass(C2CarFile* compass, float rotation)
     float margin = 20.0f;        // Margin in screen pixels
     
     // Try positioning near camera center first for testing
-    glm::vec3 position(m_screenWidth/2.0f, m_screenHeight/2.0f, 0.0f);
+    glm::vec3 position(318.f, 256.f, 0.0f);
     
     // Original lower-left positioning (commented for debugging):
     // glm::vec3 position(margin + compassSize/2.0f, m_screenHeight - margin - compassSize/2.0f, 0.0f);
-    glm::vec3 rotationVec(0.0f, 0.0f, rotation);
-    glm::vec3 scale(1.f, 1.f, 1.f);  // Heavy scaling to reduce CAR geometry to UI size
+    // Rotate compass to face camera with top visible (-90 degrees around X-axis) plus user rotation around Z
+    glm::vec3 rotationVec(glm::radians(30.0f), 0.0f, rotation);
+    glm::vec3 scale(14.f, 14.f, 14.f);  // Heavy scaling to reduce CAR geometry to UI size
     
     // Create Transform for the UI element
     Transform uiTransform(position, rotationVec, scale);
@@ -135,7 +136,7 @@ void CEUIRenderer::renderCompassGeometry(C2CarFile* compass, Transform& uiTransf
     
     // Create orthographic projection matrix for UI
     // Left, Right, Bottom, Top, Near, Far
-    glm::mat4 orthoProjection = glm::ortho(0.0f, (float)m_screenWidth, 0.0f, (float)m_screenHeight, -100.0f, 100.0f);
+    glm::mat4 orthoProjection = glm::ortho(0.0f, (float)m_screenWidth, 0.0f, (float)m_screenHeight, -1000.0f, 1000.0f);
     
     // Create view matrix (identity for orthographic UI)
     glm::mat4 view = glm::mat4(1.0f);

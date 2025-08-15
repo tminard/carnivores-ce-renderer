@@ -119,6 +119,8 @@ public:
   bool hasDynamicWaterAt(int xy);
   bool hasDynamicWaterAt(int x, int y);
   bool hasDangerTileAt(std::shared_ptr<C2MapRscFile> rsc, glm::vec2 tile);
+  int getFogIndexAt(int x, int y);
+  bool hasFogAt(int x, int y);
 
   void setWaterAt(int x, int y); // for C2
   void setWaterAt(int x, int y, int water_height);// c1

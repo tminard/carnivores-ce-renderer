@@ -732,6 +732,21 @@ bool C2MapFile::hasDangerTileAt(std::shared_ptr<C2MapRscFile> rsc, glm::vec2 til
   return false;
 }
 
+int C2MapFile::getFogIndexAt(int x, int y)
+{
+  // Fog data is at half resolution, so divide coordinates by 2
+  int xy = (((int)y >> 1) * (getWidth() >> 1)) + ((int)x >> 1);
+  int fogIndex = m_fog_data.at(xy);
+  
+  // Return 0-based index (-1 if no fog)
+  return fogIndex > 0 ? fogIndex - 1 : -1;
+}
+
+bool C2MapFile::hasFogAt(int x, int y)
+{
+  return getFogIndexAt(x, y) >= 0;
+}
+
 void C2MapFile::postProcess(std::weak_ptr<C2MapRscFile> rsc)
 {
   std::shared_ptr<C2MapRscFile> m_rsc = rsc.lock();

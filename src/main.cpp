@@ -492,6 +492,9 @@ int main(int argc, const char * argv[])
         glDepthFunc(GL_LESS);
         terrain->RenderWater();
       }
+      
+      // Render fog volumes
+      terrain->RenderFogVolumes();
     }
     
     // Render the terrain objects

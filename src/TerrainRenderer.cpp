@@ -2,6 +2,8 @@
 #include "CETerrainVertex.hpp"
 #include "vertex.h"
 
+#include <map>
+
 #include "C2MapFile.h"
 #include "C2MapRscFile.h"
 #include "CEWorldModel.h"
@@ -45,6 +47,14 @@ TerrainRenderer::~TerrainRenderer()
     glDeleteBuffers(1, &this->m_waters[w].m_vab);
     glDeleteBuffers(1, &this->m_waters[w].m_iab);
     glDeleteVertexArrays(1, &this->m_waters[w].m_vao);
+  }
+  
+  for (auto& fog_volume : this->m_fog_volumes) {
+    if (fog_volume.m_vao != 0) {
+      glDeleteBuffers(1, &fog_volume.m_vab);
+      glDeleteBuffers(1, &fog_volume.m_iab);
+      glDeleteVertexArrays(1, &fog_volume.m_vao);
+    }
   }
 }
 
@@ -175,6 +185,7 @@ void TerrainRenderer::loadShader()
   
   this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram((shaderPath / "terrain.vs").string(), (shaderPath / "terrain.fs").string()));
   this->m_water_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram((shaderPath / "water_surface.vs").string(), (shaderPath / "water_surface.fs").string()));
+  this->m_fog_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram((shaderPath / "fog_volume.vs").string(), (shaderPath / "fog_volume.fs").string()));
 
   this->m_shader->use();
   this->m_shader->setFloat("view_distance", (m_cmap_data_weak->getTileLength() * (m_cmap_data_weak->getWidth() / 8.f)));
@@ -214,6 +225,15 @@ void TerrainRenderer::Update(Transform& transform, Camera& camera)
   this->m_water_shader->setMat4("projection", camera.GetProjection());
   this->m_water_shader->setFloat("time", (float)t);
   this->m_water_shader->setVec3("cameraPos", camera.GetPosition());
+  
+  // Set up fog shader transforms
+  this->m_fog_shader->use();
+  this->m_fog_shader->setMat4("MVP", MVP);
+  this->m_fog_shader->setMat4("model", model);
+  this->m_fog_shader->setMat4("view", camera.GetVM());
+  this->m_fog_shader->setMat4("projection", camera.GetProjection());
+  this->m_fog_shader->setFloat("time", (float)t);
+  this->m_fog_shader->setVec3("cameraPos", camera.GetPosition());
   
   // Water level is now set per water plane during rendering
   
@@ -1049,6 +1069,7 @@ void TerrainRenderer::loadIntoHardwareMemory()
   glBindVertexArray(0);
 
   this->loadWaterIntoMemory();
+  this->loadFogVolumesIntoMemory();
 }
 
 // Calculate the real UV coords using the atlas
@@ -1115,6 +1136,131 @@ void TerrainRenderer::RenderWater()
   }
 
   glBindVertexArray(0);
+}
+
+void TerrainRenderer::RenderFogVolumes()
+{
+  if (m_fog_volumes.empty()) {
+    static bool logged = false;
+    if (!logged) {
+      std::cout << "No fog volumes to render" << std::endl;
+      logged = true;
+    }
+    return;
+  }
+  
+  static bool logged = false;
+  if (!logged) {
+    std::cout << "Rendering " << m_fog_volumes.size() << " fog volumes" << std::endl;
+    logged = true;
+  }
+  
+  // Enable blending for transparent fog
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  glDepthMask(GL_FALSE); // Don't write to depth buffer for transparency
+  glDisable(GL_CULL_FACE); // Disable culling so fog is visible from all angles
+  
+  this->m_fog_shader->use();
+  this->m_fog_shader->bindTexture("skyTexture", m_crsc_data_weak->getDaySky()->getTextureID(), 2);
+  
+  // Set common uniforms for fog shader (similar to water shader)
+  this->m_fog_shader->setFloat("terrainWidth", this->m_cmap_data_weak->getWidth());
+  this->m_fog_shader->setFloat("terrainHeight", this->m_cmap_data_weak->getHeight());
+  this->m_fog_shader->setFloat("tileWidth", this->m_cmap_data_weak->getTileLength());
+  this->m_fog_shader->setFloat("view_distance", (m_cmap_data_weak->getTileLength() * (m_cmap_data_weak->getWidth() / 8.f)));
+  
+  // Get sky color for fog blending
+  glm::vec4 skyColor = m_crsc_data_weak->getFadeColor();
+  skyColor.r /= 255.0f;
+  skyColor.g /= 255.0f; 
+  skyColor.b /= 255.0f;
+  skyColor.a /= 255.0f;
+  this->m_fog_shader->setVec4("skyColor", skyColor);
+  
+  for (size_t fv_idx = 0; fv_idx < m_fog_volumes.size(); fv_idx++) {
+    auto& fog_volume = m_fog_volumes[fv_idx];
+    
+    // Skip empty fog volumes
+    if (fog_volume.m_vertices.empty()) {
+      continue;
+    }
+    
+    // Set fog-specific uniforms
+    float fogTransparency = fog_volume.m_fog_data.transparency;
+    
+    // Normalize transparency from map data (likely 0-255 or 0-1000 scale)
+    if (fogTransparency > 1.0f) {
+      if (fogTransparency > 255.0f) {
+        fogTransparency = fogTransparency / 1000.0f; // 0-1000 scale
+      } else {
+        fogTransparency = fogTransparency / 255.0f;  // 0-255 scale
+      }
+    }
+    
+    // Ensure reasonable visibility for fog
+    fogTransparency = std::max(0.1f, std::min(0.8f, fogTransparency)); // Min 10%, max 80% transparency
+    
+    // Extract fog color from RGB value
+    int rgb = fog_volume.m_fog_data.rgb;
+    
+    // Extract RGB like original Carnivores code, but swap R and B channels
+    float b = ((rgb >> 16) & 0xFF) / 255.0f; // Blue from high bits
+    float g = ((rgb >> 8) & 0xFF) / 255.0f;  // Green from middle bits
+    float r = (rgb & 0xFF) / 255.0f;         // Red from low bits
+    
+    this->m_fog_shader->setFloat("fogTransparency", fogTransparency);
+    this->m_fog_shader->setVec3("fogColor", glm::vec3(r, g, b));
+
+    // Create and bind VAO/VBO for this fog volume if not already done
+    if (fog_volume.m_vao == 0) {
+      // Generate OpenGL objects
+      glGenVertexArrays(1, &fog_volume.m_vao);
+      glGenBuffers(1, &fog_volume.m_vab);
+      glGenBuffers(1, &fog_volume.m_iab);
+      
+      // Bind and upload vertex data
+      glBindVertexArray(fog_volume.m_vao);
+      
+      glBindBuffer(GL_ARRAY_BUFFER, fog_volume.m_vab);
+      glBufferData(GL_ARRAY_BUFFER, fog_volume.m_vertices.size() * sizeof(Vertex), fog_volume.m_vertices.data(), GL_STATIC_DRAW);
+      
+      // Set vertex attributes (same layout as water/terrain)
+      glEnableVertexAttribArray(0); // position
+      glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
+      
+      glEnableVertexAttribArray(1); // texCoord
+      glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(3 * sizeof(float)));
+      
+      glEnableVertexAttribArray(2); // normal
+      glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(5 * sizeof(float)));
+      
+      glEnableVertexAttribArray(3); // alpha
+      glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(8 * sizeof(float)));
+      
+      glEnableVertexAttribArray(4); // flags
+      glVertexAttribIPointer(4, 1, GL_UNSIGNED_INT, sizeof(Vertex), (void*)(9 * sizeof(float)));
+      
+      // Upload index data
+      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, fog_volume.m_iab);
+      glBufferData(GL_ELEMENT_ARRAY_BUFFER, fog_volume.m_indices.size() * sizeof(unsigned int), fog_volume.m_indices.data(), GL_STATIC_DRAW);
+    }
+    
+    // Bind texture (use first texture in atlas for noise)
+    auto texture = this->m_crsc_data_weak->getTexture(fog_volume.m_texture_id);
+    if (texture) {
+      this->m_fog_shader->bindTexture("basic_texture", texture->getTextureID(), 1);
+    }
+    
+    glBindVertexArray(fog_volume.m_vao);
+    glDrawElements(GL_TRIANGLES, fog_volume.m_num_indices, GL_UNSIGNED_INT, 0);
+  }
+  
+  // Restore OpenGL state
+  glBindVertexArray(0);
+  glDepthMask(GL_TRUE);
+  glDisable(GL_BLEND);
+  glEnable(GL_CULL_FACE); // Re-enable culling
 }
 
 void TerrainRenderer::createHeightmapTexture()
@@ -1217,4 +1363,278 @@ void TerrainRenderer::loadWaterAtWithIndex(int x, int y, int forceWaterIndex)
   water_object->m_indices.push_back(base_vertex_index + 2); // UL
 
   water_object->m_num_indices = water_object->m_indices.size();
+}
+
+/*
+ * Load fog volumes into memory and create geometry
+ */
+void TerrainRenderer::loadFogVolumesIntoMemory()
+{
+  std::cout << "=== Starting loadFogVolumesIntoMemory ===" << std::endl;
+  
+  auto width = m_cmap_data_weak->getWidth();
+  auto height = m_cmap_data_weak->getHeight();
+  std::cout << "Scanning map for fog zones: " << width << "x" << height << " tiles" << std::endl;
+  
+  // Find all fog zones by scanning the fog map at proper resolution
+  // Fog map is at half resolution, so scan every 2nd tile to avoid duplicates
+  std::map<int, std::vector<glm::vec2>> fogZones; // fog_id -> list of fog map cells (not individual tiles)
+  
+  // Scan at fog map resolution (every 2x2 tile block)
+  for (int y = 0; y < height; y += 2) {
+    for (int x = 0; x < width; x += 2) {
+      int fogIndex = m_cmap_data_weak->getFogIndexAt(x, y);
+      if (fogIndex >= 0) {
+        // Store fog map coordinates (which represent 2x2 tile blocks)
+        fogZones[fogIndex].push_back(glm::vec2(x >> 1, y >> 1));
+      }
+    }
+  }
+  
+  std::cout << "Found " << fogZones.size() << " unique fog zones" << std::endl;
+  
+  // Generate fog volumes for each zone
+  for (const auto& zone : fogZones) {
+    int fogIndex = zone.first;
+    const auto& tiles = zone.second;
+    
+    if (tiles.empty()) continue;
+    
+    // Get fog data
+    FogData fogData = m_crsc_data_weak->getFog(fogIndex);
+    
+    // Calculate bounding box of fog zone (in fog map coordinates)
+    float minX = tiles[0].x, maxX = tiles[0].x;
+    float minY = tiles[0].y, maxY = tiles[0].y;
+    
+    for (const auto& tile : tiles) {
+      minX = std::min(minX, tile.x);
+      maxX = std::max(maxX, tile.x);
+      minY = std::min(minY, tile.y);
+      maxY = std::max(maxY, tile.y);
+    }
+    
+    // Convert fog map coordinates to world tile coordinates (multiply by 2)
+    // Each fog map cell covers a 2x2 tile area
+    glm::vec2 centerFogCoords = glm::vec2((minX + maxX) * 0.5f, (minY + maxY) * 0.5f);
+    glm::vec2 sizeFogCoords = glm::vec2(maxX - minX + 1, maxY - minY + 1);
+    
+    // Convert to world tile coordinates
+    glm::vec2 center = centerFogCoords * 2.0f;  // Scale up to world coordinates
+    glm::vec2 size = sizeFogCoords * 2.0f;      // Scale up size as well
+    
+    std::cout << "Generating fog volume " << fogIndex << " at center (" << center.x << "," << center.y 
+              << ") size (" << size.x << "," << size.y << ")" << std::endl;
+    
+    generateFogVolume(fogIndex, fogData, center, size);
+  }
+  
+  std::cout << "Generated " << m_fog_volumes.size() << " fog volumes" << std::endl;
+  
+  // Debug: Print details about each fog volume
+  for (size_t i = 0; i < m_fog_volumes.size(); i++) {
+    const auto& fv = m_fog_volumes[i];
+    std::cout << "Fog volume " << i << ": center(" << fv.m_center.x << "," << fv.m_center.y 
+              << ") size(" << fv.m_size.x << "," << fv.m_size.y 
+              << ") vertices=" << fv.m_vertices.size() 
+              << " danger=" << fv.m_fog_data.danger 
+              << " transparency=" << fv.m_fog_data.transparency
+              << " altitude=" << fv.m_fog_data.altitude
+              << " rgb=" << fv.m_fog_data.rgb << std::endl;
+              
+    // Print first vertex position for debugging
+    if (!fv.m_vertices.empty()) {
+      glm::vec3 pos = fv.m_vertices[0].getPos();
+      std::cout << "  First vertex position: (" << pos.x << ", " << pos.y << ", " << pos.z << ")" << std::endl;
+    }
+  }
+}
+
+/*
+ * Generate a single fog volume
+ */
+void TerrainRenderer::generateFogVolume(int fog_id, const FogData& fog_data, glm::vec2 center, glm::vec2 size)
+{
+  _FogVolume fog_volume;
+  fog_volume.m_fog_id = fog_id;
+  fog_volume.m_fog_data = fog_data;
+  fog_volume.m_center = center;
+  fog_volume.m_size = size;
+  fog_volume.m_texture_id = 0; // Use first texture for noise
+  
+  // Create layered geometry for volumetric effect
+  createFogVolumeGeometry(fog_volume, 6); // More layers for better volume effect and ground coverage
+  
+  m_fog_volumes.push_back(fog_volume);
+}
+
+/*
+ * Create layered geometry for fog volume
+ */
+void TerrainRenderer::createFogVolumeGeometry(_FogVolume& fog_volume, int num_layers)
+{
+  float tileSize = m_cmap_data_weak->getTileLength();
+  
+  // Calculate world coordinates
+  glm::vec2 worldCenter = fog_volume.m_center * tileSize;
+  glm::vec2 worldSize = fog_volume.m_size * tileSize;
+  
+  std::cout << "Creating fog geometry: tileSize=" << tileSize 
+            << " center(" << fog_volume.m_center.x << "," << fog_volume.m_center.y << ")"
+            << " worldCenter(" << worldCenter.x << "," << worldCenter.y << ")"
+            << " size(" << fog_volume.m_size.x << "," << fog_volume.m_size.y << ")"
+            << " worldSize(" << worldSize.x << "," << worldSize.y << ")" << std::endl;
+  
+  // Get terrain height at center for fog base altitude
+  // getTerrainHeightAt() already returns scaled height
+  float baseHeight = m_cmap_data_weak->getTerrainHeightAt((int)fog_volume.m_center.y * m_cmap_data_weak->getWidth() + (int)fog_volume.m_center.x);
+  std::cout << "Scaled terrain height at fog center: " << baseHeight << std::endl;
+  
+  // The altitude from fog data needs to be scaled like original Carnivores
+  // In original code: YBegin * ctHScale where ctHScale = 64
+  float fogAltitudeOffset = fog_volume.m_fog_data.altitude;
+  
+  // Debug the raw altitude value
+  std::cout << "Raw fog altitude from data: " << fogAltitudeOffset << std::endl;
+  
+  // Apply Carnivores scaling factor (ctHScale: C2=64, C1=32)
+  fogAltitudeOffset *= m_cmap_data_weak->getHeightmapScale();
+  
+  std::cout << "Fog altitude after ctHScale (" << m_cmap_data_weak->getHeightmapScale() << "): " << fogAltitudeOffset << std::endl;
+  
+  // Ensure reasonable altitude offset (now that it's properly scaled)
+  if (fogAltitudeOffset > 500.0f) {
+    fogAltitudeOffset = 200.0f; // Cap altitude for visibility
+  }
+  if (fogAltitudeOffset < -100.0f) {
+    fogAltitudeOffset = 50.0f; // Ensure fog is above ground
+  }
+  
+  // Create fog like original Carnivores: infinite fog above YBegin level
+  // In original: fog starts at YBegin*ctHScale and extends infinitely upward
+  float fogStartHeight = baseHeight + fogAltitudeOffset; // Original YBegin*ctHScale equivalent
+  
+  // C1 maps need the -48 offset that appears throughout the original C1 code
+  if (m_cmap_data_weak->m_type == CEMapType::C1) {
+    fogStartHeight += (-48.0f * m_cmap_data_weak->getHeightmapScale()); // -48 * ctHScale
+  }
+  float fogTopHeight = fogStartHeight + 200.0f; // Create reasonable bounded volume for rendering
+  float totalFogHeight = fogTopHeight - fogStartHeight;
+  float layerThickness = totalFogHeight / num_layers; // Distribute layers from fog start upward
+  
+  std::cout << "Fog volume altitude: base=" << baseHeight << " rawOffset=" << fog_volume.m_fog_data.altitude 
+            << " normalizedOffset=" << fogAltitudeOffset << " start=" << fogStartHeight 
+            << " top=" << fogTopHeight << " totalHeight=" << totalFogHeight;
+  if (m_cmap_data_weak->m_type == CEMapType::C1) {
+    std::cout << " (C1 with -48*" << m_cmap_data_weak->getHeightmapScale() << " offset)";
+  }
+  std::cout << std::endl;
+  
+  // Determine fog type flag
+  uint32_t fogTypeFlag = fog_volume.m_fog_data.danger ? 1 : 0;
+  
+  for (int layer = 0; layer < num_layers; layer++) {
+    float layerHeight = fogStartHeight + (layer * layerThickness);
+    float layerAlpha = 0.8f - (float(layer) / float(num_layers)) * 0.5f; // Start at 80% alpha, fade to 30%
+    
+    // Create quad for this layer
+    glm::vec3 corners[4] = {
+      glm::vec3(worldCenter.x - worldSize.x * 0.5f, layerHeight, worldCenter.y - worldSize.y * 0.5f), // LL
+      glm::vec3(worldCenter.x + worldSize.x * 0.5f, layerHeight, worldCenter.y - worldSize.y * 0.5f), // LR
+      glm::vec3(worldCenter.x - worldSize.x * 0.5f, layerHeight, worldCenter.y + worldSize.y * 0.5f), // UL
+      glm::vec3(worldCenter.x + worldSize.x * 0.5f, layerHeight, worldCenter.y + worldSize.y * 0.5f)  // UR
+    };
+    
+    // UV coordinates for texture sampling
+    glm::vec2 uvs[4] = {
+      glm::vec2(0.0f, 0.0f),
+      glm::vec2(1.0f, 0.0f),
+      glm::vec2(0.0f, 1.0f),
+      glm::vec2(1.0f, 1.0f)
+    };
+    
+    int base_vertex_index = fog_volume.m_vertices.size();
+    
+    // Add vertices
+    for (int i = 0; i < 4; i++) {
+      Vertex vertex(corners[i], uvs[i], glm::vec3(0.0, 1.0, 0.0), false, layerAlpha, fog_volume.m_texture_id, fogTypeFlag);
+      fog_volume.m_vertices.push_back(vertex);
+    }
+    
+    // Add indices for two triangles
+    fog_volume.m_indices.push_back(base_vertex_index + 0); // LL
+    fog_volume.m_indices.push_back(base_vertex_index + 1); // LR
+    fog_volume.m_indices.push_back(base_vertex_index + 2); // UL
+    
+    fog_volume.m_indices.push_back(base_vertex_index + 1); // LR
+    fog_volume.m_indices.push_back(base_vertex_index + 3); // UR
+    fog_volume.m_indices.push_back(base_vertex_index + 2); // UL
+  }
+  
+  // Add vertical planes around the edges for better side visibility
+  float edgeAlpha = 0.4f; // Lower alpha for edge planes
+  
+  // Front vertical plane (facing negative Z)
+  {
+    int base_vertex_index = fog_volume.m_vertices.size();
+    
+    glm::vec3 corners[4] = {
+      glm::vec3(worldCenter.x - worldSize.x * 0.5f, fogStartHeight, worldCenter.y - worldSize.y * 0.5f), // Bottom Left
+      glm::vec3(worldCenter.x + worldSize.x * 0.5f, fogStartHeight, worldCenter.y - worldSize.y * 0.5f), // Bottom Right  
+      glm::vec3(worldCenter.x - worldSize.x * 0.5f, fogTopHeight, worldCenter.y - worldSize.y * 0.5f),   // Top Left
+      glm::vec3(worldCenter.x + worldSize.x * 0.5f, fogTopHeight, worldCenter.y - worldSize.y * 0.5f)    // Top Right
+    };
+    
+    glm::vec2 uvs[4] = {
+      glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 0.0f),
+      glm::vec2(0.0f, 1.0f), glm::vec2(1.0f, 1.0f)
+    };
+    
+    for (int i = 0; i < 4; i++) {
+      Vertex vertex(corners[i], uvs[i], glm::vec3(0.0, 0.0, -1.0), false, edgeAlpha, fog_volume.m_texture_id, fogTypeFlag);
+      fog_volume.m_vertices.push_back(vertex);
+    }
+    
+    // Two triangles for the plane
+    fog_volume.m_indices.push_back(base_vertex_index + 0);
+    fog_volume.m_indices.push_back(base_vertex_index + 1);
+    fog_volume.m_indices.push_back(base_vertex_index + 2);
+    
+    fog_volume.m_indices.push_back(base_vertex_index + 1);
+    fog_volume.m_indices.push_back(base_vertex_index + 3);
+    fog_volume.m_indices.push_back(base_vertex_index + 2);
+  }
+  
+  // Back vertical plane (facing positive Z)
+  {
+    int base_vertex_index = fog_volume.m_vertices.size();
+    
+    glm::vec3 corners[4] = {
+      glm::vec3(worldCenter.x + worldSize.x * 0.5f, fogStartHeight, worldCenter.y + worldSize.y * 0.5f), // Bottom Right
+      glm::vec3(worldCenter.x - worldSize.x * 0.5f, fogStartHeight, worldCenter.y + worldSize.y * 0.5f), // Bottom Left  
+      glm::vec3(worldCenter.x + worldSize.x * 0.5f, fogTopHeight, worldCenter.y + worldSize.y * 0.5f),   // Top Right
+      glm::vec3(worldCenter.x - worldSize.x * 0.5f, fogTopHeight, worldCenter.y + worldSize.y * 0.5f)    // Top Left
+    };
+    
+    glm::vec2 uvs[4] = {
+      glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 0.0f),
+      glm::vec2(0.0f, 1.0f), glm::vec2(1.0f, 1.0f)
+    };
+    
+    for (int i = 0; i < 4; i++) {
+      Vertex vertex(corners[i], uvs[i], glm::vec3(0.0, 0.0, 1.0), false, edgeAlpha, fog_volume.m_texture_id, fogTypeFlag);
+      fog_volume.m_vertices.push_back(vertex);
+    }
+    
+    fog_volume.m_indices.push_back(base_vertex_index + 0);
+    fog_volume.m_indices.push_back(base_vertex_index + 1);
+    fog_volume.m_indices.push_back(base_vertex_index + 2);
+    
+    fog_volume.m_indices.push_back(base_vertex_index + 1);
+    fog_volume.m_indices.push_back(base_vertex_index + 3);
+    fog_volume.m_indices.push_back(base_vertex_index + 2);
+  }
+  
+  fog_volume.m_vertex_count = fog_volume.m_vertices.size();
+  fog_volume.m_num_indices = fog_volume.m_indices.size();
 }

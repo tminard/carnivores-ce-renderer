@@ -20,7 +20,7 @@ const std::shared_ptr<C2CarFile>& C2CarFilePreloader::fetch(std::filesystem::pat
   if (it != _files.end()) {
     return it->second;
   } else {
-    _files[file_name.string()] = std::shared_ptr<C2CarFile>(new C2CarFile(file_name));
+    _files[file_name.string()] = std::shared_ptr<C2CarFile>(new C2CarFile(file_name.string()));
 
     return _files[file_name.string()];
   }

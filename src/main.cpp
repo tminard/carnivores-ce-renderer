@@ -445,20 +445,11 @@ int main(int argc, const char * argv[])
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     checkGLError("After glClear");
 
-    double rnTimeDelta = currentTime - lastRndAudioTime;
-    
-    if (rnTimeDelta >= 32.0) {
-      m_random_ambient = cMapRsc->getRandomAudio(currentPosition.x, currentPosition.y, currentPosition.z - cMap->getTileLength());
-      if (m_random_ambient) {
-        g_audio_manager->play(std::move(m_random_ambient));
-        lastRndAudioTime = currentTime;
-      }
-    }
-
+    glm::vec2 currentWorldPos = g_player_controller->getWorldPosition();
     glm::vec2 next_world_pos = g_player_controller->getWorldPosition();
+    bool outOfBounds = next_world_pos.x < 0 || next_world_pos.x > cMap->getWidth() || next_world_pos.y < 0 || next_world_pos.y > cMap->getHeight();
+
     if (next_world_pos != current_world_pos) {
-      bool outOfBounds = next_world_pos.x < 0 || next_world_pos.x > cMap->getWidth() || next_world_pos.y < 0 || next_world_pos.y > cMap->getHeight();
-      
       if (!outOfBounds) {
         int next_ambient_id = cMap->getAmbientAudioIDAt((int)next_world_pos.x, (int)next_world_pos.y);
         
@@ -470,6 +461,22 @@ int main(int argc, const char * argv[])
       }
       
       current_world_pos = next_world_pos;
+    }
+
+    // Handle random audio.
+    int currentAmbientArea = cMap->getAmbientAudioIDAt((int)currentWorldPos.x, (int)currentWorldPos.y);
+    
+    // Update timer FIRST, THEN check if we need to play a track
+    cMapRsc->updateRandomSoundTimer(currentAmbientArea, timeDelta);
+    
+    if (!outOfBounds && cMapRsc->shouldPlayRandomSound(currentAmbientArea, currentTime)) {
+      m_random_ambient = cMapRsc->getRandomAudioForArea(currentAmbientArea,
+                                                        currentPosition.x,
+                                                        currentPosition.y,
+                                                        currentPosition.z);
+      if (m_random_ambient) {
+        g_audio_manager->play(std::move(m_random_ambient));
+      }
     }
 
     // Render the terrain

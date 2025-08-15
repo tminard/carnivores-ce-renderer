@@ -53,6 +53,7 @@
 
 #include "CEAnimation.h"
 #include "CEShadowManager.h"
+#include "CEUIRenderer.h"
 
 namespace fs = std::filesystem;
 using json = nlohmann::json;
@@ -159,12 +160,23 @@ int main(int argc, const char * argv[])
       fullscreen = data["video"]["fullscreen"];
     }
   }
+
+  // Parse UI configuration
+  std::string compassPath;
+  if (data.contains("ui") && data["ui"].is_object()) {
+    if (data["ui"].contains("compass") && data["ui"]["compass"].is_string()) {
+      compassPath = constructPath(basePath, data["ui"]["compass"].get<std::string>()).string();
+    }
+  }
   
   std::cout << "Base Path: " << basePath << std::endl;
   std::cout << "Map: " << data["map"]["type"] << std::endl;
   std::cout << "MAP: " << mapPath << std::endl;
   std::cout << "RSC: " << mapRscPath << std::endl;
   std::cout << "Spawns: " << spawns.size() << std::endl;
+  if (!compassPath.empty()) {
+    std::cout << "Compass: " << compassPath << std::endl;
+  }
   
   auto mapType = CEMapType::C2;
   if (data["map"]["type"] == "C1") {
@@ -300,6 +312,24 @@ int main(int argc, const char * argv[])
   
   glm::vec2 current_world_pos = g_player_controller->getWorldPosition();
   int current_ambient_id = 0;
+
+  // Load compass if specified
+  std::shared_ptr<C2CarFile> compass;
+  if (!compassPath.empty()) {
+    try {
+      compass = cFileLoad->fetch(compassPath);
+      std::cout << "Compass loaded successfully" << std::endl;
+    } catch (const std::exception& e) {
+      std::cerr << "Failed to load compass: " << e.what() << std::endl;
+    }
+  }
+
+  // Initialize UI renderer
+  std::unique_ptr<CEUIRenderer> uiRenderer;
+  if (compass) {
+    uiRenderer = std::make_unique<CEUIRenderer>(width, height);
+    std::cout << "UI renderer initialized" << std::endl;
+  }
   
   std::cout << "== Entering render loop ==" << std::endl;
   
@@ -546,6 +576,18 @@ int main(int argc, const char * argv[])
       glDepthMask(GL_TRUE); // Re-enable depth writes
       
       glEnable(GL_CULL_FACE);
+    }
+
+    // Render UI elements (compass, etc.)
+    if (uiRenderer && compass) {
+      // Calculate compass rotation based on camera direction
+      Camera* camera = g_player_controller->getCamera();
+      float compassRotation = 0.0f; // For now, static compass
+      
+      // TODO: Calculate rotation based on camera yaw
+      // compassRotation = -camera->getYaw();
+      
+      uiRenderer->renderCompass(compass.get(), compassRotation);
     }
     
     glfwSwapBuffers(window);

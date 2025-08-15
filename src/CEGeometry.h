@@ -63,6 +63,7 @@ public:
   void Update(Transform& transform, Camera& camera);
   bool SetAnimation(std::weak_ptr<CEAnimation> animation, double atTime, double startAt, double lastUpdateAt, bool deferUpdate, bool maxFPS, bool notVisible, float playbackSpeed, bool loop);
   void Draw();
+  void DrawNaked();
   
   void ConfigureShaderUniforms(C2MapFile* map, C2MapRscFile* rsc);
   

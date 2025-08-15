@@ -1,9 +1,9 @@
 {
   "basePath": "../../runtime/cce/",
   "map": {
-    "type": "C2",
-    "map": "../game/lost/area2.map",
-    "rsc": "../game/lost/area2.rsc"
+    "type": "C1",
+    "map": "../game/c1/area1.map",
+    "rsc": "../game/c1/area1.rsc"
   },
   "video": {
     "fullscreen": false
@@ -17,6 +17,9 @@
     "file": "../../runtime/cce/game/models/rifle.car"
   }
   ],
+  "ui": {
+    "compass": "game/models/poacher.car"
+  },
   "spawns": [
   {
     "file": "../../runtime/cce/game/models/Bigfoot.car",

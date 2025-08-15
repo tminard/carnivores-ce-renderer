@@ -185,15 +185,20 @@ bool CEGeometry::SetAnimation(std::weak_ptr<CEAnimation> animation, double atTim
   return true;
 }
 
-void CEGeometry::Draw()
+void CEGeometry::DrawNaked()
 {
-  m_shader->use();
   m_texture->use();
   glBindVertexArray(this->m_vertexArrayObject);
   
   glDrawElementsBaseVertex(GL_TRIANGLES, (int)this->m_indices.size(), GL_UNSIGNED_INT, 0, 0);
   
   glBindVertexArray(0);
+}
+
+void CEGeometry::Draw()
+{
+  m_shader->use();
+  this->DrawNaked();
 }
 
 void CEGeometry::ConfigureShaderUniforms(C2MapFile* map, C2MapRscFile* rsc)

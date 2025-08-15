@@ -582,6 +582,9 @@ void TerrainRenderer::loadWaterAt(int x, int y)
     water_data = this->m_crsc_data_weak->getWater(water_index);
   }
 
+  // Check if this water tile is in a danger zone (lava)
+  bool isDangerWater = this->m_cmap_data_weak->hasDangerTileAt(this->m_crsc_data_weak, glm::vec2(x, y));
+
   float wheight = water_object->m_height;
   glm::vec3 vpositionLL = this->calcWorldVertex(x, y, true, wheight);
   glm::vec3 vpositionLR = this->calcWorldVertex(fmin(x + 1, height - 1), y, true, wheight);
@@ -594,10 +597,13 @@ void TerrainRenderer::loadWaterAt(int x, int y)
 
   std::array<glm::vec2, 4> vertex_uv_mapping = this->calcUVMapForQuad(x, y, false, 0);
 
-  Vertex v1(vpositionLL, scaleAtlasUV(vertex_uv_mapping[0], texture_id), glm::vec3(0.0, 1.0, 0.0), false, water_object->m_transparency, texture_id, 0);
-  Vertex v2(vpositionLR, scaleAtlasUV(vertex_uv_mapping[1], texture_id), glm::vec3(0.0, 1.0, 0.0), false, water_object->m_transparency, texture_id, 0);
-  Vertex v3(vpositionUL, scaleAtlasUV(vertex_uv_mapping[2], texture_id), glm::vec3(0.0, 1.0, 0.0), false, water_object->m_transparency, texture_id, 0);
-  Vertex v4(vpositionUR, scaleAtlasUV(vertex_uv_mapping[3], texture_id), glm::vec3(0.0, 1.0, 0.0), false, water_object->m_transparency, texture_id, 0);
+  // Use flags parameter to pass danger water information (1 = danger water, 0 = normal water)
+  uint32_t dangerFlag = isDangerWater ? 1 : 0;
+
+  Vertex v1(vpositionLL, scaleAtlasUV(vertex_uv_mapping[0], texture_id), glm::vec3(0.0, 1.0, 0.0), false, water_object->m_transparency, texture_id, dangerFlag);
+  Vertex v2(vpositionLR, scaleAtlasUV(vertex_uv_mapping[1], texture_id), glm::vec3(0.0, 1.0, 0.0), false, water_object->m_transparency, texture_id, dangerFlag);
+  Vertex v3(vpositionUL, scaleAtlasUV(vertex_uv_mapping[2], texture_id), glm::vec3(0.0, 1.0, 0.0), false, water_object->m_transparency, texture_id, dangerFlag);
+  Vertex v4(vpositionUR, scaleAtlasUV(vertex_uv_mapping[3], texture_id), glm::vec3(0.0, 1.0, 0.0), false, water_object->m_transparency, texture_id, dangerFlag);
 
   water_object->m_vertices.push_back(v1);
   water_object->m_vertices.push_back(v2);
@@ -673,6 +679,8 @@ void TerrainRenderer::loadWaterIntoMemory()
         glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(glm::vec3) + sizeof(glm::vec2)));
         glEnableVertexAttribArray(3); // alpha
         glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(glm::vec3) + sizeof(glm::vec2) + sizeof(glm::vec3)));
+        glEnableVertexAttribArray(4); // flags
+        glVertexAttribPointer(4, 1, GL_UNSIGNED_INT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(glm::vec3) + sizeof(glm::vec2) + sizeof(glm::vec3) + sizeof(float)));
 
         glGenBuffers(1, &water_object->m_iab);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, water_object->m_iab);
@@ -779,6 +787,7 @@ void TerrainRenderer::loadIntoHardwareMemory()
         // If has water texture, check if adjacent to explicitly marked water
         if (hasWaterTexture) {
           // Check 8 adjacent tiles (including diagonals)
+          int adjacentWaterX = -1, adjacentWaterY = -1;
           for (int dy = -1; dy <= 1; dy++) {
             for (int dx = -1; dx <= 1; dx++) {
               if (dx == 0 && dy == 0) continue; // Skip center tile
@@ -791,11 +800,44 @@ void TerrainRenderer::loadIntoHardwareMemory()
                 int adj_index = (adj_y * width) + adj_x;
                 if (this->m_cmap_data_weak->hasWaterAt(adj_index)) {
                   hasWater = true;
+                  adjacentWaterX = adj_x;
+                  adjacentWaterY = adj_y;
                   break;
                 }
               }
             }
             if (hasWater) break;
+          }
+          
+          // If we found adjacent water, get the adjacent tile's water entity info
+          if (hasWater && adjacentWaterX >= 0 && adjacentWaterY >= 0) {
+            // Get the water entity used by the adjacent water tile
+            int adj_index = (adjacentWaterY * width) + adjacentWaterX;
+            int adj_texID = m_cmap_data_weak->getWaterTextureIDAt(adj_index, 0);
+            if (adj_texID == 255) adj_texID = 0;
+            int adj_unscaledWHeight = (int)m_cmap_data_weak->getLowestHeight(adjacentWaterX, adjacentWaterY, true);
+            
+            // Create a temporary water entity matching the adjacent water
+            CEWaterEntity adjWater;
+            adjWater.fogRGB = 0;
+            adjWater.texture_id = adj_texID;
+            adjWater.transparency = 1.0f;
+            adjWater.water_level = adj_unscaledWHeight + 48;
+            
+            // Find the matching water entity for this adjacent water
+            int adj_water_index = m_crsc_data_weak->findMatchingWater(adjWater);
+            if (adj_water_index >= 0) {
+              // Store the water index to force this tile to use the same water entity
+              // We'll create a simple way to pass this to loadWaterAt
+              
+              // For now, let's directly call a modified loadWaterAt that uses this specific water index
+              waterTileCount++;
+              if (waterTileCount < 10) {
+                std::cout << "Found edge case water at tile (" << x << "," << y << ") using water index " << adj_water_index << std::endl;
+              }
+              loadWaterAtWithIndex(x, y, adj_water_index);
+              hasWater = false; // Prevent the regular loadWaterAt call below
+            }
           }
         }
       }
@@ -1115,4 +1157,64 @@ void TerrainRenderer::createHeightmapTexture()
     glBindTexture(GL_TEXTURE_2D, 0);
     
     std::cout << "Created heightmap texture with " << width << "x" << height << " resolution" << std::endl;
+}
+
+/*
+ * add to water VBO at given location, forcing specific water index for edge cases
+ */
+void TerrainRenderer::loadWaterAtWithIndex(int x, int y, int forceWaterIndex)
+{
+  if (forceWaterIndex < 0 || forceWaterIndex >= this->m_waters.size()) {
+    std::cout << "Invalid forced water index " << forceWaterIndex << ", falling back to regular detection" << std::endl;
+    loadWaterAt(x, y);
+    return;
+  }
+
+  int width = this->m_cmap_data_weak->getWidth();
+  int height = this->m_cmap_data_weak->getHeight();
+  
+  // Use the forced water index directly
+  _Water* water_object = &this->m_waters[forceWaterIndex];
+  CEWaterEntity water_data = this->m_crsc_data_weak->getWater(forceWaterIndex);
+
+  // Check if this water tile is in a danger zone (lava)
+  bool isDangerWater = this->m_cmap_data_weak->hasDangerTileAt(this->m_crsc_data_weak, glm::vec2(x, y));
+
+  float wheight = water_object->m_height;
+  glm::vec3 vpositionLL = this->calcWorldVertex(x, y, true, wheight);
+  glm::vec3 vpositionLR = this->calcWorldVertex(fmin(x + 1, height - 1), y, true, wheight);
+  glm::vec3 vpositionUL = this->calcWorldVertex(x, fmin(y + 1, width - 1), true, wheight);
+  glm::vec3 vpositionUR = this->calcWorldVertex(fmin(x + 1, height - 1), fmin(y + 1, width - 1), true, wheight);
+
+  int base_vertex_index = water_object->m_vertices.size();
+
+  // Add vertices (using correct constructor with all 7 parameters)
+  int texture_id = water_data.texture_id;
+  
+  std::array<glm::vec2, 4> vertex_uv_mapping = this->calcUVMapForQuad(x, y, false, 0);
+  
+  // Use flags parameter to pass danger water information (1 = danger water, 0 = normal water)
+  uint32_t dangerFlag = isDangerWater ? 1 : 0;
+  
+  // Water uses atlas textures - scale UV coordinates with texture ID like original loadWaterAt
+  Vertex v1(vpositionLL, scaleAtlasUV(vertex_uv_mapping[0], texture_id), glm::vec3(0.0, 1.0, 0.0), false, water_object->m_transparency, texture_id, dangerFlag);
+  Vertex v2(vpositionLR, scaleAtlasUV(vertex_uv_mapping[1], texture_id), glm::vec3(0.0, 1.0, 0.0), false, water_object->m_transparency, texture_id, dangerFlag);
+  Vertex v3(vpositionUL, scaleAtlasUV(vertex_uv_mapping[2], texture_id), glm::vec3(0.0, 1.0, 0.0), false, water_object->m_transparency, texture_id, dangerFlag);
+  Vertex v4(vpositionUR, scaleAtlasUV(vertex_uv_mapping[3], texture_id), glm::vec3(0.0, 1.0, 0.0), false, water_object->m_transparency, texture_id, dangerFlag);
+
+  water_object->m_vertices.push_back(v1);
+  water_object->m_vertices.push_back(v2);
+  water_object->m_vertices.push_back(v3);
+  water_object->m_vertices.push_back(v4);
+
+  // Add indices for two triangles
+  water_object->m_indices.push_back(base_vertex_index + 0); // LL
+  water_object->m_indices.push_back(base_vertex_index + 1); // LR
+  water_object->m_indices.push_back(base_vertex_index + 2); // UL
+
+  water_object->m_indices.push_back(base_vertex_index + 1); // LR
+  water_object->m_indices.push_back(base_vertex_index + 3); // UR
+  water_object->m_indices.push_back(base_vertex_index + 2); // UL
+
+  water_object->m_num_indices = water_object->m_indices.size();
 }

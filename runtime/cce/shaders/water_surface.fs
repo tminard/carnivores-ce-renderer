@@ -8,6 +8,7 @@ in vec3 toLightVector;
 in vec2 cloudTexCoord;
 in vec3 viewDirection;
 in vec2 heightmapCoord;
+flat in uint isDangerWater;
 
 out vec4 outputColor;
 
@@ -46,6 +47,57 @@ void main()
     float maxVisibleDepth = 3.0; // Reasonable depth range in world units
     waterDepth = clamp(waterDepth, 0.0, maxVisibleDepth);
     
+    // Handle danger water (lava) differently
+    if (isDangerWater == 1u) {
+        // Subtle bubbling animation for lava effect
+        float bubblingWaves = sin(time * 3.0 + texCoord0.x * 8.0) * 0.3 + 
+                              cos(time * 2.5 + texCoord0.y * 6.0) * 0.2 +
+                              sin(time * 4.0 + texCoord0.x * 4.0 + texCoord0.y * 4.0) * 0.15;
+        
+        // Subtle heat distortion offset for UV coordinates
+        vec2 heatDistortion = vec2(
+            sin(time * 2.0 + texCoord0.x * 15.0) * 0.002,
+            cos(time * 2.5 + texCoord0.y * 12.0) * 0.002
+        );
+        
+        // Sample texture with heat distortion
+        vec4 sC = texture(basic_texture, texCoord0 + heatDistortion);
+        
+        // Calculate basic lighting for danger water
+        vec3 unitSurfaceNormal = normalize(surfaceNormal);
+        vec3 unitToLightVector = normalize(toLightVector);
+        float diffuse = max(dot(unitSurfaceNormal, unitToLightVector), 0.0);
+        float brightness = ambientStrength + diffuse * diffuseStrength;
+        
+        // Apply subtle lighting with heat glow
+        brightness *= (1.0 + bubblingWaves * 0.1); // Subtle brightness variation from bubbling
+        
+        vec3 baseColor = vec3(sC.b, sC.g, sC.r) * brightness;
+        
+        // Subtle lava color enhancement - slightly warmer
+        baseColor.r = min(baseColor.r * 1.2, 1.0);
+        baseColor.g = min(baseColor.g * 1.05, 1.0);  
+        baseColor.b *= 0.9; // Slightly reduce blue for warmer look
+        
+        // Skip complex transparency calculations - use high uniform opacity for lava
+        float dangerAlpha = 0.9; // High opacity for lava
+        
+        // Basic fog calculation
+        float dist = gl_FragCoord.z / gl_FragCoord.w;
+        float min_distance = 256.0 * 6.0;
+        float max_distance = view_distance;
+        float fogFactor = 0.0;
+        if (dist > min_distance) {
+            fogFactor = clamp((dist - min_distance) / (max_distance - min_distance), 0.0, 1.0);
+            fogFactor = min(fogFactor, 0.65);
+        }
+        
+        vec3 finalColor = mix(baseColor, skyColor.rgb, fogFactor);
+        outputColor = mix(vec4(finalColor, dangerAlpha), skyColor, 1.0 - EdgeFactor);
+        return;
+    }
+    
+    // Normal water processing continues below
     // Ambient and fade
     float min_distance = 256.0 * 6.0; // Start fog
     float max_distance = view_distance;

@@ -4,6 +4,7 @@ layout(location = 0) in vec3 position;
 layout(location = 1) in vec2 texCoord;
 layout(location = 2) in vec3 normal;
 layout(location = 3) in float alpha;
+layout(location = 4) in uint flags;
 
 out vec2 texCoord0;
 smooth out float alpha0;
@@ -13,6 +14,7 @@ out vec3 toLightVector;
 out vec2 cloudTexCoord;
 out vec3 viewDirection;
 out vec2 heightmapCoord;
+flat out uint isDangerWater;
 
 uniform mat4 MVP;
 uniform mat4 model;
@@ -75,4 +77,7 @@ void main()
     
     // Calculate heightmap texture coordinates (normalized to [0,1])
     heightmapCoord = vec2(position.x / (terrainWidth * tileWidth), position.z / (terrainHeight * tileWidth));
+    
+    // Pass danger water flag (1 = danger water, 0 = normal water)
+    isDangerWater = flags;
 }

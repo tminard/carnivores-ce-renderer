@@ -72,6 +72,7 @@ private:
   
   void loadWaterIntoMemory();
   void loadWaterAt(int x, int y);
+  void loadWaterAtWithIndex(int x, int y, int forceWaterIndex);
 
   glm::vec2 calcAtlasUV(int texID, glm::vec2 uv);
   glm::vec2 scaleAtlasUV(glm::vec2 atlas_uv, int texture_id);

@@ -1105,6 +1105,7 @@ void TerrainRenderer::Render()
 void TerrainRenderer::RenderWater()
 {
   this->m_water_shader->use();
+  this->m_water_shader->setFloat("time", (float)glfwGetTime()); // Fix: Update time for water animation
   this->m_water_shader->bindTexture("skyTexture", m_crsc_data_weak->getDaySky()->getTextureID(), 2);
   this->m_water_shader->bindTexture("heightmapTexture", heightmapTexture, 3);
 
@@ -1514,10 +1515,12 @@ void TerrainRenderer::createFogVolumeGeometry(_FogVolume& fog_volume, int num_la
   // In original: fog starts at YBegin*ctHScale and extends infinitely upward
   float fogStartHeight = baseHeight + fogAltitudeOffset; // Original YBegin*ctHScale equivalent
   
-  // C1 maps need the -48 offset that appears throughout the original C1 code
+  // Apply height corrections based on original engine differences
   if (m_cmap_data_weak->m_type == CEMapType::C1) {
+    // C1 maps need the -48 offset that appears throughout the original C1 code
     fogStartHeight += (-48.0f * m_cmap_data_weak->getHeightmapScale()); // -48 * ctHScale
   }
+  // C2 uses no offset - fog starts exactly at YBegin*ctHScale as per original C2 source
   float fogTopHeight = fogStartHeight + 200.0f; // Create reasonable bounded volume for rendering
   float totalFogHeight = fogTopHeight - fogStartHeight;
   float layerThickness = totalFogHeight / num_layers; // Distribute layers from fog start upward

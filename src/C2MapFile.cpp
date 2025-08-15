@@ -423,13 +423,29 @@ bool C2MapFile::hasWaterAt(int xy)
     uint8_t flags = this->getFlagsAt(xy);
     if (flags & 0x0080 || flags & 0x8000) return true;
 
-    // Check height delta first (strict 48 delta test)
-    if (this->m_watermap_data.at(xy) != this->m_heightmap_data.at(xy) + 48) {
-      return true;
+    uint8_t surfaceHeight = this->m_heightmap_data.at(xy);
+    uint8_t groundHeight = this->m_watermap_data.at(xy);
+    
+    // Fix for false water detection in mountains:
+    // When both heights max out (255), it's due to heightmap data limits, not water
+    if (surfaceHeight == 255 && groundHeight == 255) {
+      return false;
     }
     
-    // Even if height delta is exactly 48 (no water), check if texture matches known water entities
-    // This catches edge cases where water texture is used but height wasn't modified
+    // Additional check: if ground height is at max but surface isn't maxed, 
+    // it's likely a steep slope rather than water
+    if (groundHeight == 255 && surfaceHeight < 255) {
+      return false;
+    }
+    
+    // Original C1 logic: Water exists when GetLandUpH() - GetLandH() > threshold
+    // In our case: surface height - ground height should be significantly > 48
+    int heightDifference = (int)surfaceHeight - (int)groundHeight;
+    if (heightDifference <= 48) {
+      return false; // No water if difference is 48 or less
+    }
+    
+    // Even if height delta indicates water, check texture IDs for confirmation
     int id = int(this->m_texturec1_A_index_data.at(xy));
     int id_second = int(this->m_texturec1_B_index_data.at(xy));
     if (!id || !id_second) {
@@ -437,12 +453,8 @@ bool C2MapFile::hasWaterAt(int xy)
       return true;
     }
     
-    // Check if either texture ID is used by any known water entity
-    // Note: This requires access to water entities, which we don't have in C2MapFile
-    // This check should ideally be done at the TerrainRenderer level where we have access to water entities
-    // For now, keep the existing logic
-
-    return false;
+    // If we reach here, height difference suggests water and textures aren't water-specific
+    return true;
   }
 }
 
@@ -464,7 +476,21 @@ bool C2MapFile::hasOriginalWaterAt(int xy)
     return false;
   } else {
     if (flags & 0x0080) return true;
-    return (this->m_watermap_data.at(xy) != this->m_heightmap_data.at(xy) + 48);
+    
+    uint8_t surfaceHeight = this->m_heightmap_data.at(xy);
+    uint8_t groundHeight = this->m_watermap_data.at(xy);
+    
+    // Apply same mountain fix as hasWaterAt()
+    if (surfaceHeight == 255 && groundHeight == 255) {
+      return false;
+    }
+    if (groundHeight == 255 && surfaceHeight < 255) {
+      return false;
+    }
+    
+    // Original logic with proper comparison
+    int heightDifference = (int)surfaceHeight - (int)groundHeight;
+    return (heightDifference > 48);
   }
 }
 

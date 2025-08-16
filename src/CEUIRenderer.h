@@ -22,9 +22,13 @@ class CEUIRenderer
 private:
     std::unique_ptr<Camera> m_ui2DCamera;
     int m_screenWidth, m_screenHeight;
+    bool m_weaponDrawn;
     
     void initializeUI2DCamera();
     void renderCompassGeometry(C2CarFile* compass, Transform& uiTransform);
+    void renderWeaponGeometry(C2CarFile* weapon, Transform& weaponTransform);
+    void setupWeaponRendering();
+    void restoreNormalRendering();
     void renderTestSquare();
     
 public:
@@ -37,6 +41,11 @@ public:
     // Render compass in lower-left corner  
     void renderCompass(C2CarFile* compass, float rotation);
     void renderCompass(C2CarFile* compass, Camera* gameCamera);
+    
+    // Weapon system
+    void toggleWeapon(); // Draw/holster weapon
+    void renderWeapon(C2CarFile* weapon);
+    bool isWeaponDrawn() const { return m_weaponDrawn; }
     
     // Set up 2D rendering state
     void begin2DRendering();

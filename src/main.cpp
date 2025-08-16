@@ -169,6 +169,16 @@ int main(int argc, const char * argv[])
     }
   }
   
+  // Parse weapon configuration
+  std::string primaryWeaponPath;
+  if (data.contains("weapons") && data["weapons"].is_object()) {
+    if (data["weapons"].contains("primary") && data["weapons"]["primary"].is_object()) {
+      if (data["weapons"]["primary"].contains("file") && data["weapons"]["primary"]["file"].is_string()) {
+        primaryWeaponPath = constructPath(basePath, data["weapons"]["primary"]["file"].get<std::string>()).string();
+      }
+    }
+  }
+  
   std::cout << "Base Path: " << basePath << std::endl;
   std::cout << "Map: " << data["map"]["type"] << std::endl;
   std::cout << "MAP: " << mapPath << std::endl;
@@ -176,6 +186,9 @@ int main(int argc, const char * argv[])
   std::cout << "Spawns: " << spawns.size() << std::endl;
   if (!compassPath.empty()) {
     std::cout << "Compass: " << compassPath << std::endl;
+  }
+  if (!primaryWeaponPath.empty()) {
+    std::cout << "Primary Weapon: " << primaryWeaponPath << std::endl;
   }
   
   auto mapType = CEMapType::C2;
@@ -324,11 +337,27 @@ int main(int argc, const char * argv[])
     }
   }
 
+  // Load primary weapon if specified
+  std::shared_ptr<C2CarFile> primaryWeapon;
+  if (!primaryWeaponPath.empty()) {
+    try {
+      primaryWeapon = cFileLoad->fetch(primaryWeaponPath);
+      std::cout << "Primary weapon loaded successfully" << std::endl;
+    } catch (const std::exception& e) {
+      std::cerr << "Failed to load primary weapon: " << e.what() << std::endl;
+    }
+  }
+
   // Initialize UI renderer
   std::unique_ptr<CEUIRenderer> uiRenderer;
-  if (compass) {
+  if (compass || primaryWeapon) {
     uiRenderer = std::make_unique<CEUIRenderer>(width, height);
     std::cout << "UI renderer initialized" << std::endl;
+  }
+
+  // Bind UI renderer to input manager if we have it
+  if (uiRenderer) {
+    input_manager->BindUIRenderer(uiRenderer.get());
   }
   
   std::cout << "== Entering render loop ==" << std::endl;
@@ -578,16 +607,19 @@ int main(int argc, const char * argv[])
       glEnable(GL_CULL_FACE);
     }
 
-    // Render UI elements (compass, etc.)
-    if (uiRenderer && compass) {
-      // Calculate compass rotation based on camera direction
+    // Render UI elements (compass, weapon, etc.)
+    if (uiRenderer) {
       Camera* camera = g_player_controller->getCamera();
-      float compassRotation = 0.0f; // For now, static compass
       
-      // TODO: Calculate rotation based on camera yaw
-      // compassRotation = -camera->getYaw();
+      // Render compass if available
+      if (compass) {
+        uiRenderer->renderCompass(compass.get(), camera);
+      }
       
-      uiRenderer->renderCompass(compass.get(), camera);
+      // Render weapon if available
+      if (primaryWeapon) {
+        uiRenderer->renderWeapon(primaryWeapon.get());
+      }
     }
     
     glfwSwapBuffers(window);

@@ -12,11 +12,11 @@
     "shadowDebug": false,
     "renderDebug": false
   },
-  "weapons": [
-  {
-    "file": "../../runtime/cce/game/models/rifle.car"
-  }
-  ],
+  "weapons": {
+    "primary": {
+      "file": "game/models/x_bow.car"
+    }
+  },
   "ui": {
     "compass": "game/models/compas.car"
   },

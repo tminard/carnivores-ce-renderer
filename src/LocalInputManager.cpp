@@ -1,11 +1,17 @@
 #include "LocalInputManager.hpp"
 #include "camera.h"
 #include "CELocalPlayerController.hpp"
+#include "CEUIRenderer.h"
 
 void LocalInputManager::Bind(std::shared_ptr<CELocalPlayerController> player_controller)
 {
   this->m_player_controller = player_controller;
   this->lastTime = glfwGetTime();
+}
+
+void LocalInputManager::BindUIRenderer(CEUIRenderer* ui_renderer)
+{
+  this->m_ui_renderer = ui_renderer;
 }
 
 float horizontalAngle = glm::radians(3.14f);
@@ -126,6 +132,19 @@ void LocalInputManager::ProcessLocalInput(GLFWwindow* window, float deltaTime)
     }
     else if (glfwGetKey(window, GLFW_KEY_P) == GLFW_RELEASE) {
       this->m_last_key_state[GLFW_KEY_P] = GLFW_RELEASE;
+    }
+    
+    // Handle right mouse button for weapon toggle
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS && 
+        this->m_last_mouse_state[GLFW_MOUSE_BUTTON_RIGHT] != GLFW_PRESS) {
+      this->m_last_mouse_state[GLFW_MOUSE_BUTTON_RIGHT] = GLFW_PRESS;
+      
+      if (this->m_ui_renderer) {
+        this->m_ui_renderer->toggleWeapon();
+      }
+    }
+    else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_RELEASE) {
+      this->m_last_mouse_state[GLFW_MOUSE_BUTTON_RIGHT] = GLFW_RELEASE;
     }
   }
   

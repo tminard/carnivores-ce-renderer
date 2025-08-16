@@ -19,7 +19,7 @@ namespace fs = std::filesystem;
 using json = nlohmann::json;
 
 CEUIRenderer::CEUIRenderer(int screenWidth, int screenHeight)
-    : m_screenWidth(screenWidth), m_screenHeight(screenHeight)
+    : m_screenWidth(screenWidth), m_screenHeight(screenHeight), m_weaponDrawn(false)
 {
     setScreenSize(screenWidth, screenHeight);
     initializeUI2DCamera();
@@ -117,7 +117,7 @@ void CEUIRenderer::renderCompassGeometry(C2CarFile* compass, Transform& uiTransf
     
     // Create orthographic projection matrix for UI
     // Left, Right, Bottom, Top, Near, Far
-    glm::mat4 orthoProjection = glm::ortho(0.0f, (float)m_screenWidth, 0.0f, (float)m_screenHeight, -1000.0f, 1000.0f);
+    glm::mat4 orthoProjection = glm::ortho(0.0f, (float)m_screenWidth, 0.0f, (float)m_screenHeight, -100.f, 10000.0f);
     
     // Create view matrix (identity for orthographic UI)
     glm::mat4 view = glm::mat4(1.0f);
@@ -233,4 +233,134 @@ void CEUIRenderer::renderTestSquare()
     glDeleteTextures(1, &textureID);
     
     std::cout << "Test square rendered" << std::endl;
+}
+
+void CEUIRenderer::toggleWeapon()
+{
+    m_weaponDrawn = !m_weaponDrawn;
+    std::cout << "Weapon " << (m_weaponDrawn ? "drawn" : "holstered") << std::endl;
+}
+
+void CEUIRenderer::renderWeapon(C2CarFile* weapon)
+{
+    if (!weapon || !m_ui2DCamera || !m_weaponDrawn) {
+        return; // Don't render if weapon not drawn or missing
+    }
+    
+    std::cout << "Rendering weapon with CAR file" << std::endl;
+    
+    // For perspective rendering, we'll position weapon in world space via translation matrix
+    // This position is just for the transform, actual positioning done in world space
+    glm::vec3 position(0.0f, 0.0f, 0.0f);
+    
+    // Rotate weapon to point away from player and angle upward
+    // X: slight up angle, Y: 180° to face away from player, Z: no roll
+    glm::vec3 rotationVec(glm::radians(0.0f), glm::radians(180.0f), glm::radians(0.0f));
+    
+    // Scale weapon appropriately for perspective view
+    glm::vec3 scale(1.f);
+    
+    // Create Transform for the weapon
+    Transform weaponTransform(position, rotationVec, scale);
+
+    // Set up weapon-specific rendering state
+    setupWeaponRendering();
+    
+    renderWeaponGeometry(weapon, weaponTransform);
+    
+    // Restore normal rendering state
+    restoreNormalRendering();
+}
+
+void CEUIRenderer::renderWeaponGeometry(C2CarFile* weapon, Transform& weaponTransform)
+{
+    // Get the CAR file's geometry directly
+    auto geometry = weapon->getGeometry();
+    if (!geometry) {
+        std::cerr << "Weapon CAR file has no geometry" << std::endl;
+        return;
+    }
+
+    std::cout << "Using CEGeometry Update/Draw pattern for weapon" << std::endl;
+    
+    // Switch to UI shader for UI rendering (avoids instanced rendering issues)
+    geometry->setShader("ui");
+    
+    // Use perspective projection for weapon to give it depth
+    auto position = weaponTransform.GetPos();
+    
+    // Create perspective projection for weapon depth
+    float aspectRatio = (float)m_screenWidth / (float)m_screenHeight;
+    glm::mat4 perspectiveProjection = glm::perspective(glm::radians(60.0f), aspectRatio, 0.1f, 100000.0f);
+    
+    // Create view matrix positioned for first-person weapon view
+    glm::vec3 weaponCameraPos(0.0f, 0.0f, 0.1f);  // Close to weapon
+    glm::vec3 weaponCameraTarget(0.0f, 0.0f, 0.0f);  // Looking at origin
+    glm::vec3 weaponCameraUp(0.0f, 1.0f, 0.0f);
+    glm::mat4 view = glm::lookAt(weaponCameraPos, weaponCameraTarget, weaponCameraUp);
+    
+    // Position weapon in world space for perspective view
+    glm::vec3 weaponWorldPos(0.f, 0.f, 0.f);  // Offset for first-person positioning
+    glm::mat4 weaponTranslation = glm::translate(glm::mat4(1.0f), weaponWorldPos);
+    glm::mat4 model = weaponTranslation * weaponTransform.GetStaticModel();
+    
+    // Calculate MVP for perspective weapon
+    glm::mat4 mvp = perspectiveProjection * view * model;
+    
+    // Set the perspective MVP matrix manually
+    auto shader = geometry->getShader();
+    if (shader) {
+        shader->use();
+        shader->setMat4("MVP", mvp);
+        std::cout << "Weapon shader ready with perspective MVP" << std::endl;
+    } else {
+        std::cerr << "ERROR: Weapon geometry has no shader!" << std::endl;
+        return;
+    }
+    
+    // Then call Draw() which will use the standard shader system
+    geometry->Draw();
+    std::cout << "Weapon rendered" << std::endl;
+}
+
+void CEUIRenderer::setupWeaponRendering()
+{
+    // Clear only the depth buffer to ensure weapon renders over everything
+    glClear(GL_DEPTH_BUFFER_BIT);
+    
+    // Keep normal depth testing for weapon's internal depth
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);  // Normal depth testing within weapon
+    
+    // Enable face culling to hide inside faces
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);  // Cull back faces (inside faces)
+    glFrontFace(GL_CCW);  // Counter-clockwise faces are front
+    
+    // Use a very small depth range near the camera for weapon
+    // This keeps weapon in front while preserving internal depth relationships
+    glDepthRange(0.0, 0.1);  // Weapon uses first 10% of depth buffer
+    
+    // Enable blending for proper transparency if needed
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    
+    std::cout << "Weapon rendering state set up" << std::endl;
+}
+
+void CEUIRenderer::restoreNormalRendering()
+{
+    // Restore normal depth testing (already GL_LESS, but good to be explicit)
+    glDepthFunc(GL_LESS);     
+    glDepthRange(0.0, 1.0);   // Restore full depth range for scene
+    
+    // Keep face culling enabled for normal scene rendering
+    // Most games keep this enabled for performance
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+    
+    // Disable blending
+    glDisable(GL_BLEND);
+    
+    std::cout << "Normal rendering state restored" << std::endl;
 }

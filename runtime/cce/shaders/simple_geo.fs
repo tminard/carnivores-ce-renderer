@@ -12,6 +12,10 @@ uniform bool enableShadows = false;
 uniform float ambientStrength = 0.3;
 uniform float diffuseStrength = 0.7;
 
+// New uniforms for impact marker coloring
+uniform bool useCustomColor = false;
+uniform vec3 customColor = vec3(1.0, 0.0, 0.0);
+
 float ShadowCalculation(vec4 fragPosLightSpace)
 {
     if (!enableShadows) return 0.0;
@@ -32,9 +36,13 @@ float ShadowCalculation(vec4 fragPosLightSpace)
 
 void main()
 {
-    // FORCE show debug colors to test shader execution
-    // All objects should appear in these debug colors
+    // Check if we should use custom color (for impact markers)
+    if (useCustomColor) {
+        FragColor = vec4(customColor, 1.0);
+        return;
+    }
     
+    // Original debug rendering for other objects
     if (enableShadows) {
         // Shadow-enabled objects = BRIGHT GREEN
         FragColor = vec4(0.0, 1.0, 0.0, 1.0);  

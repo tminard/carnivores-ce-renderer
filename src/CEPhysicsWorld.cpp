@@ -41,10 +41,10 @@ CEPhysicsWorld::CEPhysicsWorld(C2MapFile* mapFile, C2MapRscFile* mapRsc)
     m_dynamicsWorld = new btDiscreteDynamicsWorld(m_dispatcher, m_broadphase, m_solver, m_collisionConfig);
     m_dynamicsWorld->setGravity(btVector3(0, -9.81f, 0)); // Earth gravity
     
-    // Setup collision geometry
-    setupTerrain(mapFile);
-    setupWorldObjects(mapRsc);
-    setupWaterPlanes(mapFile);
+    // Setup collision geometry (terrain and world objects disabled for performance)
+    // setupTerrain(mapFile);  // DISABLED: Too expensive, using height checks instead
+    // setupWorldObjects(mapRsc);  // DISABLED: Too many collision meshes causing severe FPS drops
+    setupWaterPlanes(mapFile);  // RE-ENABLED: For water collision detection
     
     std::cout << "Physics world initialized with " << m_dynamicsWorld->getNumCollisionObjects() << " collision objects" << std::endl;
 }
@@ -204,11 +204,17 @@ void CEPhysicsWorld::setupWorldObjects(C2MapRscFile* mapRsc)
             // Create rigid bodies for each instance of this object
             const auto& transforms = model->getTransforms();
             int instanceIndex = 0;
-            std::cout << "Creating " << transforms.size() << " instances for object type " << i << " with " << objectMesh->getNumTriangles() << " triangles" << std::endl;
             
             for (const auto& transform : transforms) {
                 glm::vec3 position = *const_cast<Transform&>(transform).GetPos();
                 btRigidBody* objectBody = createStaticBody(objectShape, position);
+                
+                // Add collision filtering for objects
+                short objectGroup = 1 << 2;  // Object collision group
+                short objectMask = 1 << 0;   // Only collide with projectiles (group 0)
+                m_dynamicsWorld->removeRigidBody(objectBody);
+                m_dynamicsWorld->addRigidBody(objectBody, objectGroup, objectMask);
+                
                 m_objectBodies.push_back(objectBody);
                 
                 // Store object info for this instance
@@ -219,7 +225,6 @@ void CEPhysicsWorld::setupWorldObjects(C2MapRscFile* mapRsc)
                 objectInfo.objectName = "WorldObject_" + std::to_string(i) + "_Instance_" + std::to_string(instanceIndex);
                 m_objectInfoMap[objectBody] = objectInfo;
                 
-                std::cout << "  Instance " << instanceIndex << " at [" << position.x << ", " << position.y << ", " << position.z << "]" << std::endl;
                 instanceIndex++;
             }
             
@@ -253,13 +258,20 @@ void CEPhysicsWorld::setupWaterPlanes(C2MapFile* mapFile)
     float mapHeight = height * tileLength;
     
     // Create water plane at a reasonable water level (you can adjust this)
-    float estimatedWaterLevel = 50.0f; // Adjust based on your map's typical water level
+    float estimatedWaterLevel = 1000.0f; // Set higher to avoid interference with typical terrain heights
     
-    btBoxShape* waterShape = new btBoxShape(btVector3(mapWidth / 2, 0.5f, mapHeight / 2));
+    btBoxShape* waterShape = new btBoxShape(btVector3(mapWidth / 2, 2.0f, mapHeight / 2)); // Thicker water plane
     
     // Position water plane
     glm::vec3 waterPosition(mapWidth / 2, estimatedWaterLevel, mapHeight / 2);
     btRigidBody* waterBody = createStaticBody(waterShape, waterPosition);
+    
+    // Set collision filtering to prevent interference with raycast detection
+    // Use a specific collision group for water
+    short waterGroup = 1 << 1;  // Water collision group
+    short waterMask = 1 << 0;   // Only collide with projectiles (group 0)
+    m_dynamicsWorld->removeRigidBody(waterBody);
+    m_dynamicsWorld->addRigidBody(waterBody, waterGroup, waterMask);
     
     // Store object info for water plane
     CollisionObjectInfo waterInfo;
@@ -319,10 +331,10 @@ btRigidBody* CEPhysicsWorld::createProjectile(const glm::vec3& position, const g
 void CEPhysicsWorld::stepSimulation(float deltaTime)
 {
     if (m_dynamicsWorld) {
-        // Use smaller fixed time steps for high-speed projectiles
-        // This prevents tunneling and improves collision detection
-        float fixedTimeStep = 1.0f / 240.0f; // 240 Hz physics for precision
-        int maxSubSteps = 20; // Allow more substeps for accuracy
+        // Use reasonable time steps for good performance while maintaining accuracy
+        // Reduced from 240Hz to 60Hz for much better performance
+        float fixedTimeStep = 1.0f / 60.0f; // 60 Hz physics for good balance
+        int maxSubSteps = 4; // Reduced substeps for better performance
         
         m_dynamicsWorld->stepSimulation(deltaTime, maxSubSteps, fixedTimeStep);
     }

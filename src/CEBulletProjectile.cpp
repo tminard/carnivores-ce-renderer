@@ -14,6 +14,10 @@
 
 #include <GLFW/glfw3.h>
 #include <iostream>
+#include <unordered_map>
+
+// Forward declaration for impact event logging  
+extern void addImpactEvent(const glm::vec3& location, const std::string& surfaceType, float distance, float damage, const std::string& impactType);
 
 
 CEBulletProjectile::CEBulletProjectile(btDiscreteDynamicsWorld* world, 
@@ -56,20 +60,23 @@ CEBulletProjectile::CEBulletProjectile(btDiscreteDynamicsWorld* world,
     m_rigidBody->setRestitution(0.1f); // Low bounce
     m_rigidBody->setFriction(0.3f);
     
-    // Enable Continuous Collision Detection (CCD) to prevent tunneling
-    m_rigidBody->setCcdMotionThreshold(0.01f); // Very small threshold for high-speed objects
-    m_rigidBody->setCcdSweptSphereRadius(0.002f); // Half the bullet radius for swept sphere
+    // Enable Continuous Collision Detection (CCD) with more relaxed settings for performance
+    m_rigidBody->setCcdMotionThreshold(0.1f); // Less aggressive CCD for better performance
+    m_rigidBody->setCcdSweptSphereRadius(0.01f); // Larger swept sphere, less computation
     
     // Set user pointer for collision detection
     m_rigidBody->setUserPointer(this);
     
-    // Add to physics world
+    // Add to physics world with collision filtering
     if (world) {
-        world->addRigidBody(m_rigidBody);
+        // Use collision group 0 for projectiles
+        short projectileGroup = 1 << 0;  // Projectile collision group  
+        short projectileMask = (1 << 1); // Can collide with water (group 1) - objects disabled for performance
+        world->addRigidBody(m_rigidBody, projectileGroup, projectileMask);
         m_spawnTime = glfwGetTime(); // Set spawn time when added to world
     }
     
-    std::cout << "Bullet projectile created at [" << position.x << ", " << position.y << ", " << position.z << "]" << std::endl;
+    // Bullet projectile created and initialized
 }
 
 CEBulletProjectile::~CEBulletProjectile()
@@ -94,35 +101,16 @@ bool CEBulletProjectile::update(double currentTime, CEPhysicsWorld* physics)
     btVector3 velocity = m_rigidBody->getLinearVelocity();
     float speed = velocity.length();
     
-    // Debug: Log projectile state periodically
-    static double lastLogTime = 0;
-    if (currentTime - lastLogTime > 0.2) { // Log every 0.2 seconds for better tracking
-        std::cout << "📊 Projectile Status: Pos[" << currentPos.x << ", " << currentPos.y << ", " << currentPos.z 
-                  << "] Speed: " << speed << " m/s" << std::endl;
-        
-        // Check if projectile is below ground level (emergency fallback)
-        if (currentPos.y < 0) {
-            std::cout << "⚠️  Projectile below ground level! Y=" << currentPos.y << std::endl;
-        }
-        
-        lastLogTime = currentTime;
-    }
+    // Projectile status tracking handled internally
     
     // Check for collisions using contact manifolds
     if (!m_hasImpacted && checkForCollisions(physics)) {
-        std::cout << "🎯 PROJECTILE IMPACT DETECTED!" << std::endl;
-        std::cout << "   📍 Location: [" << m_impactPoint.x << ", " << m_impactPoint.y << ", " << m_impactPoint.z << "]" << std::endl;
-        std::cout << "   🎲 Surface: " << m_impactSurfaceType << std::endl;
-        std::cout << "   📏 Distance: " << m_impactDistance << "m" << std::endl;
-        std::cout << "   ⚡ Damage: " << m_damage << std::endl;
-        
+        // Log impact to GUI instead of console
+        addImpactEvent(m_impactPoint, m_impactSurfaceType, m_impactDistance, m_damage, "Collision Detection");
         return true; // Impact detected
     }
     
-    // Also check velocity-based fallback (for debugging)
-    if (speed < 0.1f) {
-        std::cout << "⚠️  Projectile velocity very low (" << speed << " m/s) but no collision detected" << std::endl;
-    }
+    // No need for velocity debugging output - handled in GUI
     
     return false; // No impact yet
 }
@@ -166,6 +154,8 @@ bool CEBulletProjectile::checkForCollisions(CEPhysicsWorld* physics)
     
     // Method 1: Check if this projectile has contacts via manifolds
     if (physics->hasContacts(m_rigidBody)) {
+        std::cout << "🚨 COLLISION Method 1: Contact manifold detected at position [" << currentPos.x << ", " << currentPos.y << ", " << currentPos.z << "]" << std::endl;
+        
         m_hasImpacted = true;
         m_checkedForContacts = true;
         m_impactPoint = currentPos;
@@ -201,11 +191,11 @@ bool CEBulletProjectile::checkForCollisions(CEPhysicsWorld* physics)
             m_impactSurfaceType = "terrain";
         }
         
-        std::cout << "💥 CONTACT MANIFOLD IMPACT DETECTED!" << std::endl;
+        // Contact manifold impact detected
         return true;
     }
     
-    // Method 2: Raycast fallback - check for collision in current movement path
+    // Method 2: Raycast ahead for water and object detection (with collision filtering)
     btVector3 velocity = m_rigidBody->getLinearVelocity();
     glm::vec3 velocityVec(velocity.getX(), velocity.getY(), velocity.getZ());
     
@@ -217,62 +207,136 @@ bool CEBulletProjectile::checkForCollisions(CEPhysicsWorld* physics)
         
         auto rayResult = physics->raycast(currentPos, rayEnd);
         if (rayResult.hasHit) {
-            m_hasImpacted = true;
-            m_checkedForContacts = true;
-            m_impactPoint = rayResult.hitPoint;
-            m_impactNormal = rayResult.hitNormal;
-            m_impactDistance = glm::distance(m_impactPoint, m_spawnPosition);
-            
-            // Use detailed object information
-            switch (rayResult.objectInfo.type) {
-                case CEPhysicsWorld::CollisionObjectType::TERRAIN:
-                    m_impactSurfaceType = "terrain";
-                    break;
-                case CEPhysicsWorld::CollisionObjectType::WORLD_OBJECT:
-                    m_impactSurfaceType = "object";
-                    break;
-                case CEPhysicsWorld::CollisionObjectType::WATER_PLANE:
-                    m_impactSurfaceType = "water";
-                    break;
-                default:
-                    m_impactSurfaceType = "unknown";
-                    break;
+            // Only register water collisions - terrain handled by Method 3, objects disabled for performance
+            if (rayResult.objectInfo.type == CEPhysicsWorld::CollisionObjectType::WATER_PLANE) {
+                std::cout << "🚨 COLLISION Method 2: Water detected at position [" << rayResult.hitPoint.x << ", " << rayResult.hitPoint.y << ", " << rayResult.hitPoint.z << "]" << std::endl;
+                
+                m_hasImpacted = true;
+                m_checkedForContacts = true;
+                m_impactPoint = rayResult.hitPoint;
+                m_impactNormal = rayResult.hitNormal;
+                m_impactDistance = glm::distance(m_impactPoint, m_spawnPosition);
+                m_impactSurfaceType = "water";
+                
+                return true;
             }
-            
-            std::cout << "💥 RAYCAST IMPACT DETECTED!" << std::endl;
-            std::cout << "   🎯 Target: " << rayResult.objectInfo.objectName << std::endl;
-            
-            // Add detailed target information
-            if (rayResult.objectInfo.type == CEPhysicsWorld::CollisionObjectType::TERRAIN) {
-                // Calculate terrain tile coordinates using actual tile size
-                float tileSize = physics->getMapFile() ? physics->getMapFile()->getTileLength() : 256.0f;
-                int tileX = static_cast<int>(m_impactPoint.x / tileSize);
-                int tileZ = static_cast<int>(m_impactPoint.z / tileSize);
-                std::cout << "   🗺️  Terrain Tile: [" << tileX << ", " << tileZ << "] (size: " << tileSize << ")" << std::endl;
-                std::cout << "   🏔️  Ground Height: " << m_impactPoint.y << std::endl;
-            } else if (rayResult.objectInfo.type == CEPhysicsWorld::CollisionObjectType::WORLD_OBJECT) {
-                std::cout << "   🏗️  Object Index: " << rayResult.objectInfo.objectIndex << std::endl;
-                std::cout << "   📦 Instance: " << rayResult.objectInfo.instanceIndex << std::endl;
-                std::cout << "   📍 Object Position: [" << m_impactPoint.x << ", " << m_impactPoint.y << ", " << m_impactPoint.z << "]" << std::endl;
-            } else if (rayResult.objectInfo.type == CEPhysicsWorld::CollisionObjectType::WATER_PLANE) {
-                std::cout << "   🌊 Water Level: " << m_impactPoint.y << std::endl;
-            }
-            
-            return true;
         }
     }
     
-    // Method 3: Emergency ground check - if projectile is clearly underground
-    if (currentPos.y < -100.0f) { // Well below any reasonable ground level
-        m_hasImpacted = true;
-        m_checkedForContacts = true;
-        m_impactPoint = currentPos;
-        m_impactNormal = glm::vec3(0, 1, 0);
-        m_impactDistance = glm::distance(m_impactPoint, m_spawnPosition);
-        m_impactSurfaceType = "terrain";
+    // Method 3: Efficient ground height check (replaces expensive terrain collision)
+    if (physics->getMapFile()) {
+        C2MapFile* mapFile = physics->getMapFile();
+        float tileSize = mapFile->getTileLength();
         
-        std::cout << "💥 EMERGENCY GROUND IMPACT DETECTED! (Y=" << currentPos.y << ")" << std::endl;
-        return true;
+        // Convert world coordinates to tile coordinates (same as getWorldPosition())
+        int tileX = (int)floorf(currentPos.x / tileSize);
+        int tileZ = (int)floorf(currentPos.z / tileSize);
+        
+        // Check if projectile is outside map bounds (in tile coordinates) - terminate it
+        if (tileX < 0 || tileX >= mapFile->getWidth() || 
+            tileZ < 0 || tileZ >= mapFile->getHeight()) {
+            m_hasImpacted = true;
+            m_checkedForContacts = true;
+            m_impactPoint = currentPos;
+            m_impactNormal = glm::vec3(0, 1, 0);
+            m_impactDistance = glm::distance(m_impactPoint, m_spawnPosition);
+            m_impactSurfaceType = "out-of-bounds";
+            
+            // Out of bounds - terminate projectile
+            return true;
+        }
+        
+        // Safe to check ground height now with tile coordinates
+        float groundHeight = mapFile->getPlaceGroundHeight(tileX, tileZ);
+        
+        // Debug: Check if this is the first height check for this projectile
+        static bool firstCheck = true;
+        if (firstCheck) {
+            std::cout << "🔍 First projectile height check:" << std::endl;
+            std::cout << "   Projectile Y: " << currentPos.y << std::endl;
+            std::cout << "   Ground Height: " << groundHeight << std::endl;
+            std::cout << "   Tile Size: " << tileSize << std::endl;
+            std::cout << "   Tile Coords: [" << tileX << ", " << tileZ << "]" << std::endl;
+            firstCheck = false;
+        }
+        
+        // Perform ray-terrain intersection for precise collision detection
+        // Get previous position to create a ray segment
+        static std::unordered_map<btRigidBody*, glm::vec3> previousPositions;
+        glm::vec3 prevPos = previousPositions.count(m_rigidBody) ? previousPositions[m_rigidBody] : m_spawnPosition;
+        previousPositions[m_rigidBody] = currentPos;
+        
+        // Perform ray-terrain intersection along the projectile path
+        glm::vec3 rayStart = prevPos;
+        glm::vec3 rayEnd = currentPos;
+        glm::vec3 rayDir = rayEnd - rayStart;
+        float rayLength = glm::length(rayDir);
+        
+        if (rayLength > 0.001f) { // Only check if projectile has moved
+            rayDir = glm::normalize(rayDir);
+            
+            // Step along the ray checking for terrain intersection
+            int steps = std::max(1, (int)(rayLength / 10.0f)); // Check every 10 units
+            for (int i = 0; i <= steps; i++) {
+                float t = (float)i / (float)steps;
+                glm::vec3 testPos = rayStart + rayDir * (rayLength * t);
+                
+                // Get terrain height at test position
+                int testTileX = (int)floorf(testPos.x / tileSize);
+                int testTileZ = (int)floorf(testPos.z / tileSize);
+                
+                // Check bounds
+                if (testTileX < 0 || testTileX >= mapFile->getWidth() || 
+                    testTileZ < 0 || testTileZ >= mapFile->getHeight()) {
+                    continue;
+                }
+                
+                float testGroundHeight = mapFile->getPlaceGroundHeight(testTileX, testTileZ);
+                
+                // Bilinear interpolation for accurate terrain height
+                float fracX = (testPos.x / tileSize) - testTileX;
+                float fracZ = (testPos.z / tileSize) - testTileZ;
+                
+                if (testTileX < mapFile->getWidth() - 1 && testTileZ < mapFile->getHeight() - 1) {
+                    float h00 = testGroundHeight;
+                    float h10 = mapFile->getPlaceGroundHeight(testTileX + 1, testTileZ);
+                    float h01 = mapFile->getPlaceGroundHeight(testTileX, testTileZ + 1);
+                    float h11 = mapFile->getPlaceGroundHeight(testTileX + 1, testTileZ + 1);
+                    
+                    float h0 = h00 * (1.0f - fracX) + h10 * fracX;
+                    float h1 = h01 * (1.0f - fracX) + h11 * fracX;
+                    testGroundHeight = h0 * (1.0f - fracZ) + h1 * fracZ;
+                }
+                
+                // Check if ray intersects terrain
+                if (testPos.y <= testGroundHeight) {
+                    std::cout << "🚨 COLLISION Method 3: Ray-terrain intersection at [" << testPos.x << ", " << testGroundHeight << ", " << testPos.z << "]" << std::endl;
+                    
+                    m_hasImpacted = true;
+                    m_checkedForContacts = true;
+                    m_impactPoint = glm::vec3(testPos.x, testGroundHeight, testPos.z);
+                    
+                    // Calculate surface normal
+                    float normalX = 0.0f, normalZ = 0.0f;
+                    if (testTileX > 0 && testTileX < mapFile->getWidth() - 1) {
+                        float heightLeft = mapFile->getPlaceGroundHeight(testTileX - 1, testTileZ);
+                        float heightRight = mapFile->getPlaceGroundHeight(testTileX + 1, testTileZ);
+                        normalX = (heightLeft - heightRight) / (2.0f * tileSize);
+                    }
+                    if (testTileZ > 0 && testTileZ < mapFile->getHeight() - 1) {
+                        float heightForward = mapFile->getPlaceGroundHeight(testTileX, testTileZ - 1);
+                        float heightBackward = mapFile->getPlaceGroundHeight(testTileX, testTileZ + 1);
+                        normalZ = (heightForward - heightBackward) / (2.0f * tileSize);
+                    }
+                    
+                    m_impactNormal = glm::normalize(glm::vec3(normalX, 1.0f, normalZ));
+                    m_impactDistance = glm::distance(m_impactPoint, m_spawnPosition);
+                    m_impactSurfaceType = "terrain";
+                    
+                    return true;
+                }
+            }
+        }
     }
     
     return false;

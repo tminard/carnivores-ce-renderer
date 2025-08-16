@@ -17,6 +17,9 @@
 #include <iostream>
 #include <algorithm>
 
+// Forward declaration for impact event logging  
+extern void addImpactEvent(const glm::vec3& location, const std::string& surfaceType, float distance, float damage, const std::string& impactType);
+
 using libAF2::Sound;
 
 CEBulletProjectileManager::CEBulletProjectileManager(C2MapFile* map, C2MapRscFile* mapRsc, LocalAudioManager* audioManager)
@@ -25,7 +28,7 @@ CEBulletProjectileManager::CEBulletProjectileManager(C2MapFile* map, C2MapRscFil
     // Initialize physics world with terrain, objects, and water
     m_physicsWorld = std::make_unique<CEPhysicsWorld>(map, mapRsc);
     
-    std::cout << "Bullet Physics projectile system initialized" << std::endl;
+    // Bullet Physics projectile system initialized
 }
 
 CEBulletProjectileManager::~CEBulletProjectileManager()
@@ -42,9 +45,7 @@ CEBulletProjectileManager::~CEBulletProjectileManager()
 void CEBulletProjectileManager::spawnProjectile(const glm::vec3& origin, const glm::vec3& direction, 
                                                float muzzleVelocity, float damage, const std::string& type)
 {
-    std::cout << "Spawning ballistic projectile from: [" << origin.x << ", " << origin.y << ", " << origin.z << "]" << std::endl;
-    std::cout << "Direction: [" << direction.x << ", " << direction.y << ", " << direction.z << "]" << std::endl;
-    std::cout << "Muzzle velocity: " << muzzleVelocity << " m/s" << std::endl;
+    // Spawning ballistic projectile
     
     // Calculate initial velocity vector
     glm::vec3 velocity = glm::normalize(direction) * muzzleVelocity;
@@ -59,7 +60,7 @@ void CEBulletProjectileManager::spawnProjectile(const glm::vec3& origin, const g
     
     m_activeProjectiles.push_back(std::move(projectile));
     
-    std::cout << "Active projectiles: " << m_activeProjectiles.size() << std::endl;
+    // Active projectiles count available via getActiveProjectileCount()
 }
 
 void CEBulletProjectileManager::update(double currentTime, double deltaTime)
@@ -101,16 +102,8 @@ void CEBulletProjectileManager::handleImpact(const CEBulletProjectile& projectil
     float distance = projectile.getImpactDistance();
     float damage = projectile.getDamage();
     
-    std::cout << std::endl;
-    std::cout << "═══════════════════════════════════════" << std::endl;
-    std::cout << "🎯 BULLET IMPACT REPORT" << std::endl;
-    std::cout << "═══════════════════════════════════════" << std::endl;
-    std::cout << "📍 Impact Location: [" << hitPoint.x << ", " << hitPoint.y << ", " << hitPoint.z << "]" << std::endl;
-    std::cout << "🎲 Surface Hit: " << surfaceType << std::endl;
-    std::cout << "📏 Travel Distance: " << distance << " meters" << std::endl;
-    std::cout << "⚡ Damage Dealt: " << damage << " HP" << std::endl;
-    std::cout << "═══════════════════════════════════════" << std::endl;
-    std::cout << std::endl;
+    // Log impact to GUI instead of console
+    addImpactEvent(hitPoint, surfaceType, distance, damage, "Bullet Impact");
     
     // Play impact audio with correct surface type
     playImpactAudio(hitPoint, surfaceType);
@@ -125,8 +118,7 @@ void CEBulletProjectileManager::playImpactAudio(const glm::vec3& position, const
         return;
     }
     
-    // For now, just log that audio would play
-    std::cout << "🔊 Impact Audio: " << surfaceType << " surface impact sound" << std::endl;
+    // Audio is handled internally - no need for debug output
     
     // TODO: Load dedicated impact sound files and play them
     // auto impactSound = std::make_shared<Sound>("path/to/impact.wav");

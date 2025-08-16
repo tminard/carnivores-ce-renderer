@@ -9,11 +9,20 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/transform.hpp>
+#include <glm/common.hpp>
 
 #include <iostream>
 #include <fstream>
 #include <filesystem>
 #include <iomanip>
+#include <algorithm>
+#include <cmath>
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 #include "C2CarFile.h"
 #include "C2CarFilePreloader.h"
@@ -56,6 +65,8 @@
 #include "CEShadowManager.h"
 #include "CEUIRenderer.h"
 #include "CEBulletProjectileManager.h"
+#include "CESimpleGeometry.h"
+#include "vertex.h"
 
 // ImGui includes
 #include "imgui.h"
@@ -72,6 +83,178 @@ struct ConfigSpawn {
   std::vector<int> position;
   std::string aiControllerName;
 };
+
+struct ImpactEvent {
+  glm::vec3 location;
+  std::string surfaceType;
+  float distance;
+  float damage;
+  double timestamp;
+  std::string impactType; // "Contact Manifold", "Raycast", "Ground", etc.
+};
+
+struct VisualImpactMarker {
+  glm::vec3 position;
+  glm::vec3 color;  // Different colors for different impact types
+  double spawnTime;
+  std::string surfaceType;
+  float scale;
+};
+
+// Sphere generation utility for impact markers
+std::vector<Vertex> generateSphere(float radius, int segments) {
+  std::vector<Vertex> vertices;
+  
+  for (int i = 0; i <= segments; i++) {
+    float phi = M_PI * i / segments;
+    for (int j = 0; j <= segments; j++) {
+      float theta = 2.0f * M_PI * j / segments;
+      
+      float x = radius * sin(phi) * cos(theta);
+      float y = radius * cos(phi);
+      float z = radius * sin(phi) * sin(theta);
+      
+      float u = (float)j / segments;
+      float v = (float)i / segments;
+      
+      Vertex vertex(glm::vec3(x, y, z), glm::vec2(u, v), glm::vec3(x, y, z), false, 1.0f, 0, 0); // position, UV, normal, hidden, alpha, owner, flags
+      vertices.push_back(vertex);
+    }
+  }
+  
+  return vertices;
+}
+
+// Global impact tracking
+std::vector<ImpactEvent> recentImpacts;
+std::vector<VisualImpactMarker> visualImpactMarkers;
+const size_t MAX_IMPACT_HISTORY = 10;
+const double IMPACT_MARKER_LIFETIME = 10.0; // Show markers for 10 seconds
+
+// Impact marker rendering resources
+std::unique_ptr<CESimpleGeometry> impactMarkerGeometry;
+std::vector<glm::mat4> impactMarkerTransforms;
+std::vector<glm::vec3> impactMarkerColors;
+
+// Update impact markers: clean up old ones and prepare transforms for rendering
+void updateImpactMarkers(double currentTime) {
+  // Remove expired markers
+  size_t beforeCount = visualImpactMarkers.size();
+  visualImpactMarkers.erase(
+    std::remove_if(visualImpactMarkers.begin(), visualImpactMarkers.end(),
+      [currentTime](const VisualImpactMarker& marker) {
+        return (currentTime - marker.spawnTime) > IMPACT_MARKER_LIFETIME;
+      }), 
+    visualImpactMarkers.end());
+  
+  // Debug: Log marker count changes
+  if (beforeCount != visualImpactMarkers.size()) {
+    std::cout << "🗑️ Cleaned up markers: " << beforeCount << " -> " << visualImpactMarkers.size() << std::endl;
+  }
+  
+  // Clear previous frame data
+  impactMarkerTransforms.clear();
+  impactMarkerColors.clear();
+  
+  // Build transforms and colors for each active marker
+  for (const auto& marker : visualImpactMarkers) {
+    // Create transform matrix: scale by marker size and translate to position
+    glm::mat4 transform = glm::mat4(1.0f);
+    transform = glm::translate(transform, marker.position);
+    
+    // Fade out markers as they age for better visual effect
+    double age = currentTime - marker.spawnTime;
+    float fadeAlpha = 1.0f - (float)(age / IMPACT_MARKER_LIFETIME);
+    fadeAlpha = glm::clamp(fadeAlpha, 0.0f, 1.0f);
+    
+    // Scale marker based on age - start small and grow, then fade
+    float ageScale = std::min(1.0f, (float)(age * 2.0)); // Grow quickly in first 0.5 seconds
+    transform = glm::scale(transform, glm::vec3(marker.scale * ageScale));
+    
+    impactMarkerTransforms.push_back(transform);
+    
+    // Store color with fade alpha
+    glm::vec3 fadedColor = marker.color * fadeAlpha;
+    impactMarkerColors.push_back(fadedColor);
+  }
+  
+  // Debug: Report transform count
+  if (!impactMarkerTransforms.empty()) {
+    std::cout << "🎯 Built " << impactMarkerTransforms.size() << " marker transforms for rendering" << std::endl;
+  }
+}
+
+// Debug UI control
+bool showDebugUI = false; // Set to false to disable all ImGui panels for maximum performance
+
+// Forward declaration for external use
+extern void addImpactEvent(const glm::vec3& location, const std::string& surfaceType, float distance, float damage, const std::string& impactType);
+
+void addImpactEvent(const glm::vec3& location, const std::string& surfaceType, float distance, float damage, const std::string& impactType) {
+  ImpactEvent event;
+  event.location = location;
+  event.surfaceType = surfaceType;
+  event.distance = distance;
+  event.damage = damage;
+  event.timestamp = glfwGetTime();
+  event.impactType = impactType;
+  
+  recentImpacts.insert(recentImpacts.begin(), event);
+  if (recentImpacts.size() > MAX_IMPACT_HISTORY) {
+    recentImpacts.resize(MAX_IMPACT_HISTORY);
+  }
+  
+  // Create visual impact marker
+  VisualImpactMarker marker;
+  marker.position = location;
+  marker.spawnTime = glfwGetTime();
+  marker.surfaceType = surfaceType;
+  marker.scale = 50.0f; // Large spheres to make them very visible
+  
+  // Color code by surface type for easy identification
+  if (surfaceType == "terrain") {
+    marker.color = glm::vec3(0.8f, 0.6f, 0.2f); // Brown/orange for terrain
+  } else if (surfaceType == "water") {
+    marker.color = glm::vec3(0.2f, 0.6f, 1.0f); // Blue for water
+  } else if (surfaceType == "object") {
+    marker.color = glm::vec3(1.0f, 0.2f, 0.2f); // Red for objects
+  } else if (surfaceType == "out-of-bounds") {
+    marker.color = glm::vec3(1.0f, 0.0f, 1.0f); // Magenta for out-of-bounds
+  } else {
+    marker.color = glm::vec3(1.0f, 1.0f, 0.0f); // Yellow for unknown
+  }
+  
+  visualImpactMarkers.push_back(marker);
+  
+  std::cout << "📍 Created visual marker at [" << location.x << ", " << location.y << ", " << location.z << "] - " << surfaceType << " (Total: " << visualImpactMarkers.size() << ")" << std::endl;
+}
+
+void updateAndRenderImpactMarkers(double currentTime) {
+  // Remove expired markers
+  visualImpactMarkers.erase(
+    std::remove_if(visualImpactMarkers.begin(), visualImpactMarkers.end(),
+      [currentTime](const VisualImpactMarker& marker) {
+        return (currentTime - marker.spawnTime) > IMPACT_MARKER_LIFETIME;
+      }),
+    visualImpactMarkers.end()
+  );
+  
+  // For now, just print marker info to console (we'll add 3D rendering later)
+  static double lastDebugTime = 0;
+  if (currentTime - lastDebugTime > 2.0) { // Print every 2 seconds
+    if (!visualImpactMarkers.empty()) {
+      std::cout << "Active impact markers: " << visualImpactMarkers.size() << std::endl;
+      for (const auto& marker : visualImpactMarkers) {
+        double age = currentTime - marker.spawnTime;
+        std::cout << "  " << marker.surfaceType << " at (" 
+                  << std::fixed << std::setprecision(1)
+                  << marker.position.x << ", " << marker.position.y << ", " << marker.position.z 
+                  << ") age: " << age << "s" << std::endl;
+      }
+    }
+    lastDebugTime = currentTime;
+  }
+}
 
 std::unique_ptr<LocalInputManager> input_manager(new LocalInputManager());
 
@@ -137,10 +320,10 @@ int main(int argc, const char * argv[])
 {
   std::ifstream f("config.json");
   if (!f.is_open()) {
-      std::cerr << "Unable to open config.json!" << std::endl;
-      return 1;
+    std::cerr << "Unable to open config.json!" << std::endl;
+    return 1;
   }
-
+  
   json data = json::parse(f);
   std::vector<ConfigSpawn> spawns;
   
@@ -149,7 +332,7 @@ int main(int argc, const char * argv[])
   fs::path basePath = fs::path(data["basePath"].get<std::string>());
   fs::path mapRscPath = constructPath(basePath, data["map"]["rsc"]);
   fs::path mapPath = constructPath(basePath, data["map"]["map"]);
-
+  
   if (data.contains("spawns")) {
     for (const auto& spawnJson : data["spawns"]) {
       ConfigSpawn spawn;
@@ -166,13 +349,13 @@ int main(int argc, const char * argv[])
       spawns.push_back(spawn);
     }
   }
-
+  
   if (data.contains("video") && data["video"].is_object()) {
     if (data["video"].contains("fullscreen") && data["video"]["fullscreen"].is_boolean()) {
       fullscreen = data["video"]["fullscreen"];
     }
   }
-
+  
   // Parse UI configuration
   std::string compassPath;
   if (data.contains("ui") && data["ui"].is_object()) {
@@ -267,13 +450,13 @@ int main(int argc, const char * argv[])
   
   std::shared_ptr<C2MapRscFile> cMapRsc;
   std::shared_ptr<C2MapFile> cMap;
-
+  
   try {
-      cMapRsc = std::make_shared<C2MapRscFile>(mapType, mapRscPath.string(), basePath.string());
-      cMap = std::make_shared<C2MapFile>(mapType, mapPath.string(), cMapRsc);
+    cMapRsc = std::make_shared<C2MapRscFile>(mapType, mapRscPath.string(), basePath.string());
+    cMap = std::make_shared<C2MapFile>(mapType, mapPath.string(), cMapRsc);
   } catch (const std::exception& e) {
-      std::cerr << "Error loading map files: " << e.what() << std::endl;
-      return 1;
+    std::cerr << "Error loading map files: " << e.what() << std::endl;
+    return 1;
   }
   alDistanceModel(AL_LINEAR_DISTANCE);
   
@@ -292,10 +475,10 @@ int main(int argc, const char * argv[])
   dieAudioSrc->setGain(2.0f);
   dieAudioSrc->setClampDistance(256*6);
   dieAudioSrc->setMaxDistance(256*80);
-
+  
   // shared loader to minimize resource usage
   std::unique_ptr<C2CarFilePreloader> cFileLoad(new C2CarFilePreloader);
-
+  
   std::vector<std::shared_ptr<CERemotePlayerController>> characters = {};
   std::vector<std::unique_ptr<CEAIGenericAmbientManager>> ambients = {};
   
@@ -311,13 +494,13 @@ int main(int argc, const char * argv[])
                                                                   );
       float spawnHeight = cMap->getPlaceGroundHeight(spawn.position[0], spawn.position[1]);
       glm::vec3 spawnPos = glm::vec3(
-          (spawn.position[0] * cMap->getTileLength()) + (cMap->getTileLength() / 2),
-          spawnHeight - 12.f,
-          (spawn.position[1] * cMap->getTileLength()) + (cMap->getTileLength() / 2)
-      );
-
+                                     (spawn.position[0] * cMap->getTileLength()) + (cMap->getTileLength() / 2),
+                                     spawnHeight - 12.f,
+                                     (spawn.position[1] * cMap->getTileLength()) + (cMap->getTileLength() / 2)
+                                     );
+      
       character->setPosition(spawnPos);
-
+      
       if (spawn.aiControllerName == "GenericAmbient") {
         auto aiArgs = spawn.data["attachAI"]["args"];
         auto ambientMg = std::make_unique<CEAIGenericAmbientManager>(
@@ -356,8 +539,8 @@ int main(int argc, const char * argv[])
   
   glfwMakeContextCurrent(window);
   if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-      std::cerr << "Failed to initialize GLAD" << std::endl;
-      return -1;
+    std::cerr << "Failed to initialize GLAD" << std::endl;
+    return -1;
   }
   
   // Setup Dear ImGui context
@@ -379,7 +562,17 @@ int main(int argc, const char * argv[])
   shadowManager->initialize();
   
   // Initialize Bullet Physics projectile manager
-  projectileManager = std::make_unique<CEBulletProjectileManager>(cMap.get(), cMapRsc.get(), g_audio_manager.get());
+  projectileManager = std::make_unique<CEBulletProjectileManager>(cMap.get(), cMapRsc.get(), g_audio_manager.get()); // Re-enabled with performance optimizations
+  
+  // Initialize impact marker geometry (small sphere for collision visualization)
+  std::vector<Vertex> sphereVertices = generateSphere(1.0f, 8); // Small sphere, low detail for performance
+  
+  // Create a simple white texture for markers (16x16 white pixels)
+  const int markerTexSize = 16;
+  std::vector<uint16_t> whiteTextureData(markerTexSize * markerTexSize, 0xFFFF); // All white pixels
+  std::unique_ptr<CETexture> markerTexture = std::make_unique<CETexture>(whiteTextureData, markerTexSize * markerTexSize * 2, markerTexSize, markerTexSize);
+  
+  impactMarkerGeometry = std::make_unique<CESimpleGeometry>(sphereVertices, std::move(markerTexture));
   
   // Set light direction to be extremely vertical (like sun directly overhead)
   // Almost perfectly straight down
@@ -412,7 +605,7 @@ int main(int argc, const char * argv[])
   
   glm::vec2 current_world_pos = g_player_controller->getWorldPosition();
   int current_ambient_id = 0;
-
+  
   // Load compass if specified
   std::shared_ptr<C2CarFile> compass;
   if (!compassPath.empty()) {
@@ -423,7 +616,7 @@ int main(int argc, const char * argv[])
       std::cerr << "Failed to load compass: " << e.what() << std::endl;
     }
   }
-
+  
   // Load primary weapon if specified
   std::shared_ptr<C2CarFile> primaryWeapon;
   if (!primaryWeaponPath.empty()) {
@@ -434,7 +627,7 @@ int main(int argc, const char * argv[])
       std::cerr << "Failed to load primary weapon: " << e.what() << std::endl;
     }
   }
-
+  
   // Initialize UI renderer
   std::unique_ptr<CEUIRenderer> uiRenderer;
   if (compass || primaryWeapon) {
@@ -444,14 +637,14 @@ int main(int argc, const char * argv[])
     if (primaryWeapon) {
       uiRenderer->configureWeaponAnimations(weaponDrawAnimation, weaponHolsterAnimation, weaponFireAnimation, weaponReloadAnimation);
       uiRenderer->setAudioManager(g_audio_manager.get());
-      uiRenderer->setProjectileManager(projectileManager.get());
+      uiRenderer->setProjectileManager(projectileManager.get()); // Re-enabled with performance optimizations
       uiRenderer->setGameCamera(g_player_controller->getCamera());
       uiRenderer->configureProjectiles(muzzleVelocity, muzzleOffset, projectileDamage);
     }
     
     std::cout << "UI renderer initialized" << std::endl;
   }
-
+  
   // Bind UI renderer to input manager if we have it
   if (uiRenderer) {
     input_manager->BindUIRenderer(uiRenderer.get());
@@ -510,11 +703,14 @@ int main(int argc, const char * argv[])
     input_manager->ProcessLocalInput(window, timeDelta);
     g_player_controller->update(timeDelta, currentTime);
     
-    // Update projectile physics simulation
+    // Update projectile physics simulation (Re-enabled with performance optimizations)
     if (projectileManager) {
       projectileManager->update(currentTime, timeDelta);
     }
-
+    
+    // Update visual impact markers
+    updateImpactMarkers(currentTime);
+    
     Camera* camera = g_player_controller->getCamera();
     
     // Generate shadows around player position (only when player moves significantly)
@@ -526,10 +722,10 @@ int main(int argc, const char * argv[])
     
     // Create scene center around player position
     glm::vec3 sceneCenter(
-      playerPos.x,  // Use actual player X coordinate
-      playerGroundHeight,  // Ground height at player location
-      playerPos.z   // Use actual player Z coordinate  
-    );
+                          playerPos.x,  // Use actual player X coordinate
+                          playerGroundHeight,  // Ground height at player location
+                          playerPos.z   // Use actual player Z coordinate
+                          );
     
     // Only regenerate shadows if player moved significantly or first time
     float distanceFromLastShadow = glm::distance(sceneCenter, lastShadowCenter);
@@ -559,7 +755,7 @@ int main(int argc, const char * argv[])
     for (const auto& ambient : ambients) {
       if (ambient) {
         ambient->Process(currentTime);
-
+        
         // TODO: totally change this for multi-player?
         // For now, it's only enabled if you spawn GenericAmbients, but we'd probably want to update it to track all "players" or entities.
         if (ambient->IsDangerous()) {
@@ -587,7 +783,7 @@ int main(int argc, const char * argv[])
             ambient->ReportNotableEvent(currentPosition, "PLAYER_ELIMINATED", currentTime);
           }
         }
-
+        
         if (ambient->NoticesLocalPlayer(g_player_controller)) {
           if (g_player_controller->isAlive(currentTime)) {
             ambient->ReportNotableEvent(currentPosition, "PLAYER_SPOTTED", currentTime);
@@ -595,26 +791,37 @@ int main(int argc, const char * argv[])
         }
       }
     }
-
+    
     // Clear color, depth, and stencil buffers at the beginning of each frame
     // Check framebuffer status before clearing
     GLenum framebufferStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (framebufferStatus != GL_FRAMEBUFFER_COMPLETE) {
-        std::cerr << "Framebuffer not complete before clear: " << framebufferStatus << std::endl;
+      std::cerr << "Framebuffer not complete before clear: " << framebufferStatus << std::endl;
     }
     
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     checkGLError("After glClear");
-
+    
     // Start the Dear ImGui frame
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
-
+    
+    // Toggle debug UI with F1 key
+    static bool f1Pressed = false;
+    if (glfwGetKey(window, GLFW_KEY_F1) == GLFW_PRESS) {
+      if (!f1Pressed) {
+        showDebugUI = !showDebugUI;
+        f1Pressed = true;
+      }
+    } else {
+      f1Pressed = false;
+    }
+    
     glm::vec2 currentWorldPos = g_player_controller->getWorldPosition();
     glm::vec2 next_world_pos = g_player_controller->getWorldPosition();
     bool outOfBounds = next_world_pos.x < 0 || next_world_pos.x > cMap->getWidth() || next_world_pos.y < 0 || next_world_pos.y > cMap->getHeight();
-
+    
     if (next_world_pos != current_world_pos) {
       if (!outOfBounds) {
         int next_ambient_id = cMap->getAmbientAudioIDAt((int)next_world_pos.x, (int)next_world_pos.y);
@@ -628,7 +835,7 @@ int main(int argc, const char * argv[])
       
       current_world_pos = next_world_pos;
     }
-
+    
     // Handle random audio.
     int currentAmbientArea = cMap->getAmbientAudioIDAt((int)currentWorldPos.x, (int)currentWorldPos.y);
     
@@ -644,7 +851,7 @@ int main(int argc, const char * argv[])
         g_audio_manager->play(std::move(m_random_ambient));
       }
     }
-
+    
     // Render the terrain
     terrain->Update(g_terrain_transform, *camera);
     
@@ -677,7 +884,7 @@ int main(int argc, const char * argv[])
       glDisable(GL_CULL_FACE);
       
       glEnable(GL_DEPTH_TEST);
-
+      
       terrain->RenderObjectsWithShadows(*camera, shadowManager.get());
       
       glEnable(GL_CULL_FACE);
@@ -695,7 +902,41 @@ int main(int argc, const char * argv[])
           character->Render();
         }
       }
-
+      
+      glEnable(GL_CULL_FACE);
+    }
+    
+    // Render impact markers (always on for debugging)
+    if (impactMarkerGeometry && !impactMarkerTransforms.empty()) {
+      glDepthFunc(GL_LESS);
+      glDisable(GL_CULL_FACE);
+      glEnable(GL_DEPTH_TEST);
+      
+      // Get shader and enable custom coloring for impact markers
+      auto shader = impactMarkerGeometry->getShader();
+      if (shader) {
+        shader->use();
+        shader->setBool("useCustomColor", true);
+        
+        // For now, use a single color for all markers. 
+        // TODO: Implement per-instance coloring
+        if (!impactMarkerColors.empty()) {
+          shader->setVec3("customColor", impactMarkerColors[0]);
+        } else {
+          shader->setVec3("customColor", glm::vec3(1.0f, 0.0f, 1.0f)); // Magenta fallback
+        }
+      }
+      
+      // Update instanced transforms for markers
+      impactMarkerGeometry->UpdateInstances(impactMarkerTransforms);
+      impactMarkerGeometry->Update(*camera);
+      impactMarkerGeometry->DrawInstances();
+      
+      // Reset custom color flag to not affect other objects
+      if (shader) {
+        shader->setBool("useCustomColor", false);
+      }
+      
       glEnable(GL_CULL_FACE);
     }
     
@@ -713,7 +954,7 @@ int main(int argc, const char * argv[])
       
       glEnable(GL_CULL_FACE);
     }
-
+    
     // Render UI elements (compass, weapon, etc.)
     if (uiRenderer) {
       Camera* camera = g_player_controller->getCamera();
@@ -727,69 +968,129 @@ int main(int argc, const char * argv[])
       if (primaryWeapon) {
         uiRenderer->renderWeapon(primaryWeapon.get(), currentTime);
       }
+    } // End uiRenderer
       
-      // Create ImGui FPS display window in upper-left corner as requested
-      {
-        ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
-        ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Always);
-        ImGui::SetNextWindowBgAlpha(0.35f); // Transparent background
+    // Only show debug UI if enabled
+    if (showDebugUI) {
+        // Create ImGui FPS display window in upper-left corner as requested (update less frequently)
+        static double lastFpsUpdate = 0;
+        static int cachedFps = 0;
+        static double cachedAvgFrameTime = 0;
+        static float cachedPerfPercent = 0;
         
-        if (ImGui::Begin("Performance Monitor", nullptr, window_flags)) {
-          double avgFrameTime = fps > 0 ? 1000.0 / fps : 0.0;
-          float perfPercent = fps > 0 ? (100.0f * fps / FPS) : 0.0f;
-          
-          // Color-coded FPS display
-          if (fps >= FPS * 0.8f) {
-            ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "FPS: %d", fps);
-          } else if (fps >= FPS * 0.6f) {
-            ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "FPS: %d", fps);
-          } else {
-            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "FPS: %d", fps);
-          }
-          
-          ImGui::Text("Frame Time: %.1f ms", avgFrameTime);
-          ImGui::Text("Performance: %.0f%% of target", perfPercent);
+        if (currentTime - lastFpsUpdate > 0.5) { // Update every 0.5 seconds instead of every frame
+          cachedFps = fps;
+          cachedAvgFrameTime = fps > 0 ? 1000.0 / fps : 0.0;
+          cachedPerfPercent = fps > 0 ? (100.0f * fps / FPS) : 0.0f;
+          lastFpsUpdate = currentTime;
         }
-        ImGui::End();
-      }
-      
-      // Add collision debug panel
-      {
-        ImGuiWindowFlags debug_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
-        ImGui::SetNextWindowPos(ImVec2(10, 80), ImGuiCond_Always);
-        ImGui::SetNextWindowBgAlpha(0.35f);
         
-        if (ImGui::Begin("Collision Debug", nullptr, debug_flags)) {
-          glm::vec3 playerPos = g_player_controller->getPosition();
-          ImGui::Text("Player Pos: %.1f, %.1f, %.1f", playerPos.x, playerPos.y, playerPos.z);
+        {
+          ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
+          ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Always);
+          ImGui::SetNextWindowBgAlpha(0.35f); // Transparent background
           
-          glm::vec2 worldPos = g_player_controller->getWorldPosition();
-          ImGui::Text("World Pos: %.1f, %.1f", worldPos.x, worldPos.y);
-          
+          if (ImGui::Begin("Performance Monitor", nullptr, window_flags)) {
+            // Color-coded FPS display (using cached values)
+            if (cachedFps >= FPS * 0.8f) {
+              ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "FPS: %d", cachedFps);
+            } else if (cachedFps >= FPS * 0.6f) {
+              ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "FPS: %d", cachedFps);
+            } else {
+              ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "FPS: %d", cachedFps);
+            }
+            
+            ImGui::Text("Frame Time: %.1f ms", cachedAvgFrameTime);
+            ImGui::Text("Performance: %.0f%% of target", cachedPerfPercent);
+          }
+          ImGui::End();
+        }
+        
+        // Add collision debug panel (update less frequently)
+        static double lastCollisionUpdate = 0;
+        static glm::vec3 cachedPlayerPos;
+        static glm::vec2 cachedWorldPos;
+        static int cachedActiveProjectiles = 0;
+        
+        if (currentTime - lastCollisionUpdate > 0.1) { // Update every 0.1 seconds instead of every frame
+          cachedPlayerPos = g_player_controller->getPosition();
+          cachedWorldPos = g_player_controller->getWorldPosition();
           if (projectileManager) {
-            int activeProjectiles = projectileManager->getActiveProjectileCount();
-            ImGui::Text("Active Projectiles: %d", activeProjectiles);
+            cachedActiveProjectiles = projectileManager->getActiveProjectileCount();
           }
+          lastCollisionUpdate = currentTime;
         }
-        ImGui::End();
-      }
-    }
+        
+        {
+          ImGuiWindowFlags debug_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
+          ImGui::SetNextWindowPos(ImVec2(10, 80), ImGuiCond_Always);
+          ImGui::SetNextWindowBgAlpha(0.35f);
+          
+          if (ImGui::Begin("Collision Debug", nullptr, debug_flags)) {
+            ImGui::Text("Player Pos: %.1f, %.1f, %.1f", cachedPlayerPos.x, cachedPlayerPos.y, cachedPlayerPos.z);
+            ImGui::Text("World Pos: %.1f, %.1f", cachedWorldPos.x, cachedWorldPos.y);
+            ImGui::Text("Active Projectiles: %d", cachedActiveProjectiles);
+            ImGui::Text("Impact Markers: %zu", visualImpactMarkers.size());
+          }
+          ImGui::End();
+        }
+        
+        // Add impact history panel (simplified and less frequent updates)
+        static double lastImpactUpdate = 0;
+        static bool hasRecentImpacts = false;
+        static size_t cachedImpactCount = 0;
+        
+        // Only update impact display every 0.2 seconds to reduce performance impact
+        if (currentTime - lastImpactUpdate > 0.2) {
+          hasRecentImpacts = !recentImpacts.empty();
+          cachedImpactCount = recentImpacts.size();
+          lastImpactUpdate = currentTime;
+        }
+        
+        {
+          ImGuiWindowFlags impact_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
+          ImGui::SetNextWindowPos(ImVec2(10, 140), ImGuiCond_Always);
+          ImGui::SetNextWindowBgAlpha(0.35f);
+          
+          if (ImGui::Begin("Impact History", nullptr, impact_flags)) {
+            if (!hasRecentImpacts) {
+              ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "No impacts recorded");
+            } else {
+              ImGui::Text("Recent Impacts: %zu", cachedImpactCount);
+              ImGui::Separator();
+              
+              // Show only the most recent impact to reduce performance cost
+              if (!recentImpacts.empty()) {
+                const auto& impact = recentImpacts[0];
+                double age = currentTime - impact.timestamp;
+                
+                // Simplified display without emojis to improve performance
+                ImGui::Text("Latest: %s Impact", impact.impactType.c_str());
+                ImGui::Text("Location: [%.1f, %.1f, %.1f]", impact.location.x, impact.location.y, impact.location.z);
+                ImGui::Text("Surface: %s (%.1fm, %.0fdmg)", impact.surfaceType.c_str(), impact.distance, impact.damage);
+                ImGui::Text("Age: %.1fs ago", age);
+              }
+            }
+          }
+          ImGui::End();
+      } // End showDebugUI
+    } // End UI rendering
     
-    // Render ImGui
+    // Always render ImGui (even if no UI is shown) to maintain frame consistency
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     
     glfwSwapBuffers(window);
     glfwPollEvents();
-
+    
     CalculateFrameRate();
     
     auto frameEnd = std::chrono::high_resolution_clock::now();
     std::chrono::duration<float, std::milli> frameDuration = frameEnd - frameStart;
-
+    
     const int frameDelay = 1000 / FPS; // Compute frame delay from FPS
     if (frameDuration.count() < frameDelay) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(frameDelay) - frameDuration);
+      std::this_thread::sleep_for(std::chrono::milliseconds(frameDelay) - frameDuration);
     }
   }
   

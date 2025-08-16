@@ -301,7 +301,7 @@ void CEUIRenderer::fireWeapon()
             m_projectileManager->spawnProjectile(muzzlePosition, fireDirection, 
                                                m_muzzleVelocity, m_projectileDamage, "rifle");
             
-            std::cout << "Ballistic projectile fired from [" << muzzlePosition.x << ", " << muzzlePosition.y << ", " << muzzlePosition.z << "]" << std::endl;
+            // Ballistic projectile fired
         }
     }
 }

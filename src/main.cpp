@@ -91,6 +91,9 @@ struct ImpactEvent {
   float damage;
   double timestamp;
   std::string impactType; // "Contact Manifold", "Raycast", "Ground", etc.
+  std::string objectName; // For object hits, store the object name
+  int objectIndex; // For object hits, store the object index
+  int instanceIndex; // For object hits, store the instance index
 };
 
 struct VisualImpactMarker {
@@ -177,18 +180,14 @@ void updateImpactMarkers(double currentTime) {
     glm::vec3 fadedColor = marker.color * fadeAlpha;
     impactMarkerColors.push_back(fadedColor);
   }
-  
-  // Debug: Report transform count
-  if (!impactMarkerTransforms.empty()) {
-    std::cout << "🎯 Built " << impactMarkerTransforms.size() << " marker transforms for rendering" << std::endl;
-  }
 }
 
 // Debug UI control
 bool showDebugUI = false; // Set to false to disable all ImGui panels for maximum performance
 
-// Forward declaration for external use
+// Forward declarations for external use
 extern void addImpactEvent(const glm::vec3& location, const std::string& surfaceType, float distance, float damage, const std::string& impactType);
+extern void addImpactEvent(const glm::vec3& location, const std::string& surfaceType, float distance, float damage, const std::string& impactType, const std::string& objectName, int objectIndex, int instanceIndex);
 
 void addImpactEvent(const glm::vec3& location, const std::string& surfaceType, float distance, float damage, const std::string& impactType) {
   ImpactEvent event;
@@ -198,6 +197,9 @@ void addImpactEvent(const glm::vec3& location, const std::string& surfaceType, f
   event.damage = damage;
   event.timestamp = glfwGetTime();
   event.impactType = impactType;
+  event.objectName = ""; // No object info for basic version
+  event.objectIndex = -1;
+  event.instanceIndex = -1;
   
   recentImpacts.insert(recentImpacts.begin(), event);
   if (recentImpacts.size() > MAX_IMPACT_HISTORY) {
@@ -227,6 +229,52 @@ void addImpactEvent(const glm::vec3& location, const std::string& surfaceType, f
   visualImpactMarkers.push_back(marker);
   
   std::cout << "📍 Created visual marker at [" << location.x << ", " << location.y << ", " << location.z << "] - " << surfaceType << " (Total: " << visualImpactMarkers.size() << ")" << std::endl;
+}
+
+void addImpactEvent(const glm::vec3& location, const std::string& surfaceType, float distance, float damage, const std::string& impactType, const std::string& objectName, int objectIndex, int instanceIndex) {
+  ImpactEvent event;
+  event.location = location;
+  event.surfaceType = surfaceType;
+  event.distance = distance;
+  event.damage = damage;
+  event.timestamp = glfwGetTime();
+  event.impactType = impactType;
+  event.objectName = objectName;
+  event.objectIndex = objectIndex;
+  event.instanceIndex = instanceIndex;
+  
+  recentImpacts.insert(recentImpacts.begin(), event);
+  if (recentImpacts.size() > MAX_IMPACT_HISTORY) {
+    recentImpacts.resize(MAX_IMPACT_HISTORY);
+  }
+  
+  // Create visual impact marker (same logic as basic version)
+  VisualImpactMarker marker;
+  marker.position = location;
+  marker.spawnTime = glfwGetTime();
+  marker.surfaceType = surfaceType;
+  marker.scale = 50.0f; // Large spheres to make them very visible
+  
+  // Color code by surface type for easy identification
+  if (surfaceType == "terrain") {
+    marker.color = glm::vec3(0.8f, 0.6f, 0.2f); // Brown/orange for terrain
+  } else if (surfaceType == "water") {
+    marker.color = glm::vec3(0.2f, 0.6f, 1.0f); // Blue for water
+  } else if (surfaceType == "object") {
+    marker.color = glm::vec3(1.0f, 0.2f, 0.2f); // Red for objects
+  } else if (surfaceType == "out-of-bounds") {
+    marker.color = glm::vec3(1.0f, 0.0f, 1.0f); // Magenta for out-of-bounds
+  } else {
+    marker.color = glm::vec3(1.0f, 1.0f, 0.0f); // Yellow for unknown
+  }
+  
+  visualImpactMarkers.push_back(marker);
+  
+  if (!objectName.empty()) {
+    std::cout << "📍 Created visual marker at [" << location.x << ", " << location.y << ", " << location.z << "] - " << surfaceType << " (" << objectName << ") (Total: " << visualImpactMarkers.size() << ")" << std::endl;
+  } else {
+    std::cout << "📍 Created visual marker at [" << location.x << ", " << location.y << ", " << location.z << "] - " << surfaceType << " (Total: " << visualImpactMarkers.size() << ")" << std::endl;
+  }
 }
 
 void updateAndRenderImpactMarkers(double currentTime) {
@@ -1085,6 +1133,13 @@ int main(int argc, const char * argv[])
                 ImGui::Text("Latest: %s Impact", impact.impactType.c_str());
                 ImGui::Text("Location: [%.1f, %.1f, %.1f]", impact.location.x, impact.location.y, impact.location.z);
                 ImGui::Text("Surface: %s (%.1fm, %.0fdmg)", impact.surfaceType.c_str(), impact.distance, impact.damage);
+                
+                // Show object information if available
+                if (!impact.objectName.empty() && impact.objectIndex >= 0) {
+                  ImGui::Text("Object: %s", impact.objectName.c_str());
+                  ImGui::Text("Index: %d, Instance: %d", impact.objectIndex, impact.instanceIndex);
+                }
+                
                 ImGui::Text("Age: %.1fs ago", age);
               }
             }

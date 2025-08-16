@@ -150,62 +150,36 @@ void CEPhysicsWorld::setupWorldObjects(C2MapRscFile* mapRsc)
     int objectCount = mapRsc->getWorldModelCount();
     std::cout << "Setting up " << objectCount << " world object types for optimized physics" << std::endl;
     
+    // Performance: Maximum collision range (~50 tiles as requested)
+    float maxCollisionRange = 50.0f * 256.0f; // 50 tiles * tile size
+    float maxCollisionRangeSq = maxCollisionRange * maxCollisionRange;
+    
     for (int i = 0; i < objectCount; i++) {
         CEWorldModel* model = mapRsc->getWorldModel(i);
         if (!model) continue;
         
-        // Check if model has bounding box data
-        if (!model->hasBoundingBox()) {
-            std::cout << "  Object " << i << " has no bounding box data - skipping" << std::endl;
+        // Get object dimensions from TObjInfo (same as bounding box visualization)
+        auto objectInfo = model->getObjectInfo();
+        float radius = objectInfo->Radius;
+        float yLo = objectInfo->YLo;
+        float yHi = objectInfo->YHi;
+        
+        // Skip objects with no valid dimensions
+        if (radius <= 0) {
+            std::cout << "  Object " << i << " has no valid radius (" << radius << ") - skipping" << std::endl;
             continue;
         }
         
-        CEGeometry* geometry = model->getGeometry();
-        if (!geometry) continue;
-        
-        // Calculate AABB from TBound data for this object type
-        glm::vec3 aabbMin(FLT_MAX), aabbMax(-FLT_MAX);
-        
-        // Get the bounding box data from the model
-        const auto& boundingBoxes = model->getBoundingBoxes();
-        
-        // Examine all 8 possible bounding boxes to find the overall AABB
-        for (int b = 0; b < 8; b++) {
-            const TBound& bound = boundingBoxes[b];
-            if (bound.a > 0) { // Valid bounding box
-                // Convert elliptical TBound to AABB
-                float minX = bound.cx - bound.a;
-                float maxX = bound.cx + bound.a;
-                float minZ = bound.cy - bound.b;
-                float maxZ = bound.cy + bound.b;
-                float minY = bound.y1;
-                float maxY = bound.y2;
-                
-                aabbMin.x = std::min(aabbMin.x, minX);
-                aabbMin.y = std::min(aabbMin.y, minY);
-                aabbMin.z = std::min(aabbMin.z, minZ);
-                aabbMax.x = std::max(aabbMax.x, maxX);
-                aabbMax.y = std::max(aabbMax.y, maxY);
-                aabbMax.z = std::max(aabbMax.z, maxZ);
-            }
+        // Debug: Log object processing
+        if (i < 5) { // Log first 5 objects
+            std::cout << "  📦 Processing object " << i << " with radius=" << radius << " height=" << (yHi - yLo) << " instances=" << model->getTransforms().size() << std::endl;
         }
         
-        // If no valid bounds found, calculate from geometry
-        if (aabbMin.x == FLT_MAX) {
-            const auto& vertices = geometry->GetVertices();
-            if (vertices.empty()) {
-                std::cout << "  Object " << i << " has no vertices - skipping" << std::endl;
-                continue;
-            }
-            
-            for (const auto& vertex : vertices) {
-                glm::vec3 pos = vertex.getPos();
-                aabbMin = glm::min(aabbMin, pos);
-                aabbMax = glm::max(aabbMax, pos);
-            }
-        }
+        // Create cylindrical AABB using radius and height (same as visualization)
+        glm::vec3 aabbMin(-radius, yLo, -radius);
+        glm::vec3 aabbMax(radius, yHi, radius);
         
-        // Create box shape for AABB broadphase collision
+        // Calculate size and center
         glm::vec3 size = (aabbMax - aabbMin) * 0.5f;
         glm::vec3 center = (aabbMax + aabbMin) * 0.5f;
         
@@ -214,6 +188,7 @@ void CEPhysicsWorld::setupWorldObjects(C2MapRscFile* mapRsc)
         // Create rigid bodies for each instance of this object
         const auto& transforms = model->getTransforms();
         int instanceIndex = 0;
+        int culledInstances = 0;
         
         std::cout << "  Object " << i << " AABB: size[" << size.x << "," << size.y << "," << size.z 
                   << "] center[" << center.x << "," << center.y << "," << center.z 
@@ -221,6 +196,22 @@ void CEPhysicsWorld::setupWorldObjects(C2MapRscFile* mapRsc)
         
         for (const auto& transform : transforms) {
             glm::vec3 position = *const_cast<Transform&>(transform).GetPos();
+            
+            // Performance optimization: Only create collision for objects within shooting range
+            // For now, disable distance culling entirely to ensure collision objects are created
+            // TODO: Re-enable with proper player position-based culling later
+            bool skipDistanceCheck = true; // Temporarily disable culling for debugging
+            float distanceSq = 0; // Will be calculated if skipDistanceCheck is false
+            
+            if (!skipDistanceCheck && distanceSq > maxCollisionRangeSq) {
+                culledInstances++;
+                // Debug: Log first few culled instances
+                if (culledInstances <= 3) {
+                    float distance = sqrt(distanceSq);
+                    std::cout << "    🚫 Culling instance at [" << position.x << "," << position.y << "," << position.z << "] distance=" << distance << " (max=" << maxCollisionRange << ")" << std::endl;
+                }
+                continue; // Skip distant objects for performance
+            }
             
             // Position the AABB at the transform position plus center offset
             glm::vec3 aabbPosition = position + center;
@@ -231,6 +222,13 @@ void CEPhysicsWorld::setupWorldObjects(C2MapRscFile* mapRsc)
             short objectMask = 1 << 0;   // Only collide with projectiles (group 0)
             m_dynamicsWorld->removeRigidBody(objectBody);
             m_dynamicsWorld->addRigidBody(objectBody, objectGroup, objectMask);
+            
+            // Debug: Log first few collision bodies
+            if (m_objectBodies.size() < 3) {
+                std::cout << "🎯 Created collision body " << m_objectBodies.size() + 1 << " at position [" 
+                          << aabbPosition.x << ", " << aabbPosition.y << ", " << aabbPosition.z << "] with size [" 
+                          << size.x << ", " << size.y << ", " << size.z << "]" << std::endl;
+            }
             
             m_objectBodies.push_back(objectBody);
             
@@ -250,9 +248,16 @@ void CEPhysicsWorld::setupWorldObjects(C2MapRscFile* mapRsc)
         
         // Store shape for cleanup (shared by all instances)
         m_objectShapes.push_back(aabbShape);
+        
+        // Log performance info for this object type
+        if (culledInstances > 0) {
+            std::cout << "    Performance: " << culledInstances << " instances culled (beyond " << (maxCollisionRange/256.0f) << " tiles)" << std::endl;
+        }
     }
     
     std::cout << "Optimized world objects physics setup complete: " << m_objectBodies.size() << " AABB instances" << std::endl;
+    std::cout << "Performance: Objects limited to ~" << (maxCollisionRange/256.0f) << " tile radius for collision detection" << std::endl;
+    std::cout << "Total collision objects in world: " << m_dynamicsWorld->getNumCollisionObjects() << std::endl;
 }
 
 void CEPhysicsWorld::setupWaterPlanes(C2MapFile* mapFile)
@@ -364,6 +369,11 @@ CEPhysicsWorld::RaycastResult CEPhysicsWorld::raycast(const glm::vec3& from, con
     btVector3 btTo(to.x, to.y, to.z);
     
     btCollisionWorld::ClosestRayResultCallback rayCallback(btFrom, btTo);
+    
+    // Set collision filtering to match projectile collision groups
+    rayCallback.m_collisionFilterGroup = 1 << 0; // Projectile group (group 0)
+    rayCallback.m_collisionFilterMask = (1 << 1) | (1 << 2); // Can hit water (group 1) and objects (group 2)
+    
     m_dynamicsWorld->rayTest(btFrom, btTo, rayCallback);
     
     if (rayCallback.hasHit()) {

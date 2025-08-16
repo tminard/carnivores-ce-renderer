@@ -17,8 +17,9 @@
 #include <iostream>
 #include <algorithm>
 
-// Forward declaration for impact event logging  
+// Forward declarations for impact event logging  
 extern void addImpactEvent(const glm::vec3& location, const std::string& surfaceType, float distance, float damage, const std::string& impactType);
+extern void addImpactEvent(const glm::vec3& location, const std::string& surfaceType, float distance, float damage, const std::string& impactType, const std::string& objectName, int objectIndex, int instanceIndex);
 
 using libAF2::Sound;
 
@@ -102,8 +103,15 @@ void CEBulletProjectileManager::handleImpact(const CEBulletProjectile& projectil
     float distance = projectile.getImpactDistance();
     float damage = projectile.getDamage();
     
-    // Log impact to GUI instead of console
-    addImpactEvent(hitPoint, surfaceType, distance, damage, "Bullet Impact");
+    // Log impact to GUI with object information if available
+    if (surfaceType == "object" && !projectile.getImpactObjectName().empty()) {
+        addImpactEvent(hitPoint, surfaceType, distance, damage, "Bullet Impact", 
+                      projectile.getImpactObjectName(), 
+                      projectile.getImpactObjectIndex(), 
+                      projectile.getImpactInstanceIndex());
+    } else {
+        addImpactEvent(hitPoint, surfaceType, distance, damage, "Bullet Impact");
+    }
     
     // Play impact audio with correct surface type
     playImpactAudio(hitPoint, surfaceType);

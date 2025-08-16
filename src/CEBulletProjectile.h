@@ -11,6 +11,7 @@
 #include <glm/glm.hpp>
 #include <memory>
 #include <string>
+#include <vector>
 
 // Forward declarations
 class btRigidBody;
@@ -32,6 +33,12 @@ private:
     glm::vec3 m_impactNormal;
     std::string m_impactSurfaceType;
     float m_impactDistance;
+    
+    // Object impact information
+    std::string m_impactObjectName;
+    int m_impactObjectIndex;
+    int m_impactInstanceIndex;
+    
     
     // Collision detection state
     bool m_checkedForContacts;
@@ -59,6 +66,12 @@ public:
     glm::vec3 getImpactNormal() const { return m_impactNormal; }
     std::string getImpactSurfaceType() const { return m_impactSurfaceType; }
     float getImpactDistance() const { return m_impactDistance; }
+    
+    // Object impact information getters
+    std::string getImpactObjectName() const { return m_impactObjectName; }
+    int getImpactObjectIndex() const { return m_impactObjectIndex; }
+    int getImpactInstanceIndex() const { return m_impactInstanceIndex; }
+    
     
     // Check if projectile should be destroyed
     bool shouldDestroy(double currentTime) const;

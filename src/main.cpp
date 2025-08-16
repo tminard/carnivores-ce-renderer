@@ -173,6 +173,7 @@ int main(int argc, const char * argv[])
   std::string primaryWeaponPath;
   std::string weaponDrawAnimation = ""; // Will fallback to first animation
   std::string weaponHolsterAnimation = ""; // Will fallback to third animation
+  std::string weaponFireAnimation = ""; // Will fallback to second animation
   
   if (data.contains("weapons") && data["weapons"].is_object()) {
     if (data["weapons"].contains("primary") && data["weapons"]["primary"].is_object()) {
@@ -190,6 +191,10 @@ int main(int argc, const char * argv[])
         if (animations.contains("holster") && animations["holster"].is_string()) {
           weaponHolsterAnimation = animations["holster"].get<std::string>();
         }
+        
+        if (animations.contains("fire") && animations["fire"].is_string()) {
+          weaponFireAnimation = animations["fire"].get<std::string>();
+        }
       }
     }
   }
@@ -206,6 +211,7 @@ int main(int argc, const char * argv[])
     std::cout << "Primary Weapon: " << primaryWeaponPath << std::endl;
     std::cout << "Draw Animation: " << (weaponDrawAnimation.empty() ? "[first animation]" : weaponDrawAnimation) << std::endl;
     std::cout << "Holster Animation: " << (weaponHolsterAnimation.empty() ? "[third animation]" : weaponHolsterAnimation) << std::endl;
+    std::cout << "Fire Animation: " << (weaponFireAnimation.empty() ? "[second animation]" : weaponFireAnimation) << std::endl;
   }
   
   auto mapType = CEMapType::C2;
@@ -372,7 +378,7 @@ int main(int argc, const char * argv[])
     
     // Configure weapon animations if we have a weapon
     if (primaryWeapon) {
-      uiRenderer->configureWeaponAnimations(weaponDrawAnimation, weaponHolsterAnimation);
+      uiRenderer->configureWeaponAnimations(weaponDrawAnimation, weaponHolsterAnimation, weaponFireAnimation);
       uiRenderer->setAudioManager(g_audio_manager.get());
     }
     

@@ -14,10 +14,11 @@
   },
   "weapons": {
     "primary": {
-      "file": "game/models/shotgun.car",
+      "file": "game/models/pistol.car",
       "animations": {
-         "draw": "Sg4_get",
-         "holster": "Sg4_put"
+         "draw": "Pl2_get",
+         "holster": "Pl2_put",
+         "fire": "Pl2_fire"
        }
     }
   },

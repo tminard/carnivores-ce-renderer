@@ -23,7 +23,7 @@ class CEAnimation;
 class CEUIRenderer
 {
 public:
-    enum class WeaponState { HOLSTERED, DRAWING, DRAWN, HOLSTERING };
+    enum class WeaponState { HOLSTERED, DRAWING, DRAWN, HOLSTERING, FIRING };
 
 private:
     std::unique_ptr<Camera> m_ui2DCamera;
@@ -39,6 +39,7 @@ private:
     bool m_weaponGeometryInitialized;     // Track if weapon geometry has been initialized
     std::string m_weaponDrawAnimation;    // Draw animation name from config
     std::string m_weaponHolsterAnimation; // Holster animation name from config
+    std::string m_weaponFireAnimation;    // Fire animation name from config
     LocalAudioManager* m_audioManager;
     
     void initializeUI2DCamera();
@@ -67,12 +68,13 @@ public:
     
     // Weapon system
     void toggleWeapon(); // Draw/holster weapon
+    void fireWeapon(); // Fire weapon if drawn
     void renderWeapon(C2CarFile* weapon, double currentTime);
     bool isWeaponDrawn() const { return m_weaponDrawn; }
     WeaponState getWeaponState() const { return m_weaponState; }
     
     // Configuration
-    void configureWeaponAnimations(const std::string& drawAnim, const std::string& holsterAnim);
+    void configureWeaponAnimations(const std::string& drawAnim, const std::string& holsterAnim, const std::string& fireAnim);
     void setAudioManager(LocalAudioManager* audioManager);
     
     // Set up 2D rendering state

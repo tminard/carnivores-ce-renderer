@@ -146,6 +146,19 @@ void LocalInputManager::ProcessLocalInput(GLFWwindow* window, float deltaTime)
     else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_RELEASE) {
       this->m_last_mouse_state[GLFW_MOUSE_BUTTON_RIGHT] = GLFW_RELEASE;
     }
+    
+    // Handle left mouse button for weapon firing
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS && 
+        this->m_last_mouse_state[GLFW_MOUSE_BUTTON_LEFT] != GLFW_PRESS) {
+      this->m_last_mouse_state[GLFW_MOUSE_BUTTON_LEFT] = GLFW_PRESS;
+      
+      if (this->m_ui_renderer) {
+        this->m_ui_renderer->fireWeapon();
+      }
+    }
+    else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE) {
+      this->m_last_mouse_state[GLFW_MOUSE_BUTTON_LEFT] = GLFW_RELEASE;
+    }
   }
   
   this->lastTime = currentTime;

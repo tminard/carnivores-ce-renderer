@@ -263,6 +263,15 @@ void CEUIRenderer::toggleWeapon()
     }
 }
 
+void CEUIRenderer::fireWeapon()
+{
+    // Only fire if weapon is fully drawn
+    if (m_weaponState == WeaponState::DRAWN) {
+        m_weaponState = WeaponState::FIRING;
+        setWeaponAnimation(m_weaponFireAnimation, false); // Don't loop fire animation
+    }
+}
+
 void CEUIRenderer::renderWeapon(C2CarFile* weapon, double currentTime)
 {
     if (!weapon || !m_ui2DCamera || !m_weaponDrawn) {
@@ -384,10 +393,11 @@ void CEUIRenderer::restoreNormalRendering()
     glDisable(GL_BLEND);
 }
 
-void CEUIRenderer::configureWeaponAnimations(const std::string& drawAnim, const std::string& holsterAnim)
+void CEUIRenderer::configureWeaponAnimations(const std::string& drawAnim, const std::string& holsterAnim, const std::string& fireAnim)
 {
     m_weaponDrawAnimation = drawAnim;
     m_weaponHolsterAnimation = holsterAnim;
+    m_weaponFireAnimation = fireAnim;
 }
 
 void CEUIRenderer::setAudioManager(LocalAudioManager* audioManager)
@@ -445,6 +455,7 @@ void CEUIRenderer::updateWeaponAnimation(C2CarFile* weapon, double currentTime)
     // Only update animation when we're actively animating or need to maintain drawn state
     if (m_weaponState != WeaponState::DRAWING && 
         m_weaponState != WeaponState::HOLSTERING && 
+        m_weaponState != WeaponState::FIRING &&
         m_weaponState != WeaponState::DRAWN) {
         return;
     }
@@ -491,14 +502,14 @@ void CEUIRenderer::updateWeaponAnimation(C2CarFile* weapon, double currentTime)
             false, // deferUpdate
             true,  // maxFPS  
             false, // notVisible
-            2.0f,  // playbackSpeed
+            1.0f,  // playbackSpeed
             m_weaponAnimationLoop,  // loop flag
             true   // noInterpolation - weapons need discrete frames
         );
     }
     
     // Check if non-looping animation finished (only during animating states)
-    if (!m_weaponAnimationLoop && (m_weaponState == WeaponState::DRAWING || m_weaponState == WeaponState::HOLSTERING)) {
+    if (!m_weaponAnimationLoop && (m_weaponState == WeaponState::DRAWING || m_weaponState == WeaponState::HOLSTERING || m_weaponState == WeaponState::FIRING)) {
         double animationDuration = (currentAnimation->m_number_of_frames / (double)currentAnimation->m_kps);
         double elapsedTime = currentTime - m_weaponAnimationStartTime;
         
@@ -510,6 +521,10 @@ void CEUIRenderer::updateWeaponAnimation(C2CarFile* weapon, double currentTime)
                 m_weaponState = WeaponState::HOLSTERED;
                 m_weaponDrawn = false; // Stop rendering
                 m_currentWeaponAnimation = ""; // Clear animation
+            } else if (m_weaponState == WeaponState::FIRING) {
+                // Fire animation complete - return to drawn state
+                m_weaponState = WeaponState::DRAWN;
+                setWeaponAnimation(m_weaponDrawAnimation, false); // Return to draw animation for display
             }
         }
     }
@@ -518,12 +533,11 @@ void CEUIRenderer::updateWeaponAnimation(C2CarFile* weapon, double currentTime)
     if (didUpdate && m_weaponState != WeaponState::DRAWN) {
         auto audioSrc = weapon->getSoundForAnimation(m_currentWeaponAnimation);
         if (audioSrc != nullptr) {
+            audioSrc->setLooped(false);
+            audioSrc->setNoDistance(10.f);
+            audioSrc->setGain(10.f);
             if (geometry->GetCurrentFrame() == 0) {
-                if (!audioSrc->isPlaying()) {
-                    audioSrc->setLooped(false);
-                    audioSrc->setNoDistance(3.f);
-                    m_audioManager->play(audioSrc);
-                }
+              audioSrc->play();
             }
         }
         

@@ -110,7 +110,16 @@ struct ProjectileTraceLine {
   glm::vec3 color;
   double spawnTime;
   std::string surfaceType;
+  std::string collisionMethod;
   float thickness;
+};
+
+struct DebugSphere {
+  glm::vec3 position;
+  float radius;
+  glm::vec3 color;
+  std::string label;
+  double spawnTime;
 };
 
 // Sphere generation utility for impact markers
@@ -194,9 +203,11 @@ std::vector<Vertex> generateLine(const glm::vec3& start, const glm::vec3& end, f
 std::vector<ImpactEvent> recentImpacts;
 std::vector<VisualImpactMarker> visualImpactMarkers;
 std::vector<ProjectileTraceLine> projectileTraceLines;
+std::vector<DebugSphere> debugSpheres;
 const size_t MAX_IMPACT_HISTORY = 10;
 const double IMPACT_MARKER_LIFETIME = 10.0; // Show markers for 10 seconds
 const double TRACE_LINE_LIFETIME = 8.0; // Show trace lines for 8 seconds
+const double DEBUG_SPHERE_LIFETIME = 10.0; // Show debug spheres for 10 seconds
 
 // Impact marker rendering resources
 std::unique_ptr<CESimpleGeometry> impactMarkerGeometry;
@@ -262,9 +273,21 @@ void updateTraceLines(double currentTime) {
       }),
     projectileTraceLines.end());
   
-  // Debug: Log trace line count changes
+  // Remove expired debug spheres
+  size_t beforeSphereCount = debugSpheres.size();
+  debugSpheres.erase(
+    std::remove_if(debugSpheres.begin(), debugSpheres.end(),
+      [currentTime](const DebugSphere& sphere) {
+        return (currentTime - sphere.spawnTime) > DEBUG_SPHERE_LIFETIME;
+      }),
+    debugSpheres.end());
+  
+  // Debug: Log cleanup changes
   if (beforeCount != projectileTraceLines.size()) {
     std::cout << "🗑️ Cleaned up trace lines: " << beforeCount << " -> " << projectileTraceLines.size() << std::endl;
+  }
+  if (beforeSphereCount != debugSpheres.size()) {
+    std::cout << "🗑️ Cleaned up debug spheres: " << beforeSphereCount << " -> " << debugSpheres.size() << std::endl;
   }
   
   // Clear previous frame data
@@ -296,6 +319,8 @@ bool showDebugUI = false; // Set to false to disable all ImGui panels for maximu
 extern void addImpactEvent(const glm::vec3& location, const std::string& surfaceType, float distance, float damage, const std::string& impactType);
 extern void addImpactEvent(const glm::vec3& location, const std::string& surfaceType, float distance, float damage, const std::string& impactType, const std::string& objectName, int objectIndex, int instanceIndex);
 extern void addProjectileTraceLine(const glm::vec3& startPoint, const glm::vec3& endPoint, const std::string& surfaceType);
+extern void addProjectileTraceLineWithMethod(const glm::vec3& startPoint, const glm::vec3& endPoint, const std::string& surfaceType, const std::string& collisionMethod);
+extern void addDebugSphere(const glm::vec3& position, float radius, const glm::vec3& color, const std::string& label);
 
 void addImpactEvent(const glm::vec3& location, const std::string& surfaceType, float distance, float damage, const std::string& impactType) {
   ImpactEvent event;
@@ -386,24 +411,42 @@ void addImpactEvent(const glm::vec3& location, const std::string& surfaceType, f
 }
 
 void addProjectileTraceLine(const glm::vec3& startPoint, const glm::vec3& endPoint, const std::string& surfaceType) {
+  addProjectileTraceLineWithMethod(startPoint, endPoint, surfaceType, "legacy");
+}
+
+void addProjectileTraceLineWithMethod(const glm::vec3& startPoint, const glm::vec3& endPoint, const std::string& surfaceType, const std::string& collisionMethod) {
   ProjectileTraceLine traceLine;
   traceLine.startPoint = startPoint;
   traceLine.endPoint = endPoint;
   traceLine.spawnTime = glfwGetTime();
   traceLine.surfaceType = surfaceType;
+  traceLine.collisionMethod = collisionMethod;
   traceLine.thickness = 4.0f; // Thin but visible line
   
-  // Use VERY distinct colors for trace lines (easy to distinguish)
-  if (surfaceType == "terrain") {
-    traceLine.color = glm::vec3(0.0f, 0.0f, 1.0f); // PURE BLUE for terrain
-  } else if (surfaceType == "water") {
-    traceLine.color = glm::vec3(0.0f, 1.0f, 1.0f); // CYAN for water
-  } else if (surfaceType == "object") {
-    traceLine.color = glm::vec3(1.0f, 0.0f, 0.0f); // PURE RED for objects
-  } else if (surfaceType == "out-of-bounds") {
-    traceLine.color = glm::vec3(1.0f, 1.0f, 1.0f); // PURE WHITE for out-of-bounds
+  // Use distinct colors based on collision method and surface type
+  if (collisionMethod == "bullet_heightfield") {
+    traceLine.color = glm::vec3(0.0f, 1.0f, 0.0f); // BRIGHT GREEN for Bullet heightfield
+  } else if (collisionMethod == "legacy_terrain" || collisionMethod == "legacy_terrain_fallback") {
+    traceLine.color = glm::vec3(0.0f, 0.0f, 1.0f); // BLUE for legacy terrain
+  } else if (collisionMethod == "raycast_water") {
+    traceLine.color = glm::vec3(0.0f, 1.0f, 1.0f); // CYAN for water raycast
+  } else if (collisionMethod == "raycast_object") {
+    traceLine.color = glm::vec3(1.0f, 0.0f, 0.0f); // RED for object raycast
+  } else if (collisionMethod == "contact_manifold") {
+    traceLine.color = glm::vec3(1.0f, 1.0f, 0.0f); // YELLOW for contact manifold
   } else {
-    traceLine.color = glm::vec3(1.0f, 0.0f, 1.0f); // PURE MAGENTA for unknown
+    // Fallback to surface type colors
+    if (surfaceType == "terrain") {
+      traceLine.color = glm::vec3(0.0f, 0.0f, 1.0f); // BLUE for terrain
+    } else if (surfaceType == "water") {
+      traceLine.color = glm::vec3(0.0f, 1.0f, 1.0f); // CYAN for water
+    } else if (surfaceType == "object") {
+      traceLine.color = glm::vec3(1.0f, 0.0f, 0.0f); // RED for objects
+    } else if (surfaceType == "out-of-bounds") {
+      traceLine.color = glm::vec3(1.0f, 1.0f, 1.0f); // WHITE for out-of-bounds
+    } else {
+      traceLine.color = glm::vec3(1.0f, 0.0f, 1.0f); // MAGENTA for unknown
+    }
   }
   
   projectileTraceLines.push_back(traceLine);
@@ -411,7 +454,21 @@ void addProjectileTraceLine(const glm::vec3& startPoint, const glm::vec3& endPoi
   float distance = glm::distance(startPoint, endPoint);
   std::cout << "🎯 Created trace line from [" << startPoint.x << ", " << startPoint.y << ", " << startPoint.z 
             << "] to [" << endPoint.x << ", " << endPoint.y << ", " << endPoint.z 
-            << "] - " << surfaceType << " (Distance: " << std::fixed << std::setprecision(1) << distance << " units, Total: " << projectileTraceLines.size() << ")" << std::endl;
+            << "] - " << surfaceType << " (" << collisionMethod << ") (Distance: " << std::fixed << std::setprecision(1) << distance << " units, Total: " << projectileTraceLines.size() << ")" << std::endl;
+}
+
+void addDebugSphere(const glm::vec3& position, float radius, const glm::vec3& color, const std::string& label) {
+  DebugSphere sphere;
+  sphere.position = position;
+  sphere.radius = radius;
+  sphere.color = color;
+  sphere.label = label;
+  sphere.spawnTime = glfwGetTime();
+  
+  debugSpheres.push_back(sphere);
+  
+  std::cout << "🔵 Created debug sphere at [" << position.x << ", " << position.y << ", " << position.z 
+            << "] - " << label << " (Radius: " << radius << ", Total: " << debugSpheres.size() << ")" << std::endl;
 }
 
 void updateAndRenderImpactMarkers(double currentTime) {

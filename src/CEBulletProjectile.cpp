@@ -21,8 +21,8 @@
 
 // Impact event logging is handled by the projectile manager
 
-// Forward declaration for trace line system
-extern void addProjectileTraceLine(const glm::vec3& startPoint, const glm::vec3& endPoint, const std::string& surfaceType);
+// Forward declaration for impact visualization
+extern void addDebugSphere(const glm::vec3& position, float radius, const glm::vec3& color, const std::string& label);
 
 
 CEBulletProjectile::CEBulletProjectile(btDiscreteDynamicsWorld* world, 
@@ -45,8 +45,8 @@ CEBulletProjectile::CEBulletProjectile(btDiscreteDynamicsWorld* world,
     , m_impactInstanceIndex(-1)
     , m_checkedForContacts(false)
 {
-    // Create small sphere for bullet
-    btSphereShape* bulletShape = new btSphereShape(0.005f); // 5mm radius
+    // Create tiny sphere for bullet (essentially 1 pixel)
+    btSphereShape* bulletShape = new btSphereShape(0.001f); // 1mm radius (very small)
     
     btTransform transform;
     transform.setIdentity();
@@ -113,11 +113,8 @@ bool CEBulletProjectile::update(double currentTime, CEPhysicsWorld* physics)
     
     // Check for collisions using contact manifolds
     if (!m_hasImpacted && checkForCollisions(physics)) {
-        // Impact detected - projectile manager will handle impact logging
         return true; // Impact detected
     }
-    
-    // No need for velocity debugging output - handled in GUI
     
     return false; // No impact yet
 }
@@ -162,15 +159,8 @@ bool CEBulletProjectile::checkForCollisions(CEPhysicsWorld* physics)
     // Method 1: Check if this projectile has contacts via manifolds
     bool hasContactManifolds = physics->hasContacts(m_rigidBody);
     
-    // Debug: Log Method 1 attempts periodically
-    static int method1Count = 0;
-    method1Count++;
-    if (method1Count % 120 == 0) { // Log every 120 checks to avoid spam
-        std::cout << "🔍 Method 1 check " << method1Count << ": " << (hasContactManifolds ? "HAS CONTACTS" : "no contacts") << std::endl;
-    }
     
     if (hasContactManifolds) {
-        std::cout << "🚨 COLLISION Method 1: Contact manifold detected at position [" << currentPos.x << ", " << currentPos.y << ", " << currentPos.z << "]" << std::endl;
         
         m_hasImpacted = true;
         m_checkedForContacts = true;
@@ -210,8 +200,12 @@ bool CEBulletProjectile::checkForCollisions(CEPhysicsWorld* physics)
             m_impactSurfaceType = "terrain";
         }
         
-        // Add trace line from spawn to impact with correct surface type
-        addProjectileTraceLine(m_spawnPosition, m_impactPoint, m_impactSurfaceType);
+        // Add single impact marker at collision point
+        glm::vec3 impactColor = glm::vec3(1.0f, 0.0f, 0.0f); // Red for impact
+        if (physics->getHeightfieldTerrain() && m_impactSurfaceType == "terrain") {
+            impactColor = glm::vec3(0.0f, 1.0f, 0.0f); // Green for heightfield terrain
+        }
+        addDebugSphere(m_impactPoint, 1.0f, impactColor, "impact");
         
         // Contact manifold impact detected
         return true;
@@ -229,23 +223,10 @@ bool CEBulletProjectile::checkForCollisions(CEPhysicsWorld* physics)
         
         auto rayResult = physics->raycast(currentPos, rayEnd);
         
-        // Debug: Log raycast attempts for objects (periodically)
-        static int raycastCount = 0;
-        raycastCount++;
-        if (raycastCount % 60 == 0) { // Log every 60 raycasts to avoid spam
-            std::cout << "🔍 Raycast attempt " << raycastCount << " from [" << currentPos.x << "," << currentPos.y << "," << currentPos.z 
-                      << "] to [" << rayEnd.x << "," << rayEnd.y << "," << rayEnd.z << "] distance=" << rayDistance 
-                      << " - " << (rayResult.hasHit ? "HIT" : "MISS") << std::endl;
-            if (rayResult.hasHit) {
-                std::cout << "   🎯 Hit at [" << rayResult.hitPoint.x << "," << rayResult.hitPoint.y << "," << rayResult.hitPoint.z 
-                          << "] type=" << (int)rayResult.objectInfo.type << " name=" << rayResult.objectInfo.objectName << std::endl;
-            }
-        }
         
         if (rayResult.hasHit) {
             // Register water and object collisions - terrain handled by Method 3
             if (rayResult.objectInfo.type == CEPhysicsWorld::CollisionObjectType::WATER_PLANE) {
-                std::cout << "🚨 COLLISION Method 2: Water detected at position [" << rayResult.hitPoint.x << ", " << rayResult.hitPoint.y << ", " << rayResult.hitPoint.z << "]" << std::endl;
                 
                 m_hasImpacted = true;
                 m_checkedForContacts = true;
@@ -254,12 +235,11 @@ bool CEBulletProjectile::checkForCollisions(CEPhysicsWorld* physics)
                 m_impactDistance = glm::distance(m_impactPoint, m_spawnPosition);
                 m_impactSurfaceType = "water";
                 
-                // Add trace line from spawn to impact
-                addProjectileTraceLine(m_spawnPosition, m_impactPoint, m_impactSurfaceType);
+                // Add impact marker for water collision
+                addDebugSphere(m_impactPoint, 1.0f, glm::vec3(0.0f, 1.0f, 1.0f), "water_impact");
                 
                 return true;
             } else if (rayResult.objectInfo.type == CEPhysicsWorld::CollisionObjectType::WORLD_OBJECT) {
-                std::cout << "🎯 AABB Hit: " << rayResult.objectInfo.objectName << " at [" << rayResult.hitPoint.x << ", " << rayResult.hitPoint.y << ", " << rayResult.hitPoint.z << "]" << std::endl;
                 
                 // Check if this object should block projectiles based on visibility flags
                 if (rayResult.objectInfo.worldModel) {
@@ -295,15 +275,15 @@ bool CEBulletProjectile::checkForCollisions(CEPhysicsWorld* physics)
                 m_impactObjectIndex = rayResult.objectInfo.objectIndex;
                 m_impactInstanceIndex = rayResult.objectInfo.instanceIndex;
                 
-                // Add trace line from spawn to impact
-                addProjectileTraceLine(m_spawnPosition, m_impactPoint, m_impactSurfaceType);
+                // Add impact marker for object collision
+                addDebugSphere(m_impactPoint, 1.0f, glm::vec3(1.0f, 0.0f, 0.0f), "object_impact");
                 
                 return true;
             }
         }
     }
     
-    // Method 3: Terrain collision - now handled by Bullet heightfield if available
+    // Method 3: Terrain collision via Bullet heightfield (preferred) or legacy fallback
     if (physics->getMapFile()) {
         // Check if we have Bullet heightfield terrain available
         if (physics->getHeightfieldTerrain()) {
@@ -312,7 +292,7 @@ bool CEBulletProjectile::checkForCollisions(CEPhysicsWorld* physics)
             return false;
         }
         
-        // Fallback: Use legacy terrain partition system for manual collision detection
+        // LEGACY FALLBACK: Only use if heightfield is unavailable
         static std::unique_ptr<CETerrainPartition> terrainPartition = nullptr;
         if (!terrainPartition) {
             terrainPartition = std::make_unique<CETerrainPartition>(physics->getMapFile(), 32);
@@ -353,15 +333,12 @@ bool CEBulletProjectile::checkForCollisions(CEPhysicsWorld* physics)
                 m_impactDistance = glm::distance(m_impactPoint, m_spawnPosition);
                 m_impactSurfaceType = "out-of-bounds";
                 
-                // Add trace line from spawn to impact
-                addProjectileTraceLine(m_spawnPosition, m_impactPoint, m_impactSurfaceType);
+                // Add impact marker for out-of-bounds collision  
+                addDebugSphere(m_impactPoint, 1.0f, glm::vec3(1.0f, 1.0f, 1.0f), "oob_impact");
                 
-                std::cout << "🚨 COLLISION Method 3: Actually out-of-bounds at tile[" << tileX << "," << tileZ 
-                          << "] map size[" << mapFile->getWidth() << "," << mapFile->getHeight() << "]" << std::endl;
                 return true;
             } else {
                 // Not actually OOB, just no tile candidates found - fall back to simple check
-                std::cout << "⚠️ No tile candidates but position is valid at tile[" << tileX << "," << tileZ << "]" << std::endl;
             }
         }
         
@@ -398,8 +375,8 @@ bool CEBulletProjectile::checkForCollisions(CEPhysicsWorld* physics)
                 m_impactDistance = glm::distance(m_impactPoint, m_spawnPosition);
                 m_impactSurfaceType = "terrain";
                 
-                // Add trace line from spawn to impact
-                addProjectileTraceLine(m_spawnPosition, m_impactPoint, m_impactSurfaceType);
+                // Add impact marker for legacy terrain collision
+                addDebugSphere(m_impactPoint, 1.0f, glm::vec3(0.0f, 0.0f, 1.0f), "terrain_impact");
                 
                 return true;
             }
@@ -436,8 +413,8 @@ bool CEBulletProjectile::checkForCollisions(CEPhysicsWorld* physics)
                     m_impactDistance = glm::distance(m_impactPoint, m_spawnPosition);
                     m_impactSurfaceType = "terrain";
                     
-                    // Add trace line from spawn to impact
-                    addProjectileTraceLine(m_spawnPosition, m_impactPoint, m_impactSurfaceType);
+                    // Add impact marker for fallback terrain collision
+                    addDebugSphere(m_impactPoint, 1.0f, glm::vec3(0.5f, 0.0f, 1.0f), "fallback_terrain_impact");
                     
                     return true;
                 }

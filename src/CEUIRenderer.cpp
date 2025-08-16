@@ -283,19 +283,21 @@ void CEUIRenderer::fireWeapon()
         
         // Spawn ballistic projectile if system is configured
         if (m_projectileManager && m_gameCamera) {
-            // Calculate muzzle position based on camera position and offset
+            // Calculate projectile origin from center of screen (exact line of sight)
             glm::vec3 cameraPos = m_gameCamera->GetPosition();
-            glm::vec3 cameraRight = m_gameCamera->GetRight();
-            glm::vec3 cameraUp = m_gameCamera->GetUp();
             glm::vec3 cameraForward = m_gameCamera->GetForward();
             
-            glm::vec3 muzzlePosition = cameraPos + 
-                                     cameraRight * m_muzzleOffset.x +
-                                     cameraUp * m_muzzleOffset.y +
-                                     cameraForward * m_muzzleOffset.z;
+            // Start projectile 32 units forward from the exact center of screen line of sight
+            // This ensures the projectile starts exactly where the player is aiming
+            float forwardOffset = 32.0f; // 32 world units forward as requested
+            glm::vec3 muzzlePosition = cameraPos + (cameraForward * forwardOffset);
             
-            // Fire direction is where the camera is looking
+            // Fire direction is exactly where the camera is looking (center of screen)
             glm::vec3 fireDirection = cameraForward;
+            
+            // Debug: Log projectile spawn info
+            std::cout << "🎯 Projectile spawned at [" << muzzlePosition.x << ", " << muzzlePosition.y << ", " << muzzlePosition.z 
+                      << "] direction [" << fireDirection.x << ", " << fireDirection.y << ", " << fireDirection.z << "]" << std::endl;
             
             // Spawn ballistic projectile
             m_projectileManager->spawnProjectile(muzzlePosition, fireDirection, 

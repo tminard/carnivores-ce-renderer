@@ -10,6 +10,7 @@
 #include "C2MapRscFile.h"
 #include "CEWorldModel.h"
 #include "CEGeometry.h"
+#include "CEBulletHeightfield.h"
 #include "transform.h"
 #include "vertex.h"
 
@@ -43,6 +44,7 @@ CEPhysicsWorld::CEPhysicsWorld(C2MapFile* mapFile, C2MapRscFile* mapRsc)
     
     // Setup collision geometry (terrain and world objects optimized for performance)
     // setupTerrain(mapFile);  // DISABLED: Too expensive, using height checks instead
+    setupHeightfieldTerrain(mapFile);  // NEW: Bullet Physics heightfield terrain
     setupWorldObjects(mapRsc);  // RE-ENABLED: Optimized AABB-based hierarchical collision
     setupWaterPlanes(mapFile);  // RE-ENABLED: For water collision detection
     
@@ -51,6 +53,12 @@ CEPhysicsWorld::CEPhysicsWorld(C2MapFile* mapFile, C2MapRscFile* mapRsc)
 
 CEPhysicsWorld::~CEPhysicsWorld()
 {
+    // Remove heightfield terrain from world before cleanup
+    if (m_heightfieldTerrain) {
+        m_heightfieldTerrain->removePartitionsFromWorld(m_dynamicsWorld);
+        m_heightfieldTerrain.reset(); // This will trigger destruction
+    }
+    
     // Remove all rigid bodies
     for (int i = m_dynamicsWorld->getNumCollisionObjects() - 1; i >= 0; i--) {
         btCollisionObject* obj = m_dynamicsWorld->getCollisionObjectArray()[i];
@@ -82,6 +90,22 @@ CEPhysicsWorld::~CEPhysicsWorld()
     delete m_broadphase;
     delete m_dispatcher;
     delete m_collisionConfig;
+}
+
+void CEPhysicsWorld::setupHeightfieldTerrain(C2MapFile* mapFile)
+{
+    if (!mapFile) return;
+    
+    std::cout << "🏔️ Setting up Bullet heightfield terrain..." << std::endl;
+    
+    // Create heightfield terrain system with partitioning
+    m_heightfieldTerrain = std::make_unique<CEBulletHeightfield>(mapFile, 32, 2000.0f);
+    
+    // Add all partitions to physics world
+    m_heightfieldTerrain->addPartitionsToWorld(m_dynamicsWorld);
+    
+    std::cout << "✅ Heightfield terrain setup complete with " 
+              << m_heightfieldTerrain->getPartitionCount() << " partitions" << std::endl;
 }
 
 void CEPhysicsWorld::setupTerrain(C2MapFile* mapFile)
@@ -218,8 +242,8 @@ void CEPhysicsWorld::setupWorldObjects(C2MapRscFile* mapRsc)
             btRigidBody* objectBody = createStaticBody(aabbShape, aabbPosition);
             
             // Add collision filtering for objects
-            short objectGroup = 1 << 2;  // Object collision group
-            short objectMask = 1 << 0;   // Only collide with projectiles (group 0)
+            short objectGroup = OBJECT_GROUP;    // Object collision group
+            short objectMask = PROJECTILE_GROUP; // Only collide with projectiles
             m_dynamicsWorld->removeRigidBody(objectBody);
             m_dynamicsWorld->addRigidBody(objectBody, objectGroup, objectMask);
             
@@ -289,8 +313,8 @@ void CEPhysicsWorld::setupWaterPlanes(C2MapFile* mapFile)
     
     // Set collision filtering to prevent interference with raycast detection
     // Use a specific collision group for water
-    short waterGroup = 1 << 1;  // Water collision group
-    short waterMask = 1 << 0;   // Only collide with projectiles (group 0)
+    short waterGroup = WATER_GROUP;      // Water collision group
+    short waterMask = PROJECTILE_GROUP;  // Only collide with projectiles
     m_dynamicsWorld->removeRigidBody(waterBody);
     m_dynamicsWorld->addRigidBody(waterBody, waterGroup, waterMask);
     
@@ -440,6 +464,13 @@ bool CEPhysicsWorld::hasContacts(btRigidBody* body)
     }
     
     return false;
+}
+
+void CEPhysicsWorld::updateHeightfieldForPosition(const glm::vec3& position)
+{
+    if (m_heightfieldTerrain) {
+        m_heightfieldTerrain->updateForPosition(position, m_dynamicsWorld);
+    }
 }
 
 void CEPhysicsWorld::removeRigidBody(btRigidBody* body)

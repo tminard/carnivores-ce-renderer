@@ -1,9 +1,9 @@
 {
   "basePath": "../../runtime/cce/",
   "map": {
-    "type": "C2",
-    "map": "../game/c2/area1.map",
-    "rsc": "../game/c2/area1.rsc"
+    "type": "C1",
+    "map": "../game/c1/area3.map",
+    "rsc": "../game/c1/area3.rsc"
   },
   "video": {
     "fullscreen": false

@@ -29,6 +29,7 @@ class btCollisionShape;
 class C2MapFile;
 class C2MapRscFile;
 class CEWorldModel;
+class CEBulletHeightfield;
 
 class CEPhysicsWorld
 {
@@ -37,7 +38,16 @@ public:
     enum class CollisionObjectType {
         TERRAIN = 0,
         WORLD_OBJECT = 1,
-        WATER_PLANE = 2
+        WATER_PLANE = 2,
+        HEIGHTFIELD_TERRAIN = 3
+    };
+    
+    // Collision groups for different object types
+    enum CollisionGroups {
+        PROJECTILE_GROUP = 1 << 0,
+        TERRAIN_GROUP = 1 << 1,
+        OBJECT_GROUP = 1 << 2,
+        WATER_GROUP = 1 << 3
     };
     
     struct CollisionObjectInfo {
@@ -69,10 +79,13 @@ private:
     btSequentialImpulseConstraintSolver* m_solver;
     btDiscreteDynamicsWorld* m_dynamicsWorld;
     
-    // Terrain collision
+    // Terrain collision (legacy - being replaced by heightfield)
     btTriangleMesh* m_terrainMesh;
     btBvhTriangleMeshShape* m_terrainShape;
     btRigidBody* m_terrainBody;
+    
+    // Heightfield terrain system
+    std::unique_ptr<CEBulletHeightfield> m_heightfieldTerrain;
     
     // World objects collision
     std::vector<btTriangleMesh*> m_objectMeshes;
@@ -91,6 +104,7 @@ private:
     
     // Helper methods
     void setupTerrain(C2MapFile* mapFile);
+    void setupHeightfieldTerrain(C2MapFile* mapFile);
     void setupWorldObjects(C2MapRscFile* mapRsc);
     void setupWaterPlanes(C2MapFile* mapFile);
     btRigidBody* createStaticBody(btCollisionShape* shape, const glm::vec3& position);
@@ -114,6 +128,10 @@ public:
     
     // Get the map reference for tile calculations
     C2MapFile* getMapFile() const { return m_mapFile; }
+    
+    // Heightfield terrain access
+    CEBulletHeightfield* getHeightfieldTerrain() const { return m_heightfieldTerrain.get(); }
+    void updateHeightfieldForPosition(const glm::vec3& position);
     
     // Cleanup
     void removeRigidBody(btRigidBody* body);

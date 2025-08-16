@@ -104,6 +104,15 @@ struct VisualImpactMarker {
   float scale;
 };
 
+struct ProjectileTraceLine {
+  glm::vec3 startPoint;
+  glm::vec3 endPoint;
+  glm::vec3 color;
+  double spawnTime;
+  std::string surfaceType;
+  float thickness;
+};
+
 // Sphere generation utility for impact markers
 std::vector<Vertex> generateSphere(float radius, int segments) {
   std::vector<Vertex> vertices;
@@ -128,16 +137,76 @@ std::vector<Vertex> generateSphere(float radius, int segments) {
   return vertices;
 }
 
+// Line generation utility for trace lines
+std::vector<Vertex> generateLine(const glm::vec3& start, const glm::vec3& end, float thickness) {
+  std::vector<Vertex> vertices;
+  
+  // Create a simple thick line using a thin box/cylinder approach
+  // For simplicity, we'll create a line as a stretched cube
+  glm::vec3 direction = glm::normalize(end - start);
+  float length = glm::distance(start, end);
+  
+  // Create 8 vertices for a thin box (line with thickness)
+  float halfThickness = thickness * 0.5f;
+  
+  // Calculate perpendicular vectors to create thickness
+  glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+  if (glm::abs(glm::dot(direction, up)) > 0.9f) {
+    up = glm::vec3(1.0f, 0.0f, 0.0f); // Use different up if direction is too close to Y
+  }
+  
+  glm::vec3 right = glm::normalize(glm::cross(direction, up));
+  up = glm::normalize(glm::cross(right, direction));
+  
+  // Create vertices for the line box
+  glm::vec3 offsets[8] = {
+    glm::vec3(-halfThickness, -halfThickness, 0.0f),
+    glm::vec3( halfThickness, -halfThickness, 0.0f),
+    glm::vec3( halfThickness,  halfThickness, 0.0f),
+    glm::vec3(-halfThickness,  halfThickness, 0.0f),
+    glm::vec3(-halfThickness, -halfThickness, length),
+    glm::vec3( halfThickness, -halfThickness, length),
+    glm::vec3( halfThickness,  halfThickness, length),
+    glm::vec3(-halfThickness,  halfThickness, length)
+  };
+  
+  // Transform offsets to world space
+  for (int i = 0; i < 8; i++) {
+    glm::vec3 localPos = right * offsets[i].x + up * offsets[i].y + direction * offsets[i].z;
+    glm::vec3 worldPos = start + localPos;
+    
+    Vertex vertex(worldPos, glm::vec2(0.0f), direction, false, 1.0f, 0, 0);
+    vertices.push_back(vertex);
+  }
+  
+  // Add indices to form triangles for the line box (12 triangles, 36 vertices)
+  // For simplicity, we'll create a basic line using just 2 vertices
+  vertices.clear();
+  Vertex startVertex(start, glm::vec2(0.0f), direction, false, 1.0f, 0, 0);
+  Vertex endVertex(end, glm::vec2(1.0f), direction, false, 1.0f, 0, 0);
+  vertices.push_back(startVertex);
+  vertices.push_back(endVertex);
+  
+  return vertices;
+}
+
 // Global impact tracking
 std::vector<ImpactEvent> recentImpacts;
 std::vector<VisualImpactMarker> visualImpactMarkers;
+std::vector<ProjectileTraceLine> projectileTraceLines;
 const size_t MAX_IMPACT_HISTORY = 10;
 const double IMPACT_MARKER_LIFETIME = 10.0; // Show markers for 10 seconds
+const double TRACE_LINE_LIFETIME = 8.0; // Show trace lines for 8 seconds
 
 // Impact marker rendering resources
 std::unique_ptr<CESimpleGeometry> impactMarkerGeometry;
 std::vector<glm::mat4> impactMarkerTransforms;
 std::vector<glm::vec3> impactMarkerColors;
+
+// Trace line rendering resources
+std::unique_ptr<CESimpleGeometry> traceLineGeometry;
+std::vector<glm::mat4> traceLineTransforms;
+std::vector<glm::vec3> traceLineColors;
 
 // Update impact markers: clean up old ones and prepare transforms for rendering
 void updateImpactMarkers(double currentTime) {
@@ -182,12 +251,51 @@ void updateImpactMarkers(double currentTime) {
   }
 }
 
+// Update trace lines: clean up old ones and prepare transforms for rendering
+void updateTraceLines(double currentTime) {
+  // Remove expired trace lines
+  size_t beforeCount = projectileTraceLines.size();
+  projectileTraceLines.erase(
+    std::remove_if(projectileTraceLines.begin(), projectileTraceLines.end(),
+      [currentTime](const ProjectileTraceLine& traceLine) {
+        return (currentTime - traceLine.spawnTime) > TRACE_LINE_LIFETIME;
+      }),
+    projectileTraceLines.end());
+  
+  // Debug: Log trace line count changes
+  if (beforeCount != projectileTraceLines.size()) {
+    std::cout << "🗑️ Cleaned up trace lines: " << beforeCount << " -> " << projectileTraceLines.size() << std::endl;
+  }
+  
+  // Clear previous frame data
+  traceLineTransforms.clear();
+  traceLineColors.clear();
+  
+  // Build transforms and colors for each active trace line
+  for (const auto& traceLine : projectileTraceLines) {
+    // For lines, we'll use the identity transform since the line geometry already contains world positions
+    glm::mat4 transform = glm::mat4(1.0f);
+    
+    // Fade out trace lines as they age
+    double age = currentTime - traceLine.spawnTime;
+    float fadeAlpha = 1.0f - (float)(age / TRACE_LINE_LIFETIME);
+    fadeAlpha = glm::clamp(fadeAlpha, 0.0f, 1.0f);
+    
+    traceLineTransforms.push_back(transform);
+    
+    // Store color with fade alpha
+    glm::vec3 fadedColor = traceLine.color * fadeAlpha;
+    traceLineColors.push_back(fadedColor);
+  }
+}
+
 // Debug UI control
 bool showDebugUI = false; // Set to false to disable all ImGui panels for maximum performance
 
 // Forward declarations for external use
 extern void addImpactEvent(const glm::vec3& location, const std::string& surfaceType, float distance, float damage, const std::string& impactType);
 extern void addImpactEvent(const glm::vec3& location, const std::string& surfaceType, float distance, float damage, const std::string& impactType, const std::string& objectName, int objectIndex, int instanceIndex);
+extern void addProjectileTraceLine(const glm::vec3& startPoint, const glm::vec3& endPoint, const std::string& surfaceType);
 
 void addImpactEvent(const glm::vec3& location, const std::string& surfaceType, float distance, float damage, const std::string& impactType) {
   ImpactEvent event;
@@ -213,17 +321,17 @@ void addImpactEvent(const glm::vec3& location, const std::string& surfaceType, f
   marker.surfaceType = surfaceType;
   marker.scale = 50.0f; // Large spheres to make them very visible
   
-  // Color code by surface type for easy identification
+  // Use dark/muted colors for impact markers (contrast with bright trace lines)
   if (surfaceType == "terrain") {
-    marker.color = glm::vec3(0.8f, 0.6f, 0.2f); // Brown/orange for terrain
+    marker.color = glm::vec3(0.4f, 0.3f, 0.1f); // DARK BROWN for terrain
   } else if (surfaceType == "water") {
-    marker.color = glm::vec3(0.2f, 0.6f, 1.0f); // Blue for water
+    marker.color = glm::vec3(0.1f, 0.3f, 0.5f); // DARK BLUE for water
   } else if (surfaceType == "object") {
-    marker.color = glm::vec3(1.0f, 0.2f, 0.2f); // Red for objects
+    marker.color = glm::vec3(0.5f, 0.1f, 0.1f); // DARK RED for objects
   } else if (surfaceType == "out-of-bounds") {
-    marker.color = glm::vec3(1.0f, 0.0f, 1.0f); // Magenta for out-of-bounds
+    marker.color = glm::vec3(0.3f, 0.3f, 0.3f); // DARK GRAY for out-of-bounds
   } else {
-    marker.color = glm::vec3(1.0f, 1.0f, 0.0f); // Yellow for unknown
+    marker.color = glm::vec3(0.5f, 0.5f, 0.1f); // DARK YELLOW for unknown
   }
   
   visualImpactMarkers.push_back(marker);
@@ -255,17 +363,17 @@ void addImpactEvent(const glm::vec3& location, const std::string& surfaceType, f
   marker.surfaceType = surfaceType;
   marker.scale = 50.0f; // Large spheres to make them very visible
   
-  // Color code by surface type for easy identification
+  // Use dark/muted colors for impact markers (contrast with bright trace lines)
   if (surfaceType == "terrain") {
-    marker.color = glm::vec3(0.8f, 0.6f, 0.2f); // Brown/orange for terrain
+    marker.color = glm::vec3(0.4f, 0.3f, 0.1f); // DARK BROWN for terrain
   } else if (surfaceType == "water") {
-    marker.color = glm::vec3(0.2f, 0.6f, 1.0f); // Blue for water
+    marker.color = glm::vec3(0.1f, 0.3f, 0.5f); // DARK BLUE for water
   } else if (surfaceType == "object") {
-    marker.color = glm::vec3(1.0f, 0.2f, 0.2f); // Red for objects
+    marker.color = glm::vec3(0.5f, 0.1f, 0.1f); // DARK RED for objects
   } else if (surfaceType == "out-of-bounds") {
-    marker.color = glm::vec3(1.0f, 0.0f, 1.0f); // Magenta for out-of-bounds
+    marker.color = glm::vec3(0.3f, 0.3f, 0.3f); // DARK GRAY for out-of-bounds
   } else {
-    marker.color = glm::vec3(1.0f, 1.0f, 0.0f); // Yellow for unknown
+    marker.color = glm::vec3(0.5f, 0.5f, 0.1f); // DARK YELLOW for unknown
   }
   
   visualImpactMarkers.push_back(marker);
@@ -275,6 +383,35 @@ void addImpactEvent(const glm::vec3& location, const std::string& surfaceType, f
   } else {
     std::cout << "📍 Created visual marker at [" << location.x << ", " << location.y << ", " << location.z << "] - " << surfaceType << " (Total: " << visualImpactMarkers.size() << ")" << std::endl;
   }
+}
+
+void addProjectileTraceLine(const glm::vec3& startPoint, const glm::vec3& endPoint, const std::string& surfaceType) {
+  ProjectileTraceLine traceLine;
+  traceLine.startPoint = startPoint;
+  traceLine.endPoint = endPoint;
+  traceLine.spawnTime = glfwGetTime();
+  traceLine.surfaceType = surfaceType;
+  traceLine.thickness = 4.0f; // Thin but visible line
+  
+  // Use VERY distinct colors for trace lines (easy to distinguish)
+  if (surfaceType == "terrain") {
+    traceLine.color = glm::vec3(0.0f, 0.0f, 1.0f); // PURE BLUE for terrain
+  } else if (surfaceType == "water") {
+    traceLine.color = glm::vec3(0.0f, 1.0f, 1.0f); // CYAN for water
+  } else if (surfaceType == "object") {
+    traceLine.color = glm::vec3(1.0f, 0.0f, 0.0f); // PURE RED for objects
+  } else if (surfaceType == "out-of-bounds") {
+    traceLine.color = glm::vec3(1.0f, 1.0f, 1.0f); // PURE WHITE for out-of-bounds
+  } else {
+    traceLine.color = glm::vec3(1.0f, 0.0f, 1.0f); // PURE MAGENTA for unknown
+  }
+  
+  projectileTraceLines.push_back(traceLine);
+  
+  float distance = glm::distance(startPoint, endPoint);
+  std::cout << "🎯 Created trace line from [" << startPoint.x << ", " << startPoint.y << ", " << startPoint.z 
+            << "] to [" << endPoint.x << ", " << endPoint.y << ", " << endPoint.z 
+            << "] - " << surfaceType << " (Distance: " << std::fixed << std::setprecision(1) << distance << " units, Total: " << projectileTraceLines.size() << ")" << std::endl;
 }
 
 void updateAndRenderImpactMarkers(double currentTime) {
@@ -622,6 +759,15 @@ int main(int argc, const char * argv[])
   
   impactMarkerGeometry = std::make_unique<CESimpleGeometry>(sphereVertices, std::move(markerTexture));
   
+  // Initialize trace line geometry (simple line for trajectory visualization)
+  std::vector<Vertex> lineVertices = generateLine(glm::vec3(0, 0, 0), glm::vec3(1, 0, 0), 2.0f); // Simple horizontal line template
+  
+  // Create a bright colored texture for trace lines (16x16 bright pixels) 
+  std::vector<uint16_t> brightTextureData(markerTexSize * markerTexSize, 0xFFFF); // All bright pixels
+  std::unique_ptr<CETexture> lineTexture = std::make_unique<CETexture>(brightTextureData, markerTexSize * markerTexSize * 2, markerTexSize, markerTexSize);
+  
+  traceLineGeometry = std::make_unique<CESimpleGeometry>(lineVertices, std::move(lineTexture));
+  
   // Set light direction to be extremely vertical (like sun directly overhead)
   // Almost perfectly straight down
   shadowManager->setLightDirection(glm::vec3(0.05f, -1.0f, 0.02f));
@@ -758,6 +904,9 @@ int main(int argc, const char * argv[])
     
     // Update visual impact markers
     updateImpactMarkers(currentTime);
+    
+    // Update trace lines
+    updateTraceLines(currentTime);
     
     Camera* camera = g_player_controller->getCamera();
     
@@ -1003,6 +1152,71 @@ int main(int argc, const char * argv[])
       }
       
       glEnable(GL_CULL_FACE);
+    }
+    
+    // Render trace lines (always on for debugging) - simulate with large spheres for now
+    if (!projectileTraceLines.empty()) {
+      std::cout << "🎨 Rendering " << projectileTraceLines.size() << " trace lines as sphere pairs" << std::endl;
+      
+      // For now, render trace lines as pairs of large colored spheres at start and end points
+      // This is a temporary solution until we implement proper line rendering
+      glDepthFunc(GL_LESS);
+      glDisable(GL_CULL_FACE);
+      glEnable(GL_DEPTH_TEST);
+      
+      // Use impact marker geometry to render large spheres at start/end points
+      if (impactMarkerGeometry) {
+        auto shader = impactMarkerGeometry->getShader();
+        if (shader) {
+          shader->use();
+          shader->setBool("useCustomColor", true);
+        }
+        
+        for (const auto& traceLine : projectileTraceLines) {
+          // Render start point as large sphere
+          std::vector<glm::mat4> startTransforms;
+          glm::mat4 startTransform = glm::mat4(1.0f);
+          startTransform = glm::translate(startTransform, traceLine.startPoint);
+          startTransform = glm::scale(startTransform, glm::vec3(100.0f)); // Very large spheres
+          startTransforms.push_back(startTransform);
+          
+          if (shader) {
+            shader->setVec3("customColor", traceLine.color);
+          }
+          
+          impactMarkerGeometry->UpdateInstances(startTransforms);
+          impactMarkerGeometry->Update(*camera);
+          impactMarkerGeometry->DrawInstances();
+          
+          // Render end point as large sphere with slightly different color
+          std::vector<glm::mat4> endTransforms;
+          glm::mat4 endTransform = glm::mat4(1.0f);
+          endTransform = glm::translate(endTransform, traceLine.endPoint);
+          endTransform = glm::scale(endTransform, glm::vec3(80.0f)); // Slightly smaller for end point
+          endTransforms.push_back(endTransform);
+          
+          glm::vec3 endColor = traceLine.color * 1.2f; // Brighter end point
+          if (shader) {
+            shader->setVec3("customColor", endColor);
+          }
+          
+          impactMarkerGeometry->UpdateInstances(endTransforms);
+          impactMarkerGeometry->Update(*camera);
+          impactMarkerGeometry->DrawInstances();
+          
+          std::cout << "  📍 Start: [" << traceLine.startPoint.x << "," << traceLine.startPoint.y << "," << traceLine.startPoint.z 
+                    << "] End: [" << traceLine.endPoint.x << "," << traceLine.endPoint.y << "," << traceLine.endPoint.z 
+                    << "] Color: (" << traceLine.color.r << "," << traceLine.color.g << "," << traceLine.color.b << ")" << std::endl;
+        }
+        
+        // Reset custom color flag
+        if (shader) {
+          shader->setBool("useCustomColor", false);
+        }
+      }
+      
+      glEnable(GL_CULL_FACE);
+      std::cout << "✅ Trace lines rendered as sphere pairs" << std::endl;
     }
     
     // Render the sky

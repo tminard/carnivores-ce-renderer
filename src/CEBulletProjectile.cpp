@@ -9,6 +9,7 @@
 #include "CEPhysicsWorld.h"
 #include "CETerrainPartition.h"
 #include "C2MapFile.h"
+#include "CEWorldModel.h"
 
 // Bullet Physics includes
 #include <btBulletDynamicsCommon.h>
@@ -19,6 +20,9 @@
 #include <unordered_map>
 
 // Impact event logging is handled by the projectile manager
+
+// Forward declaration for trace line system
+extern void addProjectileTraceLine(const glm::vec3& startPoint, const glm::vec3& endPoint, const std::string& surfaceType);
 
 
 CEBulletProjectile::CEBulletProjectile(btDiscreteDynamicsWorld* world, 
@@ -73,9 +77,9 @@ CEBulletProjectile::CEBulletProjectile(btDiscreteDynamicsWorld* world,
     
     // Add to physics world with collision filtering
     if (world) {
-        // Use collision group 0 for projectiles
-        short projectileGroup = 1 << 0;  // Projectile collision group  
-        short projectileMask = (1 << 1) | (1 << 2); // Can collide with water (group 1) and objects (group 2)
+        // Use CEPhysicsWorld collision groups
+        short projectileGroup = 1 << 0;  // PROJECTILE_GROUP
+        short projectileMask = (1 << 1) | (1 << 2) | (1 << 3); // Can collide with TERRAIN_GROUP, OBJECT_GROUP, WATER_GROUP
         world->addRigidBody(m_rigidBody, projectileGroup, projectileMask);
         m_spawnTime = glfwGetTime(); // Set spawn time when added to world
     }
@@ -186,6 +190,9 @@ bool CEBulletProjectile::checkForCollisions(CEPhysicsWorld* physics)
                 case CEPhysicsWorld::CollisionObjectType::TERRAIN:
                     m_impactSurfaceType = "terrain";
                     break;
+                case CEPhysicsWorld::CollisionObjectType::HEIGHTFIELD_TERRAIN:
+                    m_impactSurfaceType = "terrain";
+                    break;
                 case CEPhysicsWorld::CollisionObjectType::WORLD_OBJECT:
                     m_impactSurfaceType = "object";
                     break;
@@ -202,6 +209,9 @@ bool CEBulletProjectile::checkForCollisions(CEPhysicsWorld* physics)
             m_impactNormal = glm::vec3(0, 1, 0);
             m_impactSurfaceType = "terrain";
         }
+        
+        // Add trace line from spawn to impact with correct surface type
+        addProjectileTraceLine(m_spawnPosition, m_impactPoint, m_impactSurfaceType);
         
         // Contact manifold impact detected
         return true;
@@ -244,12 +254,35 @@ bool CEBulletProjectile::checkForCollisions(CEPhysicsWorld* physics)
                 m_impactDistance = glm::distance(m_impactPoint, m_spawnPosition);
                 m_impactSurfaceType = "water";
                 
+                // Add trace line from spawn to impact
+                addProjectileTraceLine(m_spawnPosition, m_impactPoint, m_impactSurfaceType);
+                
                 return true;
             } else if (rayResult.objectInfo.type == CEPhysicsWorld::CollisionObjectType::WORLD_OBJECT) {
-                std::cout << "🚨 COLLISION Method 2: Object AABB hit at [" << rayResult.hitPoint.x << ", " << rayResult.hitPoint.y << ", " << rayResult.hitPoint.z << "] - " << rayResult.objectInfo.objectName << std::endl;
+                std::cout << "🎯 AABB Hit: " << rayResult.objectInfo.objectName << " at [" << rayResult.hitPoint.x << ", " << rayResult.hitPoint.y << ", " << rayResult.hitPoint.z << "]" << std::endl;
                 
-                // TODO: Implement TBound narrowphase testing here
-                // For now, just register the AABB hit
+                // Check if this object should block projectiles based on visibility flags
+                if (rayResult.objectInfo.worldModel) {
+                    TObjInfo* objInfo = rayResult.objectInfo.worldModel->getObjectInfo();
+                    if (objInfo) {
+                        // Objects with objectNOLIGHT flag are invisible bounding boxes - projectiles pass through
+                        // This allows dinosaurs/players to hide behind solid objects but not behind invisible bounds
+                        bool isInvisibleBoundingBox = (objInfo->flags & objectNOLIGHT) != 0;
+                        
+                        if (isInvisibleBoundingBox) {
+                            std::cout << "🚶 Projectile passes through invisible bounding box: " << rayResult.objectInfo.objectName 
+                                      << " (flags: 0x" << std::hex << objInfo->flags << std::dec << ")" << std::endl;
+                            // Don't register as impact - let projectile continue to hit what's behind it
+                            return false;
+                        } else {
+                            std::cout << "🛡️ Object is solid (flags: 0x" << std::hex << objInfo->flags << std::dec << "): " << rayResult.objectInfo.objectName << std::endl;
+                        }
+                    }
+                }
+                
+                // Register solid object hit
+                std::cout << "🚨 COLLISION Method 2: Solid object hit at [" << rayResult.hitPoint.x << ", " << rayResult.hitPoint.y << ", " << rayResult.hitPoint.z << "] - " << rayResult.objectInfo.objectName << std::endl;
+                
                 m_hasImpacted = true;
                 m_checkedForContacts = true;
                 m_impactPoint = rayResult.hitPoint;
@@ -262,51 +295,153 @@ bool CEBulletProjectile::checkForCollisions(CEPhysicsWorld* physics)
                 m_impactObjectIndex = rayResult.objectInfo.objectIndex;
                 m_impactInstanceIndex = rayResult.objectInfo.instanceIndex;
                 
+                // Add trace line from spawn to impact
+                addProjectileTraceLine(m_spawnPosition, m_impactPoint, m_impactSurfaceType);
+                
                 return true;
             }
         }
     }
     
-    // Method 3: Partitioned terrain collision
+    // Method 3: Terrain collision - now handled by Bullet heightfield if available
     if (physics->getMapFile()) {
-        // Create terrain partition system (lightweight, could be cached)
+        // Check if we have Bullet heightfield terrain available
+        if (physics->getHeightfieldTerrain()) {
+            // Bullet heightfield terrain is active - collision handled automatically by contact manifolds
+            // No manual terrain collision needed - return false to rely on Method 1 (contact manifolds)
+            return false;
+        }
+        
+        // Fallback: Use legacy terrain partition system for manual collision detection
         static std::unique_ptr<CETerrainPartition> terrainPartition = nullptr;
         if (!terrainPartition) {
             terrainPartition = std::make_unique<CETerrainPartition>(physics->getMapFile(), 32);
         }
         
-        // Get partitions for current position
-        auto partitionIndices = terrainPartition->getPartitionsForPosition(currentPos);
+        // Get previous position to create a ray segment
+        static std::unordered_map<btRigidBody*, glm::vec3> previousPositions;
+        glm::vec3 prevPos = previousPositions.count(m_rigidBody) ? previousPositions[m_rigidBody] : m_spawnPosition;
+        previousPositions[m_rigidBody] = currentPos;
         
-        if (partitionIndices.empty()) {
-            // Out of bounds
-            m_hasImpacted = true;
-            m_checkedForContacts = true;
-            m_impactPoint = currentPos;
-            m_impactNormal = glm::vec3(0, 1, 0);
-            m_impactDistance = glm::distance(m_impactPoint, m_spawnPosition);
-            m_impactSurfaceType = "out-of-bounds";
-            
-            std::cout << "🚨 COLLISION Method 3: Out-of-bounds at [" << currentPos.x << ", " << currentPos.y << ", " << currentPos.z << "]" << std::endl;
-            return true;
+        // Layer 1: Get tile candidates along ray path (max 16 tiles)
+        auto tileCandidates = terrainPartition->getTileCandidatesForRay(prevPos, currentPos);
+        
+        // Debug: Log ray and tile info
+        static int debugCount = 0;
+        debugCount++;
+        if (debugCount <= 3) { // Only log first few attempts
+            std::cout << "🔍 Ray from [" << prevPos.x << "," << prevPos.y << "," << prevPos.z 
+                      << "] to [" << currentPos.x << "," << currentPos.y << "," << currentPos.z 
+                      << "] found " << tileCandidates.size() << " tile candidates" << std::endl;
         }
         
-        // Check for terrain collision within relevant partitions
-        glm::vec3 hitPoint;
-        float groundHeight;
+        if (tileCandidates.empty()) {
+            // Check if we're actually out of bounds or if there's an issue with tile detection
+            C2MapFile* mapFile = physics->getMapFile();
+            float tileSize = mapFile->getTileLength();
+            int tileX = (int)std::floor(currentPos.x / tileSize);
+            int tileZ = (int)std::floor(currentPos.z / tileSize);
+            
+            bool actuallyOOB = (tileX < 0 || tileX >= mapFile->getWidth() || 
+                               tileZ < 0 || tileZ >= mapFile->getHeight());
+            
+            if (actuallyOOB) {
+                m_hasImpacted = true;
+                m_checkedForContacts = true;
+                m_impactPoint = currentPos;
+                m_impactNormal = glm::vec3(0, 1, 0);
+                m_impactDistance = glm::distance(m_impactPoint, m_spawnPosition);
+                m_impactSurfaceType = "out-of-bounds";
+                
+                // Add trace line from spawn to impact
+                addProjectileTraceLine(m_spawnPosition, m_impactPoint, m_impactSurfaceType);
+                
+                std::cout << "🚨 COLLISION Method 3: Actually out-of-bounds at tile[" << tileX << "," << tileZ 
+                          << "] map size[" << mapFile->getWidth() << "," << mapFile->getHeight() << "]" << std::endl;
+                return true;
+            } else {
+                // Not actually OOB, just no tile candidates found - fall back to simple check
+                std::cout << "⚠️ No tile candidates but position is valid at tile[" << tileX << "," << tileZ << "]" << std::endl;
+            }
+        }
         
-        if (terrainPartition->checkHeightCollision(currentPos, partitionIndices, hitPoint, groundHeight)) {
-            std::cout << "🚨 COLLISION Method 3: Partitioned terrain hit at [" << hitPoint.x << ", " << hitPoint.y << ", " << hitPoint.z 
-                      << "] partitions:" << partitionIndices.size() << std::endl;
+        // Layer 2: Test each tile candidate for precise ray-ground intersection
+        for (const auto& candidate : tileCandidates) {
+            // Quick height bounds check first
+            if (std::min(prevPos.y, currentPos.y) > candidate.maxHeight) {
+                continue; // Ray is entirely above this tile's max height
+            }
+            if (std::max(prevPos.y, currentPos.y) < candidate.minHeight) {
+                continue; // Ray is entirely below this tile's min height  
+            }
             
-            m_hasImpacted = true;
-            m_checkedForContacts = true;
-            m_impactPoint = hitPoint;
-            m_impactNormal = glm::vec3(0, 1, 0); // Simple upward normal for now
-            m_impactDistance = glm::distance(m_impactPoint, m_spawnPosition);
-            m_impactSurfaceType = "terrain";
+            // Precise ray-ground intersection for this tile
+            float groundHeight = physics->getMapFile()->getPlaceGroundHeight(candidate.tileX, candidate.tileZ);
             
-            return true;
+            // Check if ray segment crosses the ground plane
+            bool prevAbove = prevPos.y > groundHeight;
+            bool currentBelow = currentPos.y <= groundHeight;
+            
+            if (prevAbove && currentBelow) {
+                // Calculate exact intersection point
+                float t = (prevPos.y - groundHeight) / (prevPos.y - currentPos.y);
+                glm::vec3 intersectionPoint = prevPos + t * (currentPos - prevPos);
+                intersectionPoint.y = groundHeight; // Clamp to ground height
+                
+                std::cout << "🚨 COLLISION Method 3: Ray-ground intersection at tile[" << candidate.tileX << "," << candidate.tileZ 
+                          << "] ground=" << groundHeight << " prev=" << prevPos.y << " curr=" << currentPos.y << std::endl;
+                
+                m_hasImpacted = true;
+                m_checkedForContacts = true;
+                m_impactPoint = intersectionPoint;
+                m_impactNormal = glm::vec3(0, 1, 0); // Simple upward normal for now
+                m_impactDistance = glm::distance(m_impactPoint, m_spawnPosition);
+                m_impactSurfaceType = "terrain";
+                
+                // Add trace line from spawn to impact
+                addProjectileTraceLine(m_spawnPosition, m_impactPoint, m_impactSurfaceType);
+                
+                return true;
+            }
+        }
+        
+        // Fallback: If no tile candidates but position is valid, use simple position check
+        if (tileCandidates.empty()) {
+            C2MapFile* mapFile = physics->getMapFile();
+            float tileSize = mapFile->getTileLength();
+            int tileX = (int)std::floor(currentPos.x / tileSize);
+            int tileZ = (int)std::floor(currentPos.z / tileSize);
+            
+            if (tileX >= 0 && tileX < mapFile->getWidth() && 
+                tileZ >= 0 && tileZ < mapFile->getHeight()) {
+                
+                float groundHeight = mapFile->getPlaceGroundHeight(tileX, tileZ);
+                
+                // Check if ray crosses ground plane  
+                bool prevAbove = prevPos.y > groundHeight;
+                bool currentBelow = currentPos.y <= groundHeight;
+                
+                if (prevAbove && currentBelow) {
+                    float t = (prevPos.y - groundHeight) / (prevPos.y - currentPos.y);
+                    glm::vec3 intersectionPoint = prevPos + t * (currentPos - prevPos);
+                    intersectionPoint.y = groundHeight;
+                    
+                    std::cout << "🚨 COLLISION Method 3: Fallback terrain hit at tile[" << tileX << "," << tileZ 
+                              << "] ground=" << groundHeight << std::endl;
+                    
+                    m_hasImpacted = true;
+                    m_checkedForContacts = true;
+                    m_impactPoint = intersectionPoint;
+                    m_impactNormal = glm::vec3(0, 1, 0);
+                    m_impactDistance = glm::distance(m_impactPoint, m_spawnPosition);
+                    m_impactSurfaceType = "terrain";
+                    
+                    // Add trace line from spawn to impact
+                    addProjectileTraceLine(m_spawnPosition, m_impactPoint, m_impactSurfaceType);
+                    
+                    return true;
+                }
+            }
         }
     }
     

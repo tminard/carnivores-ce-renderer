@@ -104,4 +104,5 @@ public:
   const std::vector<Transform>& getTransforms() const;
   
   bool hasBoundingBox();
+  const std::array<TBound, 8>& getBoundingBoxes() const;
 };

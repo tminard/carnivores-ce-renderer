@@ -890,6 +890,23 @@ int main(int argc, const char * argv[])
       glEnable(GL_CULL_FACE);
     }
     
+    // Render debug bounding boxes if enabled
+    if (render_objects && input_manager->GetShowBoundingBoxes()) {
+      glDepthFunc(GL_LESS);
+      glEnable(GL_DEPTH_TEST);
+      
+      // Get view-projection matrix for shader setup (if needed)
+      glm::mat4 viewProjectionMatrix = camera->getProjectionMatrix() * camera->getViewMatrix();
+      
+      // Render bounding boxes for all world object models
+      for (int m = 0; m < cMapRsc->getWorldModelCount(); m++) {
+        CEWorldModel* model = cMapRsc->getWorldModel(m);
+        if (model) {
+          model->renderBoundingBox(viewProjectionMatrix);
+        }
+      }
+    }
+    
     // Render models
     if (render_objects) {
       glDepthFunc(GL_LESS);

@@ -134,6 +134,22 @@ void LocalInputManager::ProcessLocalInput(GLFWwindow* window, float deltaTime)
       this->m_last_key_state[GLFW_KEY_P] = GLFW_RELEASE;
     }
     
+    // Handle B key for bounding box visualization toggle
+    if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS && this->m_last_key_state[GLFW_KEY_B] != GLFW_PRESS) {
+      this->m_last_key_state[GLFW_KEY_B] = GLFW_PRESS;
+      
+      this->m_show_bounding_boxes = !this->m_show_bounding_boxes;
+      
+      if (this->m_show_bounding_boxes) {
+        std::cout << "Debug: Bounding box visualization ENABLED" << std::endl;
+      } else {
+        std::cout << "Debug: Bounding box visualization DISABLED" << std::endl;
+      }
+    }
+    else if (glfwGetKey(window, GLFW_KEY_B) == GLFW_RELEASE) {
+      this->m_last_key_state[GLFW_KEY_B] = GLFW_RELEASE;
+    }
+    
     // Handle right mouse button for weapon toggle
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS && 
         this->m_last_mouse_state[GLFW_MOUSE_BUTTON_RIGHT] != GLFW_PRESS) {

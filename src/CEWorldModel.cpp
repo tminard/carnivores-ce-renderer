@@ -9,6 +9,7 @@
 #include <map>
 
 #include "IndexedMeshLoader.h"
+#include "shader_program.h"
 
 // #include <GLFW/glfw3.h>
 
@@ -199,6 +200,10 @@ bool CEWorldModel::hasBoundingBox() {
   return m_old_object_info->flags & objectBOUND;
 }
 
+const std::array<TBound, 8>& CEWorldModel::getBoundingBoxes() const {
+  return m_bounding_box;
+}
+
 CESimpleGeometry* CEWorldModel::getFarGeometry()
 {
   return this->m_far_geometry.get();
@@ -266,6 +271,180 @@ void CEWorldModel::_generateBoundingBox(std::vector<Vertex>& vertex_data)
 }
 
 CEWorldModel::~CEWorldModel() {}
+
+// Function to generate wireframe box vertices as triangles for AABB visualization
+std::vector<Vertex> generateWireframeBox(const glm::vec3& min, const glm::vec3& max) {
+  std::vector<Vertex> vertices;
+  
+  // Define 8 corners of the box
+  std::vector<glm::vec3> corners = {
+    {min.x, min.y, min.z}, // 0: bottom-left-front
+    {max.x, min.y, min.z}, // 1: bottom-right-front 
+    {max.x, max.y, min.z}, // 2: top-right-front
+    {min.x, max.y, min.z}, // 3: top-left-front
+    {min.x, min.y, max.z}, // 4: bottom-left-back
+    {max.x, min.y, max.z}, // 5: bottom-right-back
+    {max.x, max.y, max.z}, // 6: top-right-back
+    {min.x, max.y, max.z}  // 7: top-left-back
+  };
+  
+  // Create wireframe using thin triangular faces for the 12 edges
+  // Each edge becomes a thin rectangular face made of 2 triangles
+  float lineWidth = 0.01f; // Very thin lines
+  
+  std::vector<std::pair<int, int>> edges = {
+    // Bottom face
+    {0, 1}, {1, 2}, {2, 3}, {3, 0},
+    // Top face  
+    {4, 5}, {5, 6}, {6, 7}, {7, 4},
+    // Vertical edges
+    {0, 4}, {1, 5}, {2, 6}, {3, 7}
+  };
+  
+  for (const auto& edge : edges) {
+    glm::vec3 start = corners[edge.first];
+    glm::vec3 end = corners[edge.second];
+    glm::vec3 direction = glm::normalize(end - start);
+    
+    // Create a simple perpendicular vector for line thickness
+    glm::vec3 perp = glm::vec3(0, 1, 0);
+    if (glm::abs(glm::dot(direction, perp)) > 0.9f) {
+      perp = glm::vec3(1, 0, 0);
+    }
+    perp = glm::normalize(glm::cross(direction, perp)) * lineWidth;
+    
+    // Create 4 vertices for the rectangular face (2 triangles)
+    glm::vec3 v1 = start - perp;
+    glm::vec3 v2 = start + perp;  
+    glm::vec3 v3 = end + perp;
+    glm::vec3 v4 = end - perp;
+    
+    // First triangle: v1, v2, v3
+    vertices.emplace_back(v1, glm::vec2(0, 0), glm::vec3(0, 1, 0), false, 1.0f, 0, 0);
+    vertices.emplace_back(v2, glm::vec2(0, 0), glm::vec3(0, 1, 0), false, 1.0f, 0, 0);
+    vertices.emplace_back(v3, glm::vec2(0, 0), glm::vec3(0, 1, 0), false, 1.0f, 0, 0);
+    
+    // Second triangle: v1, v3, v4
+    vertices.emplace_back(v1, glm::vec2(0, 0), glm::vec3(0, 1, 0), false, 1.0f, 0, 0);
+    vertices.emplace_back(v3, glm::vec2(0, 0), glm::vec3(0, 1, 0), false, 1.0f, 0, 0);
+    vertices.emplace_back(v4, glm::vec2(0, 0), glm::vec3(0, 1, 0), false, 1.0f, 0, 0);
+  }
+  
+  return vertices;
+}
+
+void CEWorldModel::renderBoundingBox(const glm::mat4& viewProjectionMatrix) {
+  // Debug: Check model data and flags
+  static bool firstDebug = true;
+  if (firstDebug) {
+    std::cout << "🔍 Model debug info:" << std::endl;
+    std::cout << "   Has objectBOUND flag: " << (hasBoundingBox() ? "YES" : "NO") << std::endl;
+    std::cout << "   Object flags: 0x" << std::hex << m_old_object_info->flags << std::dec << std::endl;
+    std::cout << "   Transform instances: " << m_transforms.size() << std::endl;
+    std::cout << "   Object radius: " << m_old_object_info->Radius << std::endl;
+    std::cout << "   Object YLo/YHi: " << m_old_object_info->YLo << "/" << m_old_object_info->YHi << std::endl;
+    firstDebug = false;
+  }
+  
+  // For debugging purposes, let's generate bounding boxes for all objects, not just those with objectBOUND
+  // This matches the original Carnivores approach where physics AABB could be generated for any object
+  if (m_transforms.empty()) {
+    return; // No instances to render
+  }
+  
+  // Static variables to avoid recreation every frame
+  static std::unique_ptr<CESimpleGeometry> boundingBoxGeometry;
+  static bool geometryInitialized = false;
+  
+  // Initialize geometry once
+  if (!geometryInitialized) {
+    // Create a simple wireframe box geometry (unit cube)
+    glm::vec3 min(-0.5f, -0.5f, -0.5f);
+    glm::vec3 max(0.5f, 0.5f, 0.5f);
+    std::vector<Vertex> boxVertices = generateWireframeBox(min, max);
+    
+    // Create a simple white texture for the wireframe
+    const int texSize = 4;
+    std::vector<uint16_t> whiteTextureData(texSize * texSize, 0xFFFF);
+    std::unique_ptr<CETexture> wireframeTexture = std::make_unique<CETexture>(whiteTextureData, texSize * texSize * 2, texSize, texSize);
+    
+    boundingBoxGeometry = std::make_unique<CESimpleGeometry>(boxVertices, std::move(wireframeTexture));
+    geometryInitialized = true;
+  }
+  
+  // Collect all transform matrices for bounding boxes
+  std::vector<glm::mat4> boundingBoxTransforms;
+  
+  // Create transforms for each transform instance of this model
+  for (const auto& modelTransform : m_transforms) {
+    glm::vec3 modelPosition = *const_cast<Transform&>(modelTransform).GetPos();
+    
+    // Generate AABB from object's basic dimensions (like original Carnivores physics)
+    float radius = m_old_object_info->Radius;
+    float yLo = m_old_object_info->YLo;
+    float yHi = m_old_object_info->YHi;
+    
+    if (radius > 0) { // Valid object with dimensions
+      // Create a simple cylindrical AABB using radius and height
+      glm::vec3 aabbMin(-radius, yLo, -radius);
+      glm::vec3 aabbMax(radius, yHi, radius);
+      
+      // Calculate size and center
+      glm::vec3 size = aabbMax - aabbMin;
+      glm::vec3 center = (aabbMax + aabbMin) * 0.5f;
+      
+      // Create transform matrix: translate to world position + local center, then scale by AABB size  
+      glm::mat4 transform = glm::mat4(1.0f);
+      transform = glm::translate(transform, modelPosition + center);
+      transform = glm::scale(transform, size);
+      
+      boundingBoxTransforms.push_back(transform);
+      
+      // Debug first successful transform
+      if (boundingBoxTransforms.size() == 1) {
+        std::cout << "✅ Created first bounding box transform at position [" 
+                  << modelPosition.x << ", " << modelPosition.y << ", " << modelPosition.z << "]" << std::endl;
+        std::cout << "   AABB size: [" << size.x << ", " << size.y << ", " << size.z << "]" << std::endl;
+        std::cout << "   From radius=" << radius << " yLo=" << yLo << " yHi=" << yHi << std::endl;
+      }
+    }
+  }
+  
+  // Debug: Log bounding box rendering attempt
+  static bool firstRender = true;
+  if (firstRender) {
+    std::cout << "🔲 renderBoundingBox called for model with " << boundingBoxTransforms.size() << " transforms" << std::endl;
+    if (!boundingBoxTransforms.empty()) {
+      std::cout << "   First transform matrix: " << std::endl;
+      for (int i = 0; i < 4; i++) {
+        std::cout << "     [" << boundingBoxTransforms[0][i][0] << ", " << boundingBoxTransforms[0][i][1] << ", " << boundingBoxTransforms[0][i][2] << ", " << boundingBoxTransforms[0][i][3] << "]" << std::endl;
+      }
+    }
+    firstRender = false;
+  }
+  
+  // Render all bounding boxes if we have any
+  if (!boundingBoxTransforms.empty()) {
+    // Set up shader for wireframe rendering
+    auto shader = boundingBoxGeometry->getShader();
+    if (shader) {
+      shader->use();
+      shader->setBool("useCustomColor", true);
+      shader->setVec3("customColor", glm::vec3(0.0f, 1.0f, 1.0f)); // Cyan wireframe boxes
+      shader->setBool("enableShadows", false);
+      shader->setMat4("projection_view", viewProjectionMatrix); // Set the camera matrices
+    }
+    
+    // Update instanced transforms and render
+    boundingBoxGeometry->UpdateInstances(boundingBoxTransforms);
+    boundingBoxGeometry->DrawInstances();
+    
+    // Reset shader state
+    if (shader) {
+      shader->setBool("useCustomColor", false);
+    }
+  }
+}
 
 TObjInfo* CEWorldModel::getObjectInfo()
 {

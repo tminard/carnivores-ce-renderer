@@ -45,6 +45,11 @@ public:
         int objectIndex = -1;  // For world objects: model index in RSC file
         int instanceIndex = -1; // For world objects: which instance of the model
         std::string objectName = ""; // For debugging/display
+        
+        // Enhanced data for hierarchical collision
+        class CEWorldModel* worldModel = nullptr; // For narrowphase TBound testing
+        glm::vec3 instanceTransform = glm::vec3(0); // Instance world position
+        glm::vec3 aabbCenter = glm::vec3(0); // AABB center offset from transform
     };
     
     struct RaycastResult {
@@ -71,7 +76,7 @@ private:
     
     // World objects collision
     std::vector<btTriangleMesh*> m_objectMeshes;
-    std::vector<btBvhTriangleMeshShape*> m_objectShapes;
+    std::vector<btCollisionShape*> m_objectShapes; // Can store both btBvhTriangleMeshShape and btBoxShape
     std::vector<btRigidBody*> m_objectBodies;
     
     // Water planes collision

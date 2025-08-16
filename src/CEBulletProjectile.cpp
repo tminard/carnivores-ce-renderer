@@ -71,7 +71,7 @@ CEBulletProjectile::CEBulletProjectile(btDiscreteDynamicsWorld* world,
     if (world) {
         // Use collision group 0 for projectiles
         short projectileGroup = 1 << 0;  // Projectile collision group  
-        short projectileMask = (1 << 1); // Can collide with water (group 1) - objects disabled for performance
+        short projectileMask = (1 << 1) | (1 << 2); // Can collide with water (group 1) and objects (group 2)
         world->addRigidBody(m_rigidBody, projectileGroup, projectileMask);
         m_spawnTime = glfwGetTime(); // Set spawn time when added to world
     }
@@ -207,7 +207,7 @@ bool CEBulletProjectile::checkForCollisions(CEPhysicsWorld* physics)
         
         auto rayResult = physics->raycast(currentPos, rayEnd);
         if (rayResult.hasHit) {
-            // Only register water collisions - terrain handled by Method 3, objects disabled for performance
+            // Register water and object collisions - terrain handled by Method 3
             if (rayResult.objectInfo.type == CEPhysicsWorld::CollisionObjectType::WATER_PLANE) {
                 std::cout << "🚨 COLLISION Method 2: Water detected at position [" << rayResult.hitPoint.x << ", " << rayResult.hitPoint.y << ", " << rayResult.hitPoint.z << "]" << std::endl;
                 
@@ -217,6 +217,19 @@ bool CEBulletProjectile::checkForCollisions(CEPhysicsWorld* physics)
                 m_impactNormal = rayResult.hitNormal;
                 m_impactDistance = glm::distance(m_impactPoint, m_spawnPosition);
                 m_impactSurfaceType = "water";
+                
+                return true;
+            } else if (rayResult.objectInfo.type == CEPhysicsWorld::CollisionObjectType::WORLD_OBJECT) {
+                std::cout << "🚨 COLLISION Method 2: Object AABB hit at [" << rayResult.hitPoint.x << ", " << rayResult.hitPoint.y << ", " << rayResult.hitPoint.z << "] - " << rayResult.objectInfo.objectName << std::endl;
+                
+                // TODO: Implement TBound narrowphase testing here
+                // For now, just register the AABB hit
+                m_hasImpacted = true;
+                m_checkedForContacts = true;
+                m_impactPoint = rayResult.hitPoint;
+                m_impactNormal = rayResult.hitNormal;
+                m_impactDistance = glm::distance(m_impactPoint, m_spawnPosition);
+                m_impactSurfaceType = "object";
                 
                 return true;
             }

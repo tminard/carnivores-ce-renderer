@@ -41,9 +41,9 @@ CEPhysicsWorld::CEPhysicsWorld(C2MapFile* mapFile, C2MapRscFile* mapRsc)
     m_dynamicsWorld = new btDiscreteDynamicsWorld(m_dispatcher, m_broadphase, m_solver, m_collisionConfig);
     m_dynamicsWorld->setGravity(btVector3(0, -9.81f, 0)); // Earth gravity
     
-    // Setup collision geometry (terrain and world objects disabled for performance)
+    // Setup collision geometry (terrain and world objects optimized for performance)
     // setupTerrain(mapFile);  // DISABLED: Too expensive, using height checks instead
-    // setupWorldObjects(mapRsc);  // DISABLED: Too many collision meshes causing severe FPS drops
+    setupWorldObjects(mapRsc);  // RE-ENABLED: Optimized AABB-based hierarchical collision
     setupWaterPlanes(mapFile);  // RE-ENABLED: For water collision detection
     
     std::cout << "Physics world initialized with " << m_dynamicsWorld->getNumCollisionObjects() << " collision objects" << std::endl;
@@ -148,95 +148,111 @@ void CEPhysicsWorld::setupWorldObjects(C2MapRscFile* mapRsc)
     if (!mapRsc) return;
     
     int objectCount = mapRsc->getWorldModelCount();
-    std::cout << "Setting up " << objectCount << " world object types for physics" << std::endl;
+    std::cout << "Setting up " << objectCount << " world object types for optimized physics" << std::endl;
     
     for (int i = 0; i < objectCount; i++) {
         CEWorldModel* model = mapRsc->getWorldModel(i);
         if (!model) continue;
         
-        CEGeometry* geometry = model->getGeometry();
-        if (!geometry) continue;
-        
-        // Get model vertices and indices for collision mesh
-        const auto& vertices = geometry->GetVertices();
-        const auto& indices = geometry->GetIndices();
-        if (vertices.empty() || indices.empty()) {
-            std::cout << "  Object " << i << " has no vertices (" << vertices.size() << ") or indices (" << indices.size() << ")" << std::endl;
+        // Check if model has bounding box data
+        if (!model->hasBoundingBox()) {
+            std::cout << "  Object " << i << " has no bounding box data - skipping" << std::endl;
             continue;
         }
         
-        // Create triangle mesh for this object type using indexed triangles
-        btTriangleMesh* objectMesh = new btTriangleMesh();
+        CEGeometry* geometry = model->getGeometry();
+        if (!geometry) continue;
         
-        // Add triangles based on indices (proper indexed mesh approach)
-        for (size_t j = 0; j < indices.size(); j += 3) {
-            if (j + 2 < indices.size()) {
-                unsigned int idx1 = indices[j];
-                unsigned int idx2 = indices[j + 1];
-                unsigned int idx3 = indices[j + 2];
+        // Calculate AABB from TBound data for this object type
+        glm::vec3 aabbMin(FLT_MAX), aabbMax(-FLT_MAX);
+        
+        // Get the bounding box data from the model
+        const auto& boundingBoxes = model->getBoundingBoxes();
+        
+        // Examine all 8 possible bounding boxes to find the overall AABB
+        for (int b = 0; b < 8; b++) {
+            const TBound& bound = boundingBoxes[b];
+            if (bound.a > 0) { // Valid bounding box
+                // Convert elliptical TBound to AABB
+                float minX = bound.cx - bound.a;
+                float maxX = bound.cx + bound.a;
+                float minZ = bound.cy - bound.b;
+                float maxZ = bound.cy + bound.b;
+                float minY = bound.y1;
+                float maxY = bound.y2;
                 
-                // Validate indices
-                if (idx1 >= vertices.size() || idx2 >= vertices.size() || idx3 >= vertices.size()) {
-                    std::cout << "  Invalid triangle indices: " << idx1 << ", " << idx2 << ", " << idx3 << " (max: " << vertices.size() - 1 << ")" << std::endl;
-                    continue;
-                }
-                
-                const Vertex& v1 = vertices[idx1];
-                const Vertex& v2 = vertices[idx2];
-                const Vertex& v3 = vertices[idx3];
-                
-                glm::vec3 pos1 = v1.getPos();
-                glm::vec3 pos2 = v2.getPos();
-                glm::vec3 pos3 = v3.getPos();
-                
-                objectMesh->addTriangle(
-                    btVector3(pos1.x, pos1.y, pos1.z),
-                    btVector3(pos2.x, pos2.y, pos2.z),
-                    btVector3(pos3.x, pos3.y, pos3.z)
-                );
+                aabbMin.x = std::min(aabbMin.x, minX);
+                aabbMin.y = std::min(aabbMin.y, minY);
+                aabbMin.z = std::min(aabbMin.z, minZ);
+                aabbMax.x = std::max(aabbMax.x, maxX);
+                aabbMax.y = std::max(aabbMax.y, maxY);
+                aabbMax.z = std::max(aabbMax.z, maxZ);
             }
         }
         
-        if (objectMesh->getNumTriangles() > 0) {
-            // Create collision shape for this object type
-            btBvhTriangleMeshShape* objectShape = new btBvhTriangleMeshShape(objectMesh, true);
-            
-            // Create rigid bodies for each instance of this object
-            const auto& transforms = model->getTransforms();
-            int instanceIndex = 0;
-            
-            for (const auto& transform : transforms) {
-                glm::vec3 position = *const_cast<Transform&>(transform).GetPos();
-                btRigidBody* objectBody = createStaticBody(objectShape, position);
-                
-                // Add collision filtering for objects
-                short objectGroup = 1 << 2;  // Object collision group
-                short objectMask = 1 << 0;   // Only collide with projectiles (group 0)
-                m_dynamicsWorld->removeRigidBody(objectBody);
-                m_dynamicsWorld->addRigidBody(objectBody, objectGroup, objectMask);
-                
-                m_objectBodies.push_back(objectBody);
-                
-                // Store object info for this instance
-                CollisionObjectInfo objectInfo;
-                objectInfo.type = CollisionObjectType::WORLD_OBJECT;
-                objectInfo.objectIndex = i;
-                objectInfo.instanceIndex = instanceIndex;
-                objectInfo.objectName = "WorldObject_" + std::to_string(i) + "_Instance_" + std::to_string(instanceIndex);
-                m_objectInfoMap[objectBody] = objectInfo;
-                
-                instanceIndex++;
+        // If no valid bounds found, calculate from geometry
+        if (aabbMin.x == FLT_MAX) {
+            const auto& vertices = geometry->GetVertices();
+            if (vertices.empty()) {
+                std::cout << "  Object " << i << " has no vertices - skipping" << std::endl;
+                continue;
             }
             
-            // Store mesh and shape for cleanup (shared by all instances)
-            m_objectMeshes.push_back(objectMesh);
-            m_objectShapes.push_back(objectShape);
-        } else {
-            delete objectMesh;
+            for (const auto& vertex : vertices) {
+                glm::vec3 pos = vertex.getPos();
+                aabbMin = glm::min(aabbMin, pos);
+                aabbMax = glm::max(aabbMax, pos);
+            }
         }
+        
+        // Create box shape for AABB broadphase collision
+        glm::vec3 size = (aabbMax - aabbMin) * 0.5f;
+        glm::vec3 center = (aabbMax + aabbMin) * 0.5f;
+        
+        btBoxShape* aabbShape = new btBoxShape(btVector3(size.x, size.y, size.z));
+        
+        // Create rigid bodies for each instance of this object
+        const auto& transforms = model->getTransforms();
+        int instanceIndex = 0;
+        
+        std::cout << "  Object " << i << " AABB: size[" << size.x << "," << size.y << "," << size.z 
+                  << "] center[" << center.x << "," << center.y << "," << center.z 
+                  << "] instances:" << transforms.size() << std::endl;
+        
+        for (const auto& transform : transforms) {
+            glm::vec3 position = *const_cast<Transform&>(transform).GetPos();
+            
+            // Position the AABB at the transform position plus center offset
+            glm::vec3 aabbPosition = position + center;
+            btRigidBody* objectBody = createStaticBody(aabbShape, aabbPosition);
+            
+            // Add collision filtering for objects
+            short objectGroup = 1 << 2;  // Object collision group
+            short objectMask = 1 << 0;   // Only collide with projectiles (group 0)
+            m_dynamicsWorld->removeRigidBody(objectBody);
+            m_dynamicsWorld->addRigidBody(objectBody, objectGroup, objectMask);
+            
+            m_objectBodies.push_back(objectBody);
+            
+            // Store enhanced object info for hierarchical collision
+            CollisionObjectInfo objectInfo;
+            objectInfo.type = CollisionObjectType::WORLD_OBJECT;
+            objectInfo.objectIndex = i;
+            objectInfo.instanceIndex = instanceIndex;
+            objectInfo.objectName = "WorldObject_" + std::to_string(i) + "_Instance_" + std::to_string(instanceIndex);
+            objectInfo.worldModel = model; // Store reference for narrowphase testing
+            objectInfo.instanceTransform = position;
+            objectInfo.aabbCenter = center;
+            m_objectInfoMap[objectBody] = objectInfo;
+            
+            instanceIndex++;
+        }
+        
+        // Store shape for cleanup (shared by all instances)
+        m_objectShapes.push_back(aabbShape);
     }
     
-    std::cout << "World objects physics setup complete: " << m_objectBodies.size() << " object instances" << std::endl;
+    std::cout << "Optimized world objects physics setup complete: " << m_objectBodies.size() << " AABB instances" << std::endl;
 }
 
 void CEPhysicsWorld::setupWaterPlanes(C2MapFile* mapFile)

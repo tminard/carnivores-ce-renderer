@@ -22,6 +22,7 @@ private:
     
     bool m_should_shutdown = false;
     bool m_wireframe = false; // TODO: move this to a LocalVideoManager
+    bool m_show_bounding_boxes = false; // Toggle for debug bounding box visualization
     double lastTime = 0.0;
 public:
     void Bind(std::shared_ptr<CELocalPlayerController> player_controller);
@@ -30,5 +31,9 @@ public:
     void cursorPosCallback(GLFWwindow* window, double x, double y);
     bool GetShouldShutdown() {
         return m_should_shutdown;
+    }
+    
+    bool GetShowBoundingBoxes() {
+        return m_show_bounding_boxes;
     }
 };

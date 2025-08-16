@@ -338,6 +338,10 @@ const std::vector<Vertex>& CEGeometry::GetVertices() const {
   return m_vertices;
 }
 
+const std::vector<unsigned int>& CEGeometry::GetIndices() const {
+  return m_indices;
+}
+
 const int CEGeometry::GetCurrentFrame() const {
   return m_current_frame;
 }

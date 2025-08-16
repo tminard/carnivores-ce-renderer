@@ -69,6 +69,7 @@ public:
   void ConfigureShaderUniforms(C2MapFile* map, C2MapRscFile* rsc);
   
   const std::vector<Vertex>& GetVertices() const;
+  const std::vector<unsigned int>& GetIndices() const;
   
   const int GetCurrentFrame() const;
 

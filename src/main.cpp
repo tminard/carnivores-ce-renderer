@@ -13,6 +13,7 @@
 #include <iostream>
 #include <fstream>
 #include <filesystem>
+#include <iomanip>
 
 #include "C2CarFile.h"
 #include "C2CarFilePreloader.h"
@@ -54,6 +55,12 @@
 #include "CEAnimation.h"
 #include "CEShadowManager.h"
 #include "CEUIRenderer.h"
+#include "CEBulletProjectileManager.h"
+
+// ImGui includes
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
 
 namespace fs = std::filesystem;
 using json = nlohmann::json;
@@ -98,8 +105,12 @@ void readStencilBuffer(int width, int height) {
   std::cerr << "Stencil bits: min=" << minStencilValue << " max=" << maxStencilValue << std::endl;
 }
 
+const int FPS = 90;
+const int frameDelay = 1000 / FPS;
+
 int _fpsCount = 0;
 int fps = 0;
+double _averageFrameTime = 0.0;
 
 std::chrono::time_point<std::chrono::steady_clock> lastTime = std::chrono::steady_clock::now();
 
@@ -107,19 +118,20 @@ void CalculateFrameRate() {
   auto currentTime = std::chrono::steady_clock::now();
   
   const auto elapsedTime = std::chrono::duration_cast<std::chrono::nanoseconds>(currentTime - lastTime).count();
+  double frameTimeMs = elapsedTime / 1000000.0; // Convert to milliseconds
+  
+  // Update running average
+  _averageFrameTime = (_averageFrameTime * _fpsCount + frameTimeMs) / (_fpsCount + 1);
   ++_fpsCount;
   
   if (elapsedTime > 1000000000) {
     lastTime = currentTime;
     fps = _fpsCount;
+    double avgFrameTime = 1000.0 / fps;
     _fpsCount = 0;
-    
-    std::cout << "fps: " << fps << std::endl;
+    _averageFrameTime = 0.0;
   }
 }
-
-const int FPS = 90;
-const int frameDelay = 1000 / FPS;
 
 int main(int argc, const char * argv[])
 {
@@ -176,6 +188,11 @@ int main(int argc, const char * argv[])
   std::string weaponFireAnimation = ""; // Will fallback to second animation
   std::string weaponReloadAnimation = ""; // Will fallback to fourth animation
   
+  // Projectile configuration
+  float muzzleVelocity = 800.0f;
+  glm::vec3 muzzleOffset(0.0f, 0.0f, 0.5f);
+  float projectileDamage = 45.0f;
+  
   if (data.contains("weapons") && data["weapons"].is_object()) {
     if (data["weapons"].contains("primary") && data["weapons"]["primary"].is_object()) {
       auto& primaryWeapon = data["weapons"]["primary"];
@@ -200,6 +217,24 @@ int main(int argc, const char * argv[])
           weaponReloadAnimation = animations["reload"].get<std::string>();
         }
       }
+      
+      if (primaryWeapon.contains("projectiles") && primaryWeapon["projectiles"].is_object()) {
+        auto& projectiles = primaryWeapon["projectiles"];
+        if (projectiles.contains("muzzleVelocity") && projectiles["muzzleVelocity"].is_number()) {
+          muzzleVelocity = projectiles["muzzleVelocity"].get<float>();
+        }
+        if (projectiles.contains("muzzleOffset") && projectiles["muzzleOffset"].is_array()) {
+          auto offset = projectiles["muzzleOffset"];
+          if (offset.size() >= 3) {
+            muzzleOffset.x = offset[0].get<float>();
+            muzzleOffset.y = offset[1].get<float>();
+            muzzleOffset.z = offset[2].get<float>();
+          }
+        }
+        if (projectiles.contains("damage") && projectiles["damage"].is_number()) {
+          projectileDamage = projectiles["damage"].get<float>();
+        }
+      }
     }
   }
   
@@ -217,6 +252,9 @@ int main(int argc, const char * argv[])
     std::cout << "Holster Animation: " << (weaponHolsterAnimation.empty() ? "[third animation]" : weaponHolsterAnimation) << std::endl;
     std::cout << "Fire Animation: " << (weaponFireAnimation.empty() ? "[second animation]" : weaponFireAnimation) << std::endl;
     std::cout << "Reload Animation: " << (weaponReloadAnimation.empty() ? "[fourth animation]" : weaponReloadAnimation) << std::endl;
+    std::cout << "Muzzle Velocity: " << muzzleVelocity << " m/s" << std::endl;
+    std::cout << "Muzzle Offset: [" << muzzleOffset.x << ", " << muzzleOffset.y << ", " << muzzleOffset.z << "]" << std::endl;
+    std::cout << "Projectile Damage: " << projectileDamage << std::endl;
   }
   
   auto mapType = CEMapType::C2;
@@ -243,6 +281,9 @@ int main(int argc, const char * argv[])
   
   // Initialize shadow manager
   std::unique_ptr<CEShadowManager> shadowManager(new CEShadowManager());
+  
+  // Initialize Bullet Physics projectile manager
+  std::unique_ptr<CEBulletProjectileManager> projectileManager;
   
   // Load audio assets
   std::shared_ptr<Sound> die = std::make_shared<Sound>(basePath / "game" / "SOUNDFX" / "HUM_DIE1.WAV");
@@ -319,8 +360,26 @@ int main(int argc, const char * argv[])
       return -1;
   }
   
+  // Setup Dear ImGui context
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+  ImGuiIO& io = ImGui::GetIO();
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+  
+  // Setup Dear ImGui style
+  ImGui::StyleColorsDark();
+  
+  // Setup Platform/Renderer backends
+  ImGui_ImplGlfw_InitForOpenGL(window, true);
+  ImGui_ImplOpenGL3_Init("#version 330 core");
+  
+  std::cout << "ImGui initialized successfully" << std::endl;
+  
   // Initialize shadow manager after OpenGL context is ready
   shadowManager->initialize();
+  
+  // Initialize Bullet Physics projectile manager
+  projectileManager = std::make_unique<CEBulletProjectileManager>(cMap.get(), cMapRsc.get(), g_audio_manager.get());
   
   // Set light direction to be extremely vertical (like sun directly overhead)
   // Almost perfectly straight down
@@ -385,6 +444,9 @@ int main(int argc, const char * argv[])
     if (primaryWeapon) {
       uiRenderer->configureWeaponAnimations(weaponDrawAnimation, weaponHolsterAnimation, weaponFireAnimation, weaponReloadAnimation);
       uiRenderer->setAudioManager(g_audio_manager.get());
+      uiRenderer->setProjectileManager(projectileManager.get());
+      uiRenderer->setGameCamera(g_player_controller->getCamera());
+      uiRenderer->configureProjectiles(muzzleVelocity, muzzleOffset, projectileDamage);
     }
     
     std::cout << "UI renderer initialized" << std::endl;
@@ -447,6 +509,11 @@ int main(int argc, const char * argv[])
     
     input_manager->ProcessLocalInput(window, timeDelta);
     g_player_controller->update(timeDelta, currentTime);
+    
+    // Update projectile physics simulation
+    if (projectileManager) {
+      projectileManager->update(currentTime, timeDelta);
+    }
 
     Camera* camera = g_player_controller->getCamera();
     
@@ -538,6 +605,11 @@ int main(int argc, const char * argv[])
     
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     checkGLError("After glClear");
+
+    // Start the Dear ImGui frame
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
 
     glm::vec2 currentWorldPos = g_player_controller->getWorldPosition();
     glm::vec2 next_world_pos = g_player_controller->getWorldPosition();
@@ -655,16 +727,67 @@ int main(int argc, const char * argv[])
       if (primaryWeapon) {
         uiRenderer->renderWeapon(primaryWeapon.get(), currentTime);
       }
+      
+      // Create ImGui FPS display window in upper-left corner as requested
+      {
+        ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
+        ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Always);
+        ImGui::SetNextWindowBgAlpha(0.35f); // Transparent background
+        
+        if (ImGui::Begin("Performance Monitor", nullptr, window_flags)) {
+          double avgFrameTime = fps > 0 ? 1000.0 / fps : 0.0;
+          float perfPercent = fps > 0 ? (100.0f * fps / FPS) : 0.0f;
+          
+          // Color-coded FPS display
+          if (fps >= FPS * 0.8f) {
+            ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "FPS: %d", fps);
+          } else if (fps >= FPS * 0.6f) {
+            ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "FPS: %d", fps);
+          } else {
+            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "FPS: %d", fps);
+          }
+          
+          ImGui::Text("Frame Time: %.1f ms", avgFrameTime);
+          ImGui::Text("Performance: %.0f%% of target", perfPercent);
+        }
+        ImGui::End();
+      }
+      
+      // Add collision debug panel
+      {
+        ImGuiWindowFlags debug_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
+        ImGui::SetNextWindowPos(ImVec2(10, 80), ImGuiCond_Always);
+        ImGui::SetNextWindowBgAlpha(0.35f);
+        
+        if (ImGui::Begin("Collision Debug", nullptr, debug_flags)) {
+          glm::vec3 playerPos = g_player_controller->getPosition();
+          ImGui::Text("Player Pos: %.1f, %.1f, %.1f", playerPos.x, playerPos.y, playerPos.z);
+          
+          glm::vec2 worldPos = g_player_controller->getWorldPosition();
+          ImGui::Text("World Pos: %.1f, %.1f", worldPos.x, worldPos.y);
+          
+          if (projectileManager) {
+            int activeProjectiles = projectileManager->getActiveProjectileCount();
+            ImGui::Text("Active Projectiles: %d", activeProjectiles);
+          }
+        }
+        ImGui::End();
+      }
     }
+    
+    // Render ImGui
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     
     glfwSwapBuffers(window);
     glfwPollEvents();
 
-    // CalculateFrameRate();
+    CalculateFrameRate();
     
     auto frameEnd = std::chrono::high_resolution_clock::now();
     std::chrono::duration<float, std::milli> frameDuration = frameEnd - frameStart;
 
+    const int frameDelay = 1000 / FPS; // Compute frame delay from FPS
     if (frameDuration.count() < frameDelay) {
         std::this_thread::sleep_for(std::chrono::milliseconds(frameDelay) - frameDuration);
     }
@@ -672,6 +795,11 @@ int main(int argc, const char * argv[])
   
   characters.clear();
   characters.shrink_to_fit();
+  
+  // Cleanup ImGui
+  ImGui_ImplOpenGL3_Shutdown();
+  ImGui_ImplGlfw_Shutdown();
+  ImGui::DestroyContext();
   
   return 0;
 }

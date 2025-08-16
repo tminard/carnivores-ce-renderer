@@ -13,6 +13,44 @@ include(FetchContent)
 FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz)
 FetchContent_MakeAvailable(json)
 
+# Bullet Physics
+FetchContent_Declare(
+    bullet3
+    GIT_REPOSITORY https://github.com/bulletphysics/bullet3.git
+    GIT_TAG 3.25
+    GIT_SHALLOW TRUE
+)
+
+# Configure Bullet3 options
+set(BUILD_BULLET2_DEMOS OFF CACHE BOOL "" FORCE)
+set(BUILD_BULLET3 OFF CACHE BOOL "" FORCE)
+set(BUILD_CPU_DEMOS OFF CACHE BOOL "" FORCE)
+set(BUILD_EXTRAS OFF CACHE BOOL "" FORCE)
+set(BUILD_OPENGL3_DEMOS OFF CACHE BOOL "" FORCE)
+set(BUILD_UNIT_TESTS OFF CACHE BOOL "" FORCE)
+set(USE_MSVC_RUNTIME_LIBRARY_DLL ON CACHE BOOL "" FORCE)
+
+FetchContent_MakeAvailable(bullet3)
+
+# ImGui setup
+set(IMGUI_DIR "${CMAKE_SOURCE_DIR}/thirdparty/imgui")
+set(IMGUI_SOURCES
+    ${IMGUI_DIR}/imgui.cpp
+    ${IMGUI_DIR}/imgui_demo.cpp
+    ${IMGUI_DIR}/imgui_draw.cpp
+    ${IMGUI_DIR}/imgui_tables.cpp
+    ${IMGUI_DIR}/imgui_widgets.cpp
+    ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp
+    ${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp
+)
+
+add_library(imgui STATIC ${IMGUI_SOURCES})
+target_include_directories(imgui PUBLIC 
+    ${IMGUI_DIR}
+    ${IMGUI_DIR}/backends
+)
+target_link_libraries(imgui PUBLIC glfw3)
+
 # Add source files
 file(GLOB_RECURSE SOURCE_FILES 
 	${CMAKE_SOURCE_DIR}/src/*.c
@@ -48,7 +86,7 @@ message(STATUS "Found GLFW3 in ${GLFW3_INCLUDE_DIR}")
 
 
 # Put all libraries into a variable
-set(LIBS glfw3 nlohmann_json::nlohmann_json)
+set(LIBS glfw3 nlohmann_json::nlohmann_json BulletDynamics BulletCollision LinearMath imgui)
 
 # Manually add GLAD
 set(GLAD_SRC_DIR "${CMAKE_SOURCE_DIR}/thirdparty/glad/src")
@@ -63,6 +101,13 @@ include_directories(
 	"${CMAKE_SOURCE_DIR}/include"
 	${GLAD_INCLUDE_DIR}
 	"${CMAKE_SOURCE_DIR}/thirdparty/wave"
+	"${CMAKE_SOURCE_DIR}/thirdparty/imgui"
+	"${CMAKE_SOURCE_DIR}/thirdparty/imgui/backends"
+)
+
+# Add Bullet Physics include directories after it's available
+target_include_directories(${PROJECT_NAME} PRIVATE
+	"${bullet3_SOURCE_DIR}/src"
 )
 
 # Define the path to your runtime folder

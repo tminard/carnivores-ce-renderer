@@ -12,11 +12,16 @@
 #include "CEAnimation.h"
 #include "LocalAudioManager.hpp"
 #include "CEAudioSource.hpp"
+#include "CEBulletProjectileManager.h"
+#include "camera.h"
+#include "shader_program.h"
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include <filesystem>
+#include <sstream>
+#include <glm/gtc/matrix_transform.hpp>
 
 
 namespace fs = std::filesystem;
@@ -26,10 +31,14 @@ CEUIRenderer::CEUIRenderer(int screenWidth, int screenHeight)
     : m_screenWidth(screenWidth), m_screenHeight(screenHeight), m_weaponDrawn(false),
       m_weaponState(WeaponState::HOLSTERED), m_currentWeaponAnimation(""),
       m_weaponAnimationStartTime(0.0), m_weaponAnimationLastUpdate(0.0), 
-      m_weaponAnimationLoop(false), m_weaponGeometryInitialized(false), m_audioManager(nullptr)
+      m_weaponAnimationLoop(false), m_weaponGeometryInitialized(false), m_audioManager(nullptr),
+      m_projectileManager(nullptr), m_gameCamera(nullptr), m_muzzleVelocity(800.0f),
+      m_muzzleOffset(0.0f, 0.0f, 0.5f), m_projectileDamage(45.0f),
+      m_textVAO(0), m_textVBO(0), m_textInitialized(false)
 {
     setScreenSize(screenWidth, screenHeight);
     initializeUI2DCamera();
+    initializeTextRendering();
 }
 
 CEUIRenderer::~CEUIRenderer()
@@ -271,6 +280,29 @@ void CEUIRenderer::fireWeapon()
     if (m_weaponState == WeaponState::DRAWN) {
         m_weaponState = WeaponState::FIRING;
         setWeaponAnimation(m_weaponFireAnimation, false); // Don't loop fire animation
+        
+        // Spawn ballistic projectile if system is configured
+        if (m_projectileManager && m_gameCamera) {
+            // Calculate muzzle position based on camera position and offset
+            glm::vec3 cameraPos = m_gameCamera->GetPosition();
+            glm::vec3 cameraRight = m_gameCamera->GetRight();
+            glm::vec3 cameraUp = m_gameCamera->GetUp();
+            glm::vec3 cameraForward = m_gameCamera->GetForward();
+            
+            glm::vec3 muzzlePosition = cameraPos + 
+                                     cameraRight * m_muzzleOffset.x +
+                                     cameraUp * m_muzzleOffset.y +
+                                     cameraForward * m_muzzleOffset.z;
+            
+            // Fire direction is where the camera is looking
+            glm::vec3 fireDirection = cameraForward;
+            
+            // Spawn ballistic projectile
+            m_projectileManager->spawnProjectile(muzzlePosition, fireDirection, 
+                                               m_muzzleVelocity, m_projectileDamage, "rifle");
+            
+            std::cout << "Ballistic projectile fired from [" << muzzlePosition.x << ", " << muzzlePosition.y << ", " << muzzlePosition.z << "]" << std::endl;
+        }
     }
 }
 
@@ -417,6 +449,23 @@ void CEUIRenderer::setAudioManager(LocalAudioManager* audioManager)
     m_audioManager = audioManager;
 }
 
+void CEUIRenderer::setProjectileManager(CEBulletProjectileManager* projectileManager)
+{
+    m_projectileManager = projectileManager;
+}
+
+void CEUIRenderer::setGameCamera(Camera* camera)
+{
+    m_gameCamera = camera;
+}
+
+void CEUIRenderer::configureProjectiles(float muzzleVelocity, const glm::vec3& muzzleOffset, float damage)
+{
+    m_muzzleVelocity = muzzleVelocity;
+    m_muzzleOffset = muzzleOffset;
+    m_projectileDamage = damage;
+}
+
 void CEUIRenderer::setWeaponAnimation(const std::string& animationName, bool loop)
 {
     // Follow AI pattern: set animation parameters but don't start immediately
@@ -559,6 +608,78 @@ void CEUIRenderer::updateWeaponAnimation(C2CarFile* weapon, double currentTime)
         }
         
         m_weaponAnimationLastUpdate = currentTime;
+    }
+}
+
+void CEUIRenderer::initializeTextRendering()
+{
+    if (m_textInitialized) return;
+    
+    // Create VAO and VBO for text rendering
+    glGenVertexArrays(1, &m_textVAO);
+    glGenBuffers(1, &m_textVBO);
+    
+    glBindVertexArray(m_textVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, m_textVBO);
+    
+    // Reserve space for a quad (6 vertices, 2 floats each for position)
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 2, NULL, GL_DYNAMIC_DRAW);
+    
+    // Position attribute
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
+    
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+    
+    m_textInitialized = true;
+}
+
+void CEUIRenderer::renderCharacter(char c, float x, float y, float scale, glm::vec3 color)
+{
+    // Simple 8x12 bitmap font rendering using colored quads
+    // Each character is represented as a colored rectangle
+    
+    float charWidth = 8.0f * scale;
+    float charHeight = 12.0f * scale;
+    
+    // Skip spaces
+    if (c == ' ') return;
+    
+    // Create quad vertices
+    float vertices[12] = {
+        // Triangle 1
+        x,               y,               // Bottom-left
+        x + charWidth,   y,               // Bottom-right  
+        x,               y + charHeight,  // Top-left
+        
+        // Triangle 2  
+        x + charWidth,   y,               // Bottom-right
+        x + charWidth,   y + charHeight,  // Top-right
+        x,               y + charHeight   // Top-left
+    };
+    
+    // Bind and update buffer
+    glBindVertexArray(m_textVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, m_textVBO);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+    
+    // Render the character quad
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    
+    glBindVertexArray(0);
+}
+
+void CEUIRenderer::renderText(const std::string& text, float x, float y, float scale, glm::vec3 color)
+{
+    // For now, use console output as a clean fallback until we implement proper shader-based text rendering
+    // This avoids the complexity of mixing legacy OpenGL with modern shader pipeline
+    
+    static double lastDebugTime = 0;
+    double currentTime = glfwGetTime();
+    if (currentTime - lastDebugTime > 1.0) { // Update every second
+        std::cout << text << std::endl;
+        lastDebugTime = currentTime;
     }
 }
 

@@ -14,11 +14,13 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "shader_program.h"
 #include "C2CarFile.h"
-#include "Camera.h"
-#include "Transform.h"
+#include "camera.h"
+#include "transform.h"
 
 class LocalAudioManager;
 class CEAnimation;
+class CEBulletProjectileManager;
+class Camera;
 
 class CEUIRenderer
 {
@@ -42,6 +44,13 @@ private:
     std::string m_weaponFireAnimation;    // Fire animation name from config
     std::string m_weaponReloadAnimation;  // Reload animation name from config
     LocalAudioManager* m_audioManager;
+    CEBulletProjectileManager* m_projectileManager;
+    Camera* m_gameCamera;
+    
+    // Projectile configuration
+    float m_muzzleVelocity;
+    glm::vec3 m_muzzleOffset;
+    float m_projectileDamage;
     
     void initializeUI2DCamera();
     void renderCompassGeometry(C2CarFile* compass, Transform& uiTransform);
@@ -78,12 +87,37 @@ public:
     // Configuration
     void configureWeaponAnimations(const std::string& drawAnim, const std::string& holsterAnim, const std::string& fireAnim, const std::string& reloadAnim);
     void setAudioManager(LocalAudioManager* audioManager);
+    void setProjectileManager(CEBulletProjectileManager* projectileManager);
+    void setGameCamera(Camera* camera);
+    void configureProjectiles(float muzzleVelocity, const glm::vec3& muzzleOffset, float damage);
     
     // Set up 2D rendering state
     void begin2DRendering();
     
     // Restore 3D rendering state
     void end2DRendering();
+    
+    // Text rendering for debug information
+    void renderText(const std::string& text, float x, float y, float scale = 1.0f, glm::vec3 color = glm::vec3(1.0f, 1.0f, 1.0f));
+    
+private:
+    // Text rendering system
+    void initializeTextRendering();
+    void createFontTexture();
+    void renderCharacterQuad(char c, float x, float y, float scale);
+    void renderCharacter(char c, float x, float y, float scale, glm::vec3 color);
+    
+    GLuint m_textVAO;
+    GLuint m_textVBO;
+    GLuint m_fontTexture;
+    std::unique_ptr<ShaderProgram> m_textShader;
+    bool m_textInitialized;
+    
+    // Font metrics
+    static const int FONT_ATLAS_WIDTH = 128;
+    static const int FONT_ATLAS_HEIGHT = 128;
+    static const int CHAR_WIDTH = 8;
+    static const int CHAR_HEIGHT = 16;
 };
 
 #endif /* defined(__CE_Character_Lab__CEUIRenderer__) */

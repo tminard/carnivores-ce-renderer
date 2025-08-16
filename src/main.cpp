@@ -171,10 +171,25 @@ int main(int argc, const char * argv[])
   
   // Parse weapon configuration
   std::string primaryWeaponPath;
+  std::string weaponDrawAnimation = ""; // Will fallback to first animation
+  std::string weaponHolsterAnimation = ""; // Will fallback to third animation
+  
   if (data.contains("weapons") && data["weapons"].is_object()) {
     if (data["weapons"].contains("primary") && data["weapons"]["primary"].is_object()) {
-      if (data["weapons"]["primary"].contains("file") && data["weapons"]["primary"]["file"].is_string()) {
-        primaryWeaponPath = constructPath(basePath, data["weapons"]["primary"]["file"].get<std::string>()).string();
+      auto& primaryWeapon = data["weapons"]["primary"];
+      
+      if (primaryWeapon.contains("file") && primaryWeapon["file"].is_string()) {
+        primaryWeaponPath = constructPath(basePath, primaryWeapon["file"].get<std::string>()).string();
+      }
+      
+      if (primaryWeapon.contains("animations") && primaryWeapon["animations"].is_object()) {
+        auto& animations = primaryWeapon["animations"];
+        if (animations.contains("draw") && animations["draw"].is_string()) {
+          weaponDrawAnimation = animations["draw"].get<std::string>();
+        }
+        if (animations.contains("holster") && animations["holster"].is_string()) {
+          weaponHolsterAnimation = animations["holster"].get<std::string>();
+        }
       }
     }
   }
@@ -189,6 +204,8 @@ int main(int argc, const char * argv[])
   }
   if (!primaryWeaponPath.empty()) {
     std::cout << "Primary Weapon: " << primaryWeaponPath << std::endl;
+    std::cout << "Draw Animation: " << (weaponDrawAnimation.empty() ? "[first animation]" : weaponDrawAnimation) << std::endl;
+    std::cout << "Holster Animation: " << (weaponHolsterAnimation.empty() ? "[third animation]" : weaponHolsterAnimation) << std::endl;
   }
   
   auto mapType = CEMapType::C2;
@@ -352,6 +369,13 @@ int main(int argc, const char * argv[])
   std::unique_ptr<CEUIRenderer> uiRenderer;
   if (compass || primaryWeapon) {
     uiRenderer = std::make_unique<CEUIRenderer>(width, height);
+    
+    // Configure weapon animations if we have a weapon
+    if (primaryWeapon) {
+      uiRenderer->configureWeaponAnimations(weaponDrawAnimation, weaponHolsterAnimation);
+      uiRenderer->setAudioManager(g_audio_manager.get());
+    }
+    
     std::cout << "UI renderer initialized" << std::endl;
   }
 
@@ -618,7 +642,7 @@ int main(int argc, const char * argv[])
       
       // Render weapon if available
       if (primaryWeapon) {
-        uiRenderer->renderWeapon(primaryWeapon.get());
+        uiRenderer->renderWeapon(primaryWeapon.get(), currentTime);
       }
     }
     

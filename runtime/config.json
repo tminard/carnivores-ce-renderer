@@ -14,7 +14,11 @@
   },
   "weapons": {
     "primary": {
-      "file": "game/models/x_bow.car"
+      "file": "game/models/shotgun.car",
+      "animations": {
+         "draw": "Sg4_get",
+         "holster": "Sg4_put"
+       }
     }
   },
   "ui": {

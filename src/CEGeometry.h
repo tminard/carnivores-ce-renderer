@@ -61,7 +61,8 @@ public:
 
   void saveTextureAsBMP(const std::string& file_name );
   void Update(Transform& transform, Camera& camera);
-  bool SetAnimation(std::weak_ptr<CEAnimation> animation, double atTime, double startAt, double lastUpdateAt, bool deferUpdate, bool maxFPS, bool notVisible, float playbackSpeed, bool loop);
+  bool SetAnimation(std::weak_ptr<CEAnimation> animation, double atTime, double startAt, double lastUpdateAt, bool deferUpdate, bool maxFPS, bool notVisible, float playbackSpeed, bool loop, bool noInterpolation = false);
+  bool SetAnimation(std::weak_ptr<CEAnimation> animation, int atFrame);
   void Draw();
   void DrawNaked();
   

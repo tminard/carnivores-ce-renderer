@@ -98,7 +98,56 @@ void CEGeometry::loadObjectIntoMemoryBuffer(std::string shaderName)
   glBindVertexArray(0);
 }
 
-bool CEGeometry::SetAnimation(std::weak_ptr<CEAnimation> animation, double atTime, double startAt, double lastUpdateAt, bool deferUpdate, bool maxFPS, bool notVisible, float playbackSpeed, bool loop) {
+bool CEGeometry::SetAnimation(std::weak_ptr<CEAnimation> animation, int atFrame) {
+  std::shared_ptr<CEAnimation> ani = animation.lock();
+  if (!ani) {
+    // Handle the case where the animation is no longer available or doesn't exist
+    return false;
+  }
+  
+  if (m_current_frame == atFrame) {
+    return true;
+  }
+  
+  if (atFrame > ani->m_number_of_frames || atFrame < 0) {
+    return false;
+  }
+
+  m_current_frame = atFrame;
+  
+  auto aniData = *ani->GetAnimationData();
+  auto origVData = ani->GetOriginalVertices();
+  assert(aniData.size() % 3 == 0);
+  size_t numVertices = origVData->size();
+  
+  // We need to copy original vertices to updatedVertices for modification
+  std::vector<TPoint3d> updatedVertices;
+  updatedVertices.resize(numVertices);
+  
+  int aniOffset = m_current_frame * (int)numVertices * 3;
+  
+  for (size_t v = 0; v < numVertices; v++) {
+    updatedVertices[v].x = (aniData[aniOffset + (v * 3 + 0)]) / 8.f;
+    updatedVertices[v].y = (aniData[aniOffset + (v * 3 + 1)]) / 8.f;
+    updatedVertices[v].z = ((aniData[aniOffset + (v * 3 + 2)])) / 8.f;
+  }
+  
+  // Recompute vertex and index buffer using face data
+  std::unique_ptr<IndexedMeshLoader> m_loader(new IndexedMeshLoader(updatedVertices, *ani->GetFaces()));
+  m_vertices = m_loader->getVertices();
+  m_indices = m_loader->getIndices();
+  
+  // Update the vertex buffer
+  glBindBuffer(GL_ARRAY_BUFFER, this->m_vertexArrayBuffers[VERTEX_VB]);
+  glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizei>(m_vertices.size() * sizeof(Vertex)), m_vertices.data(), GL_DYNAMIC_DRAW);
+  // Update the index buffer
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_vertexArrayBuffers[INDEX_VB]);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, static_cast<GLsizei>(m_indices.size() * sizeof(unsigned int)), m_indices.data(), GL_DYNAMIC_DRAW);
+  
+  return true;
+}
+
+bool CEGeometry::SetAnimation(std::weak_ptr<CEAnimation> animation, double atTime, double startAt, double lastUpdateAt, bool deferUpdate, bool maxFPS, bool notVisible, float playbackSpeed, bool loop, bool noInterpolation) {
   std::shared_ptr<CEAnimation> ani = animation.lock();
   if (!ani) {
     // Handle the case where the animation is no longer available or doesn't exist
@@ -149,9 +198,6 @@ bool CEGeometry::SetAnimation(std::weak_ptr<CEAnimation> animation, double atTim
   
   m_current_frame = currentFrame;
   
-  float k2 = static_cast<float>(exactFrameIndex - currentFrame); // Interpolation factor
-  float k1 = 1.0f - k2;
-  
   auto aniData = *ani->GetAnimationData();
   auto origVData = ani->GetOriginalVertices();
   assert(aniData.size() % 3 == 0);
@@ -162,12 +208,25 @@ bool CEGeometry::SetAnimation(std::weak_ptr<CEAnimation> animation, double atTim
   updatedVertices.resize(numVertices);
   
   int aniOffset = currentFrame * (int)numVertices * 3;
-  int nextFrameOffset = nextFrame * (int)numVertices * 3;
   
-  for (size_t v = 0; v < numVertices; v++) {
-    updatedVertices[v].x = (aniData[aniOffset + (v * 3 + 0)] * k1 + aniData[nextFrameOffset + (v * 3 + 0)] * k2) / 8.f;
-    updatedVertices[v].y = (aniData[aniOffset + (v * 3 + 1)] * k1 + aniData[nextFrameOffset + (v * 3 + 1)] * k2) / 8.f;
-    updatedVertices[v].z = ((aniData[aniOffset + (v * 3 + 2)] * k1 + aniData[nextFrameOffset + (v * 3 + 2)] * k2)) / 8.f;
+  if (noInterpolation) {
+    // Use discrete frames without interpolation (for weapons)
+    for (size_t v = 0; v < numVertices; v++) {
+      updatedVertices[v].x = (aniData[aniOffset + (v * 3 + 0)]) / 8.f;
+      updatedVertices[v].y = (aniData[aniOffset + (v * 3 + 1)]) / 8.f;
+      updatedVertices[v].z = ((aniData[aniOffset + (v * 3 + 2)])) / 8.f;
+    }
+  } else {
+    // Use interpolation between frames (for AI characters)
+    float k2 = static_cast<float>(exactFrameIndex - currentFrame); // Interpolation factor
+    float k1 = 1.0f - k2;
+    int nextFrameOffset = nextFrame * (int)numVertices * 3;
+    
+    for (size_t v = 0; v < numVertices; v++) {
+      updatedVertices[v].x = (aniData[aniOffset + (v * 3 + 0)] * k1 + aniData[nextFrameOffset + (v * 3 + 0)] * k2) / 8.f;
+      updatedVertices[v].y = (aniData[aniOffset + (v * 3 + 1)] * k1 + aniData[nextFrameOffset + (v * 3 + 1)] * k2) / 8.f;
+      updatedVertices[v].z = ((aniData[aniOffset + (v * 3 + 2)] * k1 + aniData[nextFrameOffset + (v * 3 + 2)] * k2)) / 8.f;
+    }
   }
   
   // Recompute vertex and index buffer using face data

@@ -9,7 +9,11 @@
 #include "vertex.h"
 #include "CEGeometry.h"
 #include "CETexture.h"
+#include "CEAnimation.h"
+#include "LocalAudioManager.hpp"
+#include "CEAudioSource.hpp"
 #include <glad/glad.h>
+#include <GLFW/glfw3.h>
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include <filesystem>
@@ -19,7 +23,10 @@ namespace fs = std::filesystem;
 using json = nlohmann::json;
 
 CEUIRenderer::CEUIRenderer(int screenWidth, int screenHeight)
-    : m_screenWidth(screenWidth), m_screenHeight(screenHeight), m_weaponDrawn(false)
+    : m_screenWidth(screenWidth), m_screenHeight(screenHeight), m_weaponDrawn(false),
+      m_weaponState(WeaponState::HOLSTERED), m_currentWeaponAnimation(""),
+      m_weaponAnimationStartTime(0.0), m_weaponAnimationLastUpdate(0.0), 
+      m_weaponAnimationLoop(false), m_weaponGeometryInitialized(false), m_audioManager(nullptr)
 {
     setScreenSize(screenWidth, screenHeight);
     initializeUI2DCamera();
@@ -237,17 +244,37 @@ void CEUIRenderer::renderTestSquare()
 
 void CEUIRenderer::toggleWeapon()
 {
-    m_weaponDrawn = !m_weaponDrawn;
-    std::cout << "Weapon " << (m_weaponDrawn ? "drawn" : "holstered") << std::endl;
+    switch (m_weaponState) {
+        case WeaponState::HOLSTERED:
+            m_weaponState = WeaponState::DRAWING;
+            setWeaponAnimation(m_weaponDrawAnimation, false); // Don't loop draw animation
+            m_weaponDrawn = true;
+            break;
+            
+        case WeaponState::DRAWN:
+            m_weaponState = WeaponState::HOLSTERING;
+            setWeaponAnimation(m_weaponHolsterAnimation, false); // Don't loop holster animation
+            break;
+            
+        case WeaponState::DRAWING:
+        case WeaponState::HOLSTERING:
+            // Ignore toggle during animation
+            break;
+    }
 }
 
-void CEUIRenderer::renderWeapon(C2CarFile* weapon)
+void CEUIRenderer::renderWeapon(C2CarFile* weapon, double currentTime)
 {
     if (!weapon || !m_ui2DCamera || !m_weaponDrawn) {
         return; // Don't render if weapon not drawn or missing
     }
-    
-    std::cout << "Rendering weapon with CAR file" << std::endl;
+
+    // Update weapon animation state
+    updateWeaponAnimation(weapon, currentTime);
+  
+  if (!m_weaponDrawn) {
+    return;
+  }
     
     // For perspective rendering, we'll position weapon in world space via translation matrix
     // This position is just for the transform, actual positioning done in world space
@@ -281,8 +308,6 @@ void CEUIRenderer::renderWeaponGeometry(C2CarFile* weapon, Transform& weaponTran
         return;
     }
 
-    std::cout << "Using CEGeometry Update/Draw pattern for weapon" << std::endl;
-    
     // Switch to UI shader for UI rendering (avoids instanced rendering issues)
     geometry->setShader("ui");
     
@@ -312,7 +337,6 @@ void CEUIRenderer::renderWeaponGeometry(C2CarFile* weapon, Transform& weaponTran
     if (shader) {
         shader->use();
         shader->setMat4("MVP", mvp);
-        std::cout << "Weapon shader ready with perspective MVP" << std::endl;
     } else {
         std::cerr << "ERROR: Weapon geometry has no shader!" << std::endl;
         return;
@@ -320,7 +344,6 @@ void CEUIRenderer::renderWeaponGeometry(C2CarFile* weapon, Transform& weaponTran
     
     // Then call Draw() which will use the standard shader system
     geometry->Draw();
-    std::cout << "Weapon rendered" << std::endl;
 }
 
 void CEUIRenderer::setupWeaponRendering()
@@ -344,8 +367,6 @@ void CEUIRenderer::setupWeaponRendering()
     // Enable blending for proper transparency if needed
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    
-    std::cout << "Weapon rendering state set up" << std::endl;
 }
 
 void CEUIRenderer::restoreNormalRendering()
@@ -361,6 +382,152 @@ void CEUIRenderer::restoreNormalRendering()
     
     // Disable blending
     glDisable(GL_BLEND);
-    
-    std::cout << "Normal rendering state restored" << std::endl;
 }
+
+void CEUIRenderer::configureWeaponAnimations(const std::string& drawAnim, const std::string& holsterAnim)
+{
+    m_weaponDrawAnimation = drawAnim;
+    m_weaponHolsterAnimation = holsterAnim;
+}
+
+void CEUIRenderer::setAudioManager(LocalAudioManager* audioManager)
+{
+    m_audioManager = audioManager;
+}
+
+void CEUIRenderer::setWeaponAnimation(const std::string& animationName, bool loop)
+{
+    // Follow AI pattern: set animation parameters but don't start immediately
+    m_currentWeaponAnimation = animationName;
+    m_weaponAnimationStartTime = glfwGetTime();
+    m_weaponAnimationLastUpdate = m_weaponAnimationStartTime; // Reset to ensure first update triggers
+    m_weaponAnimationLoop = loop;
+    m_weaponGeometryInitialized = false; // Reset flag to ensure new animation gets initialized
+}
+
+std::shared_ptr<CEAnimation> CEUIRenderer::getWeaponAnimation(C2CarFile* weapon, const std::string& animName)
+{
+    if (animName.empty()) {
+        std::cerr << "ERROR: Empty animation name provided" << std::endl;
+        return nullptr;
+    }
+    
+    auto animation = weapon->getAnimationByName(animName).lock();
+    if (!animation) {
+        std::cerr << "ERROR: Animation '" << animName << "' not found in weapon CAR file" << std::endl;
+        return nullptr;
+    }
+    
+    return animation;
+}
+
+void CEUIRenderer::initializeWeaponGeometry(C2CarFile* weapon)
+{
+    if (!weapon || m_currentWeaponAnimation.empty()) {
+        return;
+    }
+    
+    // Get the current animation
+    auto currentAnimation = getWeaponAnimation(weapon, m_currentWeaponAnimation);
+    if (!currentAnimation) {
+        return;
+    }
+    
+    // Initialize weapon geometry to frame 0 to prevent initial artifacts
+    auto geometry = weapon->getGeometry();
+    if (geometry) {
+        geometry->SetAnimation(currentAnimation, 0); // Set to frame 0
+    }
+}
+
+void CEUIRenderer::updateWeaponAnimation(C2CarFile* weapon, double currentTime)
+{
+    // Only update animation when we're actively animating or need to maintain drawn state
+    if (m_weaponState != WeaponState::DRAWING && 
+        m_weaponState != WeaponState::HOLSTERING && 
+        m_weaponState != WeaponState::DRAWN) {
+        return;
+    }
+    
+    // Skip if no animation is set
+    if (m_currentWeaponAnimation.empty()) {
+        std::cerr << "ERROR: No current weapon animation set!" << std::endl;
+        return;
+    }
+    
+    // Get the animation (following AI pattern)
+    auto currentAnimation = getWeaponAnimation(weapon, m_currentWeaponAnimation);
+    if (!currentAnimation) {
+        std::cerr << "ERROR: Could not get weapon animation: " << m_currentWeaponAnimation << std::endl;
+        return;
+    }
+    
+    // Update the geometry animation (following AI pattern exactly)
+    auto geometry = weapon->getGeometry();
+    if (!geometry) {
+        std::cerr << "ERROR: Weapon has no geometry!" << std::endl;
+        return;
+    }
+
+    // Initialize weapon geometry to frame 0 on first call to prevent artifacts
+    if (!m_weaponGeometryInitialized) {
+        geometry->SetAnimation(currentAnimation, 0); // Set to frame 0
+        m_weaponGeometryInitialized = true;
+    }
+
+    // Handle different states
+    bool didUpdate = false;
+    if (m_weaponState == WeaponState::DRAWN) {
+        // For drawn state, maintain the final frame of the draw animation
+        int finalFrame = currentAnimation->m_number_of_frames - 1;
+        didUpdate = geometry->SetAnimation(currentAnimation, finalFrame);
+    } else {
+        // For animating states, use normal animation update with no interpolation for crisp weapon frames
+        didUpdate = geometry->SetAnimation(
+            currentAnimation,
+            currentTime,
+            m_weaponAnimationStartTime,
+            m_weaponAnimationLastUpdate,
+            false, // deferUpdate
+            true,  // maxFPS  
+            false, // notVisible
+            2.0f,  // playbackSpeed
+            m_weaponAnimationLoop,  // loop flag
+            true   // noInterpolation - weapons need discrete frames
+        );
+    }
+    
+    // Check if non-looping animation finished (only during animating states)
+    if (!m_weaponAnimationLoop && (m_weaponState == WeaponState::DRAWING || m_weaponState == WeaponState::HOLSTERING)) {
+        double animationDuration = (currentAnimation->m_number_of_frames / (double)currentAnimation->m_kps);
+        double elapsedTime = currentTime - m_weaponAnimationStartTime;
+        
+        if (elapsedTime >= animationDuration) {
+            // Animation finished - transition to final state
+            if (m_weaponState == WeaponState::DRAWING) {
+                m_weaponState = WeaponState::DRAWN;
+            } else if (m_weaponState == WeaponState::HOLSTERING) {
+                m_weaponState = WeaponState::HOLSTERED;
+                m_weaponDrawn = false; // Stop rendering
+                m_currentWeaponAnimation = ""; // Clear animation
+            }
+        }
+    }
+    
+    // Handle audio exactly like AI characters do (only during animations, not when drawn)
+    if (didUpdate && m_weaponState != WeaponState::DRAWN) {
+        auto audioSrc = weapon->getSoundForAnimation(m_currentWeaponAnimation);
+        if (audioSrc != nullptr) {
+            if (geometry->GetCurrentFrame() == 0) {
+                if (!audioSrc->isPlaying()) {
+                    audioSrc->setLooped(false);
+                    audioSrc->setNoDistance(3.f);
+                    m_audioManager->play(audioSrc);
+                }
+            }
+        }
+        
+        m_weaponAnimationLastUpdate = currentTime;
+    }
+}
+

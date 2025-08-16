@@ -18,7 +18,8 @@
       "animations": {
          "draw": "Pl2_get",
          "holster": "Pl2_put",
-         "fire": "Pl2_fire"
+         "fire": "Pl2_fire",
+         "reload": "Pl3_rld"
        }
     }
   },

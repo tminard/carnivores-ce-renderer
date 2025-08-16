@@ -174,6 +174,7 @@ int main(int argc, const char * argv[])
   std::string weaponDrawAnimation = ""; // Will fallback to first animation
   std::string weaponHolsterAnimation = ""; // Will fallback to third animation
   std::string weaponFireAnimation = ""; // Will fallback to second animation
+  std::string weaponReloadAnimation = ""; // Will fallback to fourth animation
   
   if (data.contains("weapons") && data["weapons"].is_object()) {
     if (data["weapons"].contains("primary") && data["weapons"]["primary"].is_object()) {
@@ -195,6 +196,9 @@ int main(int argc, const char * argv[])
         if (animations.contains("fire") && animations["fire"].is_string()) {
           weaponFireAnimation = animations["fire"].get<std::string>();
         }
+        if (animations.contains("reload") && animations["reload"].is_string()) {
+          weaponReloadAnimation = animations["reload"].get<std::string>();
+        }
       }
     }
   }
@@ -212,6 +216,7 @@ int main(int argc, const char * argv[])
     std::cout << "Draw Animation: " << (weaponDrawAnimation.empty() ? "[first animation]" : weaponDrawAnimation) << std::endl;
     std::cout << "Holster Animation: " << (weaponHolsterAnimation.empty() ? "[third animation]" : weaponHolsterAnimation) << std::endl;
     std::cout << "Fire Animation: " << (weaponFireAnimation.empty() ? "[second animation]" : weaponFireAnimation) << std::endl;
+    std::cout << "Reload Animation: " << (weaponReloadAnimation.empty() ? "[fourth animation]" : weaponReloadAnimation) << std::endl;
   }
   
   auto mapType = CEMapType::C2;
@@ -378,7 +383,7 @@ int main(int argc, const char * argv[])
     
     // Configure weapon animations if we have a weapon
     if (primaryWeapon) {
-      uiRenderer->configureWeaponAnimations(weaponDrawAnimation, weaponHolsterAnimation, weaponFireAnimation);
+      uiRenderer->configureWeaponAnimations(weaponDrawAnimation, weaponHolsterAnimation, weaponFireAnimation, weaponReloadAnimation);
       uiRenderer->setAudioManager(g_audio_manager.get());
     }
     

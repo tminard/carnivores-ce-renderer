@@ -159,6 +159,18 @@ void LocalInputManager::ProcessLocalInput(GLFWwindow* window, float deltaTime)
     else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE) {
       this->m_last_mouse_state[GLFW_MOUSE_BUTTON_LEFT] = GLFW_RELEASE;
     }
+    
+    // Handle R key for weapon reload
+    if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS && this->m_last_key_state[GLFW_KEY_R] != GLFW_PRESS) {
+      this->m_last_key_state[GLFW_KEY_R] = GLFW_PRESS;
+      
+      if (this->m_ui_renderer) {
+        this->m_ui_renderer->reloadWeapon();
+      }
+    }
+    else if (glfwGetKey(window, GLFW_KEY_R) == GLFW_RELEASE) {
+      this->m_last_key_state[GLFW_KEY_R] = GLFW_RELEASE;
+    }
   }
   
   this->lastTime = currentTime;

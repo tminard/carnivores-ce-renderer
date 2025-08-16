@@ -258,6 +258,8 @@ void CEUIRenderer::toggleWeapon()
             
         case WeaponState::DRAWING:
         case WeaponState::HOLSTERING:
+        case WeaponState::FIRING:
+        case WeaponState::RELOADING:
             // Ignore toggle during animation
             break;
     }
@@ -269,6 +271,15 @@ void CEUIRenderer::fireWeapon()
     if (m_weaponState == WeaponState::DRAWN) {
         m_weaponState = WeaponState::FIRING;
         setWeaponAnimation(m_weaponFireAnimation, false); // Don't loop fire animation
+    }
+}
+
+void CEUIRenderer::reloadWeapon()
+{
+    // Only reload if weapon is fully drawn
+    if (m_weaponState == WeaponState::DRAWN) {
+        m_weaponState = WeaponState::RELOADING;
+        setWeaponAnimation(m_weaponReloadAnimation, false); // Don't loop reload animation
     }
 }
 
@@ -393,11 +404,12 @@ void CEUIRenderer::restoreNormalRendering()
     glDisable(GL_BLEND);
 }
 
-void CEUIRenderer::configureWeaponAnimations(const std::string& drawAnim, const std::string& holsterAnim, const std::string& fireAnim)
+void CEUIRenderer::configureWeaponAnimations(const std::string& drawAnim, const std::string& holsterAnim, const std::string& fireAnim, const std::string& reloadAnim)
 {
     m_weaponDrawAnimation = drawAnim;
     m_weaponHolsterAnimation = holsterAnim;
     m_weaponFireAnimation = fireAnim;
+    m_weaponReloadAnimation = reloadAnim;
 }
 
 void CEUIRenderer::setAudioManager(LocalAudioManager* audioManager)
@@ -456,6 +468,7 @@ void CEUIRenderer::updateWeaponAnimation(C2CarFile* weapon, double currentTime)
     if (m_weaponState != WeaponState::DRAWING && 
         m_weaponState != WeaponState::HOLSTERING && 
         m_weaponState != WeaponState::FIRING &&
+        m_weaponState != WeaponState::RELOADING &&
         m_weaponState != WeaponState::DRAWN) {
         return;
     }
@@ -509,7 +522,7 @@ void CEUIRenderer::updateWeaponAnimation(C2CarFile* weapon, double currentTime)
     }
     
     // Check if non-looping animation finished (only during animating states)
-    if (!m_weaponAnimationLoop && (m_weaponState == WeaponState::DRAWING || m_weaponState == WeaponState::HOLSTERING || m_weaponState == WeaponState::FIRING)) {
+    if (!m_weaponAnimationLoop && (m_weaponState == WeaponState::DRAWING || m_weaponState == WeaponState::HOLSTERING || m_weaponState == WeaponState::FIRING || m_weaponState == WeaponState::RELOADING)) {
         double animationDuration = (currentAnimation->m_number_of_frames / (double)currentAnimation->m_kps);
         double elapsedTime = currentTime - m_weaponAnimationStartTime;
         
@@ -523,6 +536,10 @@ void CEUIRenderer::updateWeaponAnimation(C2CarFile* weapon, double currentTime)
                 m_currentWeaponAnimation = ""; // Clear animation
             } else if (m_weaponState == WeaponState::FIRING) {
                 // Fire animation complete - return to drawn state
+                m_weaponState = WeaponState::DRAWN;
+                setWeaponAnimation(m_weaponDrawAnimation, false); // Return to draw animation for display
+            } else if (m_weaponState == WeaponState::RELOADING) {
+                // Reload animation complete - return to drawn state
                 m_weaponState = WeaponState::DRAWN;
                 setWeaponAnimation(m_weaponDrawAnimation, false); // Return to draw animation for display
             }

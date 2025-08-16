@@ -295,6 +295,4 @@ void CEGeometry::setShader(std::string shaderName)
   this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram((shaderPath / (shaderName + ".vs")).string(), (shaderPath / (shaderName + ".fs")).string()));
   this->m_shader->use();
   this->m_shader->setBool("enable_transparency", true);
-  
-  std::cout << "Switched geometry shader to: " << shaderName << std::endl;
 }

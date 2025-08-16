@@ -556,7 +556,7 @@ float CERemotePlayerController::calculateTerrainRoll(const glm::vec3& position, 
     
     // Clamp to restrictive bounds - creatures can't lean too far sideways
     // Max 15 degrees left/right (much more restrictive for roll)
-    return std::max(-glm::radians(15.0f), std::min(glm::radians(15.0f), rollAngle));
+    return std::max(-glm::radians(5.0f), std::min(glm::radians(5.0f), rollAngle));
 }
 
 float CERemotePlayerController::calculateFootprintHeight(const glm::vec3& centerPosition, const glm::vec3& facingDirection) {

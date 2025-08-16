@@ -587,7 +587,7 @@ int main(int argc, const char * argv[])
       // TODO: Calculate rotation based on camera yaw
       // compassRotation = -camera->getYaw();
       
-      uiRenderer->renderCompass(compass.get(), compassRotation);
+      uiRenderer->renderCompass(compass.get(), camera);
     }
     
     glfwSwapBuffers(window);

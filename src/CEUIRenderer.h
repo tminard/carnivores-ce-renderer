@@ -36,6 +36,7 @@ public:
     
     // Render compass in lower-left corner  
     void renderCompass(C2CarFile* compass, float rotation);
+    void renderCompass(C2CarFile* compass, Camera* gameCamera);
     
     // Set up 2D rendering state
     void begin2DRendering();

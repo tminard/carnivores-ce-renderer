@@ -79,28 +79,16 @@ void CEUIRenderer::renderCompass(C2CarFile* compass, float rotation)
                   << " camera=" << (m_ui2DCamera ? "valid" : "null") << std::endl;
         return;
     }
-    
-    std::cout << "Rendering compass with CAR file using 2D camera and Update/Draw pattern" << std::endl;
-    
-    // Position compass in lower-left corner using screen coordinates
-    float compassSize = 80.0f;   // Size in screen pixels
-    float margin = 20.0f;        // Margin in screen pixels
-    
-    // Try positioning near camera center first for testing
-    glm::vec3 position(318.f, 256.f, 0.0f);
+    glm::vec3 position(m_screenWidth - 128.f, m_screenHeight - 75.f, 0.0f);
     
     // Original lower-left positioning (commented for debugging):
     // glm::vec3 position(margin + compassSize/2.0f, m_screenHeight - margin - compassSize/2.0f, 0.0f);
-    // Rotate compass to face camera with top visible (-90 degrees around X-axis) plus user rotation around Z
-    glm::vec3 rotationVec(glm::radians(30.0f), 0.0f, rotation);
-    glm::vec3 scale(14.f, 14.f, 14.f);  // Heavy scaling to reduce CAR geometry to UI size
+    // Rotate compass to face camera with top visible (30 degrees around X-axis) plus user rotation around Y
+    glm::vec3 rotationVec(glm::radians(-30.0f), rotation, 0.0f);
+    glm::vec3 scale(6.f, 6.f, 6.f);  // Heavy scaling to reduce CAR geometry to UI size
     
     // Create Transform for the UI element
     Transform uiTransform(position, rotationVec, scale);
-    
-    std::cout << "DEBUG: Screen height: " << m_screenHeight << std::endl;
-    std::cout << "DEBUG: Calculated position: (" << position.x << ", " << position.y << ")" << std::endl;
-    std::cout << "DEBUG: Scale vector: (" << scale.x << ", " << scale.y << ")" << std::endl;
     
     // Set up 2D rendering
     begin2DRendering();
@@ -121,13 +109,6 @@ void CEUIRenderer::renderCompassGeometry(C2CarFile* compass, Transform& uiTransf
         return;
     }
 
-    std::cout << "Using CEGeometry Update/Draw pattern for compass with 2D camera" << std::endl;
-    
-    // Debug: Check geometry state
-    std::cout << "DEBUG: Geometry has " << geometry->GetVertices().size() << " vertices" << std::endl;
-    std::cout << "DEBUG: Geometry has " << geometry->GetIndexCount() << " indices" << std::endl;
-    std::cout << "DEBUG: VAO ID: " << geometry->GetVAO() << std::endl;
-    
     // Switch to UI shader for UI rendering (avoids instanced rendering issues)
     geometry->setShader("ui");
     
@@ -147,24 +128,44 @@ void CEUIRenderer::renderCompassGeometry(C2CarFile* compass, Transform& uiTransf
     // Calculate MVP manually
     glm::mat4 mvp = orthoProjection * view * model;
     
-    std::cout << "DEBUG: Object pos: (" << position->x << ", " << position->y << ", " << position->z << ")" << std::endl;
-    std::cout << "DEBUG: Using orthographic projection for UI" << std::endl;
-    
     // Set the orthographic MVP matrix manually
     auto shader = geometry->getShader();
     if (shader) {
         shader->use();
         shader->setMat4("MVP", mvp);
-        std::cout << "DEBUG: UI shader is ready with orthographic MVP" << std::endl;
     } else {
         std::cerr << "ERROR: Geometry has no shader!" << std::endl;
         return;
     }
     
     // Then call Draw() which will use the standard shader system
-    std::cout << "DEBUG: About to call geometry->Draw()" << std::endl;
     geometry->Draw();
-    std::cout << "DEBUG: geometry->Draw() completed" << std::endl;
+}
+
+void CEUIRenderer::renderCompass(C2CarFile* compass, Camera* gameCamera)
+{
+    if (!compass || !m_ui2DCamera || !gameCamera) {
+        std::cerr << "Failed compass render check: compass=" << (compass ? "valid" : "null") 
+                  << " ui_camera=" << (m_ui2DCamera ? "valid" : "null")
+                  << " game_camera=" << (gameCamera ? "valid" : "null") << std::endl;
+        return;
+    }
+    
+    // Calculate rotation to keep compass aligned with world directions
+    // We need to counter-rotate against the camera's Y rotation (yaw)
+    
+    // Get the camera's forward vector and calculate its Y rotation
+    glm::vec3 cameraForward = gameCamera->GetForward();
+    
+    // Calculate the yaw angle from the forward vector
+    // atan2 gives us the angle in the XZ plane (Y rotation)
+    float cameraYaw = atan2(cameraForward.x, cameraForward.z);
+    
+    // Counter-rotate the compass to keep it world-aligned
+    float compassRotation = cameraYaw;
+    
+    // Call the original method with calculated rotation
+    renderCompass(compass, compassRotation);
 }
 
 void CEUIRenderer::renderTestSquare()

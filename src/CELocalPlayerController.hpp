@@ -9,6 +9,8 @@
 
 class C2MapFile;
 class C2MapRscFile;
+class CEBulletPlayerController;
+class CEPhysicsWorld;
 
 class CELocalPlayerController : public CEBasePlayerController, public CEObservable
 {
@@ -54,9 +56,34 @@ private:
   double m_died_at = 0.0;
   bool m_dead = false;
   glm::vec3 m_body_at;
+  
+  // Physics-based movement system
+  std::unique_ptr<CEBulletPlayerController> m_physicsController;
+  bool m_usePhysics = false;
+  bool m_flyingMode = false;
+  
+  // Physics-based camera bobble
+  float m_physicsBobbleTime = 0.0f;
+  glm::vec3 m_lastPhysicsPosition = glm::vec3(0);
+  float m_currentBobbleIntensity = 0.0f;
+  
+  // Camera smoothing for terrain jitter reduction
+  glm::vec3 m_smoothedCameraPosition = glm::vec3(0);
+  glm::vec3 m_targetCameraPosition = glm::vec3(0);
+  float m_cameraSmoothing = 0.15f; // How much smoothing to apply
 
 public:
   CELocalPlayerController(float world_width, float world_height, float tile_size, std::shared_ptr<C2MapFile> map, std::shared_ptr<C2MapRscFile> rsc);
+  ~CELocalPlayerController();
+  
+  // Physics integration (required for movement)
+  void enablePhysics(CEPhysicsWorld* physicsWorld);
+  void disablePhysics();
+  bool isUsingPhysics() const { return m_usePhysics; }
+  
+  // Flying mode toggle
+  void setFlyingMode(bool flying);
+  bool isFlyingMode() const { return m_flyingMode; }
 
   // CEBasePlayerController interface implementation
   glm::vec3 getPosition() const override;
@@ -79,6 +106,7 @@ public:
   void strafeLeft(double timeDelta);
   
   void move(double currentTime, double deltaTime, bool forwardPressed, bool backwardPressed, bool rightPressed, bool leftPressed);
+  void move(double currentTime, double deltaTime, bool forwardPressed, bool backwardPressed, bool rightPressed, bool leftPressed, bool jumpPressed);
   
   void jump(double currentTime);
 

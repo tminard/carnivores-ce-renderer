@@ -79,9 +79,10 @@ void LocalInputManager::ProcessLocalInput(GLFWwindow* window, float deltaTime)
     bool backwardPressed = glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS;
     bool rightPressed = glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS;
     bool leftPressed = glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS;
+    bool jumpPressed = glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS;
     
     if (!noclip) {
-      m_player_controller->move(currentTime, timeDelta, forwardPressed, backwardPressed, rightPressed, leftPressed);
+      m_player_controller->move(currentTime, timeDelta, forwardPressed, backwardPressed, rightPressed, leftPressed, jumpPressed);
     } else {
       if (forwardPressed) m_player_controller->getCamera()->MoveForward(6.25f); // Scaled down 16x (was 100.f)
       if (backwardPressed) m_player_controller->getCamera()->MoveForward(-6.25f); // Scaled down 16x (was -100.f)
@@ -93,9 +94,7 @@ void LocalInputManager::ProcessLocalInput(GLFWwindow* window, float deltaTime)
       m_player_controller->getCamera()->MoveUp(6.25f); // Scaled down 16x (was 100.f)
     }
     
-    if (!noclip && glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-      m_player_controller->jump(currentTime);
-    }
+    // Jump is now handled through the move() method above
     if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS && this->m_last_key_state[GLFW_KEY_O] != GLFW_PRESS) {
       this->m_last_key_state[GLFW_KEY_O] = GLFW_PRESS;
       m_player_controller->DBG_printLocationInformation();

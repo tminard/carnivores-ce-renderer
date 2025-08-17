@@ -66,7 +66,7 @@ public:
     
     // Collision groups for terrain (matching CEPhysicsWorld::CollisionGroups)
     static const short TERRAIN_COLLISION_GROUP = 1 << 1;  // TERRAIN_GROUP (bit 1)
-    static const short TERRAIN_COLLISION_MASK = 1 << 0;   // Can collide with PROJECTILE_GROUP (bit 0)
+    static const short TERRAIN_COLLISION_MASK = (1 << 0) | (1 << 4);   // Can collide with PROJECTILE_GROUP and PLAYER_GROUP
 };
 
 #endif /* defined(__CE_Character_Lab__CEBulletHeightfield__) */

@@ -50,7 +50,8 @@ public:
         PROJECTILE_GROUP = 1 << 0,
         TERRAIN_GROUP = 1 << 1,
         OBJECT_GROUP = 1 << 2,
-        WATER_GROUP = 1 << 3
+        WATER_GROUP = 1 << 3,
+        PLAYER_GROUP = 1 << 4
     };
     
     struct CollisionObjectInfo {

@@ -186,8 +186,8 @@ bool CEBulletProjectile::update(double currentTime, CEPhysicsWorld* physics)
             impactColor = glm::vec3(1.0f, 0.0f, 0.5f);
         }
         
-        addDebugSphere(m_impactPoint, 0.5f, impactColor, "impact");
-        addProjectileTrajectory(m_trajectoryPoints, m_impactSurfaceType);
+        addDebugSphere(m_impactPoint, 2.0f, impactColor, "impact");
+        // Trajectory path rendering disabled - only final impact marker used
         
         return true;
     }

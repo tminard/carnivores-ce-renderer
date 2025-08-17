@@ -1,4 +1,6 @@
 #include "CELocalPlayerController.hpp"
+#include "CEBulletPlayerController.h"
+#include "CEPhysicsWorld.h"
 #include "camera.h"
 #include "C2MapFile.h"
 #include "C2MapRscFile.h"
@@ -6,11 +8,12 @@
 
 #include <iostream>
 #include <string>
+#include <cmath>
 
 CELocalPlayerController::CELocalPlayerController(float world_width, float world_height, float tile_size, std::shared_ptr<C2MapFile> map, std::shared_ptr<C2MapRscFile> rsc) : CEBasePlayerController(map, rsc), m_world_width(world_width), m_world_height(world_height), m_tile_size(tile_size) {
   
-  m_walk_speed = m_tile_size * 2.8f;
-  m_player_height = m_tile_size * 1.25f;
+  m_walk_speed = 60.0f;  // 5.1 m/s running speed - only speed we use (scaled to 1 unit = 8.5cm)
+  m_player_height = 16.0f;  // Lower eye level height for better camera feel
 
   m_current_speed = 0.0f;
   m_target_speed = 0.0f;
@@ -23,9 +26,15 @@ CELocalPlayerController::CELocalPlayerController(float world_width, float world_
   m_bobble_amount = m_player_height * 0.1f;
   m_bobble_time = 0.f;
   
+  // Initialize camera smoothing to safe values
+  m_smoothedCameraPosition = glm::vec3(0.0f, 0.0f, 0.0f);
+  m_targetCameraPosition = glm::vec3(0.0f, 0.0f, 0.0f);
+  
   // Configure sensory capabilities for local player (god view enabled)
   setSensoryCapabilities(1000.0f, 1000.0f, 1000.0f, true);
 }
+
+CELocalPlayerController::~CELocalPlayerController() = default;
 
 void CELocalPlayerController::lookAt(glm::vec3 direction)
 {
@@ -91,6 +100,11 @@ glm::vec2 CELocalPlayerController::getWorldPosition() const
 void CELocalPlayerController::setPosition(glm::vec3 position)
 {
   this->m_camera.SetPos(position);
+  
+  // Sync physics body position when physics is enabled
+  if (m_usePhysics && m_physicsController) {
+    m_physicsController->setPosition(position);
+  }
 }
 
 void CELocalPlayerController::setElevation(float elevation)
@@ -224,146 +238,7 @@ void CELocalPlayerController::panAroundBody(double currentTime) {
 }
 
 void CELocalPlayerController::move(double currentTime, double deltaTime, bool forwardPressed, bool backwardPressed, bool rightPressed, bool leftPressed) {
-  if (m_dead) return;
-
-  float dTime = static_cast<float>(deltaTime);
-  glm::vec3 movement(0.0f);
-
-  // Calculate movement vectors based on input
-  if (forwardPressed) {
-      movement += m_camera.GetForward();
-      m_target_speed = m_walk_speed;
-  }
-  if (backwardPressed) {
-      movement -= m_camera.GetForward();
-      m_target_speed = m_walk_speed * 0.5f;
-  }
-  if (rightPressed) {
-      movement += glm::normalize(glm::cross(m_camera.GetForward(), glm::vec3(0.0f, 1.0f, 0.0f)));
-      m_target_speed = m_walk_speed * 0.85f;
-  }
-  if (leftPressed) {
-      movement -= glm::normalize(glm::cross(m_camera.GetForward(), glm::vec3(0.0f, 1.0f, 0.0f)));
-      m_target_speed = m_walk_speed * 0.85f;
-  }
-
-  // Normalize the movement vector if diagonal movement is happening
-  if (glm::length(movement) > 0.0f) {
-      movement = glm::normalize(movement);
-  }
-  
-  // Reset target speed if no movement keys are pressed
-  if (!forwardPressed && !backwardPressed && !rightPressed && !leftPressed) {
-      m_target_speed = 0.0f;
-  }
-
-  // Apply acceleration and deceleration
-  if (m_target_speed > m_current_speed) {
-      m_current_speed += m_acceleration * dTime;
-      if (m_current_speed > m_target_speed) {
-          m_current_speed = m_target_speed;
-      }
-  } else if (m_target_speed < m_current_speed) {
-      m_current_speed -= m_deceleration * dTime;
-      if (m_current_speed < m_target_speed) {
-          m_current_speed = m_target_speed;
-      }
-  }
-
-  // Calculate the new position
-  auto currentPos = m_camera.GetPosition();
-  glm::vec2 currentWorldPos = glm::vec2(int(floorf(currentPos.x / m_tile_size)), int(floorf(currentPos.z / m_tile_size)));
-
-  glm::vec3 pos = m_camera.GetPosition() + movement * (m_current_speed * dTime);
-  glm::vec2 worldPos = glm::vec2(int(floorf(pos.x / m_tile_size)), int(floorf(pos.z / m_tile_size)));
-  bool outOfBounds = worldPos.x < 0 || worldPos.x > m_map->getHeight() || worldPos.y < 0 || worldPos.y > m_map->getWidth();
-
-  // If we are currently out of bounds then do something about it
-  if (outOfBounds) {
-    pos = m_map->getRandomLanding();
-    setPosition(pos);
-    currentPos = pos;
-    worldPos = glm::vec2(int(floorf(pos.x / m_tile_size)), int(floorf(pos.z / m_tile_size)));
-    currentWorldPos = glm::vec2(int(floorf(currentPos.x / m_tile_size)), int(floorf(currentPos.z / m_tile_size)));
-  }
-  
-  // Use enhanced interpolated height sampling with predictive sampling
-  glm::vec3 currentWorldPosVec(currentPos.x, currentPos.y, currentPos.z);
-  glm::vec3 nextWorldPosVec(pos.x, pos.y, pos.z);
-  
-  float currentWorldHeight = m_map->getHeightAtWorldPosition(currentWorldPosVec);
-  float nextWorldHeight = m_map->getHeightAtWorldPosition(nextWorldPosVec);
-  
-  // Use predictive height sampling for smoother movement over varying terrain
-  float predictiveHeight = nextWorldHeight;
-  if (glm::length(movement) > 0.0f) {
-      predictiveHeight = getPredictiveHeight(nextWorldPosVec, movement, m_current_speed, dTime);
-  }
-  
-  // Apply head bobble effect
-  float bobbleOffset = 0.f;
-  if (m_current_speed > 0.0f) {
-      bobbleOffset = m_bobble_amount * sin(m_bobble_speed * m_bobble_time);
-  }
-  
-  // Calculate slope angle once for both smoothing and movement validation
-  float slopeAngle = computeSlope(worldPos.x, worldPos.y);
-  
-  // Apply adaptive low-pass filter for smoother height transitions
-    float targetHeight = predictiveHeight;
-    float heightDifference = targetHeight - m_previousHeight;
-    
-    // Calculate adaptive smoothing factor based on terrain conditions and movement
-    float adaptiveFactor = getAdaptiveSmoothingFactor(heightDifference, m_current_speed, slopeAngle);
-    
-    float smoothedHeight = (targetHeight * adaptiveFactor) + (m_previousHeight * (1.0f - adaptiveFactor));
-    m_previousHeight = smoothedHeight;
-  
-  // Check if movement is allowed or out of bounds
-  float maxClimbHeight = m_player_height / 4.0f;
-  
-  if (m_is_jumping) {
-    maxClimbHeight = m_player_height * 2.f;
-  }
-
-  if ((slopeAngle <= maxSlopeAngle ||
-      predictiveHeight < currentWorldHeight ||
-      abs(predictiveHeight - currentWorldHeight) < maxClimbHeight) && !outOfBounds) {
-    
-    if (!m_is_jumping) {
-      pos.y = smoothedHeight + m_player_height + bobbleOffset;
-    }
-
-      this->m_camera.SetPos(pos);
-  } else {
-      currentPos.y = currentWorldHeight + m_player_height + bobbleOffset;
-
-      this->m_camera.SetPos(currentPos);
-  }
-  
-  // Update bobble time if the player is moving
-  if (forwardPressed || backwardPressed || rightPressed || leftPressed || m_current_speed > 0.0) {
-      m_bobble_time += 100.f * dTime;
-  } else {
-      m_bobble_time = 0.0f;
-  }
-  
-  // Handle jumping
-  if (m_is_jumping) {
-      m_vertical_speed -= m_gravity * dTime;
-      pos = m_camera.GetPosition();
-      pos.y += (m_vertical_speed * m_tile_size) * dTime;
-
-      // Check for landing using interpolated height
-      glm::vec3 jumpWorldPos(pos.x, pos.y, pos.z);
-      float groundHeight = m_map->getHeightAtWorldPosition(jumpWorldPos) + m_player_height;
-      if (pos.y <= groundHeight - 1.5f) { // Scaled down 16x (was 24.f)
-          m_is_jumping = false;
-          m_vertical_speed = 0.0f;
-          m_last_jump_time = currentTime;
-      }
-      m_camera.SetPos(pos);
-  }
+  move(currentTime, deltaTime, forwardPressed, backwardPressed, rightPressed, leftPressed, false);
 }
 
 glm::vec3 CELocalPlayerController::computeSlidingDirection(float x, float z) {
@@ -431,27 +306,14 @@ float CELocalPlayerController::getAdaptiveSmoothingFactor(float heightDifference
 }
 
 void CELocalPlayerController::jump(double currentTime) {
-    if (!m_is_jumping && (currentTime - m_last_jump_time) >= m_jump_cooldown) {
-        m_is_jumping = true;
-
-        // Influence of forward speed on jump
-        glm::vec3 forward = m_camera.GetForward();
-        float forwardSpeedFactor = glm::dot(forward, glm::normalize(forward));
-        
-        // Calculate horizontal speed contribution to the jump
-        float horizontalSpeedContribution = glm::length(forward) * forwardSpeedFactor;
-        
-        // Reduce the vertical speed slightly if moving forward
-        float adjustedVerticalSpeed = m_jump_speed - (horizontalSpeedContribution * 0.2f);
-
-        // Set the vertical speed with the reduced factor
-        m_vertical_speed = adjustedVerticalSpeed;
-        
-        // Add a small forward boost if the player is moving forward
-        if (horizontalSpeedContribution > 0) {
-            m_camera.SetPos(m_camera.GetPosition() + forward * horizontalSpeedContribution * 0.5f);
-        }
+    // Physics system handles jumping directly through the move() method with jump input
+    if (!m_usePhysics || !m_physicsController) {
+        std::cerr << "Warning: Physics-based movement not enabled. Use move() with jumpPressed parameter instead." << std::endl;
+        return;
     }
+    
+    // Jump input should be handled via the move() method with jumpPressed parameter
+    // This method is kept for backward compatibility but doesn't do anything in physics mode
 }
 
 bool CELocalPlayerController::isAlive(double currentTime)
@@ -465,5 +327,114 @@ void CELocalPlayerController::kill(double killedAt) {
   m_dead = true;
   m_target_speed = 0.0;
   m_current_speed = 0.0;
+}
+
+void CELocalPlayerController::enablePhysics(CEPhysicsWorld* physicsWorld)
+{
+  if (!physicsWorld) return;
+  
+  // Create physics controller at current position
+  glm::vec3 currentPos = getPosition();
+  m_physicsController = std::make_unique<CEBulletPlayerController>(physicsWorld, currentPos);
+  
+  // Configure physics controller to match current settings
+  m_physicsController->setWalkSpeed(m_walk_speed);
+  m_physicsController->setJumpForce(m_jump_speed * 80.0f); // Convert to physics impulse
+  m_physicsController->setFlying(m_flyingMode);
+  
+  m_usePhysics = true;
+}
+
+void CELocalPlayerController::disablePhysics()
+{
+  if (m_physicsController) {
+    // Store current physics position before disabling
+    glm::vec3 physicsPos = m_physicsController->getPosition();
+    setPosition(physicsPos);
+    
+    m_physicsController.reset();
+  }
+  m_usePhysics = false;
+}
+
+void CELocalPlayerController::setFlyingMode(bool flying)
+{
+  m_flyingMode = flying;
+  
+  if (m_physicsController) {
+    m_physicsController->setFlying(flying);
+  }
+}
+
+void CELocalPlayerController::move(double currentTime, double deltaTime, bool forwardPressed, bool backwardPressed, bool rightPressed, bool leftPressed, bool jumpPressed) {
+  if (m_dead) return;
+  
+  // Physics-based movement is now the primary system
+  if (!m_usePhysics || !m_physicsController) {
+    // Physics not enabled - fall back to safe camera position
+    std::cerr << "Warning: Physics-based movement not enabled. Call enablePhysics() first." << std::endl;
+    
+    // Set a safe default camera position if not initialized
+    if (glm::length(m_smoothedCameraPosition) < 0.1f) {
+      m_smoothedCameraPosition = m_camera.GetPosition();
+    }
+    return;
+  }
+  
+  // Pass input directly - physics controller will handle camera transformation
+  CEBulletPlayerController::MovementInput input;
+  input.forward = forwardPressed;
+  input.backward = backwardPressed;
+  input.left = leftPressed;
+  input.right = rightPressed;
+  input.jump = jumpPressed;
+  input.flying = m_flyingMode;
+  
+  // Update physics controller with camera forward direction
+  m_physicsController->update(input, currentTime, static_cast<float>(deltaTime), m_camera.GetForward());
+  
+  // Get physics position and calculate movement
+  glm::vec3 physicsPos = m_physicsController->getPosition();
+  auto movementState = m_physicsController->getMovementState();
+  
+  // Calculate camera bobble based on movement speed and ground contact
+  glm::vec3 bobbleOffset = glm::vec3(0);
+  if (movementState.isGrounded && movementState.speed > 1.0f && !m_flyingMode) {
+    // Calculate bobble intensity based on movement speed
+    float speedRatio = glm::clamp(movementState.speed / m_walk_speed, 0.0f, 1.0f);
+    m_currentBobbleIntensity = glm::mix(m_currentBobbleIntensity, speedRatio, static_cast<float>(deltaTime) * 8.0f);
+    
+    // Update bobble time based on movement speed
+    m_physicsBobbleTime += static_cast<float>(deltaTime) * movementState.speed * 0.02f;
+    
+    // Calculate natural bobble using sine waves for realistic walking motion
+    float bobbleFreq = 12.0f; // Steps per second feel
+    float verticalBob = std::sin(m_physicsBobbleTime * bobbleFreq) * m_currentBobbleIntensity * 1.6f; // Doubled for more noticeable effect
+    float horizontalBob = std::sin(m_physicsBobbleTime * bobbleFreq * 0.5f) * m_currentBobbleIntensity * 0.8f; // Doubled for more noticeable effect
+    
+    bobbleOffset = glm::vec3(horizontalBob, verticalBob, 0);
+  } else {
+    // Smooth out bobble when not moving or in air
+    m_currentBobbleIntensity = glm::mix(m_currentBobbleIntensity, 0.0f, static_cast<float>(deltaTime) * 5.0f);
+  }
+  
+  // Apply camera position with proper eye height and bobble
+  glm::vec3 eyeHeight = glm::vec3(0, m_player_height, 0); // m_player_height is already eye level
+  m_targetCameraPosition = physicsPos + eyeHeight + bobbleOffset;
+  
+  // Smooth camera position to reduce terrain jitter while keeping physics accurate
+  // Check if this is the first frame or position is invalid
+  if (glm::length(m_smoothedCameraPosition) < 0.1f || 
+      std::isnan(m_smoothedCameraPosition.x) || std::isnan(m_smoothedCameraPosition.y) || std::isnan(m_smoothedCameraPosition.z) ||
+      std::abs(m_smoothedCameraPosition.x) > 10000.0f || std::abs(m_smoothedCameraPosition.y) > 10000.0f || std::abs(m_smoothedCameraPosition.z) > 10000.0f) {
+    // Initialize or reset to safe position
+    m_smoothedCameraPosition = m_targetCameraPosition;
+  } else {
+    // Smooth the camera position over time
+    m_smoothedCameraPosition = glm::mix(m_smoothedCameraPosition, m_targetCameraPosition, 
+                                       static_cast<float>(deltaTime) * (1.0f / m_cameraSmoothing));
+  }
+  
+  m_camera.SetPos(m_smoothedCameraPosition);
 }
 

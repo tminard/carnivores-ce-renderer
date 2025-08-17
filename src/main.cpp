@@ -934,6 +934,8 @@ int main(int argc, const char * argv[])
   // Initialize Bullet Physics projectile manager
   projectileManager = std::make_unique<CEBulletProjectileManager>(cMap.get(), cMapRsc.get(), g_audio_manager.get()); // Re-enabled with performance optimizations
   
+  g_player_controller->disablePhysics();
+  
   // Initialize impact marker geometry (small sphere for collision visualization)
   std::vector<Vertex> sphereVertices = generateSphere(1.0f, 8); // Small sphere, low detail for performance
   
@@ -1068,6 +1070,8 @@ int main(int argc, const char * argv[])
   
   // grab a character
   auto charac = characters.at(1);
+  g_player_controller->update(glfwGetTime(), 0.0);
+  g_player_controller->enablePhysics(projectileManager->getPhysicsWorld());
   
   while (!glfwWindowShouldClose(window) && !input_manager->GetShouldShutdown()) {
     glfwMakeContextCurrent(window);
@@ -1423,62 +1427,8 @@ int main(int argc, const char * argv[])
       glEnable(GL_CULL_FACE);
     }
     
-    // Render trajectory lines (continuous paths showing bullet physics)
-    if (!projectileTrajectories.empty()) {
-      glDepthFunc(GL_LESS);
-      glDisable(GL_CULL_FACE);
-      glEnable(GL_DEPTH_TEST);
-      glEnable(GL_BLEND);
-      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-      
-      // Use impact marker geometry to render small spheres at each trajectory point
-      if (impactMarkerGeometry) {
-        auto shader = impactMarkerGeometry->getShader();
-        if (shader) {
-          shader->use();
-          shader->setBool("useCustomColor", true);
-        }
-        
-        for (const auto& trajectory : projectileTrajectories) {
-          if (trajectory.points.size() < 2) continue;
-          
-          // Calculate fade based on age
-          double age = currentTime - trajectory.spawnTime;
-          float alpha = std::max(0.0f, 1.0f - static_cast<float>(age / TRAJECTORY_LIFETIME));
-          
-          std::vector<glm::mat4> pointTransforms;
-          pointTransforms.reserve(trajectory.points.size());
-          
-          // Create small spheres for each trajectory point
-          for (size_t i = 0; i < trajectory.points.size(); i++) {
-            glm::mat4 transform = glm::mat4(1.0f);
-            transform = glm::translate(transform, trajectory.points[i]);
-            
-            // Make spheres smaller towards the end of trajectory for nice visual effect
-            float sizeScale = 1.0f - (static_cast<float>(i) / trajectory.points.size()) * 0.3f;
-            transform = glm::scale(transform, glm::vec3(0.1875f * sizeScale * alpha)); // Scaled down 16x (was 3.0f)
-            pointTransforms.push_back(transform);
-          }
-          
-          if (shader && !pointTransforms.empty()) {
-            glm::vec3 fadedColor = trajectory.color * alpha;
-            shader->setVec3("customColor", fadedColor);
-            
-            impactMarkerGeometry->UpdateInstances(pointTransforms);
-            impactMarkerGeometry->Update(*camera);
-            impactMarkerGeometry->DrawInstances();
-          }
-        }
-        
-        // Reset custom color flag
-        if (shader) {
-          shader->setBool("useCustomColor", false);
-        }
-      }
-      
-      glDisable(GL_BLEND);
-      glEnable(GL_CULL_FACE);
-    }
+    // Trajectory path rendering removed to prevent collision with bullet spheres
+    // Only final impact markers are rendered below
     
     // Render the sky
     if (render_sky) {

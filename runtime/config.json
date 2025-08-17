@@ -1,9 +1,9 @@
 {
   "basePath": "../../runtime/cce/",
   "map": {
-    "type": "C2",
-    "map": "../game/c2/area1.map",
-    "rsc": "../game/c2/area1.rsc"
+    "type": "C1",
+    "map": "../game/c1/area1.map",
+    "rsc": "../game/c1/area1.rsc"
   },
   "video": {
     "fullscreen": false
@@ -14,12 +14,12 @@
   },
   "weapons": {
     "primary": {
-      "file": "game/models/pistol.car",
+      "file": "game/models/rifle.car",
       "animations": {
-         "draw": "Pl2_get",
-         "holster": "Pl2_put",
-         "fire": "Pl2_fire",
-         "reload": "Pl3_rld"
+         "draw": "Rf2_get",
+         "holster": "Rf2_put",
+         "fire": "Rf2_fire",
+         "reload": "Rf2_rld"
        },
        "projectiles": {
          "muzzleFlashFrame": 2,
@@ -54,9 +54,9 @@
         },
         "behavior": {
           "vision": 40.0,
-          "maxAttackChance": 90.0,
-          "minAttackChance": 20.0,
-          "damageOnContact": true
+          "maxAttackChance": 0.0,
+          "minAttackChance": 0.0,
+          "damageOnContact": false
         },
         "character": {
           "walkSpeed": 2.25
@@ -82,9 +82,9 @@
         },
         "behavior": {
           "vision": 20.0,
-          "maxAttackChance": 60.0,
-          "minAttackChance": 20.0,
-          "damageOnContact": true
+          "maxAttackChance": 0.0,
+          "minAttackChance": 0.0,
+          "damageOnContact": false
         },
         "character": {
           "walkSpeed": 2.65,
@@ -111,9 +111,9 @@
         },
         "behavior": {
           "vision": 20.0,
-          "maxAttackChance": 100.0,
-          "minAttackChance": 100.0,
-          "damageOnContact": true
+          "maxAttackChance": 0.0,
+          "minAttackChance": 0.0,
+          "damageOnContact": false
         },
         "character": {
           "walkSpeed": 2.65,

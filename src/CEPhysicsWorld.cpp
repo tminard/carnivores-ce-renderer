@@ -42,9 +42,9 @@ CEPhysicsWorld::CEPhysicsWorld(C2MapFile* mapFile, C2MapRscFile* mapRsc)
     m_solver = new btSequentialImpulseConstraintSolver();
     
     m_dynamicsWorld = new btDiscreteDynamicsWorld(m_dispatcher, m_broadphase, m_solver, m_collisionConfig);
-    // Use much weaker gravity for realistic high-velocity bullet ballistics
-    // Normal gravity (48) makes bullets drop too fast at rifle velocities
-    float gameGravity = -15.0f; // Weaker gravity for realistic bullet trajectories
+    // Use much stronger gravity for snappy FPS player movement feel
+    // Bullets can have separate physics properties if needed
+    float gameGravity = -115.3f; // Realistic Earth gravity (9.8 m/s² scaled to 1 unit = 8.5cm)
     m_dynamicsWorld->setGravity(btVector3(0, gameGravity, 0));
     
     // Initialize debug drawer for physics visualization

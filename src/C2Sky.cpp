@@ -81,12 +81,15 @@ void C2Sky::loadTextureIntoMemory()
         }
     }
 
-    // Set texture parameters
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    // Set texture parameters to prevent edge artifacts
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    
+    // Generate mipmaps to reduce aliasing
+    glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
 
     // Store the texture ID for later use
     this->m_cube_texture = textureID;
@@ -100,17 +103,20 @@ void C2Sky::updateClouds()
   double time = glfwGetTime();
   double time_delta = this->last_cloud_time - time;
 
-  float max_uv = (SKY_DISTANCE / 256.f);
-
+  // Fixed cloud UV scaling - use normalized coordinates
+  float max_uv = 12.0f; // A bit more tiling (2x original)
   float unit_sec = (max_uv / (240.f * 10.f));
   float start = last_cloud_start + (unit_sec * (float)time_delta);
   
+  // Wrap UV coordinates to prevent stretching
+  start = fmod(start, max_uv);
+  
   float cloudUV[] = {
     start, start,
-    max_uv, start,
-    max_uv, max_uv,
-    max_uv, max_uv,
-    start, max_uv,
+    start + max_uv, start,
+    start + max_uv, start + max_uv,
+    start + max_uv, start + max_uv,
+    start, start + max_uv,
     start, start
   };
 
@@ -125,14 +131,15 @@ void C2Sky::updateClouds()
   // Build objects
 void C2Sky::loadIntoHardwareMemory()
 {
-  float start = (float)glfwGetTime();
-  float r_f = (SKY_DISTANCE / 256.f / 4.f) + start;
+  // Initialize cloud UVs with proper scaling
+  float start = 0.0f;
+  float max_uv = 12.0f; // A bit more tiling
   float cloudUV[] = {
     start, start,
-    r_f, start,
-    r_f, r_f,
-    r_f, r_f,
-    start, r_f,
+    max_uv, start,
+    max_uv, max_uv,
+    max_uv, max_uv,
+    start, max_uv,
     start, start
   };
   this->last_cloud_time = glfwGetTime();

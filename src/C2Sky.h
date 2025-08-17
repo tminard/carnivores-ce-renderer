@@ -32,8 +32,8 @@ struct Transform;
 class C2Sky
 {
 private:
-  const float SKY_DISTANCE = 8000.f;
-  const float SKY_HEIGHT = 748.f;
+  const float SKY_DISTANCE = 4000.f;  // Reduced distance to prevent edge artifacts
+  const float SKY_HEIGHT = 400.f;     // Proportionally adjusted height
 
   std::unique_ptr<ShaderProgram> m_shader;
 

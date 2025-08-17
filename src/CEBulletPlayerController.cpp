@@ -67,9 +67,9 @@ CEBulletPlayerController::CEBulletPlayerController(CEPhysicsWorld* physicsWorld,
     btRigidBody::btRigidBodyConstructionInfo rbInfo(m_mass, motionState, m_playerShape, localInertia);
     
     // Set physics properties for outdoor terrain (grass/rock/mud)
-    rbInfo.m_friction = 0.3f;           // Moderate friction for natural terrain
+    rbInfo.m_friction = 0.1f;           // Light friction - let forces do the work
     rbInfo.m_restitution = 0.0f;        // No bouncing
-    rbInfo.m_linearDamping = 0.3f;      // Some damping for control
+    rbInfo.m_linearDamping = 0.2f;      // Light damping for control
     rbInfo.m_angularDamping = 1.0f;     // Complete angular damping to prevent spinning
     
     m_playerBody = new btRigidBody(rbInfo);
@@ -257,7 +257,7 @@ void CEBulletPlayerController::applyMovementForces(const MovementInput& input, f
             
             // Apply acceleration force when moving
             glm::vec3 velocityDifference = targetVelocity - currentHorizontal;
-            glm::vec3 accelerationForce = velocityDifference * m_mass * 25.0f; // Very strong force to overcome friction
+            glm::vec3 accelerationForce = velocityDifference * m_mass * 35.0f; // Very strong force for responsive movement
             m_playerBody->applyCentralForce(glmToBtVector3(accelerationForce));
             
             // Add small step-up force when moving and grounded

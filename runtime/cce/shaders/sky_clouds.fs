@@ -10,7 +10,7 @@ void main()
 {
     float dist = (gl_FragCoord.z / gl_FragCoord.w);
 
-    float alpha = 1.0 - clamp((dist / (5500.0)), 0.0, 1.0);
+    float alpha = 1.0 - clamp((dist / (1000.0)), 0.0, 1.0); // Better fade distance for scaled world
     vec4 sC = texture(basic_texture, TexCoords0);
     vec4 finalColor = vec4(sC.b, sC.g, sC.r, alpha);
 

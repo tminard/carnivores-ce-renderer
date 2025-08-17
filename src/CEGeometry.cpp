@@ -16,6 +16,9 @@
 
 #include "IndexedMeshLoader.h"
 
+// Bullet Physics for mesh collision generation
+#include <btBulletCollisionCommon.h>
+
 namespace fs = std::filesystem;
 using json = nlohmann::json;
 
@@ -358,4 +361,43 @@ void CEGeometry::setShader(std::string shaderName)
   this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram((shaderPath / (shaderName + ".vs")).string(), (shaderPath / (shaderName + ".fs")).string()));
   this->m_shader->use();
   this->m_shader->setBool("enable_transparency", true);
+}
+
+// Physics mesh generation - ensures 1:1 accuracy with visual mesh
+btTriangleMesh* CEGeometry::createPhysicsTriangleMesh() const
+{
+    btTriangleMesh* triangleMesh = new btTriangleMesh();
+    
+    // Convert vertices and indices to Bullet Physics format
+    for (size_t i = 0; i < m_indices.size(); i += 3) {
+        // Ensure we have a complete triangle
+        if (i + 2 >= m_indices.size()) break;
+        
+        // Get the three vertices of this triangle
+        const Vertex& v0 = m_vertices[m_indices[i]];
+        const Vertex& v1 = m_vertices[m_indices[i + 1]];
+        const Vertex& v2 = m_vertices[m_indices[i + 2]];
+        
+        // Create Bullet vectors (note: CEGeometry uses same coordinate system as physics)
+        btVector3 bv0(v0.getPos().x, v0.getPos().y, v0.getPos().z);
+        btVector3 bv1(v1.getPos().x, v1.getPos().y, v1.getPos().z);
+        btVector3 bv2(v2.getPos().x, v2.getPos().y, v2.getPos().z);
+        
+        // Add triangle to mesh
+        triangleMesh->addTriangle(bv0, bv1, bv2);
+    }
+    
+    return triangleMesh;
+}
+
+std::vector<glm::vec3> CEGeometry::getDebugPhysicsVertices() const
+{
+    std::vector<glm::vec3> debugVertices;
+    
+    // Extract vertex positions for debug visualization
+    for (const auto& vertex : m_vertices) {
+        debugVertices.push_back(vertex.getPos());
+    }
+    
+    return debugVertices;
 }

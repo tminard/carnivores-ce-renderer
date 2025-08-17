@@ -11,12 +11,14 @@
 #include "CEWorldModel.h"
 #include "CEGeometry.h"
 #include "CEBulletHeightfield.h"
+#include "CEBulletDebugDraw.h"
 #include "transform.h"
 #include "vertex.h"
 
 // Bullet Physics includes
 #include <btBulletDynamicsCommon.h>
 #include <BulletCollision/CollisionShapes/btBvhTriangleMeshShape.h>
+#include <BulletCollision/CollisionShapes/btScaledBvhTriangleMeshShape.h>
 #include <BulletCollision/CollisionShapes/btTriangleMesh.h>
 
 #include <iostream>
@@ -44,6 +46,10 @@ CEPhysicsWorld::CEPhysicsWorld(C2MapFile* mapFile, C2MapRscFile* mapRsc)
     // Normal gravity (48) makes bullets drop too fast at rifle velocities
     float gameGravity = -15.0f; // Weaker gravity for realistic bullet trajectories
     m_dynamicsWorld->setGravity(btVector3(0, gameGravity, 0));
+    
+    // Initialize debug drawer for physics visualization
+    m_debugDrawer = std::make_unique<CEBulletDebugDraw>();
+    m_dynamicsWorld->setDebugDrawer(m_debugDrawer.get());
     
     // Setup collision geometry (terrain and world objects optimized for performance)
     // setupTerrain(mapFile);  // DISABLED: Too expensive, using height checks instead
@@ -77,6 +83,9 @@ CEPhysicsWorld::~CEPhysicsWorld()
     for (auto* shape : m_objectShapes) {
         delete shape;
     }
+    for (auto* baseShape : m_baseBvhShapes) {
+        delete baseShape;
+    }
     for (auto* mesh : m_objectMeshes) {
         delete mesh;
     }
@@ -102,7 +111,7 @@ void CEPhysicsWorld::setupHeightfieldTerrain(C2MapFile* mapFile)
     std::cout << "🏔️ Setting up Bullet heightfield terrain..." << std::endl;
     
     // Create heightfield terrain system with partitioning
-    m_heightfieldTerrain = std::make_unique<CEBulletHeightfield>(mapFile, 32, 2000.0f);
+    m_heightfieldTerrain = std::make_unique<CEBulletHeightfield>(mapFile, 32, 480.f);
     
     // Add all partitions to physics world
     m_heightfieldTerrain->addPartitionsToWorld(m_dynamicsWorld);
@@ -186,226 +195,105 @@ void CEPhysicsWorld::setupWorldObjects(C2MapRscFile* mapRsc)
     if (!mapRsc) return;
     
     int objectCount = mapRsc->getWorldModelCount();
-    std::cout << "Setting up " << objectCount << " world object types for optimized physics" << std::endl;
+    std::cout << "🔧 Setting up " << objectCount << " world object types using btScaledBvhTriangleMeshShape for efficient instancing" << std::endl;
     
-    // Performance: Maximum collision range (~50 tiles as requested)
-    float tileLength = m_mapFile->getTileLength(); // Get current tile size
-    float maxCollisionRange = 50.0f * tileLength; // 50 tiles * current tile size
+    // Performance: Maximum collision range
+    float tileLength = m_mapFile->getTileLength();
+    float maxCollisionRange = 300.0f; // Reasonable range for bullet collision detection
     float maxCollisionRangeSq = maxCollisionRange * maxCollisionRange;
     
     for (int i = 0; i < objectCount; i++) {
         CEWorldModel* model = mapRsc->getWorldModel(i);
         if (!model) continue;
         
-        // Get object dimensions from TObjInfo (same as bounding box visualization)
+        // Get object dimensions
         auto objectInfo = model->getObjectInfo();
         float radius = objectInfo->Radius;
-        float yLo = objectInfo->YLo;
-        float yHi = objectInfo->YHi;
         
         // Skip objects with no valid dimensions
         if (radius <= 0) {
-            std::cout << "  Object " << i << " has no valid radius (" << radius << ") - skipping" << std::endl;
+            std::cout << "  ⚠️ Object " << i << " has no valid radius (" << radius << ") - skipping" << std::endl;
             continue;
         }
         
-        // Debug: Log object processing
-        if (i < 5) { // Log first 5 objects
-            std::cout << "  📦 Processing object " << i << " with raw_radius=" << radius << " half_radius=" << (radius * 0.5f) << " height=" << (yHi - yLo) << " yLo=" << yLo << " yHi=" << yHi << " instances=" << model->getTransforms().size() << std::endl;
+        // Create triangle mesh from geometry (shared by all instances)
+        btTriangleMesh* triangleMesh = model->getGeometry()->createPhysicsTriangleMesh();
+        if (!triangleMesh || triangleMesh->getNumTriangles() == 0) {
+            std::cout << "  ⚠️ Object " << i << " has no valid triangles - skipping" << std::endl;
+            delete triangleMesh;
+            continue;
         }
         
-        // Create cylindrical AABB using halved radius (same as visualization and contact filtering)
-        float halfRadius = radius * 0.5f; // Match the visualization and contact filtering
+        // Create base BVH triangle mesh shape (shared by all instances)
+        btBvhTriangleMeshShape* baseBvhShape = new btBvhTriangleMeshShape(triangleMesh, true);
         
-        // Clamp height to reasonable values - many Carnivores objects have unrealistic height bounds
-        // Most trees/rocks should be under 100 units tall in the scaled world
-        float objectHeight = yHi - yLo;
-        const float MAX_REASONABLE_HEIGHT = 100.0f; // Reasonable max height for objects
+        // Store base shape and mesh for cleanup
+        m_objectMeshes.push_back(triangleMesh);
+        m_baseBvhShapes.push_back(baseBvhShape);
         
-        if (objectHeight > MAX_REASONABLE_HEIGHT) {
-            std::cout << "  ⚠️ Object " << i << " height " << objectHeight << " clamped to " << MAX_REASONABLE_HEIGHT << std::endl;
-            // Keep the bottom, but clamp the top
-            yHi = yLo + MAX_REASONABLE_HEIGHT;
-        }
+        std::cout << "  📐 Object " << i << " base BVH shape: " << triangleMesh->getNumTriangles() << " triangles" << std::endl;
         
-        glm::vec3 aabbMin(-halfRadius, yLo, -halfRadius);
-        glm::vec3 aabbMax(halfRadius, yHi, halfRadius);
-        
-        // Calculate size and center (keep original size since positions are in original coordinate space)
-        glm::vec3 size = (aabbMax - aabbMin) * 0.5f;
-        glm::vec3 center = (aabbMax + aabbMin) * 0.5f;
-        
-        btBoxShape* aabbShape = new btBoxShape(btVector3(size.x, size.y, size.z));
-        
-        // Use the actual radius from object info to determine inner collision bounds
-        glm::vec3 innerSize = size; // Default fallback
-        
-        // Get the object radius that defines the actual collision geometry
-        TObjInfo* objInfo = model->getObjectInfo();
-        if (objInfo && objInfo->Radius > 0) {
-            // Use the object's radius to create inner collision geometry
-            // The radius defines the actual collision boundary (like tree trunk radius)
-            float objectRadius = objInfo->Radius * 0.5f; // Half radius as used in physics setup
-            // Apply the same scaling as visual renderer: YHi and YLo are already *2, then scaled by 0.0625f
-            float objectHeight = (objInfo->YHi - objInfo->YLo) * 0.0625f; // Match visual scaling
-            
-            // Create inner collision box based on actual object radius and height  
-            innerSize.x = objectRadius;
-            innerSize.y = objectHeight * 0.5f;  // Half height for box size
-            innerSize.z = objectRadius;
-        }
-        
-        // Create rigid bodies for each instance of this object
+        // Create instances using btScaledBvhTriangleMeshShape
         const auto& transforms = model->getTransforms();
         int instanceIndex = 0;
         int culledInstances = 0;
         
-        std::cout << "  Object " << i << " AABB: size[" << size.x << "," << size.y << "," << size.z 
-                  << "] center[" << center.x << "," << center.y << "," << center.z 
-                  << "] instances:" << transforms.size() << std::endl;
+        std::cout << "  🔄 Creating " << transforms.size() << " instances..." << std::endl;
         
         for (const auto& transform : transforms) {
             glm::vec3 position = *const_cast<Transform&>(transform).GetPos();
-            
-            // Performance optimization: Only create collision for objects within shooting range
-            // For now, disable distance culling entirely to ensure collision objects are created
-            // TODO: Re-enable with proper player position-based culling later
-            bool skipDistanceCheck = true; // Temporarily disable culling for debugging
-            float distanceSq = 0; // Will be calculated if skipDistanceCheck is false
-            
-            if (!skipDistanceCheck && distanceSq > maxCollisionRangeSq) {
-                culledInstances++;
-                // Debug: Log first few culled instances
-                if (culledInstances <= 3) {
-                    float distance = sqrt(distanceSq);
-                    std::cout << "    🚫 Culling instance at [" << position.x << "," << position.y << "," << position.z << "] distance=" << distance << " (max=" << maxCollisionRange << ")" << std::endl;
-                }
-                continue; // Skip distant objects for performance
-            }
-            
-            // Position collision boxes using the EXACT same transform logic as visual rendering
-            // Now using original GetObjectH algorithm for PLACEGROUND objects
-            glm::vec3 visualPosition;
+            glm::vec3 rotation = *const_cast<Transform&>(transform).GetRot(); // Extract rotation!
+
+            // Calculate proper object position (same as visual rendering)
+            glm::vec3 objectPosition;
+            TObjInfo* objInfo = model->getObjectInfo();
             if (objInfo->flags & objectPLACEGROUND) {
-                // Use same algorithm as TerrainRenderer: getObjectHeightForRadius(x, y, GrRad)
-                int tileX = (int)(position.x / 16.0f); // Convert world pos to tile coordinates
+                int tileX = (int)(position.x / 16.0f);
                 int tileZ = (int)(position.z / 16.0f);
                 float objectH = m_mapFile->getObjectHeightForRadius(tileX, tileZ, objInfo->GrRad);
-                visualPosition = glm::vec3(position.x, objectH, position.z);
+                objectPosition = glm::vec3(position.x, objectH, position.z);
             } else {
-                // Non-PLACEGROUND objects use the object height map
-                visualPosition = position; // position.y already contains correct height from object height map
+                objectPosition = position;
             }
             
-            // Position outer AABB using the same logic as before (with center offset for AABB bounds)
-            glm::vec3 aabbPosition = position + center;
+            // Create scaled instance of the base BVH shape
+            // Use the scaling that matches visual rendering
+            btVector3 scale(0.0625f, 0.0625f, 0.0625f);
+            btScaledBvhTriangleMeshShape* scaledShape = new btScaledBvhTriangleMeshShape(baseBvhShape, scale);
             
-            // Position inner box to match exactly where the visual object is rendered
-            // For Bullet Physics, the position represents the CENTER of the box
-            // For PLACEGROUND objects: visualPosition is at ground level, so we need to center the box above ground
-            // For non-PLACEGROUND objects: visualPosition already includes YLo offset, so we center from there
-            glm::vec3 innerPosition = visualPosition;
-            innerPosition.y += innerSize.y; // Center the collision box (Bullet requires center position)
-            btRigidBody* objectBody = createStaticBody(aabbShape, aabbPosition);
+            // Create rigid body for this instance WITH ROTATION to match visual rendering
+            btRigidBody* instanceBody = createStaticBody(scaledShape, objectPosition, rotation);
             
-            // Debug: Log AABB details for problematic instances
-            if (i == 2 && instanceIndex < 3) { // Log first few instances of object 2
-                std::cout << "    📊 Object " << i << " Instance " << instanceIndex 
-                          << " raw_position[" << position.x << "," << position.y << "," << position.z << "]"
-                          << " aabb_position[" << aabbPosition.x << "," << aabbPosition.y << "," << aabbPosition.z << "]"
-                          << " aabb_size[" << size.x << "," << size.y << "," << size.z << "]" << std::endl;
-                          
-                // Show the actual AABB bounds in world space
-                glm::vec3 worldMin = aabbPosition - size;
-                glm::vec3 worldMax = aabbPosition + size;
-                std::cout << "    📐 World AABB: min[" << worldMin.x << "," << worldMin.y << "," << worldMin.z 
-                          << "] max[" << worldMax.x << "," << worldMax.y << "," << worldMax.z << "]" << std::endl;
-            }
+            // Set collision filtering
+            short objectGroup = OBJECT_GROUP;
+            short objectMask = -1; // Collide with everything
+            m_dynamicsWorld->removeRigidBody(instanceBody);
+            m_dynamicsWorld->addRigidBody(instanceBody, objectGroup, objectMask);
             
-            // Add collision filtering for OUTER objects - make them invisible to raycasts
-            // They exist for other physics purposes but projectiles should pass through to inner geometry
-            short outerObjectGroup = OBJECT_GROUP;    // Object collision group
-            short outerObjectMask = 0; // Don't collide with anything - invisible to raycasts
-            m_dynamicsWorld->removeRigidBody(objectBody);
-            m_dynamicsWorld->addRigidBody(objectBody, outerObjectGroup, outerObjectMask);
+            // Store for cleanup
+            m_objectShapes.push_back(scaledShape);
+            m_objectBodies.push_back(instanceBody);
             
-            // Debug: Log first few collision bodies
-            if (m_objectBodies.size() < 3) {
-                std::cout << "🎯 Created collision body " << m_objectBodies.size() + 1 << " at position [" 
-                          << aabbPosition.x << ", " << aabbPosition.y << ", " << aabbPosition.z << "] with size [" 
-                          << size.x << ", " << size.y << ", " << size.z << "]" << std::endl;
-            }
-            
-            m_objectBodies.push_back(objectBody);
-            
-            // Store enhanced object info for hierarchical collision (OUTER BOUND box)
-            CollisionObjectInfo objectInfo;
-            objectInfo.type = CollisionObjectType::WORLD_OBJECT;
-            objectInfo.objectIndex = i;
-            objectInfo.instanceIndex = instanceIndex;
-            objectInfo.objectName = "WorldObject_" + std::to_string(i) + "_Instance_" + std::to_string(instanceIndex);
-            objectInfo.worldModel = model; // Store reference for narrowphase testing
-            objectInfo.instanceTransform = position;
-            objectInfo.aabbCenter = center;
-            m_objectInfoMap[objectBody] = objectInfo;
-            
-            // Create INNER collision box (solid geometry - the "yellow box") - one per instance
-            btBoxShape* innerShape = new btBoxShape(btVector3(innerSize.x, innerSize.y, innerSize.z));
-            btRigidBody* innerBody = createStaticBody(innerShape, innerPosition);
-            
-            // Add collision filtering for INNER objects - these should be hit by raycasts
-            short innerObjectGroup = OBJECT_GROUP;    // Object collision group  
-            short innerObjectMask = -1; // Collide with everything (so raycasts can hit them)
-            m_dynamicsWorld->removeRigidBody(innerBody);
-            m_dynamicsWorld->addRigidBody(innerBody, innerObjectGroup, innerObjectMask);
-            
-            // Debug: Log inner box positioning relative to outer box
-            if (i < 10 && instanceIndex < 5) { // Expand logging to catch tree objects
-                glm::vec3 innerWorldMin = innerPosition - innerSize;
-                glm::vec3 innerWorldMax = innerPosition + innerSize;
-                glm::vec3 outerWorldMin = aabbPosition - size;
-                glm::vec3 outerWorldMax = aabbPosition + size;
-                
-                std::cout << "    🟡 INNER box " << instanceIndex << " for object " << i << ":" << std::endl;
-                std::cout << "       Transform pos: [" << position.x << "," << position.y << "," << position.z << "] YLo=" << objInfo->YLo << " (scaled=" << (objInfo->YLo * 0.0625f) << ")" << std::endl;
-                std::cout << "       PLACEGROUND flag: " << ((objInfo->flags & objectPLACEGROUND) ? "YES" : "NO") << " (flags=0x" << std::hex << objInfo->flags << std::dec << ")" << std::endl;
-                std::cout << "       Visual pos: [" << visualPosition.x << "," << visualPosition.y << "," << visualPosition.z << "]" << std::endl;
-                std::cout << "       Physics pos: [" << innerPosition.x << "," << innerPosition.y << "," << innerPosition.z << "]" << std::endl;
-                std::cout << "       Size: [" << innerSize.x << "," << innerSize.y << "," << innerSize.z << "] (radius=" << objInfo->Radius << ")" << std::endl;
-                std::cout << "       YHi=" << objInfo->YHi << " objectHeight=" << (objInfo->YHi - objInfo->YLo) << " innerSize.y=" << innerSize.y << std::endl;
-                std::cout << "       Bounds: min[" << innerWorldMin.x << "," << innerWorldMin.y << "," << innerWorldMin.z << "] max[" << innerWorldMax.x << "," << innerWorldMax.y << "," << innerWorldMax.z << "]" << std::endl;
-                std::cout << "    🔲 OUTER box bounds: min[" << outerWorldMin.x << "," << outerWorldMin.y << "," << outerWorldMin.z << "] max[" << outerWorldMax.x << "," << outerWorldMax.y << "," << outerWorldMax.z << "]" << std::endl;
-            }
-            
-            m_objectBodies.push_back(innerBody);
-            m_objectShapes.push_back(innerShape); // Store inner shape for cleanup
-            
-            // Store inner object info - mark as INNER solid geometry
-            CollisionObjectInfo innerObjectInfo;
-            innerObjectInfo.type = CollisionObjectType::WORLD_OBJECT;
-            innerObjectInfo.objectIndex = i;
-            innerObjectInfo.instanceIndex = instanceIndex;
-            innerObjectInfo.objectName = "WorldObject_" + std::to_string(i) + "_Instance_" + std::to_string(instanceIndex) + "_INNER";
-            innerObjectInfo.worldModel = model;
-            innerObjectInfo.instanceTransform = position;
-            innerObjectInfo.aabbCenter = center;
-            m_objectInfoMap[innerBody] = innerObjectInfo;
+            // Store object info
+            CollisionObjectInfo instanceInfo;
+            instanceInfo.type = CollisionObjectType::WORLD_OBJECT;
+            instanceInfo.objectIndex = i;
+            instanceInfo.instanceIndex = instanceIndex;
+            instanceInfo.objectName = "ScaledBVH_" + std::to_string(i) + "_Instance_" + std::to_string(instanceIndex);
+            instanceInfo.worldModel = model;
+            instanceInfo.instanceTransform = objectPosition;
+            m_objectInfoMap[instanceBody] = instanceInfo;
             
             instanceIndex++;
         }
         
-        // Store shape for cleanup (shared by all instances)
-        m_objectShapes.push_back(aabbShape);
-        
-        // Log performance info for this object type
-        if (culledInstances > 0) {
-            std::cout << "    Performance: " << culledInstances << " instances culled (beyond " << (maxCollisionRange/tileLength) << " tiles)" << std::endl;
-        }
+        std::cout << "  ✅ Created " << instanceIndex << " instances (culled " << culledInstances << " distant)" << std::endl;
     }
     
-    std::cout << "Optimized world objects physics setup complete: " << m_objectBodies.size() << " AABB instances" << std::endl;
-    std::cout << "Performance: Objects limited to ~" << (maxCollisionRange/tileLength) << " tile radius for collision detection" << std::endl;
-    std::cout << "Total collision objects in world: " << m_dynamicsWorld->getNumCollisionObjects() << std::endl;
+    std::cout << "🎯 World objects physics setup complete:" << std::endl;
+    std::cout << "  📊 Base BVH shapes: " << m_baseBvhShapes.size() << std::endl;
+    std::cout << "  🔄 Scaled instances: " << m_objectBodies.size() << std::endl;
+    std::cout << "  🌍 Total collision objects: " << m_dynamicsWorld->getNumCollisionObjects() << std::endl;
 }
 
 void CEPhysicsWorld::setupWaterPlanes(C2MapFile* mapFile)
@@ -460,6 +348,29 @@ btRigidBody* CEPhysicsWorld::createStaticBody(btCollisionShape* shape, const glm
     btTransform transform;
     transform.setIdentity();
     transform.setOrigin(btVector3(position.x, position.y, position.z));
+    
+    // Static bodies have zero mass
+    btVector3 localInertia(0, 0, 0);
+    
+    btDefaultMotionState* motionState = new btDefaultMotionState(transform);
+    btRigidBody::btRigidBodyConstructionInfo rbInfo(0, motionState, shape, localInertia);
+    btRigidBody* body = new btRigidBody(rbInfo);
+    
+    m_dynamicsWorld->addRigidBody(body);
+    return body;
+}
+
+btRigidBody* CEPhysicsWorld::createStaticBody(btCollisionShape* shape, const glm::vec3& position, const glm::vec3& rotation)
+{
+    btTransform transform;
+    transform.setIdentity();
+    transform.setOrigin(btVector3(position.x, position.y, position.z));
+    
+    // Convert Euler angles (GLM) to Bullet quaternion
+    // Transform uses X,Y,Z rotation order
+    btQuaternion quat;
+    quat.setEulerZYX(rotation.z, rotation.y, rotation.x); // Bullet uses Z,Y,X order
+    transform.setRotation(quat);
     
     // Static bodies have zero mass
     btVector3 localInertia(0, 0, 0);
@@ -594,4 +505,60 @@ void CEPhysicsWorld::removeRigidBody(btRigidBody* body)
         
         delete body;
     }
+}
+
+void CEPhysicsWorld::enablePhysicsDebugRendering(bool enable)
+{
+    if (!m_debugDrawer) return;
+    
+    if (enable) {
+        // Enable minimal debug drawing for performance
+        // Only show wireframes - AABBs and contact points are too expensive for large scenes
+        int debugMode = btIDebugDraw::DBG_DrawWireframe;
+        
+        m_debugDrawer->setDebugMode(debugMode);
+        std::cout << "🔧 Bullet Physics debug rendering enabled (lightweight mode: " << debugMode << ")" << std::endl;
+    } else {
+        m_debugDrawer->setDebugMode(btIDebugDraw::DBG_NoDebug);
+        std::cout << "🔧 Bullet Physics debug rendering disabled" << std::endl;
+    }
+}
+
+void CEPhysicsWorld::renderPhysicsDebug(const glm::mat4& viewProjectionMatrix, const glm::vec3& cameraPosition)
+{
+    if (!m_debugDrawer || !m_dynamicsWorld) return;
+    
+    // Set view-projection matrix and camera position for proper 3D rendering and culling
+    m_debugDrawer->setViewProjectionMatrix(viewProjectionMatrix);
+    m_debugDrawer->setCameraPosition(cameraPosition);
+    
+    // Begin debug frame
+    m_debugDrawer->beginFrame();
+    
+    // Selective debug drawing - exclude expensive heightfield terrain
+    // Only draw world objects (much more useful for bullet collision debugging)
+    int totalObjects = m_dynamicsWorld->getNumCollisionObjects();
+    int drawnObjects = 0;
+    int skippedTerrain = 0;
+    int skippedDistance = 0;
+    
+    for (int i = 0; i < totalObjects; i++) {
+        btCollisionObject* obj = m_dynamicsWorld->getCollisionObjectArray()[i];
+        
+        // Draw this collision object
+        btVector3 color(1.0f, 1.0f, 0.0f); // Yellow for visibility
+        m_dynamicsWorld->debugDrawObject(obj->getWorldTransform(), obj->getCollisionShape(), color);
+        drawnObjects++;
+    }
+    
+    // Log object counts every 60 frames (once per second at 60fps)
+    static int logCounter = 0;
+    if (++logCounter % 60 == 0) {
+        std::cout << "🔧 Physics Debug: Drew " << drawnObjects << "/" << totalObjects 
+                  << " objects (skipped " << skippedTerrain << " terrain, " 
+                  << skippedDistance << " distant)" << std::endl;
+    }
+    
+    // Render accumulated debug lines
+    m_debugDrawer->endFrame();
 }

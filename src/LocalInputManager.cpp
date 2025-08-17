@@ -150,6 +150,22 @@ void LocalInputManager::ProcessLocalInput(GLFWwindow* window, float deltaTime)
       this->m_last_key_state[GLFW_KEY_B] = GLFW_RELEASE;
     }
     
+    // Handle X key for physics debug visualization toggle
+    if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS && this->m_last_key_state[GLFW_KEY_X] != GLFW_PRESS) {
+      this->m_last_key_state[GLFW_KEY_X] = GLFW_PRESS;
+      
+      this->m_show_physics_debug = !this->m_show_physics_debug;
+      
+      if (this->m_show_physics_debug) {
+        std::cout << "Debug: Bullet Physics debug visualization ENABLED" << std::endl;
+      } else {
+        std::cout << "Debug: Bullet Physics debug visualization DISABLED" << std::endl;
+      }
+    }
+    else if (glfwGetKey(window, GLFW_KEY_X) == GLFW_RELEASE) {
+      this->m_last_key_state[GLFW_KEY_X] = GLFW_RELEASE;
+    }
+    
     // Handle right mouse button for weapon toggle
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS && 
         this->m_last_mouse_state[GLFW_MOUSE_BUTTON_RIGHT] != GLFW_PRESS) {

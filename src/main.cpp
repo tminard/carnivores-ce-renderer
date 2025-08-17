@@ -65,6 +65,7 @@
 #include "CEShadowManager.h"
 #include "CEUIRenderer.h"
 #include "CEBulletProjectileManager.h"
+#include "CEPhysicsWorld.h"
 #include "CESimpleGeometry.h"
 #include "vertex.h"
 
@@ -953,8 +954,7 @@ int main(int argc, const char * argv[])
   traceLineGeometry = std::make_unique<CESimpleGeometry>(lineVertices, std::move(lineTexture));
   
   // Set light direction to be extremely vertical (like sun directly overhead)
-  // Almost perfectly straight down
-  shadowManager->setLightDirection(glm::vec3(0.05f, -1.0f, 0.02f));
+  shadowManager->setLightDirection(glm::vec3(0.2f, -0.9f, 0.1f));
   
   int width, height;
   glfwGetFramebufferSize(window, &width, &height);
@@ -1285,7 +1285,33 @@ int main(int argc, const char * argv[])
         if (model) {
           model->renderBoundingBox(viewProjectionMatrix);
           model->renderRadiusCylinder(viewProjectionMatrix);
+          model->renderPhysicsMeshDebug(viewProjectionMatrix); // Show accurate physics mesh wireframes
         }
+      }
+    }
+    
+    // Render Bullet Physics debug visualization if enabled
+    static bool lastPhysicsDebugState = false;
+    bool currentPhysicsDebugState = input_manager->GetShowPhysicsDebug();
+    
+    if (projectileManager) {
+      // Only call enablePhysicsDebugRendering when state changes (major performance optimization)
+      if (currentPhysicsDebugState != lastPhysicsDebugState) {
+        projectileManager->getPhysicsWorld()->enablePhysicsDebugRendering(currentPhysicsDebugState);
+        lastPhysicsDebugState = currentPhysicsDebugState;
+      }
+      
+      // Render debug info if enabled
+      if (currentPhysicsDebugState) {
+        glDepthFunc(GL_LEQUAL); // Allow debug to render over objects
+        glEnable(GL_DEPTH_TEST);
+        
+        // Get view-projection matrix and camera position for physics debug rendering
+        glm::mat4 viewProjectionMatrix = camera->getProjectionMatrix() * camera->getViewMatrix();
+        glm::vec3 cameraPosition = g_player_controller->getPosition();
+        
+        // Render the debug information with selective object drawing (no terrain)
+        projectileManager->getPhysicsWorld()->renderPhysicsDebug(viewProjectionMatrix, cameraPosition);
       }
     }
     
@@ -1530,7 +1556,7 @@ int main(int argc, const char * argv[])
           cachedPlayerPos = g_player_controller->getPosition();
           cachedWorldPos = g_player_controller->getWorldPosition();
           if (projectileManager) {
-            cachedActiveProjectiles = projectileManager->getActiveProjectileCount();
+            cachedActiveProjectiles = static_cast<int>(projectileManager->getActiveProjectileCount());
           }
           lastCollisionUpdate = currentTime;
         }

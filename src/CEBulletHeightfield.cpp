@@ -49,7 +49,7 @@ CEBulletHeightfield::CEBulletHeightfield(C2MapFile* mapFile, int partitionSize, 
         }
     }
     
-    std::cout << "✅ Built " << m_heightfieldPartitions.size() << " heightfield partitions" << std::endl;
+    std::cout << "✅ Built " << m_heightfieldPartitions.size() << " heightfield partitions with overlap to prevent gaps" << std::endl;
 }
 
 CEBulletHeightfield::~CEBulletHeightfield()
@@ -66,11 +66,27 @@ void CEBulletHeightfield::buildHeightfieldPartition(int partitionX, int partitio
     partition->partitionX = partitionX;
     partition->partitionZ = partitionZ;
     
-    // Calculate tile bounds for this partition
+    // Calculate tile bounds for this partition WITH OVERLAP to prevent gaps
     partition->startTileX = partitionX * m_partitionSize;
     partition->startTileZ = partitionZ * m_partitionSize;
-    partition->widthTiles = std::min(m_partitionSize, m_mapWidth - partition->startTileX);
-    partition->heightTiles = std::min(m_partitionSize, m_mapHeight - partition->startTileZ);
+    
+    // Add overlap: extend by 1 tile on positive edges (except at map boundaries)
+    int endTileX = std::min((partitionX + 1) * m_partitionSize + 1, m_mapWidth);
+    int endTileZ = std::min((partitionZ + 1) * m_partitionSize + 1, m_mapHeight);
+    
+    partition->widthTiles = endTileX - partition->startTileX;
+    partition->heightTiles = endTileZ - partition->startTileZ;
+    
+    // Debug output for overlap verification
+    bool hasXOverlap = (endTileX < m_mapWidth) && (endTileX > (partitionX + 1) * m_partitionSize);
+    bool hasZOverlap = (endTileZ < m_mapHeight) && (endTileZ > (partitionZ + 1) * m_partitionSize);
+    
+    std::cout << "  📦 Partition[" << partitionX << "," << partitionZ << "]: tiles[" 
+              << partition->startTileX << "-" << (endTileX-1) << ", " 
+              << partition->startTileZ << "-" << (endTileZ-1) << "] size[" 
+              << partition->widthTiles << "x" << partition->heightTiles << "]"
+              << (hasXOverlap ? " +X_overlap" : "") 
+              << (hasZOverlap ? " +Z_overlap" : "") << std::endl;
     
     // Calculate world bounds
     partition->worldMin = glm::vec3(

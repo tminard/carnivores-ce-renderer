@@ -25,6 +25,9 @@ class btBvhTriangleMeshShape;
 class btRigidBody;
 class btCollisionShape;
 
+// Forward declarations for debug rendering
+class CEBulletDebugDraw;
+
 // Forward declarations for Carnivores classes
 class C2MapFile;
 class C2MapRscFile;
@@ -87,9 +90,13 @@ private:
     // Heightfield terrain system
     std::unique_ptr<CEBulletHeightfield> m_heightfieldTerrain;
     
+    // Debug rendering
+    std::unique_ptr<CEBulletDebugDraw> m_debugDrawer;
+    
     // World objects collision
     std::vector<btTriangleMesh*> m_objectMeshes;
-    std::vector<btCollisionShape*> m_objectShapes; // Can store both btBvhTriangleMeshShape and btBoxShape
+    std::vector<btBvhTriangleMeshShape*> m_baseBvhShapes; // Base BVH shapes for scaling/instancing
+    std::vector<btCollisionShape*> m_objectShapes; // Scaled instances and other shapes
     std::vector<btRigidBody*> m_objectBodies;
     
     // Water planes collision
@@ -108,6 +115,7 @@ private:
     void setupWorldObjects(C2MapRscFile* mapRsc);
     void setupWaterPlanes(C2MapFile* mapFile);
     btRigidBody* createStaticBody(btCollisionShape* shape, const glm::vec3& position);
+    btRigidBody* createStaticBody(btCollisionShape* shape, const glm::vec3& position, const glm::vec3& rotation);
     
 public:
     CEPhysicsWorld(C2MapFile* mapFile, C2MapRscFile* mapRsc);
@@ -142,6 +150,10 @@ public:
     // Heightfield terrain access
     CEBulletHeightfield* getHeightfieldTerrain() const { return m_heightfieldTerrain.get(); }
     void updateHeightfieldForPosition(const glm::vec3& position);
+    
+    // Debug rendering
+    void enablePhysicsDebugRendering(bool enable);
+    void renderPhysicsDebug(const glm::mat4& viewProjectionMatrix, const glm::vec3& cameraPosition);
     
     // Cleanup
     void removeRigidBody(btRigidBody* body);

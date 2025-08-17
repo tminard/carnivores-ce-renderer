@@ -589,3 +589,105 @@ void CEWorldModel::renderNearInstances()
 const std::vector<Transform>& CEWorldModel::getTransforms() const {
   return m_transforms;
 }
+
+void CEWorldModel::renderPhysicsMeshDebug(const glm::mat4& viewProjectionMatrix) {
+  if (m_transforms.empty()) {
+    return; // No instances to render
+  }
+  
+  // Static variables to avoid recreation every frame
+  static std::unique_ptr<CESimpleGeometry> physicsMeshGeometry;
+  static bool geometryInitialized = false;
+  
+  // Initialize geometry once
+  if (!geometryInitialized) {
+    // Create wireframe geometry from the actual physics mesh triangles
+    std::vector<Vertex> meshVertices;
+    
+    // Get debug vertices from the geometry (exact same vertices used for physics)
+    auto debugVertices = m_geometry->getDebugPhysicsVertices();
+    const auto& indices = m_geometry->getIndices();
+    
+    // Create wireframe edges from triangles (draw triangle outlines)
+    for (size_t i = 0; i < indices.size(); i += 3) {
+      if (i + 2 >= indices.size()) break;
+      
+      // Get triangle vertices
+      glm::vec3 v0 = debugVertices[indices[i]];
+      glm::vec3 v1 = debugVertices[indices[i + 1]];
+      glm::vec3 v2 = debugVertices[indices[i + 2]];
+      
+      // Create wireframe edges: v0->v1, v1->v2, v2->v0
+      glm::vec3 normal(0, 1, 0); // Simple normal for wireframe
+      glm::vec2 uv(0, 0); // Simple UV for wireframe
+      
+      // Edge 1: v0 -> v1
+      meshVertices.emplace_back(v0, uv, normal, false, 1.0f, 0, 0);
+      meshVertices.emplace_back(v1, uv, normal, false, 1.0f, 0, 0);
+      
+      // Edge 2: v1 -> v2
+      meshVertices.emplace_back(v1, uv, normal, false, 1.0f, 0, 0);
+      meshVertices.emplace_back(v2, uv, normal, false, 1.0f, 0, 0);
+      
+      // Edge 3: v2 -> v0
+      meshVertices.emplace_back(v2, uv, normal, false, 1.0f, 0, 0);
+      meshVertices.emplace_back(v0, uv, normal, false, 1.0f, 0, 0);
+    }
+    
+    // Create a yellow texture for the physics mesh wireframe
+    const int texSize = 4;
+    std::vector<uint16_t> yellowTextureData(texSize * texSize, 0xFFE0); // Yellow in RGB565
+    std::unique_ptr<CETexture> physicsMeshTexture = std::make_unique<CETexture>(yellowTextureData, texSize * texSize * 2, texSize, texSize);
+    
+    physicsMeshGeometry = std::make_unique<CESimpleGeometry>(meshVertices, std::move(physicsMeshTexture));
+    geometryInitialized = true;
+    
+    std::cout << "🟡 Physics mesh debug: Created wireframe with " << meshVertices.size() << " vertices from " << (indices.size() / 3) << " triangles" << std::endl;
+  }
+  
+  // Collect transforms for each instance
+  std::vector<glm::mat4> meshTransforms;
+  
+  for (const auto& modelTransform : m_transforms) {
+    glm::vec3 modelPosition = *const_cast<Transform&>(modelTransform).GetPos();
+    
+    // Use exact same positioning as physics world
+    glm::vec3 meshPosition;
+    if (m_old_object_info->flags & objectPLACEGROUND) {
+      // For PLACEGROUND objects, use the corrected height calculation
+      // This should match CEPhysicsWorld positioning exactly
+      meshPosition = modelPosition; // Simplified for now - could add height correction
+    } else {
+      meshPosition = modelPosition;
+    }
+    
+    // Create transform matrix at exact physics position
+    glm::mat4 transform = glm::mat4(1.0f);
+    transform = glm::translate(transform, meshPosition);
+    
+    meshTransforms.push_back(transform);
+  }
+  
+  // Render all physics mesh wireframes
+  if (!meshTransforms.empty()) {
+    // Set wireframe mode for physics mesh
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    
+    // Set up shader for wireframe rendering
+    auto shader = physicsMeshGeometry->getShader();
+    if (shader) {
+      shader->use();
+      shader->setBool("useCustomColor", true);
+      shader->setVec3("customColor", glm::vec3(1.0f, 1.0f, 0.0f)); // Yellow wireframe for physics mesh
+      shader->setBool("enableShadows", false);
+      shader->setMat4("projection_view", viewProjectionMatrix);
+    }
+    
+    // Update instanced transforms and render
+    physicsMeshGeometry->UpdateInstances(meshTransforms);
+    physicsMeshGeometry->DrawInstances();
+    
+    // Restore fill mode
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+  }
+}

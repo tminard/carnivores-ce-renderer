@@ -16,6 +16,8 @@
 #include <fstream>
 #include <string>
 
+// Forward declarations
+class btTriangleMesh;
 class Vertex;
 class CETexture;
 class ShaderProgram;
@@ -83,5 +85,13 @@ public:
   // Methods for shadow rendering that need direct access to OpenGL objects
   GLuint GetVAO() const { return m_vertexArrayObject; }
   size_t GetIndexCount() const { return m_indices.size(); }
+  
+  // Physics mesh generation - ensures 1:1 accuracy with visual mesh
+  class btTriangleMesh* createPhysicsTriangleMesh() const;
+  std::vector<glm::vec3> getDebugPhysicsVertices() const;
+  
+  // Direct access to geometry data for physics (const to ensure immutability)
+  const std::vector<Vertex>& getVertices() const { return m_vertices; }
+  const std::vector<unsigned int>& getIndices() const { return m_indices; }
 };
 

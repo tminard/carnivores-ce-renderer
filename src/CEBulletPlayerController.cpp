@@ -40,7 +40,7 @@ CEBulletPlayerController::CEBulletPlayerController(CEPhysicsWorld* physicsWorld,
     // Human running: 5-6 m/s = 59-71 units/s  
     m_walkSpeed = 60.0f;        // Running speed - only speed we use
     m_runSpeed = 60.0f;         // Same as walk speed
-    m_jumpForce = 1400.0f;      // Realistic jump force for 0.4m jump height
+    m_jumpForce = 3500.0f;      // Strong jump force for good height
     m_maxSlopeAngle = 45.0f;    // Standard slope limit
     m_airControl = 0.2f;        // Some air control for better feel
     
@@ -145,7 +145,7 @@ void CEBulletPlayerController::update(const MovementInput& input, double current
             
             // Set proper jump velocity for realistic jump height (~0.4m)
             btVector3 currentVel = m_playerBody->getLinearVelocity();
-            currentVel.setY(30.0f); // Realistic jump velocity for 0.4m jump (scaled to 1 unit = 8.5cm)
+            currentVel.setY(50.0f); // Strong jump velocity for good height
             m_playerBody->setLinearVelocity(currentVel);
         }
     }

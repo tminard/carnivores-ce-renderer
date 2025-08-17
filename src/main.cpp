@@ -1001,7 +1001,7 @@ int main(int argc, const char * argv[])
   std::shared_ptr<C2CarFile> primaryWeapon;
   if (!primaryWeaponPath.empty()) {
     try {
-      primaryWeapon = cFileLoad->fetch(primaryWeaponPath);
+      primaryWeapon = cFileLoad->fetch(primaryWeaponPath, true);  // Use pixel-perfect textures for weapons
       std::cout << "Primary weapon loaded successfully" << std::endl;
     } catch (const std::exception& e) {
       std::cerr << "Failed to load primary weapon: " << e.what() << std::endl;

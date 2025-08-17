@@ -22,10 +22,10 @@
 #include "dependency/libAF/af2-sound.h"
 #include "CEAudioSource.hpp"
 
-C2CarFile::C2CarFile(std::string file_name)
+C2CarFile::C2CarFile(std::string file_name, bool pixelPerfectTextures)
 {
   std::cout << "Loading " << file_name << std::endl;
-  this->load_file(file_name);
+  this->load_file(file_name, pixelPerfectTextures);
 }
 
 C2CarFile::~C2CarFile()
@@ -52,7 +52,7 @@ std::weak_ptr<CEAnimation> C2CarFile::getAnimationByName(std::string animation_n
   return this->m_animations[animation_name];
 }
 
-void C2CarFile::load_file(std::string file_name)
+void C2CarFile::load_file(std::string file_name, bool pixelPerfectTextures)
 {
   std::ifstream infile;
   TCharacterInfo c_char_info;
@@ -89,7 +89,7 @@ void C2CarFile::load_file(std::string file_name)
 
     _texture_data.resize(tsize);
     infile.read(reinterpret_cast<char *>(_texture_data.data()), tsize);
-    m_texture = std::unique_ptr<CETexture>(new CETexture(_texture_data, 256*256, 256, 256));
+    m_texture = std::unique_ptr<CETexture>(new CETexture(_texture_data, 256*256, 256, 256, pixelPerfectTextures));
     
     std::vector<std::string> orderedAniNames;
 

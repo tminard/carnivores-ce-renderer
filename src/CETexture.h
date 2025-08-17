@@ -33,14 +33,16 @@ private:
   GLuint m_texture_id;
   int m_height;
   int m_width;
+  bool m_pixelPerfect;
 
   void loadTextureIntoHardwareMemory();
 public:
-  CETexture(const std::vector<uint16_t>& raw_texture_data, int texture_size = 128*128*2, int texture_height = 128, int texture_width = 128);
+  CETexture(const std::vector<uint16_t>& raw_texture_data, int texture_size = 128*128*2, int texture_height = 128, int texture_width = 128, bool pixelPerfect = false);
   ~CETexture();
 
   void saveToBMPFile(std::string file_name);
   void use();
+  void setPixelPerfectFiltering(); // For crisp pixel-perfect textures (weapons, UI)
   std::unique_ptr<CBitmap> getCBitmap();
   std::vector<uint16_t>* getRawData();
   

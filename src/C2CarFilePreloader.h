@@ -21,7 +21,7 @@ class C2CarFilePreloader
     std::map<std::string, std::shared_ptr<C2CarFile> > _files;
   
 public:
-	const std::shared_ptr<C2CarFile>& fetch(std::filesystem::path file_name);
+	const std::shared_ptr<C2CarFile>& fetch(std::filesystem::path file_name, bool pixelPerfectTextures = false);
 };
 
 #endif /* defined(__CE_Character_Lab__C2CarFilePreloader__) */

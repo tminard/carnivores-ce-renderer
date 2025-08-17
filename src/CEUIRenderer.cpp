@@ -338,7 +338,7 @@ void CEUIRenderer::renderWeapon(C2CarFile* weapon, double currentTime)
     glm::vec3 rotationVec(glm::radians(0.0f), glm::radians(180.0f), glm::radians(0.0f));
     
     // Scale weapon appropriately for perspective view
-    glm::vec3 scale(1.f);
+    glm::vec3 scale(4.0f);
     
     // Create Transform for the weapon
     Transform weaponTransform(position, rotationVec, scale);
@@ -372,7 +372,7 @@ void CEUIRenderer::renderWeaponGeometry(C2CarFile* weapon, Transform& weaponTran
     glm::mat4 perspectiveProjection = glm::perspective(glm::radians(60.0f), aspectRatio, 0.00625f, 6250.0f); // Scaled down 16x
     
     // Create view matrix positioned for first-person weapon view
-    glm::vec3 weaponCameraPos(0.0f, 0.0f, 0.1f);  // Close to weapon
+    glm::vec3 weaponCameraPos(0.0f, 0.0f, 5.0f);  // Further from weapon to reduce pixelation
     glm::vec3 weaponCameraTarget(0.0f, 0.0f, 0.0f);  // Looking at origin
     glm::vec3 weaponCameraUp(0.0f, 1.0f, 0.0f);
     glm::mat4 view = glm::lookAt(weaponCameraPos, weaponCameraTarget, weaponCameraUp);
@@ -385,11 +385,31 @@ void CEUIRenderer::renderWeaponGeometry(C2CarFile* weapon, Transform& weaponTran
     // Calculate MVP for perspective weapon
     glm::mat4 mvp = perspectiveProjection * view * model;
     
-    // Set the perspective MVP matrix manually
+    // Set the perspective MVP matrix and lighting uniforms
     auto shader = geometry->getShader();
     if (shader) {
         shader->use();
         shader->setMat4("MVP", mvp);
+        shader->setMat4("model", model);
+        
+        // Use same lighting as world objects but adjusted for weapon perspective
+        glm::vec3 lightDirection = glm::vec3(0.3f, -0.7f, -0.2f); // Slightly front-lit for weapon
+        glm::vec3 lightPosition = glm::vec3(10.0f, 20.0f, 10.0f);  // Close light for weapon
+        
+        shader->setVec3("lightDirection", lightDirection);
+        shader->setVec3("lightPosition", lightPosition);
+        
+        // Set lighting parameters optimized for first-person weapon
+        shader->setFloat("ambientStrength", 0.5f);   // Higher ambient for good visibility
+        shader->setFloat("diffuseStrength", 0.9f);   // Strong diffuse for definition
+        shader->setFloat("specularStrength", 0.3f);  // Moderate specular for metallic look
+        
+        // Set up basic light space matrix for consistency (even if shadows not used)
+        glm::mat4 lightProjection = glm::ortho(-50.0f, 50.0f, -50.0f, 50.0f, 1.0f, 100.0f);
+        glm::mat4 lightView = glm::lookAt(lightPosition, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::mat4 lightSpaceMatrix = lightProjection * lightView;
+        shader->setMat4("lightSpaceMatrix", lightSpaceMatrix);
+        
     } else {
         std::cerr << "ERROR: Weapon geometry has no shader!" << std::endl;
         return;
@@ -401,9 +421,6 @@ void CEUIRenderer::renderWeaponGeometry(C2CarFile* weapon, Transform& weaponTran
 
 void CEUIRenderer::setupWeaponRendering()
 {
-    // Clear only the depth buffer to ensure weapon renders over everything
-    glClear(GL_DEPTH_BUFFER_BIT);
-    
     // Keep normal depth testing for weapon's internal depth
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);  // Normal depth testing within weapon

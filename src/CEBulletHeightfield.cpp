@@ -2,7 +2,7 @@
 //  CEBulletHeightfield.cpp
 //  CE Character Lab
 //
-//  Bullet Physics heightfield terrain system with partition support
+//  Bullet Physics custom terrain triangle mesh system with exact subdivision matching
 //
 
 #include "CEBulletHeightfield.h"
@@ -11,21 +11,18 @@
 
 // Bullet Physics includes
 #include <btBulletDynamicsCommon.h>
-#include <BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h>
+#include <BulletCollision/CollisionShapes/btBvhTriangleMeshShape.h>
+#include <BulletCollision/CollisionShapes/btTriangleMesh.h>
 
 #include <iostream>
 #include <algorithm>
 #include <cmath>
 #include <limits>
 
-CEBulletHeightfield::CEBulletHeightfield(C2MapFile* mapFile, int partitionSize, float activationRadius)
+CEBulletHeightfield::CEBulletHeightfield(C2MapFile* mapFile)
     : m_mapFile(mapFile)
-    , m_partitionSize(partitionSize)
-    , m_activationRadius(activationRadius)
-    , m_lastQueryPosition(0, 0, 0)
 {
     if (!m_mapFile) {
-        std::cout << "❌ CEBulletHeightfield: Invalid map file" << std::endl;
         return;
     }
     
@@ -33,275 +30,130 @@ CEBulletHeightfield::CEBulletHeightfield(C2MapFile* mapFile, int partitionSize, 
     m_mapWidth = m_mapFile->getWidth();
     m_mapHeight = m_mapFile->getHeight();
     
-    // Calculate number of partitions needed
-    int partitionsX = (m_mapWidth + m_partitionSize - 1) / m_partitionSize;
-    int partitionsZ = (m_mapHeight + m_partitionSize - 1) / m_partitionSize;
     
-    std::cout << "🏔️ CEBulletHeightfield: Creating " << partitionsX << "x" << partitionsZ 
-              << " heightfield partitions (" << m_partitionSize << "x" << m_partitionSize << " tiles each)" << std::endl;
+    // Build single terrain triangle mesh
+    buildTerrainMesh();
     
-    m_heightfieldPartitions.reserve(partitionsX * partitionsZ);
-    
-    // Build all heightfield partitions
-    for (int partZ = 0; partZ < partitionsZ; partZ++) {
-        for (int partX = 0; partX < partitionsX; partX++) {
-            buildHeightfieldPartition(partX, partZ);
-        }
-    }
-    
-    std::cout << "✅ Built " << m_heightfieldPartitions.size() << " heightfield partitions with overlap to prevent gaps" << std::endl;
 }
 
 CEBulletHeightfield::~CEBulletHeightfield()
 {
-    // Cleanup is handled by removePartitionsFromWorld
-    // Individual partition cleanup is automatic via unique_ptr
+    // Cleanup is automatic via unique_ptr
 }
 
-void CEBulletHeightfield::buildHeightfieldPartition(int partitionX, int partitionZ)
+void CEBulletHeightfield::buildTerrainMesh()
 {
     if (!m_mapFile) return;
     
-    auto partition = std::make_unique<HeightfieldPartition>();
-    partition->partitionX = partitionX;
-    partition->partitionZ = partitionZ;
+    m_terrainMesh = std::make_unique<TerrainMesh>();
     
-    // Calculate tile bounds for this partition WITH OVERLAP to prevent gaps
-    partition->startTileX = partitionX * m_partitionSize;
-    partition->startTileZ = partitionZ * m_partitionSize;
+    // Calculate world bounds for entire map
+    m_terrainMesh->worldMin = glm::vec3(0, -1000.0f, 0);
+    m_terrainMesh->worldMax = glm::vec3(m_mapWidth * m_tileSize, 1000.0f, m_mapHeight * m_tileSize);
     
-    // Add overlap: extend by 1 tile on positive edges (except at map boundaries)
-    int endTileX = std::min((partitionX + 1) * m_partitionSize + 1, m_mapWidth);
-    int endTileZ = std::min((partitionZ + 1) * m_partitionSize + 1, m_mapHeight);
+    // Create triangle mesh using EXACT same logic as TerrainRenderer::loadIntoHardwareMemory()
+    m_terrainMesh->triangleMesh = new btTriangleMesh();
+    m_terrainMesh->minHeight = std::numeric_limits<float>::max();
+    m_terrainMesh->maxHeight = std::numeric_limits<float>::lowest();
     
-    partition->widthTiles = endTileX - partition->startTileX;
-    partition->heightTiles = endTileZ - partition->startTileZ;
+    int triangleCount = 0;
     
-    // Debug output for overlap verification
-    bool hasXOverlap = (endTileX < m_mapWidth) && (endTileX > (partitionX + 1) * m_partitionSize);
-    bool hasZOverlap = (endTileZ < m_mapHeight) && (endTileZ > (partitionZ + 1) * m_partitionSize);
     
-    std::cout << "  📦 Partition[" << partitionX << "," << partitionZ << "]: tiles[" 
-              << partition->startTileX << "-" << (endTileX-1) << ", " 
-              << partition->startTileZ << "-" << (endTileZ-1) << "] size[" 
-              << partition->widthTiles << "x" << partition->heightTiles << "]"
-              << (hasXOverlap ? " +X_overlap" : "") 
-              << (hasZOverlap ? " +Z_overlap" : "") << std::endl;
-    
-    // Calculate world bounds
-    partition->worldMin = glm::vec3(
-        partition->startTileX * m_tileSize,
-        -1000.0f, // Will be updated
-        partition->startTileZ * m_tileSize
-    );
-    partition->worldMax = glm::vec3(
-        (partition->startTileX + partition->widthTiles) * m_tileSize,
-        1000.0f, // Will be updated
-        (partition->startTileZ + partition->heightTiles) * m_tileSize
-    );
-    
-    // Build height data for Bullet heightfield
-    partition->heightData.reserve(partition->widthTiles * partition->heightTiles);
-    partition->minHeight = std::numeric_limits<float>::max();
-    partition->maxHeight = std::numeric_limits<float>::lowest();
-    
-    // Bullet expects height data in row-major order (Z then X)
-    for (int localZ = 0; localZ < partition->heightTiles; localZ++) {
-        for (int localX = 0; localX < partition->widthTiles; localX++) {
-            int globalX = partition->startTileX + localX;
-            int globalZ = partition->startTileZ + localZ;
+    // Generate triangles for each tile quad (EXACT same loops as TerrainRenderer lines 934-1010)
+    for (int y = 0; y < m_mapHeight - 1; y++) {
+        for (int x = 0; x < m_mapWidth - 1; x++) {
+            int base_index = (y * m_mapWidth) + x;
             
-            float height = m_mapFile->getPlaceGroundHeight(globalX, globalZ);
-            partition->heightData.push_back(height);
+            // Use EXACT same logic as TerrainRenderer::calcWorldVertex()
+            // LL (Lower Left): tile at (x, y)
+            float h1 = m_mapFile->getHeightAt((y * m_mapWidth) + x);
+            float worldX1 = (x * m_tileSize) + (m_tileSize / 2.0f);
+            float worldZ1 = (y * m_tileSize) + (m_tileSize / 2.0f);
+            btVector3 vpositionLL(worldX1, h1, worldZ1);
             
-            partition->minHeight = std::min(partition->minHeight, height);
-            partition->maxHeight = std::max(partition->maxHeight, height);
+            // LR (Lower Right): tile at (x+1, y)
+            float h2 = m_mapFile->getHeightAt((y * m_mapWidth) + (x + 1));
+            float worldX2 = ((x + 1) * m_tileSize) + (m_tileSize / 2.0f);
+            btVector3 vpositionLR(worldX2, h2, worldZ1);
+            
+            // UL (Upper Left): tile at (x, y+1)  
+            float h3 = m_mapFile->getHeightAt(((y + 1) * m_mapWidth) + x);
+            float worldZ2 = ((y + 1) * m_tileSize) + (m_tileSize / 2.0f);
+            btVector3 vpositionUL(worldX1, h3, worldZ2);
+            
+            // UR (Upper Right): tile at (x+1, y+1)
+            float h4 = m_mapFile->getHeightAt(((y + 1) * m_mapWidth) + (x + 1));
+            btVector3 vpositionUR(worldX2, h4, worldZ2);
+            
+            // Update height bounds
+            m_terrainMesh->minHeight = std::min({m_terrainMesh->minHeight, h1, h2, h3, h4});
+            m_terrainMesh->maxHeight = std::max({m_terrainMesh->maxHeight, h1, h2, h3, h4});
+            
+            // Use EXACT same triangle subdivision logic as TerrainRenderer (lines 949-1002)
+            bool quad_reverse = m_mapFile->isQuadRotatedAt(base_index);
+            
+            if (quad_reverse) {
+                // Triangle 1: lower_left → upper_left → lower_right
+                m_terrainMesh->triangleMesh->addTriangle(vpositionLL, vpositionUL, vpositionLR);
+                // Triangle 2: lower_right → upper_left → upper_right  
+                m_terrainMesh->triangleMesh->addTriangle(vpositionLR, vpositionUL, vpositionUR);
+            } else {
+                // Triangle 1: lower_left → upper_right → lower_right
+                m_terrainMesh->triangleMesh->addTriangle(vpositionLL, vpositionUR, vpositionLR);
+                // Triangle 2: lower_left → upper_left → upper_right
+                m_terrainMesh->triangleMesh->addTriangle(vpositionLL, vpositionUL, vpositionUR);
+            }
+            
+            
+            triangleCount += 2;
         }
     }
+    
+    // Store triangle count
+    m_terrainMesh->triangleCount = triangleCount;
     
     // Update world bounds with actual height range
-    partition->worldMin.y = partition->minHeight;
-    partition->worldMax.y = partition->maxHeight;
+    m_terrainMesh->worldMin.y = m_terrainMesh->minHeight;
+    m_terrainMesh->worldMax.y = m_terrainMesh->maxHeight;
     
-    // Create Bullet heightfield shape
-    partition->terrainShape = new btHeightfieldTerrainShape(
-        partition->widthTiles,
-        partition->heightTiles,
-        partition->heightData.data(),
-        1.0f, // heightScale
-        partition->minHeight,
-        partition->maxHeight,
-        1, // upAxis (Y)
-        PHY_FLOAT,
-        false // flipQuadEdges
-    );
+    // Create BVH triangle mesh shape from our custom triangle mesh
+    // Bullet's BVH will handle spatial partitioning and culling internally
+    m_terrainMesh->terrainShape = new btBvhTriangleMeshShape(m_terrainMesh->triangleMesh, true);
     
-    // Configure heightfield properties
-    partition->terrainShape->setUseDiamondSubdivision(true); // Better triangle quality
-    partition->terrainShape->setLocalScaling(btVector3(m_tileSize, 1.0f, m_tileSize));
-    
-    // Create static rigid body for the heightfield
+    // Create static rigid body for the triangle mesh
     btTransform transform;
     transform.setIdentity();
-    
-    // Position the heightfield at its world location
-    // Bullet heightfield is centered, so we need to offset by half the size
-    float centerOffsetX = (partition->widthTiles - 1) * m_tileSize * 0.5f;
-    float centerOffsetZ = (partition->heightTiles - 1) * m_tileSize * 0.5f;
-    
-    transform.setOrigin(btVector3(
-        partition->worldMin.x + centerOffsetX,
-        (partition->minHeight + partition->maxHeight) * 0.5f,
-        partition->worldMin.z + centerOffsetZ
-    ));
+    transform.setOrigin(btVector3(0, 0, 0));
     
     btDefaultMotionState* motionState = new btDefaultMotionState(transform);
-    btRigidBody::btRigidBodyConstructionInfo rbInfo(0.0f, motionState, partition->terrainShape, btVector3(0, 0, 0));
+    btRigidBody::btRigidBodyConstructionInfo rbInfo(0.0f, motionState, m_terrainMesh->terrainShape, btVector3(0, 0, 0));
     
-    partition->terrainBody = new btRigidBody(rbInfo);
-    partition->terrainBody->setRestitution(0.1f);
-    partition->terrainBody->setFriction(0.8f);
+    m_terrainMesh->terrainBody = new btRigidBody(rbInfo);
+    m_terrainMesh->terrainBody->setRestitution(0.1f);
+    m_terrainMesh->terrainBody->setFriction(0.8f);
     
     // Set user pointer for identification
-    partition->terrainBody->setUserPointer(partition.get());
+    m_terrainMesh->terrainBody->setUserPointer(m_terrainMesh.get());
     
-    std::cout << "🏔️ Built heightfield partition[" << partitionX << "," << partitionZ 
-              << "] tiles=" << partition->widthTiles << "x" << partition->heightTiles
-              << " height_range=[" << partition->minHeight << "," << partition->maxHeight << "]" << std::endl;
-    
-    m_heightfieldPartitions.push_back(std::move(partition));
 }
 
-void CEBulletHeightfield::addPartitionsToWorld(btDiscreteDynamicsWorld* world)
+void CEBulletHeightfield::addToWorld(btDiscreteDynamicsWorld* world)
 {
-    if (!world) return;
+    if (!world || !m_terrainMesh || !m_terrainMesh->terrainBody) return;
     
-    // We need access to CEPhysicsWorld to register object info - this is a design issue
-    // For now, we'll use the userPointer to identify heightfield partitions
-    for (const auto& partition : m_heightfieldPartitions) {
-        if (partition->terrainBody) {
-            world->addRigidBody(partition->terrainBody, TERRAIN_COLLISION_GROUP, TERRAIN_COLLISION_MASK);
-        }
-    }
+    world->addRigidBody(m_terrainMesh->terrainBody, TERRAIN_COLLISION_GROUP, TERRAIN_COLLISION_MASK);
     
-    std::cout << "✅ Added " << m_heightfieldPartitions.size() << " heightfield partitions to physics world" << std::endl;
 }
 
-void CEBulletHeightfield::removePartitionsFromWorld(btDiscreteDynamicsWorld* world)
+void CEBulletHeightfield::removeFromWorld(btDiscreteDynamicsWorld* world)
 {
-    if (!world) return;
+    if (!world || !m_terrainMesh || !m_terrainMesh->terrainBody) return;
     
-    for (const auto& partition : m_heightfieldPartitions) {
-        if (partition->terrainBody) {
-            world->removeRigidBody(partition->terrainBody);
-        }
-    }
+    world->removeRigidBody(m_terrainMesh->terrainBody);
     
-    std::cout << "🗑️ Removed heightfield partitions from physics world" << std::endl;
 }
 
-
-void CEBulletHeightfield::updateActivePartitions(const glm::vec3& queryPosition)
+int CEBulletHeightfield::getTriangleCount() const
 {
-    // Only update if position changed significantly
-    float distanceMoved = glm::distance(queryPosition, m_lastQueryPosition);
-    if (distanceMoved < m_activationRadius * 0.1f) {
-        return; // Not enough movement to warrant update
-    }
-    
-    m_lastQueryPosition = queryPosition;
-    m_activePartitionIndices.clear();
-    
-    // Find partitions within activation radius
-    for (size_t i = 0; i < m_heightfieldPartitions.size(); i++) {
-        const auto& partition = m_heightfieldPartitions[i];
-        
-        // Calculate distance from query position to partition center
-        glm::vec3 partitionCenter = (partition->worldMin + partition->worldMax) * 0.5f;
-        partitionCenter.y = queryPosition.y; // Ignore height difference
-        
-        float distance = glm::distance(queryPosition, partitionCenter);
-        
-        if (distance <= m_activationRadius) {
-            m_activePartitionIndices.push_back(static_cast<int>(i));
-        }
-    }
-    
-    std::cout << "🎯 Updated active partitions: " << m_activePartitionIndices.size() 
-              << "/" << m_heightfieldPartitions.size() << " at position [" 
-              << queryPosition.x << "," << queryPosition.y << "," << queryPosition.z << "]" << std::endl;
-}
-
-void CEBulletHeightfield::updateForPosition(const glm::vec3& position, btDiscreteDynamicsWorld* world)
-{
-    updateActivePartitions(position);
-    // In the future, we could dynamically add/remove partitions from the world here
-    // For now, all partitions remain in the world for simplicity
-}
-
-std::vector<int> CEBulletHeightfield::getActivePartitionsForRay(const glm::vec3& rayStart, const glm::vec3& rayEnd) const
-{
-    std::vector<int> result;
-    
-    // Check each active partition for ray intersection
-    for (int partitionIndex : m_activePartitionIndices) {
-        if (partitionIndex < 0 || partitionIndex >= static_cast<int>(m_heightfieldPartitions.size())) continue;
-        
-        const auto& partition = m_heightfieldPartitions[partitionIndex];
-        
-        // Simple AABB-ray intersection test
-        glm::vec3 rayDir = rayEnd - rayStart;
-        float rayLength = glm::length(rayDir);
-        
-        if (rayLength < 0.001f) continue;
-        
-        rayDir = glm::normalize(rayDir);
-        
-        // AABB intersection (simplified)
-        glm::vec3 invRayDir = glm::vec3(1.0f / rayDir.x, 1.0f / rayDir.y, 1.0f / rayDir.z);
-        
-        glm::vec3 t1 = (partition->worldMin - rayStart) * invRayDir;
-        glm::vec3 t2 = (partition->worldMax - rayStart) * invRayDir;
-        
-        glm::vec3 tMin = glm::min(t1, t2);
-        glm::vec3 tMax = glm::max(t1, t2);
-        
-        float tNear = std::max({tMin.x, tMin.y, tMin.z});
-        float tFar = std::min({tMax.x, tMax.y, tMax.z});
-        
-        if (tNear <= tFar && tFar >= 0.0f && tNear <= rayLength) {
-            result.push_back(partitionIndex);
-        }
-    }
-    
-    return result;
-}
-
-std::vector<int> CEBulletHeightfield::getActivePartitionsForArea(const glm::vec3& center, float radius) const
-{
-    std::vector<int> result;
-    
-    for (int partitionIndex : m_activePartitionIndices) {
-        if (partitionIndex < 0 || partitionIndex >= static_cast<int>(m_heightfieldPartitions.size())) continue;
-        
-        const auto& partition = m_heightfieldPartitions[partitionIndex];
-        
-        // Calculate distance from center to partition AABB
-        glm::vec3 closestPoint = glm::clamp(center, partition->worldMin, partition->worldMax);
-        float distance = glm::distance(center, closestPoint);
-        
-        if (distance <= radius) {
-            result.push_back(partitionIndex);
-        }
-    }
-    
-    return result;
-}
-
-const CEBulletHeightfield::HeightfieldPartition* CEBulletHeightfield::getPartition(int index) const
-{
-    if (index < 0 || index >= static_cast<int>(m_heightfieldPartitions.size())) {
-        return nullptr;
-    }
-    return m_heightfieldPartitions[index].get();
+    return m_terrainMesh ? m_terrainMesh->triangleCount : 0;
 }

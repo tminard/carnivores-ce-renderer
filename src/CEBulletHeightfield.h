@@ -2,7 +2,7 @@
 //  CEBulletHeightfield.h
 //  CE Character Lab
 //
-//  Bullet Physics heightfield terrain system with partition support
+//  Bullet Physics custom terrain triangle mesh system with exact subdivision matching
 //
 
 #ifndef __CE_Character_Lab__CEBulletHeightfield__
@@ -16,63 +16,53 @@
 class C2MapFile;
 class CETerrainPartition;
 class btDiscreteDynamicsWorld;
-class btHeightfieldTerrainShape;
+class btBvhTriangleMeshShape;
+class btTriangleMesh;
 class btRigidBody;
 class btVector3;
 
 class CEBulletHeightfield
 {
 public:
-    struct HeightfieldPartition {
-        int partitionX, partitionZ;
-        int startTileX, startTileZ;
-        int widthTiles, heightTiles;
-        
-        std::vector<float> heightData;
-        btHeightfieldTerrainShape* terrainShape;
+    // Simplified single terrain mesh structure
+    struct TerrainMesh {
+        btTriangleMesh* triangleMesh;
+        btBvhTriangleMeshShape* terrainShape;
         btRigidBody* terrainBody;
         
         glm::vec3 worldMin, worldMax;
         float minHeight, maxHeight;
+        int triangleCount;
         
-        HeightfieldPartition() : terrainShape(nullptr), terrainBody(nullptr) {}
+        TerrainMesh() : triangleMesh(nullptr), terrainShape(nullptr), terrainBody(nullptr), triangleCount(0) {}
+        
+        ~TerrainMesh() {
+            if (triangleMesh) delete triangleMesh;
+            if (terrainShape) delete terrainShape;
+            // terrainBody is managed by physics world
+        }
     };
 
 private:
     C2MapFile* m_mapFile;
     float m_tileSize;
     int m_mapWidth, m_mapHeight;
-    int m_partitionSize;
     
-    std::vector<std::unique_ptr<HeightfieldPartition>> m_heightfieldPartitions;
+    std::unique_ptr<TerrainMesh> m_terrainMesh;
     
-    // Active partition management for performance
-    std::vector<int> m_activePartitionIndices;
-    glm::vec3 m_lastQueryPosition;
-    float m_activationRadius;
-    
-    void buildHeightfieldPartition(int partitionX, int partitionZ);
-    void updateActivePartitions(const glm::vec3& queryPosition);
+    void buildTerrainMesh();
     
 public:
-    CEBulletHeightfield(C2MapFile* mapFile, int partitionSize = 32, float activationRadius = 2000.0f);
+    CEBulletHeightfield(C2MapFile* mapFile);
     ~CEBulletHeightfield();
     
-    // Add/remove partitions from physics world
-    void addPartitionsToWorld(btDiscreteDynamicsWorld* world);
-    void removePartitionsFromWorld(btDiscreteDynamicsWorld* world);
-    
-    // Dynamic partition management based on position
-    void updateForPosition(const glm::vec3& position, btDiscreteDynamicsWorld* world);
-    
-    // Get partitions that intersect with a ray or area
-    std::vector<int> getActivePartitionsForRay(const glm::vec3& rayStart, const glm::vec3& rayEnd) const;
-    std::vector<int> getActivePartitionsForArea(const glm::vec3& center, float radius) const;
+    // Add/remove terrain mesh from physics world
+    void addToWorld(btDiscreteDynamicsWorld* world);
+    void removeFromWorld(btDiscreteDynamicsWorld* world);
     
     // Debug info
-    int getPartitionCount() const { return static_cast<int>(m_heightfieldPartitions.size()); }
-    int getActivePartitionCount() const { return static_cast<int>(m_activePartitionIndices.size()); }
-    const HeightfieldPartition* getPartition(int index) const;
+    int getTriangleCount() const;
+    const TerrainMesh* getTerrainMesh() const { return m_terrainMesh.get(); }
     
     // Collision groups for terrain (matching CEPhysicsWorld::CollisionGroups)
     static const short TERRAIN_COLLISION_GROUP = 1 << 1;  // TERRAIN_GROUP (bit 1)

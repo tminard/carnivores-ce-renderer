@@ -57,14 +57,13 @@ CEPhysicsWorld::CEPhysicsWorld(C2MapFile* mapFile, C2MapRscFile* mapRsc)
     setupWorldObjects(mapRsc);  // RE-ENABLED: Optimized AABB-based hierarchical collision
     setupWaterPlanes(mapFile);  // RE-ENABLED: For water collision detection
     
-    std::cout << "Physics world initialized with " << m_dynamicsWorld->getNumCollisionObjects() << " collision objects" << std::endl;
 }
 
 CEPhysicsWorld::~CEPhysicsWorld()
 {
     // Remove heightfield terrain from world before cleanup
     if (m_heightfieldTerrain) {
-        m_heightfieldTerrain->removePartitionsFromWorld(m_dynamicsWorld);
+        m_heightfieldTerrain->removeFromWorld(m_dynamicsWorld);
         m_heightfieldTerrain.reset(); // This will trigger destruction
     }
     
@@ -108,27 +107,23 @@ void CEPhysicsWorld::setupHeightfieldTerrain(C2MapFile* mapFile)
 {
     if (!mapFile) return;
     
-    std::cout << "🏔️ Setting up Bullet heightfield terrain..." << std::endl;
     
-    // Create heightfield terrain system with partitioning
-    m_heightfieldTerrain = std::make_unique<CEBulletHeightfield>(mapFile, 32, 480.f);
+    // Create single terrain triangle mesh with exact subdivision matching
+    m_heightfieldTerrain = std::make_unique<CEBulletHeightfield>(mapFile);
     
-    // Add all partitions to physics world
-    m_heightfieldTerrain->addPartitionsToWorld(m_dynamicsWorld);
+    // Add terrain mesh to physics world
+    m_heightfieldTerrain->addToWorld(m_dynamicsWorld);
     
-    // Register heightfield terrain bodies in object info map for proper collision detection
-    for (int i = 0; i < m_heightfieldTerrain->getPartitionCount(); i++) {
-        const auto* partition = m_heightfieldTerrain->getPartition(i);
-        if (partition && partition->terrainBody) {
-            CollisionObjectInfo heightfieldInfo;
-            heightfieldInfo.type = CollisionObjectType::HEIGHTFIELD_TERRAIN;
-            heightfieldInfo.objectName = "HeightfieldTerrain_Partition_" + std::to_string(i);
-            m_objectInfoMap[partition->terrainBody] = heightfieldInfo;
-        }
+    // Register terrain body in object info map for proper collision detection
+    const auto* terrainMesh = m_heightfieldTerrain->getTerrainMesh();
+    if (terrainMesh && terrainMesh->terrainBody) {
+        CollisionObjectInfo terrainInfo;
+        terrainInfo.type = CollisionObjectType::HEIGHTFIELD_TERRAIN;
+        terrainInfo.objectName = "TerrainTriangleMesh";
+        m_objectInfoMap[terrainMesh->terrainBody] = terrainInfo;
     }
     
-    std::cout << "✅ Heightfield terrain setup complete with " 
-              << m_heightfieldTerrain->getPartitionCount() << " partitions registered" << std::endl;
+    int totalTriangles = m_heightfieldTerrain->getTriangleCount();
 }
 
 void CEPhysicsWorld::setupTerrain(C2MapFile* mapFile)
@@ -141,7 +136,6 @@ void CEPhysicsWorld::setupTerrain(C2MapFile* mapFile)
     int width = mapFile->getWidth();
     int height = mapFile->getHeight();
     
-    std::cout << "Setting up terrain physics: " << width << "x" << height << " tiles" << std::endl;
     
     // Create triangle mesh from heightfield
     for (int y = 0; y < height - 1; y++) {
@@ -187,7 +181,6 @@ void CEPhysicsWorld::setupTerrain(C2MapFile* mapFile)
     terrainInfo.objectName = "Terrain";
     m_objectInfoMap[m_terrainBody] = terrainInfo;
     
-    std::cout << "Terrain physics setup complete with " << m_terrainMesh->getNumTriangles() << " triangles" << std::endl;
 }
 
 void CEPhysicsWorld::setupWorldObjects(C2MapRscFile* mapRsc)
@@ -195,7 +188,6 @@ void CEPhysicsWorld::setupWorldObjects(C2MapRscFile* mapRsc)
     if (!mapRsc) return;
     
     int objectCount = mapRsc->getWorldModelCount();
-    std::cout << "🔧 Setting up " << objectCount << " world object types using btScaledBvhTriangleMeshShape for efficient instancing" << std::endl;
     
     // Performance: Maximum collision range
     float tileLength = m_mapFile->getTileLength();
@@ -212,14 +204,12 @@ void CEPhysicsWorld::setupWorldObjects(C2MapRscFile* mapRsc)
         
         // Skip objects with no valid dimensions
         if (radius <= 0) {
-            std::cout << "  ⚠️ Object " << i << " has no valid radius (" << radius << ") - skipping" << std::endl;
             continue;
         }
         
         // Create triangle mesh from geometry (shared by all instances)
         btTriangleMesh* triangleMesh = model->getGeometry()->createPhysicsTriangleMesh();
         if (!triangleMesh || triangleMesh->getNumTriangles() == 0) {
-            std::cout << "  ⚠️ Object " << i << " has no valid triangles - skipping" << std::endl;
             delete triangleMesh;
             continue;
         }
@@ -231,14 +221,12 @@ void CEPhysicsWorld::setupWorldObjects(C2MapRscFile* mapRsc)
         m_objectMeshes.push_back(triangleMesh);
         m_baseBvhShapes.push_back(baseBvhShape);
         
-        std::cout << "  📐 Object " << i << " base BVH shape: " << triangleMesh->getNumTriangles() << " triangles" << std::endl;
         
         // Create instances using btScaledBvhTriangleMeshShape
         const auto& transforms = model->getTransforms();
         int instanceIndex = 0;
         int culledInstances = 0;
         
-        std::cout << "  🔄 Creating " << transforms.size() << " instances..." << std::endl;
         
         for (const auto& transform : transforms) {
             glm::vec3 position = *const_cast<Transform&>(transform).GetPos();
@@ -287,13 +275,8 @@ void CEPhysicsWorld::setupWorldObjects(C2MapRscFile* mapRsc)
             instanceIndex++;
         }
         
-        std::cout << "  ✅ Created " << instanceIndex << " instances (culled " << culledInstances << " distant)" << std::endl;
     }
     
-    std::cout << "🎯 World objects physics setup complete:" << std::endl;
-    std::cout << "  📊 Base BVH shapes: " << m_baseBvhShapes.size() << std::endl;
-    std::cout << "  🔄 Scaled instances: " << m_objectBodies.size() << std::endl;
-    std::cout << "  🌍 Total collision objects: " << m_dynamicsWorld->getNumCollisionObjects() << std::endl;
 }
 
 void CEPhysicsWorld::setupWaterPlanes(C2MapFile* mapFile)
@@ -304,7 +287,6 @@ void CEPhysicsWorld::setupWaterPlanes(C2MapFile* mapFile)
     int width = mapFile->getWidth();
     int height = mapFile->getHeight();
     
-    std::cout << "Setting up water plane physics for " << width << "x" << height << " map" << std::endl;
     
     // For now, create a simplified water collision plane
     // In a more advanced implementation, you could scan the map for actual water tiles
@@ -340,7 +322,6 @@ void CEPhysicsWorld::setupWaterPlanes(C2MapFile* mapFile)
     m_waterShapes.push_back(waterShape);
     m_waterBodies.push_back(waterBody);
     
-    std::cout << "Water plane physics setup complete at estimated level: " << estimatedWaterLevel << std::endl;
 }
 
 btRigidBody* CEPhysicsWorld::createStaticBody(btCollisionShape* shape, const glm::vec3& position)
@@ -485,9 +466,7 @@ CEPhysicsWorld::ContactInfo CEPhysicsWorld::getFilteredContacts(btRigidBody* bod
 
 void CEPhysicsWorld::updateHeightfieldForPosition(const glm::vec3& position)
 {
-    if (m_heightfieldTerrain) {
-        m_heightfieldTerrain->updateForPosition(position, m_dynamicsWorld);
-    }
+    // No longer needed with single mesh - Bullet's BVH handles spatial optimization internally
 }
 
 void CEPhysicsWorld::removeRigidBody(btRigidBody* body)
@@ -517,10 +496,8 @@ void CEPhysicsWorld::enablePhysicsDebugRendering(bool enable)
         int debugMode = btIDebugDraw::DBG_DrawWireframe;
         
         m_debugDrawer->setDebugMode(debugMode);
-        std::cout << "🔧 Bullet Physics debug rendering enabled (lightweight mode: " << debugMode << ")" << std::endl;
     } else {
         m_debugDrawer->setDebugMode(btIDebugDraw::DBG_NoDebug);
-        std::cout << "🔧 Bullet Physics debug rendering disabled" << std::endl;
     }
 }
 
@@ -535,29 +512,62 @@ void CEPhysicsWorld::renderPhysicsDebug(const glm::mat4& viewProjectionMatrix, c
     // Begin debug frame
     m_debugDrawer->beginFrame();
     
-    // Selective debug drawing - exclude expensive heightfield terrain
-    // Only draw world objects (much more useful for bullet collision debugging)
+    // Optimized selective debug drawing with distance culling
     int totalObjects = m_dynamicsWorld->getNumCollisionObjects();
     int drawnObjects = 0;
     int skippedTerrain = 0;
     int skippedDistance = 0;
+    int skippedTerrainTriangles = 0;
+    
+    const float maxTerrainDebugDistance = 100.0f; // Only show terrain within 100 units of camera
     
     for (int i = 0; i < totalObjects; i++) {
         btCollisionObject* obj = m_dynamicsWorld->getCollisionObjectArray()[i];
+        btVector3 objOrigin = obj->getWorldTransform().getOrigin();
+        glm::vec3 objectPos(objOrigin.getX(), objOrigin.getY(), objOrigin.getZ());
         
-        // Draw this collision object
-        btVector3 color(1.0f, 1.0f, 0.0f); // Yellow for visibility
+        // Check if this is a terrain partition
+        auto it = m_objectInfoMap.find(static_cast<btRigidBody*>(obj));
+        bool isTerrain = (it != m_objectInfoMap.end() && it->second.type == CollisionObjectType::HEIGHTFIELD_TERRAIN);
+        
+        if (isTerrain) {
+            // For terrain: check if camera is within reasonable range for debug rendering
+            const auto* terrainMesh = m_heightfieldTerrain->getTerrainMesh();
+            if (terrainMesh) {
+                // Check if camera is within terrain bounds (inside or above the map)
+                bool cameraInsideTerrainBounds = (
+                    cameraPosition.x >= terrainMesh->worldMin.x && cameraPosition.x <= terrainMesh->worldMax.x &&
+                    cameraPosition.z >= terrainMesh->worldMin.z && cameraPosition.z <= terrainMesh->worldMax.z
+                );
+                
+                // If camera is outside terrain bounds, check distance to nearest edge
+                float distanceToTerrain = 0.0f;
+                if (!cameraInsideTerrainBounds) {
+                    glm::vec3 closestPoint = glm::clamp(cameraPosition, terrainMesh->worldMin, terrainMesh->worldMax);
+                    distanceToTerrain = glm::distance(cameraPosition, closestPoint);
+                }
+                
+                // Show terrain if camera is inside bounds OR within distance limit
+                bool showTerrain = cameraInsideTerrainBounds || (distanceToTerrain <= maxTerrainDebugDistance);
+                
+                if (!showTerrain) {
+                    skippedTerrain++;
+                    continue; // Skip terrain rendering
+                }
+                
+                // Terrain is being rendered - count its triangles for debug info
+                if (terrainMesh->terrainBody == obj) {
+                    skippedTerrainTriangles += terrainMesh->triangleCount;
+                }
+            }
+        }
+        
+        // Draw this collision object  
+        btVector3 color = isTerrain ? btVector3(0.0f, 1.0f, 0.0f) : btVector3(1.0f, 1.0f, 0.0f); // Green for terrain, yellow for objects
         m_dynamicsWorld->debugDrawObject(obj->getWorldTransform(), obj->getCollisionShape(), color);
         drawnObjects++;
     }
     
-    // Log object counts every 60 frames (once per second at 60fps)
-    static int logCounter = 0;
-    if (++logCounter % 60 == 0) {
-        std::cout << "🔧 Physics Debug: Drew " << drawnObjects << "/" << totalObjects 
-                  << " objects (skipped " << skippedTerrain << " terrain, " 
-                  << skippedDistance << " distant)" << std::endl;
-    }
     
     // Render accumulated debug lines
     m_debugDrawer->endFrame();

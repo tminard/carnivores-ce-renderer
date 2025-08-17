@@ -20,6 +20,8 @@
 // Forward declarations for impact event logging  
 extern void addImpactEvent(const glm::vec3& location, const std::string& surfaceType, float distance, float damage, const std::string& impactType);
 extern void addImpactEvent(const glm::vec3& location, const std::string& surfaceType, float distance, float damage, const std::string& impactType, const std::string& objectName, int objectIndex, int instanceIndex);
+extern void addFaceIntersectionEvent(const glm::vec3& location, const std::string& surfaceType, float distance, const glm::vec3& normal, const glm::vec3& direction, int tileX, int tileZ, int faceIndex, const std::string& objectName, int objectIndex, int instanceIndex);
+extern void addDebugSphere(const glm::vec3& position, float radius, const glm::vec3& color, const std::string& label);
 
 using libAF2::Sound;
 
@@ -80,11 +82,22 @@ void CEBulletProjectileManager::update(double currentTime, double deltaTime)
             handleImpact(*projectile);
         }
         
+        // Process face intersections for effects (even if not impacted yet)
+        processFaceIntersections(*projectile);
+        
         // Remove projectiles that should be destroyed
         if (projectile->shouldDestroy(currentTime)) {
             // Remove from physics world first
             if (projectile->getRigidBody()) {
                 m_physicsWorld->removeRigidBody(projectile->getRigidBody());
+            }
+            
+            // Debug: Log projectile cleanup
+            static int cleanupCount = 0;
+            cleanupCount++;
+            if (cleanupCount <= 5) {
+                std::cout << "🗑️ Cleanup projectile " << cleanupCount << " - active count: " 
+                          << m_activeProjectiles.size() << " -> " << (m_activeProjectiles.size() - 1) << std::endl;
             }
             
             it = m_activeProjectiles.erase(it);
@@ -134,4 +147,69 @@ void CEBulletProjectileManager::playImpactAudio(const glm::vec3& position, const
     // audioSrc->setPosition(position);
     // audioSrc->setGain(1.0f);
     // m_audioManager->play(audioSrc);
+}
+
+void CEBulletProjectileManager::processFaceIntersections(CEBulletProjectile& projectile)
+{
+    const auto& intersections = projectile.getFaceIntersections();
+    
+    if (intersections.empty()) return;
+    
+    std::cout << "🔥 Processing " << intersections.size() << " face intersections for effects" << std::endl;
+    
+    for (const auto& intersection : intersections) {
+        // Create effect markers at each face intersection point
+        // This shows where the bullet passed through surfaces, even if it ended up below terrain
+        
+        // Choose effect color based on surface type
+        glm::vec3 effectColor;
+        std::string effectLabel;
+        
+        if (intersection.surfaceType == "terrain") {
+            effectColor = glm::vec3(1.0f, 0.8f, 0.0f); // Orange for terrain hits
+            effectLabel = "terrain_face_hit";
+        } else if (intersection.surfaceType == "object") {
+            effectColor = glm::vec3(1.0f, 0.0f, 1.0f); // Magenta for object hits
+            effectLabel = "object_face_hit";
+        } else if (intersection.surfaceType == "water") {
+            effectColor = glm::vec3(0.0f, 0.8f, 1.0f); // Cyan for water hits
+            effectLabel = "water_face_hit";
+        } else {
+            effectColor = glm::vec3(0.5f, 0.5f, 0.5f); // Gray for unknown
+            effectLabel = "unknown_face_hit";
+        }
+        
+        // Add face intersection event to UI with all detailed information
+        addFaceIntersectionEvent(
+            intersection.position,
+            intersection.surfaceType,
+            intersection.distance,
+            intersection.normal,
+            intersection.incomingDirection,
+            intersection.tileX,
+            intersection.tileZ,
+            intersection.faceIndex,
+            intersection.objectName,
+            intersection.objectIndex,
+            intersection.instanceIndex
+        );
+        
+        std::cout << "  💥 " << intersection.surfaceType << " face hit at [" 
+                  << intersection.position.x << ", " << intersection.position.y << ", " << intersection.position.z << "]";
+        
+        if (intersection.surfaceType == "terrain") {
+            std::cout << " tile[" << intersection.tileX << "," << intersection.tileZ << "]";
+        } else if (intersection.surfaceType == "object") {
+            std::cout << " object: " << intersection.objectName;
+        }
+        
+        std::cout << " normal: [" << intersection.normal.x << ", " << intersection.normal.y << ", " << intersection.normal.z << "]" << std::endl;
+        
+        // TODO: Add particle effects, decals, ricochet calculations based on normals
+        // TODO: Add surface-specific impact sounds
+        // TODO: Add damage calculations for objects
+    }
+    
+    // Clear processed intersections to prevent reprocessing
+    projectile.clearFaceIntersections();
 }

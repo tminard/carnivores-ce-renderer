@@ -51,8 +51,8 @@ private:
 
   constexpr static const int SIZE = 1024;
   constexpr static const int SIZE_C1 = 512;
-  constexpr static const float HEIGHT_SCALE = 64.f;
-  constexpr static const float HEIGHT_SCALE_C1 = 32.f;
+  constexpr static const float HEIGHT_SCALE = 4.f; // Scaled down 16x for new world scale (was 64.f)
+  constexpr static const float HEIGHT_SCALE_C1 = 2.f; // Scaled down 16x for new world scale (was 32.f)
   
   void postProcess(std::weak_ptr<C2MapRscFile> rsc);
   void fillWater(int x, int y, int src_x, int src_y);

@@ -24,9 +24,9 @@ uniform float tileWidth;
 uniform float time;
 uniform vec3 cameraPos;
 
-const float waveAmplitude = 8.0;  // Gentler waves for fog
-const float waveFrequency = 6.0;  // Lower frequency for smoother motion
-const float waveSpeed = 1.5;      // Slower movement for fog
+const float waveAmplitude = 0.5;  // Scaled down 16x for new world scale (was 8.0)
+const float waveFrequency = 0.375; // Scaled down 16x for new world scale (was 6.0)
+const float waveSpeed = 1.5;      // Keep same speed for natural animation
 
 void main()
 {
@@ -58,7 +58,7 @@ void main()
     float edgeDistanceX = min(position.x, (terrainWidth * tileWidth) - position.x);
     float edgeDistanceY = min(position.z, (terrainHeight * tileWidth) - position.z);
     float minEdgeDistance = min(edgeDistanceX, edgeDistanceY);
-    float maxEdgeDistance = tileWidth * 40.0; // Softer edge fade for fog
+    float maxEdgeDistance = tileWidth * 40.0; // Auto-scales with tileWidth
     EdgeFactor = clamp(minEdgeDistance / maxEdgeDistance, 0.0, 1.0);
     
     texCoord0 = texCoord;
@@ -68,7 +68,7 @@ void main()
     cloudTexCoord = vec2(
         1.0 - (position.z / (tileWidth * 128.0)) - (time * 0.002), 
         1.0 - (position.x / (tileWidth * 128.0)) - (time * 0.003)
-    );
+    ); // Auto-scales with tileWidth
     
     // Calculate view direction for fog effects
     viewDirection = normalize(cameraPos - worldPosition.xyz);

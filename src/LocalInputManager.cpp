@@ -83,14 +83,14 @@ void LocalInputManager::ProcessLocalInput(GLFWwindow* window, float deltaTime)
     if (!noclip) {
       m_player_controller->move(currentTime, timeDelta, forwardPressed, backwardPressed, rightPressed, leftPressed);
     } else {
-      if (forwardPressed) m_player_controller->getCamera()->MoveForward(100.f);
-      if (backwardPressed) m_player_controller->getCamera()->MoveForward(-100.f);
-      if (rightPressed) m_player_controller->getCamera()->MoveRight(-100.f);
-      if (leftPressed) m_player_controller->getCamera()->MoveRight(100.f);
+      if (forwardPressed) m_player_controller->getCamera()->MoveForward(6.25f); // Scaled down 16x (was 100.f)
+      if (backwardPressed) m_player_controller->getCamera()->MoveForward(-6.25f); // Scaled down 16x (was -100.f)
+      if (rightPressed) m_player_controller->getCamera()->MoveRight(-6.25f); // Scaled down 16x (was -100.f)
+      if (leftPressed) m_player_controller->getCamera()->MoveRight(6.25f); // Scaled down 16x (was 100.f)
     }
     
     if (noclip && glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-      m_player_controller->getCamera()->MoveUp(100.f);
+      m_player_controller->getCamera()->MoveUp(6.25f); // Scaled down 16x (was 100.f)
     }
     
     if (!noclip && glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
@@ -111,7 +111,7 @@ void LocalInputManager::ProcessLocalInput(GLFWwindow* window, float deltaTime)
         noclip = false;
       } else {
         float currentHeight = m_player_controller->getCamera()->GetHeight();
-        m_player_controller->getCamera()->SetHeight(currentHeight + 256.f);
+        m_player_controller->getCamera()->SetHeight(currentHeight + 16.f); // Scaled down 16x (was 256.f)
         noclip = true;
       }
     } else if (glfwGetKey(window, GLFW_KEY_L) == GLFW_RELEASE) {

@@ -412,8 +412,8 @@ void C2MapRscFile::load(const std::string &file_name, std::filesystem::path base
 
       std::unique_ptr<CEAudioSource> src(new CEAudioSource(snd));
 
-      src->setClampDistance((256*2));
-      src->setMaxDistance((256*200));
+      src->setClampDistance((16*2)); // Scaled down 16x (was 256*2)
+      src->setMaxDistance((16*200)); // Scaled down 16x (was 256*200)
       src->setGain(1.f);
       src->setLooped(false);
 

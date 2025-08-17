@@ -239,7 +239,7 @@ void C2Sky::Render(GLFWwindow* window, Camera& camera)
   view[3][1] = 0.0f;
   view[3][2] = 0.0f;
 
-  glm::mat4 projection = glm::perspective(glm::radians(80.0f), (float)width / (float)height, 0.1f, 100000.f);
+  glm::mat4 projection = glm::perspective(glm::radians(80.0f), (float)width / (float)height, 0.00625f, 6250.f); // Scaled down 16x
   float elapsedTime = static_cast<float>(glfwGetTime());
 
   // Render the skybox

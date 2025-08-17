@@ -287,10 +287,9 @@ void CEUIRenderer::fireWeapon()
             glm::vec3 cameraPos = m_gameCamera->GetPosition();
             glm::vec3 cameraForward = m_gameCamera->GetForward();
             
-            // Start projectile 32 units forward from the exact center of screen line of sight
-            // This ensures the projectile starts exactly where the player is aiming
-            float forwardOffset = 32.0f; // 32 world units forward as requested
-            glm::vec3 muzzlePosition = cameraPos + (cameraForward * forwardOffset);
+            // For accurate shooting, start projectile slightly forward from camera
+            // and fire directly where the camera is looking (center of screen)
+            glm::vec3 muzzlePosition = cameraPos + (cameraForward * m_muzzleOffset.z);
             
             // Fire direction is exactly where the camera is looking (center of screen)
             glm::vec3 fireDirection = cameraForward;
@@ -370,7 +369,7 @@ void CEUIRenderer::renderWeaponGeometry(C2CarFile* weapon, Transform& weaponTran
     
     // Create perspective projection for weapon depth
     float aspectRatio = (float)m_screenWidth / (float)m_screenHeight;
-    glm::mat4 perspectiveProjection = glm::perspective(glm::radians(60.0f), aspectRatio, 0.1f, 100000.0f);
+    glm::mat4 perspectiveProjection = glm::perspective(glm::radians(60.0f), aspectRatio, 0.00625f, 6250.0f); // Scaled down 16x
     
     // Create view matrix positioned for first-person weapon view
     glm::vec3 weaponCameraPos(0.0f, 0.0f, 0.1f);  // Close to weapon

@@ -210,11 +210,11 @@ float CELocalPlayerController::computeSlope(float x, float z) {
 
 void CELocalPlayerController::panAroundBody(double currentTime) {
     float angle = (currentTime - m_died_at) * 0.5f;
-    float radius = 10.0f;
+    float radius = 0.625f; // Scaled down 16x (was 10.0f)
     glm::vec3 bodyPosition = getPosition();
     float x = bodyPosition.x + radius * cos(angle);
     float z = bodyPosition.z + radius * sin(angle);
-    float y = bodyPosition.y + 5.0f;
+    float y = bodyPosition.y + 0.3125f; // Scaled down 16x (was 5.0f)
 
     glm::vec3 cameraPosition = glm::vec3(x, y, z);
     setPosition(cameraPosition);
@@ -357,7 +357,7 @@ void CELocalPlayerController::move(double currentTime, double deltaTime, bool fo
       // Check for landing using interpolated height
       glm::vec3 jumpWorldPos(pos.x, pos.y, pos.z);
       float groundHeight = m_map->getHeightAtWorldPosition(jumpWorldPos) + m_player_height;
-      if (pos.y <= groundHeight - 24.f) {
+      if (pos.y <= groundHeight - 1.5f) { // Scaled down 16x (was 24.f)
           m_is_jumping = false;
           m_vertical_speed = 0.0f;
           m_last_jump_time = currentTime;

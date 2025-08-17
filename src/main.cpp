@@ -90,10 +90,16 @@ struct ImpactEvent {
   float distance;
   float damage;
   double timestamp;
-  std::string impactType; // "Contact Manifold", "Raycast", "Ground", etc.
+  std::string impactType; // "Contact Manifold", "Raycast", "Ground", "Face Intersection", etc.
   std::string objectName; // For object hits, store the object name
   int objectIndex; // For object hits, store the object index
   int instanceIndex; // For object hits, store the instance index
+  
+  // Face intersection specific data
+  glm::vec3 surfaceNormal; // Surface normal at hit point
+  glm::vec3 incomingDirection; // Bullet direction when hitting
+  int tileX, tileZ; // For terrain hits - which heightfield tile
+  int faceIndex; // Which triangle/face was hit (when available)
 };
 
 struct VisualImpactMarker {
@@ -120,6 +126,14 @@ struct DebugSphere {
   glm::vec3 color;
   std::string label;
   double spawnTime;
+};
+
+struct ProjectileTrajectory {
+  std::vector<glm::vec3> points;
+  glm::vec3 color;
+  double spawnTime;
+  float thickness;
+  std::string surfaceType;
 };
 
 // Sphere generation utility for impact markers
@@ -204,10 +218,12 @@ std::vector<ImpactEvent> recentImpacts;
 std::vector<VisualImpactMarker> visualImpactMarkers;
 std::vector<ProjectileTraceLine> projectileTraceLines;
 std::vector<DebugSphere> debugSpheres;
+std::vector<ProjectileTrajectory> projectileTrajectories;
 const size_t MAX_IMPACT_HISTORY = 10;
 const double IMPACT_MARKER_LIFETIME = 10.0; // Show markers for 10 seconds
 const double TRACE_LINE_LIFETIME = 8.0; // Show trace lines for 8 seconds
 const double DEBUG_SPHERE_LIFETIME = 10.0; // Show debug spheres for 10 seconds
+const double TRAJECTORY_LIFETIME = 60.0; // Show trajectories for 60 seconds
 
 // Impact marker rendering resources
 std::unique_ptr<CESimpleGeometry> impactMarkerGeometry;
@@ -282,12 +298,24 @@ void updateTraceLines(double currentTime) {
       }),
     debugSpheres.end());
   
+  // Remove expired trajectories
+  size_t beforeTrajectoryCount = projectileTrajectories.size();
+  projectileTrajectories.erase(
+    std::remove_if(projectileTrajectories.begin(), projectileTrajectories.end(),
+      [currentTime](const ProjectileTrajectory& trajectory) {
+        return (currentTime - trajectory.spawnTime) > TRAJECTORY_LIFETIME;
+      }),
+    projectileTrajectories.end());
+  
   // Debug: Log cleanup changes
   if (beforeCount != projectileTraceLines.size()) {
     std::cout << "🗑️ Cleaned up trace lines: " << beforeCount << " -> " << projectileTraceLines.size() << std::endl;
   }
   if (beforeSphereCount != debugSpheres.size()) {
     std::cout << "🗑️ Cleaned up debug spheres: " << beforeSphereCount << " -> " << debugSpheres.size() << std::endl;
+  }
+  if (beforeTrajectoryCount != projectileTrajectories.size()) {
+    std::cout << "🗑️ Cleaned up trajectories: " << beforeTrajectoryCount << " -> " << projectileTrajectories.size() << std::endl;
   }
   
   // Clear previous frame data
@@ -318,9 +346,11 @@ bool showDebugUI = false; // Set to false to disable all ImGui panels for maximu
 // Forward declarations for external use
 extern void addImpactEvent(const glm::vec3& location, const std::string& surfaceType, float distance, float damage, const std::string& impactType);
 extern void addImpactEvent(const glm::vec3& location, const std::string& surfaceType, float distance, float damage, const std::string& impactType, const std::string& objectName, int objectIndex, int instanceIndex);
+extern void addFaceIntersectionEvent(const glm::vec3& location, const std::string& surfaceType, float distance, const glm::vec3& normal, const glm::vec3& direction, int tileX, int tileZ, int faceIndex, const std::string& objectName, int objectIndex, int instanceIndex);
 extern void addProjectileTraceLine(const glm::vec3& startPoint, const glm::vec3& endPoint, const std::string& surfaceType);
 extern void addProjectileTraceLineWithMethod(const glm::vec3& startPoint, const glm::vec3& endPoint, const std::string& surfaceType, const std::string& collisionMethod);
 extern void addDebugSphere(const glm::vec3& position, float radius, const glm::vec3& color, const std::string& label);
+extern void addProjectileTrajectory(const std::vector<glm::vec3>& trajectoryPoints, const std::string& surfaceType);
 
 void addImpactEvent(const glm::vec3& location, const std::string& surfaceType, float distance, float damage, const std::string& impactType) {
   ImpactEvent event;
@@ -334,6 +364,13 @@ void addImpactEvent(const glm::vec3& location, const std::string& surfaceType, f
   event.objectIndex = -1;
   event.instanceIndex = -1;
   
+  // Initialize face intersection data
+  event.surfaceNormal = glm::vec3(0, 1, 0);
+  event.incomingDirection = glm::vec3(0, 0, 0);
+  event.tileX = -1;
+  event.tileZ = -1;
+  event.faceIndex = -1;
+  
   recentImpacts.insert(recentImpacts.begin(), event);
   if (recentImpacts.size() > MAX_IMPACT_HISTORY) {
     recentImpacts.resize(MAX_IMPACT_HISTORY);
@@ -344,7 +381,7 @@ void addImpactEvent(const glm::vec3& location, const std::string& surfaceType, f
   marker.position = location;
   marker.spawnTime = glfwGetTime();
   marker.surfaceType = surfaceType;
-  marker.scale = 50.0f; // Large spheres to make them very visible
+  marker.scale = 0.5f; // Larger for better visibility
   
   // Use dark/muted colors for impact markers (contrast with bright trace lines)
   if (surfaceType == "terrain") {
@@ -360,8 +397,61 @@ void addImpactEvent(const glm::vec3& location, const std::string& surfaceType, f
   }
   
   visualImpactMarkers.push_back(marker);
+}
+
+void addFaceIntersectionEvent(const glm::vec3& location, const std::string& surfaceType, float distance, 
+                             const glm::vec3& normal, const glm::vec3& direction, int tileX, int tileZ, int faceIndex,
+                             const std::string& objectName, int objectIndex, int instanceIndex) {
+  ImpactEvent event;
+  event.location = location;
+  event.surfaceType = surfaceType;
+  event.distance = distance;
+  event.damage = 0.0f; // Face intersections don't have damage, just tracking
+  event.timestamp = glfwGetTime();
+  event.impactType = "Face Intersection";
+  event.objectName = objectName;
+  event.objectIndex = objectIndex;
+  event.instanceIndex = instanceIndex;
   
-  std::cout << "📍 Created visual marker at [" << location.x << ", " << location.y << ", " << location.z << "] - " << surfaceType << " (Total: " << visualImpactMarkers.size() << ")" << std::endl;
+  // Face intersection specific data
+  event.surfaceNormal = normal;
+  event.incomingDirection = direction;
+  event.tileX = tileX;
+  event.tileZ = tileZ;
+  event.faceIndex = faceIndex;
+  
+  recentImpacts.insert(recentImpacts.begin(), event);
+  if (recentImpacts.size() > MAX_IMPACT_HISTORY) {
+    recentImpacts.resize(MAX_IMPACT_HISTORY);
+  }
+  
+  // Also create visual markers for face intersections
+  VisualImpactMarker marker;
+  marker.position = location;
+  marker.spawnTime = glfwGetTime();
+  marker.surfaceType = surfaceType;
+  marker.scale = 2.0f;
+  
+  // Use different colors for different surface types
+  if (surfaceType == "terrain") {
+    marker.color = glm::vec3(1.0f, 0.8f, 0.0f); // Orange for terrain
+  } else if (surfaceType == "object") {
+    marker.color = glm::vec3(1.0f, 0.0f, 1.0f); // Magenta for objects
+  } else if (surfaceType == "water") {
+    marker.color = glm::vec3(0.0f, 0.8f, 1.0f); // Cyan for water
+  } else {
+    marker.color = glm::vec3(0.5f, 0.5f, 0.5f); // Gray for unknown
+  }
+  
+  visualImpactMarkers.push_back(marker);
+  
+  std::cout << "🎯 Created face intersection marker at [" << location.x << ", " << location.y << ", " << location.z << "] - " << surfaceType;
+  if (surfaceType == "terrain") {
+    std::cout << " tile[" << tileX << "," << tileZ << "]";
+  } else if (surfaceType == "object") {
+    std::cout << " object: " << objectName;
+  }
+  std::cout << " face: " << faceIndex << std::endl;
 }
 
 void addImpactEvent(const glm::vec3& location, const std::string& surfaceType, float distance, float damage, const std::string& impactType, const std::string& objectName, int objectIndex, int instanceIndex) {
@@ -376,6 +466,13 @@ void addImpactEvent(const glm::vec3& location, const std::string& surfaceType, f
   event.objectIndex = objectIndex;
   event.instanceIndex = instanceIndex;
   
+  // Initialize face intersection data
+  event.surfaceNormal = glm::vec3(0, 1, 0);
+  event.incomingDirection = glm::vec3(0, 0, 0);
+  event.tileX = -1;
+  event.tileZ = -1;
+  event.faceIndex = -1;
+  
   recentImpacts.insert(recentImpacts.begin(), event);
   if (recentImpacts.size() > MAX_IMPACT_HISTORY) {
     recentImpacts.resize(MAX_IMPACT_HISTORY);
@@ -386,7 +483,7 @@ void addImpactEvent(const glm::vec3& location, const std::string& surfaceType, f
   marker.position = location;
   marker.spawnTime = glfwGetTime();
   marker.surfaceType = surfaceType;
-  marker.scale = 50.0f; // Large spheres to make them very visible
+  marker.scale = 0.5f; // Larger for better visibility
   
   // Use dark/muted colors for impact markers (contrast with bright trace lines)
   if (surfaceType == "terrain") {
@@ -402,12 +499,6 @@ void addImpactEvent(const glm::vec3& location, const std::string& surfaceType, f
   }
   
   visualImpactMarkers.push_back(marker);
-  
-  if (!objectName.empty()) {
-    std::cout << "📍 Created visual marker at [" << location.x << ", " << location.y << ", " << location.z << "] - " << surfaceType << " (" << objectName << ") (Total: " << visualImpactMarkers.size() << ")" << std::endl;
-  } else {
-    std::cout << "📍 Created visual marker at [" << location.x << ", " << location.y << ", " << location.z << "] - " << surfaceType << " (Total: " << visualImpactMarkers.size() << ")" << std::endl;
-  }
 }
 
 void addProjectileTraceLine(const glm::vec3& startPoint, const glm::vec3& endPoint, const std::string& surfaceType) {
@@ -452,9 +543,10 @@ void addProjectileTraceLineWithMethod(const glm::vec3& startPoint, const glm::ve
   projectileTraceLines.push_back(traceLine);
   
   float distance = glm::distance(startPoint, endPoint);
+  float distanceMeters = distance / 4.0f; // Convert game units to meters (4 units = 1 meter in scaled world)
   std::cout << "🎯 Created trace line from [" << startPoint.x << ", " << startPoint.y << ", " << startPoint.z 
             << "] to [" << endPoint.x << ", " << endPoint.y << ", " << endPoint.z 
-            << "] - " << surfaceType << " (" << collisionMethod << ") (Distance: " << std::fixed << std::setprecision(1) << distance << " units, Total: " << projectileTraceLines.size() << ")" << std::endl;
+            << "] - " << surfaceType << " (" << collisionMethod << ") (Distance: " << std::fixed << std::setprecision(1) << distanceMeters << "m, Total: " << projectileTraceLines.size() << ")" << std::endl;
 }
 
 void addDebugSphere(const glm::vec3& position, float radius, const glm::vec3& color, const std::string& label) {
@@ -469,6 +561,41 @@ void addDebugSphere(const glm::vec3& position, float radius, const glm::vec3& co
   
   std::cout << "🔵 Created debug sphere at [" << position.x << ", " << position.y << ", " << position.z 
             << "] - " << label << " (Radius: " << radius << ", Total: " << debugSpheres.size() << ")" << std::endl;
+}
+
+void addProjectileTrajectory(const std::vector<glm::vec3>& trajectoryPoints, const std::string& surfaceType) {
+  if (trajectoryPoints.size() < 2) return; // Need at least 2 points for a line
+  
+  ProjectileTrajectory trajectory;
+  trajectory.points = trajectoryPoints;
+  trajectory.spawnTime = glfwGetTime();
+  trajectory.surfaceType = surfaceType;
+  trajectory.thickness = 2.0f;
+  
+  // Use green variations for better visibility
+  if (surfaceType == "terrain") {
+    trajectory.color = glm::vec3(0.0f, 1.0f, 0.0f); // Bright green for terrain
+  } else if (surfaceType == "water") {
+    trajectory.color = glm::vec3(0.0f, 0.8f, 0.2f); // Blue-green for water
+  } else if (surfaceType == "object") {
+    trajectory.color = glm::vec3(0.2f, 1.0f, 0.0f); // Lime green for objects
+  } else if (surfaceType == "out-of-bounds") {
+    trajectory.color = glm::vec3(0.5f, 1.0f, 0.5f); // Light green for out-of-bounds
+  } else {
+    trajectory.color = glm::vec3(0.0f, 0.8f, 0.0f); // Dark green for unknown
+  }
+  
+  projectileTrajectories.push_back(trajectory);
+  
+  float trajectoryLength = 0.0f;
+  for (size_t i = 1; i < trajectoryPoints.size(); i++) {
+    trajectoryLength += glm::distance(trajectoryPoints[i-1], trajectoryPoints[i]);
+  }
+  
+  float trajectoryLengthMeters = trajectoryLength / 4.0f; // Convert game units to meters (4 units = 1 meter in scaled world)
+  std::cout << "🎯 Created trajectory with " << trajectoryPoints.size() << " points - " 
+            << surfaceType << " (Length: " << std::fixed << std::setprecision(1) << trajectoryLengthMeters 
+            << "m, Total: " << projectileTrajectories.size() << ")" << std::endl;
 }
 
 void updateAndRenderImpactMarkers(double currentTime) {
@@ -715,8 +842,8 @@ int main(int argc, const char * argv[])
   std::shared_ptr<CEAudioSource> dieAudioSrc = std::make_shared<CEAudioSource>(die);
   dieAudioSrc->setLooped(false);
   dieAudioSrc->setGain(2.0f);
-  dieAudioSrc->setClampDistance(256*6);
-  dieAudioSrc->setMaxDistance(256*80);
+  dieAudioSrc->setClampDistance(16*6); // Scaled down 16x (was 256*6)
+  dieAudioSrc->setMaxDistance(16*80); // Scaled down 16x (was 256*80)
   
   // shared loader to minimize resource usage
   std::unique_ptr<C2CarFilePreloader> cFileLoad(new C2CarFilePreloader);
@@ -737,7 +864,7 @@ int main(int argc, const char * argv[])
       float spawnHeight = cMap->getPlaceGroundHeight(spawn.position[0], spawn.position[1]);
       glm::vec3 spawnPos = glm::vec3(
                                      (spawn.position[0] * cMap->getTileLength()) + (cMap->getTileLength() / 2),
-                                     spawnHeight - 12.f,
+                                     spawnHeight - 0.75f, // Scaled down 16x (was 12.f)
                                      (spawn.position[1] * cMap->getTileLength()) + (cMap->getTileLength() / 2)
                                      );
       
@@ -952,7 +1079,7 @@ int main(int argc, const char * argv[])
     lastTime = currentTime;
     
     input_manager->ProcessLocalInput(window, timeDelta);
-    g_player_controller->update(timeDelta, currentTime);
+    g_player_controller->update(currentTime, timeDelta);
     
     // Update projectile physics simulation (Re-enabled with performance optimizations)
     if (projectileManager) {
@@ -985,7 +1112,7 @@ int main(int argc, const char * argv[])
     float distanceFromLastShadow = glm::distance(sceneCenter, lastShadowCenter);
     if (!shadowsGenerated || distanceFromLastShadow > shadowUpdateDistance) {
       // Use a much larger shadow radius to cover more of the map
-      float sceneRadius = tileLength * 200.0f; // Large radius to cover entire visible map area
+      float sceneRadius = tileLength * 200.0f; // Radius auto-scales with tileLength
       
       // Generate shadows for this area (this will use cache if available)
       // Light matrices are calculated once during generation and remain stable
@@ -1025,7 +1152,7 @@ int main(int argc, const char * argv[])
                                                                    "Hr_dead1"
                                                                    );
             auto bodyPos = g_player_controller->getPosition();
-            bodyPos.y = cMap->getPlaceGroundHeight(player_world_pos.x, player_world_pos.y) + 12.f;
+            bodyPos.y = cMap->getPlaceGroundHeight(player_world_pos.x, player_world_pos.y) + 0.75f; // Scaled down 16x (was 12.f)
             body->setPosition(bodyPos);
             body->setNextAnimation("Hr_dead1");
             body->StopMovement();
@@ -1157,6 +1284,7 @@ int main(int argc, const char * argv[])
         CEWorldModel* model = cMapRsc->getWorldModel(m);
         if (model) {
           model->renderBoundingBox(viewProjectionMatrix);
+          model->renderRadiusCylinder(viewProjectionMatrix);
         }
       }
     }
@@ -1213,8 +1341,6 @@ int main(int argc, const char * argv[])
     
     // Render trace lines (always on for debugging) - simulate with large spheres for now
     if (!projectileTraceLines.empty()) {
-      std::cout << "🎨 Rendering " << projectileTraceLines.size() << " trace lines as sphere pairs" << std::endl;
-      
       // For now, render trace lines as pairs of large colored spheres at start and end points
       // This is a temporary solution until we implement proper line rendering
       glDepthFunc(GL_LESS);
@@ -1260,10 +1386,6 @@ int main(int argc, const char * argv[])
           impactMarkerGeometry->UpdateInstances(endTransforms);
           impactMarkerGeometry->Update(*camera);
           impactMarkerGeometry->DrawInstances();
-          
-          std::cout << "  📍 Start: [" << traceLine.startPoint.x << "," << traceLine.startPoint.y << "," << traceLine.startPoint.z 
-                    << "] End: [" << traceLine.endPoint.x << "," << traceLine.endPoint.y << "," << traceLine.endPoint.z 
-                    << "] Color: (" << traceLine.color.r << "," << traceLine.color.g << "," << traceLine.color.b << ")" << std::endl;
         }
         
         // Reset custom color flag
@@ -1273,7 +1395,63 @@ int main(int argc, const char * argv[])
       }
       
       glEnable(GL_CULL_FACE);
-      std::cout << "✅ Trace lines rendered as sphere pairs" << std::endl;
+    }
+    
+    // Render trajectory lines (continuous paths showing bullet physics)
+    if (!projectileTrajectories.empty()) {
+      glDepthFunc(GL_LESS);
+      glDisable(GL_CULL_FACE);
+      glEnable(GL_DEPTH_TEST);
+      glEnable(GL_BLEND);
+      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+      
+      // Use impact marker geometry to render small spheres at each trajectory point
+      if (impactMarkerGeometry) {
+        auto shader = impactMarkerGeometry->getShader();
+        if (shader) {
+          shader->use();
+          shader->setBool("useCustomColor", true);
+        }
+        
+        for (const auto& trajectory : projectileTrajectories) {
+          if (trajectory.points.size() < 2) continue;
+          
+          // Calculate fade based on age
+          double age = currentTime - trajectory.spawnTime;
+          float alpha = std::max(0.0f, 1.0f - static_cast<float>(age / TRAJECTORY_LIFETIME));
+          
+          std::vector<glm::mat4> pointTransforms;
+          pointTransforms.reserve(trajectory.points.size());
+          
+          // Create small spheres for each trajectory point
+          for (size_t i = 0; i < trajectory.points.size(); i++) {
+            glm::mat4 transform = glm::mat4(1.0f);
+            transform = glm::translate(transform, trajectory.points[i]);
+            
+            // Make spheres smaller towards the end of trajectory for nice visual effect
+            float sizeScale = 1.0f - (static_cast<float>(i) / trajectory.points.size()) * 0.3f;
+            transform = glm::scale(transform, glm::vec3(0.1875f * sizeScale * alpha)); // Scaled down 16x (was 3.0f)
+            pointTransforms.push_back(transform);
+          }
+          
+          if (shader && !pointTransforms.empty()) {
+            glm::vec3 fadedColor = trajectory.color * alpha;
+            shader->setVec3("customColor", fadedColor);
+            
+            impactMarkerGeometry->UpdateInstances(pointTransforms);
+            impactMarkerGeometry->Update(*camera);
+            impactMarkerGeometry->DrawInstances();
+          }
+        }
+        
+        // Reset custom color flag
+        if (shader) {
+          shader->setBool("useCustomColor", false);
+        }
+      }
+      
+      glDisable(GL_BLEND);
+      glEnable(GL_CULL_FACE);
     }
     
     // Render the sky
@@ -1409,6 +1587,30 @@ int main(int argc, const char * argv[])
                 if (!impact.objectName.empty() && impact.objectIndex >= 0) {
                   ImGui::Text("Object: %s", impact.objectName.c_str());
                   ImGui::Text("Index: %d, Instance: %d", impact.objectIndex, impact.instanceIndex);
+                }
+                
+                // Show face intersection details for detailed impacts
+                if (impact.impactType == "Face Intersection") {
+                  ImGui::Separator();
+                  ImGui::TextColored(ImVec4(0.7f, 0.9f, 1.0f, 1.0f), "Face Details:");
+                  
+                  // Show surface normal
+                  ImGui::Text("Normal: [%.2f, %.2f, %.2f]", impact.surfaceNormal.x, impact.surfaceNormal.y, impact.surfaceNormal.z);
+                  
+                  // Show incoming direction
+                  ImGui::Text("Direction: [%.2f, %.2f, %.2f]", impact.incomingDirection.x, impact.incomingDirection.y, impact.incomingDirection.z);
+                  
+                  // Show terrain-specific information
+                  if (impact.surfaceType == "terrain" && impact.tileX >= 0 && impact.tileZ >= 0) {
+                    ImGui::Text("Tile: [%d, %d]", impact.tileX, impact.tileZ);
+                  }
+                  
+                  // Show face index if available
+                  if (impact.faceIndex >= 0) {
+                    ImGui::Text("Face Index: %d", impact.faceIndex);
+                  } else {
+                    ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Face Index: N/A");
+                  }
                 }
                 
                 ImGui::Text("Age: %.1fs ago", age);

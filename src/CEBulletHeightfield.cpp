@@ -160,6 +160,8 @@ void CEBulletHeightfield::addPartitionsToWorld(btDiscreteDynamicsWorld* world)
 {
     if (!world) return;
     
+    // We need access to CEPhysicsWorld to register object info - this is a design issue
+    // For now, we'll use the userPointer to identify heightfield partitions
     for (const auto& partition : m_heightfieldPartitions) {
         if (partition->terrainBody) {
             world->addRigidBody(partition->terrainBody, TERRAIN_COLLISION_GROUP, TERRAIN_COLLISION_MASK);
@@ -181,6 +183,7 @@ void CEBulletHeightfield::removePartitionsFromWorld(btDiscreteDynamicsWorld* wor
     
     std::cout << "🗑️ Removed heightfield partitions from physics world" << std::endl;
 }
+
 
 void CEBulletHeightfield::updateActivePartitions(const glm::vec3& queryPosition)
 {

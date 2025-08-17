@@ -26,10 +26,10 @@ uniform vec3 cameraPos;
 uniform float waterLevel;
 uniform sampler2D heightmapTexture;
 
-const float waveAmplitude = 12.0; // Increased amplitude for more pronounced waves
-const float waveFrequency = 10.0; // Increased frequency for more ripples
-const float waveSpeed = 2.0;     // Increased speed for faster ripples
-const float maxDistance = 128.0 * 30.0; // Maximum distance for wave animation
+const float waveAmplitude = 0.75; // Scaled down 16x for new world scale (was 12.0)
+const float waveFrequency = 0.625; // Scaled down 16x for new world scale (was 10.0)
+const float waveSpeed = 2.0;     // Keep same speed for natural animation
+const float maxDistance = 16.0 * 30.0; // Scaled down 16x for new world scale (was 128.0 * 30.0)
 
 void main()
 {
@@ -44,7 +44,7 @@ void main()
         float waterDepth = waterLevel - terrainHeight;
         
         // Depth-based wave attenuation: deeper water has larger waves, shallow water has smaller waves
-        float depthFactor = clamp(waterDepth / 100.0, 0.1, 1.0); // Minimum 10% wave height in shallow areas
+        float depthFactor = clamp(waterDepth / 6.25, 0.1, 1.0); // Scaled down 16x (was 100.0)
         float attenuatedAmplitude = waveAmplitude * depthFactor;
         
         // Only animate the main body of the surface and not the edges or shallow pools
@@ -63,13 +63,13 @@ void main()
     float edgeDistanceX = min(position.x, (terrainWidth * tileWidth) - position.x);
     float edgeDistanceY = min(position.z, (terrainHeight * tileWidth) - position.z);
     float minEdgeDistance = min(edgeDistanceX, edgeDistanceY);
-    float maxEdgeDistance = tileWidth * 60.0;
+    float maxEdgeDistance = tileWidth * 60.0; // This auto-scales with tileWidth
     EdgeFactor = clamp(minEdgeDistance / maxEdgeDistance, 0.0, 1.0);
     
     texCoord0 = texCoord;
     alpha0 = alpha;
 
-    // Calculate cloud texture coordinates
+    // Calculate cloud texture coordinates (auto-scales with tileWidth)
     cloudTexCoord = vec2(1.0 - (position.z / (tileWidth * 128.0)) - (time * 0.004), 1.0 - (position.x / (tileWidth * 128.0)) - (time * 0.004));
     
     // Calculate view direction for depth-dependent transparency

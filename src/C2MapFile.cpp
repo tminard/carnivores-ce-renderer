@@ -97,7 +97,7 @@ int C2MapFile::getHeight()
 
 float C2MapFile::getTileLength()
 {
-  return 256.f;
+  return 16.f; // Maximum physics optimization (1 tile = 4m, 4 units/meter)
 }
 
 int C2MapFile::getWaterTextureIDAt(int xy, int water_texture_id)
@@ -658,15 +658,39 @@ float C2MapFile::getHeightAtWorldPosition(const glm::vec3& worldPos) {
 */
 int C2MapFile::getObjectHeightForRadius(int x, int y, int R)
 {
-    x = (x<<8) + 128;
-    y = (y<<8) + 128;
-    float hr,h;
-    hr = getHeightAt((y*getWidth())+(x));
+    // Replicate original GetObjectH function exactly
+    // x,y are tile coordinates, R is radius in world units
     
-    h = getHeightAt( ((y)*getWidth()) + (x+R) ); if (h < hr && h != 0) hr = h;
-    h = getHeightAt( ((y)*getWidth()) + (x-R) ); if (h < hr && h != 0) hr = h;
-    h = getHeightAt( ((y+R)*getWidth()) + (x) ); if (h < hr && h != 0) hr = h;
-    h = getHeightAt( ((y-R)*getWidth()) + (x) ); if (h < hr && h != 0) hr = h;
+    // Convert tile coordinates to world coordinates (original: x = (x<<8) + 128)
+    // In original: 1 tile = 256 units, center at +128
+    // In CE: 1 tile = 16 units, so scale accordingly
+    float world_x = (x * 16.0f) + 8.0f; // Tile center in world coordinates
+    float world_y = (y * 16.0f) + 8.0f;
+    
+    // Scale radius to match our coordinate system
+    // Original radius was in 256-unit system, ours is 16-unit system
+    float scaled_R = R * (16.0f / 256.0f);
+    
+    // Find lowest height among center and 4 cardinal directions
+    float hr = getInterpolatedGroundHeight(world_x, world_y);
+    float h;
+    
+    h = getInterpolatedGroundHeight(world_x + scaled_R, world_y);
+    if (h < hr) hr = h;
+    
+    h = getInterpolatedGroundHeight(world_x - scaled_R, world_y); 
+    if (h < hr) hr = h;
+    
+    h = getInterpolatedGroundHeight(world_x, world_y + scaled_R);
+    if (h < hr) hr = h;
+    
+    h = getInterpolatedGroundHeight(world_x, world_y - scaled_R);
+    if (h < hr) hr = h;
+    
+    // Add 15 units like original (scaled to our coordinate system)
+    hr += 15.0f * (getHeightmapScale() / 64.0f); // Original added 15, scaled by ctHScale ratio
+    
+    // Return as integer (original divided by ctHScale, but we're already in scaled units)
     return (int)hr;
 }
 
@@ -721,7 +745,7 @@ glm::vec3 C2MapFile::getRandomLanding()
   int xy = (landing.y * getWidth()) + landing.x;
   return glm::vec3(
     (landing.x * getTileLength()) + (getTileLength() / 2),
-    getHeightAt(xy) + 1024.f,
+    getHeightAt(xy) + 64.f, // Scaled down 16x (was 1024.f)
     (landing.y * getTileLength()) + (getTileLength() / 2)
   );
 }

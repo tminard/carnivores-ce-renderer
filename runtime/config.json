@@ -1,9 +1,9 @@
 {
   "basePath": "../../runtime/cce/",
   "map": {
-    "type": "C1",
-    "map": "../game/c1/area3.map",
-    "rsc": "../game/c1/area3.rsc"
+    "type": "C2",
+    "map": "../game/c2/area1.map",
+    "rsc": "../game/c2/area1.rsc"
   },
   "video": {
     "fullscreen": false
@@ -23,9 +23,9 @@
        },
        "projectiles": {
          "muzzleFlashFrame": 2,
-         "muzzleOffset": [0.0, 0.0, 0.5],
-         "muzzleVelocity": 100000.0,
-         "maxRange": 150000.0,
+         "muzzleOffset": [0.0, 0.0, 8.0],
+         "muzzleVelocity": 4000.0,
+         "maxRange": 50000.0,
          "damage": 45,
          "projectileType": "ballistic"
        }

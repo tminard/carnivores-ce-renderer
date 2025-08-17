@@ -84,7 +84,7 @@ void main()
         
         // Basic fog calculation
         float dist = gl_FragCoord.z / gl_FragCoord.w;
-        float min_distance = 256.0 * 6.0;
+        float min_distance = 16.0 * 6.0;
         float max_distance = view_distance;
         float fogFactor = 0.0;
         if (dist > min_distance) {
@@ -99,7 +99,7 @@ void main()
     
     // Normal water processing continues below
     // Ambient and fade
-    float min_distance = 256.0 * 6.0; // Start fog
+    float min_distance = 16.0 * 6.0; // Start fog
     float max_distance = view_distance;
     float fogFactor = 0.0;
     float dist = gl_FragCoord.z / gl_FragCoord.w;

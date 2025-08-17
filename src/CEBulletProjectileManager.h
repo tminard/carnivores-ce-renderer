@@ -33,6 +33,9 @@ private:
     void handleImpact(const CEBulletProjectile& projectile);
     void playImpactAudio(const glm::vec3& position, const std::string& surfaceType);
     
+    // Face intersection processing
+    void processFaceIntersections(CEBulletProjectile& projectile);
+    
 public:
     CEBulletProjectileManager(C2MapFile* map, C2MapRscFile* mapRsc, LocalAudioManager* audioManager);
     ~CEBulletProjectileManager();

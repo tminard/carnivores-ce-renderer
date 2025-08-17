@@ -62,7 +62,7 @@ CERemotePlayerController::CERemotePlayerController(std::shared_ptr<LocalAudioMan
   // the original geometry.
   m_geo = std::make_unique<CEGeometry>(m_loader->getVertices(), m_loader->getIndices(), carFile->getGeometry()->getTexture().lock(), "dinosaur");
   
-  Transform transform(glm::vec3(0.f), glm::vec3(0, glm::radians(180.f), 0), glm::vec3(1.f));
+  Transform transform(glm::vec3(0.f), glm::vec3(0, glm::radians(180.f), 0), glm::vec3(0.0625f)); // Scaled down 16x
   std::vector<glm::mat4> model = { transform.GetStaticModel() };
   
   // Only ever ONE instance!
@@ -153,9 +153,9 @@ void CERemotePlayerController::updateWithObserver(double currentTime, Transform 
     if (audioSrc != nullptr && m_geo->GetCurrentFrame() == 0 && !audioSrc->isPlaying()) {
       audioSrc->setPosition(m_camera.GetPosition());
       audioSrc->setLooped(false);
-      audioSrc->setMaxDistance(256*60);
+      audioSrc->setMaxDistance(16*60); // Scaled down 16x (was 256*60)
       audioSrc->setGain(2.f);
-      audioSrc->setClampDistance(256*6);
+      audioSrc->setClampDistance(16*6); // Scaled down 16x (was 256*6)
       m_g_audio_manager->play(audioSrc);
     }
     m_animation_last_update_at = currentTime;
@@ -200,7 +200,7 @@ void CERemotePlayerController::uploadStateToHardware()
   
   // Apply terrain alignment angles (fix both pitch and roll inversion)
   glm::vec3 rotation(-pitch, yaw, -roll); // Negate both pitch and roll to fix inversions
-  Transform transform(position, rotation, glm::vec3(1.f));
+  Transform transform(position, rotation, glm::vec3(0.0625f)); // Scaled down 16x
   
   // Update instance data
   std::vector<glm::mat4> model = { transform.GetStaticModel() };

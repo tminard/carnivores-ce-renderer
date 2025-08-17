@@ -109,9 +109,11 @@ void TerrainRenderer::preloadObjectMap()
       }
       
       if (w_obj->getObjectInfo()->flags & objectPLACEGROUND) {
-        // Note: original implementation gets the lowest height of a quad and uses that.
-        float map_height = m_cmap_data_weak->getPlaceGroundHeight(x, y);
-        object_height = map_height - (w_obj->getObjectInfo()->YLo / 2.f); // Copies funny offsetting in original source - key is to avoid z-fighting without exposing gaps
+        // Use original algorithm: GetObjectH(x, y, GrRad) - finds lowest height within radius
+        // Original: HMapO[y][x] = GetObjectH(x,y, MObjects[ob].info.GrRad);
+        // Original rendering: v[0].y = (float)(HMapO[y][x]) * ctHScale - CameraY;
+        float objectH = m_cmap_data_weak->getObjectHeightForRadius(x, y, w_obj->getObjectInfo()->GrRad);
+        object_height = objectH; // Already scaled correctly in getObjectHeightForRadius
       } else {
         object_height = this->m_cmap_data_weak->getObjectHeightAt(xy);
       }
@@ -135,10 +137,11 @@ void TerrainRenderer::preloadObjectMap()
       
       glm::vec3 world_position = glm::vec3(((float)(x)*map_tile_length) + map_tile_length, object_height, ((float)(y)*map_tile_length) + map_tile_length);
       
+      // Scale objects down 16x to match new world scale 
       Transform transform_initial(
                                   world_position,
                                   rotation,
-                                  glm::vec3(1.f, 1.f, 1.f)
+                                  glm::vec3(0.0625f, 0.0625f, 0.0625f) // 1/16 scale
                                   );
 
       w_obj->addFar(transform_initial);
@@ -1503,12 +1506,12 @@ void TerrainRenderer::createFogVolumeGeometry(_FogVolume& fog_volume, int num_la
   
   std::cout << "Fog altitude after ctHScale (" << m_cmap_data_weak->getHeightmapScale() << "): " << fogAltitudeOffset << std::endl;
   
-  // Ensure reasonable altitude offset (now that it's properly scaled)
-  if (fogAltitudeOffset > 500.0f) {
-    fogAltitudeOffset = 200.0f; // Cap altitude for visibility
+  // Ensure reasonable altitude offset (scaled for new world scale)
+  if (fogAltitudeOffset > 31.25f) { // Scaled down 16x (was 500.0f)
+    fogAltitudeOffset = 12.5f; // Scaled down 16x (was 200.0f)
   }
-  if (fogAltitudeOffset < -100.0f) {
-    fogAltitudeOffset = 50.0f; // Ensure fog is above ground
+  if (fogAltitudeOffset < -6.25f) { // Scaled down 16x (was -100.0f)
+    fogAltitudeOffset = 3.125f; // Scaled down 16x (was 50.0f)
   }
   
   // Create fog like original Carnivores: infinite fog above YBegin level
@@ -1521,7 +1524,8 @@ void TerrainRenderer::createFogVolumeGeometry(_FogVolume& fog_volume, int num_la
     fogStartHeight += (-48.0f * m_cmap_data_weak->getHeightmapScale()); // -48 * ctHScale
   }
   // C2 uses no offset - fog starts exactly at YBegin*ctHScale as per original C2 source
-  float fogTopHeight = fogStartHeight + 200.0f; // Create reasonable bounded volume for rendering
+  float fogThickness = (m_cmap_data_weak->m_type == CEMapType::C1) ? 25.0f : 12.5f; // C1 needs thicker fog due to height scale differences
+  float fogTopHeight = fogStartHeight + fogThickness;
   float totalFogHeight = fogTopHeight - fogStartHeight;
   float layerThickness = totalFogHeight / num_layers; // Distribute layers from fog start upward
   

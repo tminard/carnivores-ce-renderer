@@ -126,6 +126,16 @@ public:
     // Check if a specific rigid body has any contacts
     bool hasContacts(btRigidBody* body);
     
+    // Get contact information with object filtering for visible geometry
+    struct ContactInfo {
+        bool hasValidContact = false;
+        glm::vec3 contactPoint;
+        glm::vec3 contactNormal;
+        CollisionObjectInfo objectInfo;
+        btRigidBody* contactedBody = nullptr;
+    };
+    ContactInfo getFilteredContacts(btRigidBody* body);
+    
     // Get the map reference for tile calculations
     C2MapFile* getMapFile() const { return m_mapFile; }
     

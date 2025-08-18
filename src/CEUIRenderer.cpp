@@ -276,10 +276,10 @@ void CEUIRenderer::toggleWeapon()
 
 void CEUIRenderer::fireWeapon()
 {
-    // Only fire if weapon is fully drawn
-    if (m_weaponState == WeaponState::DRAWN) {
+    // Only fire if weapon is fully drawn or currently firing (allow rapid fire)
+    if (m_weaponState == WeaponState::DRAWN || m_weaponState == WeaponState::FIRING) {
         m_weaponState = WeaponState::FIRING;
-        setWeaponAnimation(m_weaponFireAnimation, false); // Don't loop fire animation
+        setWeaponAnimation(m_weaponFireAnimation, false); // Don't loop fire animation - this resets the animation
         
         // Spawn ballistic projectile if system is configured
         if (m_projectileManager && m_gameCamera) {

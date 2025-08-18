@@ -1,9 +1,9 @@
 {
   "basePath": "../../runtime/cce/",
   "map": {
-    "type": "C2",
-    "map": "../game/ice/area3.map",
-    "rsc": "../game/ice/area3.rsc"
+    "type": "C1",
+    "map": "../game/c1/area1.map",
+    "rsc": "../game/c1/area1.rsc"
   },
   "video": {
     "fullscreen": false
@@ -15,6 +15,7 @@
   "weapons": {
     "primary": {
       "file": "game/models/rifle.car",
+      "rounds": 12,
       "animations": {
          "draw": "Rf2_get",
          "holster": "Rf2_put",

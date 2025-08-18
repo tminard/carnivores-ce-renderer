@@ -17,6 +17,10 @@
 
 #include <iostream>
 #include <algorithm>
+#include <fstream>
+#include <filesystem>
+#include <random>
+#include <nlohmann/json.hpp>
 
 // Forward declarations for impact event logging  
 extern void addImpactEvent(const glm::vec3& location, const std::string& surfaceType, float distance, float damage, const std::string& impactType);
@@ -26,6 +30,8 @@ extern void addFaceIntersectionEvent(const glm::vec3& location, const std::strin
 extern void addDebugSphere(const glm::vec3& position, float radius, const glm::vec3& color, const std::string& label);
 
 using libAF2::Sound;
+namespace fs = std::filesystem;
+using json = nlohmann::json;
 
 CEBulletProjectileManager::CEBulletProjectileManager(C2MapFile* map, C2MapRscFile* mapRsc, LocalAudioManager* audioManager)
     : m_map(map), m_mapRsc(mapRsc), m_audioManager(audioManager)
@@ -35,6 +41,9 @@ CEBulletProjectileManager::CEBulletProjectileManager(C2MapFile* map, C2MapRscFil
     
     // Initialize particle system for impact effects
     m_particleSystem.reset(new CEParticleSystem(2000)); // Max 2000 particles for intense effects
+    
+    // Load impact sound configuration from config.json
+    loadImpactSoundConfig();
     
     // Bullet Physics projectile system initialized
 }
@@ -48,6 +57,55 @@ CEBulletProjectileManager::~CEBulletProjectileManager()
         }
     }
     m_activeProjectiles.clear();
+}
+
+void CEBulletProjectileManager::loadImpactSoundConfig()
+{
+    try {
+        std::ifstream f("config.json");
+        if (!f.is_open()) {
+            std::cout << "Warning: Could not open config.json for impact sound configuration" << std::endl;
+            return;
+        }
+        
+        json data = json::parse(f);
+        
+        // Get base path from config
+        fs::path basePath = fs::path(data["basePath"].get<std::string>());
+        
+        // Load impact sound paths if they exist
+        if (data.contains("impactSounds")) {
+            const auto& impactSounds = data["impactSounds"];
+            
+            if (impactSounds.contains("terrain")) {
+                for (const auto& soundFile : impactSounds["terrain"]) {
+                    std::string fullPath = (basePath / soundFile.get<std::string>()).string();
+                    m_terrainSoundPaths.push_back(fullPath);
+                }
+                std::cout << "🔊 Loaded " << m_terrainSoundPaths.size() << " terrain impact sounds" << std::endl;
+            }
+            
+            if (impactSounds.contains("object")) {
+                for (const auto& soundFile : impactSounds["object"]) {
+                    std::string fullPath = (basePath / soundFile.get<std::string>()).string();
+                    m_objectSoundPaths.push_back(fullPath);
+                }
+                std::cout << "🔊 Loaded " << m_objectSoundPaths.size() << " object impact sounds" << std::endl;
+            }
+            
+            if (impactSounds.contains("water")) {
+                for (const auto& soundFile : impactSounds["water"]) {
+                    std::string fullPath = (basePath / soundFile.get<std::string>()).string();
+                    m_waterSoundPaths.push_back(fullPath);
+                }
+                std::cout << "🔊 Loaded " << m_waterSoundPaths.size() << " water impact sounds" << std::endl;
+            }
+        } else {
+            std::cout << "No impact sounds configuration found in config.json" << std::endl;
+        }
+    } catch (const std::exception& e) {
+        std::cout << "Error loading impact sound configuration: " << e.what() << std::endl;
+    }
 }
 
 void CEBulletProjectileManager::spawnProjectile(const glm::vec3& origin, const glm::vec3& direction, 
@@ -178,14 +236,44 @@ void CEBulletProjectileManager::playImpactAudio(const glm::vec3& position, const
         return;
     }
     
-    // Audio is handled internally - no need for debug output
+    // Determine which sound array to use based on surface type
+    std::vector<std::string>* soundPaths = nullptr;
+    if (surfaceType == "terrain" || surfaceType == "ground") {
+        soundPaths = &m_terrainSoundPaths;
+    } else if (surfaceType == "object") {
+        soundPaths = &m_objectSoundPaths;
+    } else if (surfaceType == "water") {
+        soundPaths = &m_waterSoundPaths;
+    }
     
-    // TODO: Load dedicated impact sound files and play them
-    // auto impactSound = std::make_shared<Sound>("path/to/impact.wav");
-    // auto audioSrc = std::make_shared<CEAudioSource>(impactSound);
-    // audioSrc->setPosition(position);
-    // audioSrc->setGain(1.0f);
-    // m_audioManager->play(audioSrc);
+    // Only play sound if sounds are configured for this surface type
+    if (soundPaths && !soundPaths->empty()) {
+        // Randomly select a sound from the array
+        static std::random_device rd;
+        static std::mt19937 gen(rd());
+        std::uniform_int_distribution<> dis(0, soundPaths->size() - 1);
+        int randomIndex = dis(gen);
+        
+        const std::string& soundPath = (*soundPaths)[randomIndex];
+        
+        // Only play if the file exists
+        if (fs::exists(soundPath)) {
+            try {
+                auto impactSound = std::make_shared<Sound>(soundPath);
+                auto audioSrc = std::make_shared<CEAudioSource>(impactSound);
+                audioSrc->setPosition(position);
+                audioSrc->setGain(0.3f); // Moderate volume for impact sounds
+                m_audioManager->play(audioSrc);
+                
+                std::cout << "🔊 Playing " << surfaceType << " impact sound [" << (randomIndex + 1) << "/" << soundPaths->size() << "]: " << soundPath << std::endl;
+            } catch (const std::exception& e) {
+                std::cout << "Error playing impact sound: " << e.what() << std::endl;
+            }
+        } else {
+            std::cout << "Warning: Impact sound file not found: " << soundPath << std::endl;
+        }
+    }
+    // If no sounds configured for this surface type, fail silently
 }
 
 void CEBulletProjectileManager::renderParticles(Camera* camera)

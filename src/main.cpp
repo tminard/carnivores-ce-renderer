@@ -981,7 +981,7 @@ int main(int argc, const char * argv[])
   std::unique_ptr<CEBulletProjectileManager> projectileManager;
   
   // Load audio assets
-  std::shared_ptr<Sound> die = std::make_shared<Sound>(basePath / "game" / "SOUNDFX" / "HUM_DIE1.WAV");
+  std::shared_ptr<Sound> die = std::make_shared<Sound>(basePath / "game" / "audio" / "HUM_DIE1.WAV");
   std::shared_ptr<CEAudioSource> dieAudioSrc = std::make_shared<CEAudioSource>(die);
   dieAudioSrc->setLooped(false);
   dieAudioSrc->setGain(2.0f);

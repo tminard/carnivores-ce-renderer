@@ -2,8 +2,8 @@
   "basePath": "../../runtime/cce/",
   "map": {
     "type": "C1",
-    "map": "../game/c1/area1.map",
-    "rsc": "../game/c1/area1.rsc"
+    "map": "../game/c1/area2.map",
+    "rsc": "../game/c1/area2.rsc"
   },
   "video": {
     "fullscreen": false
@@ -33,6 +33,23 @@
          "sway": 1.8
        }
     }
+  },
+  "impactSounds": {
+    "terrain": [
+      "../../runtime/cce/game/audio/IMPACT/GROUND1.wav",
+      "../../runtime/cce/game/audio/IMPACT/GROUND2.wav",
+      "../../runtime/cce/game/audio/IMPACT/GROUND3.wav"
+    ],
+    "object": [
+      "../../runtime/cce/game/audio/IMPACT/MODEL1.wav",
+      "../../runtime/cce/game/audio/IMPACT/MODEL2.wav",
+      "../../runtime/cce/game/audio/IMPACT/MODEL3.wav"
+    ],
+    "water": [
+      "../../runtime/cce/game/audio/IMPACT/WATER1.wav",
+      "../../runtime/cce/game/audio/IMPACT/WATER2.wav",
+      "../../runtime/cce/game/audio/IMPACT/WATER3.wav"
+    ]
   },
   "ui": {
     "compass": "game/models/compas.car"

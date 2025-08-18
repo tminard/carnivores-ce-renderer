@@ -31,9 +31,15 @@ private:
     LocalAudioManager* m_audioManager;
     std::unique_ptr<CEParticleSystem> m_particleSystem;
     
+    // Impact sound configuration - arrays for randomization
+    std::vector<std::string> m_terrainSoundPaths;
+    std::vector<std::string> m_objectSoundPaths;
+    std::vector<std::string> m_waterSoundPaths;
+    
     // Impact handling
     void handleImpact(const CEBulletProjectile& projectile);
     void playImpactAudio(const glm::vec3& position, const std::string& surfaceType);
+    void loadImpactSoundConfig();
     
     // Face intersection processing
     void processFaceIntersections(CEBulletProjectile& projectile);

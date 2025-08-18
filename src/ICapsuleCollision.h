@@ -36,6 +36,15 @@ public:
     virtual bool checkMovement(const glm::vec3& from, const glm::vec3& to) const = 0;
     
     /**
+     * Check movement and get collision information for sliding.
+     * @param from Starting position
+     * @param to Target position
+     * @param outCollisionNormal Normal vector of collision surface (only valid if collision detected)
+     * @return true if movement is clear, false if blocked by collision
+     */
+    virtual bool checkMovementWithNormal(const glm::vec3& from, const glm::vec3& to, glm::vec3& outCollisionNormal) const = 0;
+    
+    /**
      * Set the dimensions of the collision capsule.
      * @param radius Capsule radius
      * @param height Capsule height (cylindrical part, not including hemispheres)

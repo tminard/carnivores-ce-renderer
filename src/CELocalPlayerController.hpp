@@ -35,6 +35,9 @@ private:
   float getPredictiveHeight(const glm::vec3& currentPos, const glm::vec3& movementDir, float speed, float deltaTime);
   float getAdaptiveSmoothingFactor(float heightDifference, float speed, float slopeAngle);
   
+  // Collision sliding helpers
+  glm::vec3 calculateSlideMovement(const glm::vec3& intendedMovement, const glm::vec3& collisionNormal) const;
+  
   const float maxSlopeAngle = 45.0f;
   float m_previousHeight = 0.0f;
   

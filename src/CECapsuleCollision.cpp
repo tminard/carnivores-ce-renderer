@@ -206,6 +206,43 @@ bool CECapsuleCollision::checkMovement(const glm::vec3& from, const glm::vec3& t
     return !sweepCallback.hasHit();
 }
 
+bool CECapsuleCollision::checkMovementWithNormal(const glm::vec3& from, const glm::vec3& to, glm::vec3& outCollisionNormal) const
+{
+    if (!m_enabled || !m_dynamicsWorld) {
+        return true; // Allow movement if disabled
+    }
+    
+    // Use convex sweep test to check if movement is clear
+    btTransform fromTransform, toTransform;
+    fromTransform.setIdentity();
+    toTransform.setIdentity();
+    fromTransform.setOrigin(glmToBtVector3(from));
+    toTransform.setOrigin(glmToBtVector3(to));
+    
+    // Create a temporary capsule shape for the sweep test
+    btCapsuleShape testShape(m_radius, m_height);
+    
+    // Perform convex sweep test
+    btCollisionWorld::ClosestConvexResultCallback sweepCallback(
+        glmToBtVector3(from), 
+        glmToBtVector3(to)
+    );
+    
+    // Set collision filtering to match our capsule body
+    sweepCallback.m_collisionFilterGroup = PLAYER_COLLISION_GROUP;
+    sweepCallback.m_collisionFilterMask = PLAYER_COLLISION_MASK;
+    
+    m_dynamicsWorld->convexSweepTest(&testShape, fromTransform, toTransform, sweepCallback);
+    
+    // If collision detected, store the normal
+    if (sweepCallback.hasHit()) {
+        outCollisionNormal = btVector3ToGlm(sweepCallback.m_hitNormalWorld);
+    }
+    
+    // Return true if no collision (movement is allowed)
+    return !sweepCallback.hasHit();
+}
+
 void CECapsuleCollision::setDimensions(float radius, float height)
 {
     if (m_radius == radius && m_height == height) {

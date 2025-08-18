@@ -369,8 +369,10 @@ void CELocalPlayerController::move(double currentTime, double deltaTime, bool fo
                                 predictiveHeight < currentWorldHeight ||
                                 abs(predictiveHeight - currentWorldHeight) < maxClimbHeight) && !outOfBounds;
   
-  // Object collision validation (new logic)
+  // Object collision validation with sliding (enhanced logic)
   bool objectAllowsMovement = true;
+  glm::vec3 finalMovementPos = pos; // This might get adjusted for sliding
+  
   if (hasCapsuleCollision()) {
     // Test collision from current position to new position
     glm::vec3 currentCapsulePos = currentPos;
@@ -379,12 +381,34 @@ void CELocalPlayerController::move(double currentTime, double deltaTime, bool fo
     glm::vec3 targetCapsulePos = pos;
     targetCapsulePos.y -= m_player_height;
     
-    objectAllowsMovement = m_capsuleCollision->checkMovement(currentCapsulePos, targetCapsulePos);
+    glm::vec3 collisionNormal;
+    objectAllowsMovement = m_capsuleCollision->checkMovementWithNormal(currentCapsulePos, targetCapsulePos, collisionNormal);
     
-    // Debug output for collision testing
-    static int collisionDebugCounter = 0;
-    if (!objectAllowsMovement && (collisionDebugCounter++ % 30 == 0)) {
-      std::cout << "Object collision detected - movement blocked" << std::endl;
+    // If collision detected, try sliding movement
+    if (!objectAllowsMovement) {
+      glm::vec3 intendedMovement = targetCapsulePos - currentCapsulePos;
+      glm::vec3 slideMovement = calculateSlideMovement(intendedMovement, collisionNormal);
+      
+      // Test if sliding movement is possible
+      glm::vec3 slideCapsulePos = currentCapsulePos + slideMovement;
+      if (m_capsuleCollision->checkMovement(currentCapsulePos, slideCapsulePos)) {
+        // Sliding successful - update final position
+        finalMovementPos = currentPos + slideMovement;
+        finalMovementPos.y += m_player_height; // Convert back to camera position
+        objectAllowsMovement = true; // Allow sliding movement
+        
+        // Debug output for sliding
+        static int slideDebugCounter = 0;
+        if (slideDebugCounter++ % 30 == 0) {
+          std::cout << "Object collision - sliding along surface" << std::endl;
+        }
+      } else {
+        // Sliding also blocked - no movement possible
+        static int collisionDebugCounter = 0;
+        if (collisionDebugCounter++ % 30 == 0) {
+          std::cout << "Object collision detected - movement completely blocked" << std::endl;
+        }
+      }
     }
   }
 
@@ -392,14 +416,14 @@ void CELocalPlayerController::move(double currentTime, double deltaTime, bool fo
   if (terrainAllowsMovement && objectAllowsMovement) {
     
     if (!m_is_jumping) {
-      pos.y = smoothedHeight + m_player_height + bobbleOffset;
+      finalMovementPos.y = smoothedHeight + m_player_height + bobbleOffset;
     }
 
-    this->m_camera.SetPos(pos);
+    this->m_camera.SetPos(finalMovementPos);
     
     // Sync capsule collision position with successful movement
     if (hasCapsuleCollision()) {
-      glm::vec3 capsulePos = pos;
+      glm::vec3 capsulePos = finalMovementPos;
       capsulePos.y -= m_player_height;
       m_capsuleCollision->updatePosition(capsulePos);
     }
@@ -573,4 +597,27 @@ ICapsuleCollision* CELocalPlayerController::getCapsuleCollision() const
 bool CELocalPlayerController::hasCapsuleCollision() const
 {
   return m_capsuleCollision != nullptr && m_capsuleCollision->isEnabled();
+}
+
+// Collision sliding helpers
+
+glm::vec3 CELocalPlayerController::calculateSlideMovement(const glm::vec3& intendedMovement, const glm::vec3& collisionNormal) const
+{
+  // Project the intended movement onto the collision surface
+  // This removes the component of movement that would go "into" the surface
+  glm::vec3 slidingMovement = intendedMovement - glm::dot(intendedMovement, collisionNormal) * collisionNormal;
+  
+  // Keep only the sliding component, scaled to preserve movement magnitude along surface
+  float originalLength = glm::length(intendedMovement);
+  float slidingLength = glm::length(slidingMovement);
+  
+  if (slidingLength > 0.0001f) { // Avoid division by zero
+    // Preserve original movement speed in the sliding direction
+    slidingMovement = glm::normalize(slidingMovement) * originalLength * 0.8f; // 0.8f for slight friction effect
+  } else {
+    // If movement is perfectly perpendicular to surface, no sliding
+    slidingMovement = glm::vec3(0.0f);
+  }
+  
+  return slidingMovement;
 }

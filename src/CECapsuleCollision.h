@@ -70,6 +70,7 @@ public:
     // ICapsuleCollision interface implementation
     void updatePosition(const glm::vec3& position) override;
     bool checkMovement(const glm::vec3& from, const glm::vec3& to) const override;
+    bool checkMovementWithNormal(const glm::vec3& from, const glm::vec3& to, glm::vec3& outCollisionNormal) const override;
     void setDimensions(float radius, float height) override;
     glm::vec3 getPosition() const override;
     void setEnabled(bool enabled) override;

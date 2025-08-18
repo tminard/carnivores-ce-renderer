@@ -56,6 +56,12 @@ private:
     float m_muzzleVelocity;
     glm::vec3 m_muzzleOffset;
     float m_projectileDamage;
+    float m_recoilStrength;
+    float m_swayStrength;
+    
+    // Sway state variables
+    double m_swayTime;
+    glm::vec2 m_swayOffset;
     
     void initializeUI2DCamera();
     void renderCompassGeometry(C2CarFile* compass, Transform& uiTransform);
@@ -96,10 +102,16 @@ public:
     void setGameCamera(Camera* camera);
     void configureProjectiles(float muzzleVelocity, const glm::vec3& muzzleOffset, float damage);
     void configureAmmo(int maxRounds);
+    void configureRecoil(float recoilStrength);
+    void configureSway(float swayStrength);
+    void updateSway(double currentTime, float playerVelocityMagnitude);
     
     // Ammo information getters
     int getCurrentAmmo() const { return m_weaponCurrentRounds; }
     int getMaxAmmo() const { return m_weaponMaxRounds; }
+    
+    // Sway information getter
+    glm::vec2 getCurrentSwayOffset() const { return m_swayOffset; }
     
     // Set up 2D rendering state
     void begin2DRendering();

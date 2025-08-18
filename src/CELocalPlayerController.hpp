@@ -99,6 +99,9 @@ public:
   
   bool isAlive(double currentTime);
   
+  // Movement information getters
+  float getCurrentSpeed() const { return m_current_speed; }
+  
   // Capsule collision management
   
   /**

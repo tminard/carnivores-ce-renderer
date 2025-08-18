@@ -746,6 +746,8 @@ int main(int argc, const char * argv[])
   float muzzleVelocity = 800.0f;
   glm::vec3 muzzleOffset(0.0f, 0.0f, 0.5f);
   float projectileDamage = 45.0f;
+  float weaponRecoil = 1.0f; // Default recoil strength
+  float weaponSway = 0.0f; // Default sway strength
   
   // Ammo configuration
   int weaponMaxRounds = 30; // Default ammo capacity
@@ -796,6 +798,12 @@ int main(int argc, const char * argv[])
         if (projectiles.contains("damage") && projectiles["damage"].is_number()) {
           projectileDamage = projectiles["damage"].get<float>();
         }
+        if (projectiles.contains("recoil") && projectiles["recoil"].is_number()) {
+          weaponRecoil = projectiles["recoil"].get<float>();
+        }
+        if (projectiles.contains("sway") && projectiles["sway"].is_number()) {
+          weaponSway = projectiles["sway"].get<float>();
+        }
       }
     }
   }
@@ -817,6 +825,8 @@ int main(int argc, const char * argv[])
     std::cout << "Muzzle Velocity: " << muzzleVelocity << " m/s" << std::endl;
     std::cout << "Muzzle Offset: [" << muzzleOffset.x << ", " << muzzleOffset.y << ", " << muzzleOffset.z << "]" << std::endl;
     std::cout << "Projectile Damage: " << projectileDamage << std::endl;
+    std::cout << "Weapon Recoil: " << weaponRecoil << std::endl;
+    std::cout << "Weapon Sway: " << weaponSway << std::endl;
     std::cout << "Weapon Rounds: " << weaponMaxRounds << std::endl;
   }
   
@@ -1053,6 +1063,8 @@ int main(int argc, const char * argv[])
       uiRenderer->setGameCamera(g_player_controller->getCamera());
       uiRenderer->configureProjectiles(muzzleVelocity, muzzleOffset, projectileDamage);
       uiRenderer->configureAmmo(weaponMaxRounds);
+      uiRenderer->configureRecoil(weaponRecoil);
+      uiRenderer->configureSway(weaponSway);
     }
     
     std::cout << "UI renderer initialized" << std::endl;
@@ -1485,6 +1497,10 @@ int main(int argc, const char * argv[])
       if (compass) {
         uiRenderer->renderCompass(compass.get(), camera);
       }
+      
+      // Update weapon sway based on player movement
+      float playerSpeed = g_player_controller->getCurrentSpeed();
+      uiRenderer->updateSway(currentTime, playerSpeed);
       
       // Render weapon if available
       if (primaryWeapon) {

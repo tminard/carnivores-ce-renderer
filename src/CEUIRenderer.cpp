@@ -21,6 +21,8 @@
 #include <nlohmann/json.hpp>
 #include <filesystem>
 #include <sstream>
+#include <cstdlib>
+#include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
 
 
@@ -34,7 +36,8 @@ CEUIRenderer::CEUIRenderer(int screenWidth, int screenHeight)
       m_weaponAnimationLoop(false), m_weaponGeometryInitialized(false), 
       m_weaponMaxRounds(30), m_weaponCurrentRounds(30), m_audioManager(nullptr),
       m_projectileManager(nullptr), m_gameCamera(nullptr), m_muzzleVelocity(800.0f),
-      m_muzzleOffset(0.0f, 0.0f, 0.5f), m_projectileDamage(45.0f),
+      m_muzzleOffset(0.0f, 0.0f, 0.5f), m_projectileDamage(45.0f), m_recoilStrength(1.0f),
+      m_swayStrength(0.0f), m_swayTime(0.0), m_swayOffset(0.0f, 0.0f),
       m_textVAO(0), m_textVBO(0), m_textInitialized(false)
 {
     setScreenSize(screenWidth, screenHeight);
@@ -290,6 +293,37 @@ void CEUIRenderer::fireWeapon()
         m_weaponCurrentRounds--;
         std::cout << "Shot fired! Ammo remaining: " << m_weaponCurrentRounds << "/" << m_weaponMaxRounds << std::endl;
         
+        // Apply recoil to camera by modifying global angle variables
+        if (m_gameCamera && m_recoilStrength > 0.0f) {
+            // Random recoil pattern: primarily upward with slight horizontal variation
+            float verticalRecoilDegrees = m_recoilStrength * (0.8f + (rand() % 40) / 100.0f); // 80-120% of base recoil
+            float horizontalRecoilDegrees = m_recoilStrength * 0.3f * ((rand() % 200 - 100) / 100.0f); // ±30% horizontal
+            
+            // Apply recoil by modifying external angle variables (defined in LocalInputManager.cpp)
+            extern float verticalAngle;
+            extern float horizontalAngle;
+            
+            // Apply upward recoil (increase vertical angle for upward kick)
+            verticalAngle += verticalRecoilDegrees;
+            horizontalAngle += horizontalRecoilDegrees;
+            
+            // Clamp vertical angle to prevent over-rotation
+            if (verticalAngle > 87.0f) verticalAngle = 87.0f;
+            if (verticalAngle < -85.0f) verticalAngle = -85.0f;
+            
+            // Update camera direction based on modified angles
+            glm::vec3 direction(
+                cos(glm::radians(verticalAngle)) * sin(glm::radians(horizontalAngle)),
+                sin(glm::radians(verticalAngle)),
+                cos(glm::radians(verticalAngle)) * cos(glm::radians(horizontalAngle))
+            );
+            
+            // Apply the new direction to camera via player controller
+            // Note: We need access to the player controller for this to work properly
+            // For now, we'll apply direction directly to the camera's LookAt
+            m_gameCamera->SetLookAt(direction);
+        }
+        
         // Spawn ballistic projectile if system is configured
         if (m_projectileManager && m_gameCamera) {
             // Calculate projectile origin from center of screen (exact line of sight)
@@ -300,12 +334,36 @@ void CEUIRenderer::fireWeapon()
             // and fire directly where the camera is looking (center of screen)
             glm::vec3 muzzlePosition = cameraPos + (cameraForward * m_muzzleOffset.z);
             
-            // Fire direction is exactly where the camera is looking (center of screen)
+            // Apply sway to fire direction for weapon accuracy
             glm::vec3 fireDirection = cameraForward;
             
-            // Debug: Log projectile spawn info
-            std::cout << "🎯 Projectile spawned at [" << muzzlePosition.x << ", " << muzzlePosition.y << ", " << muzzlePosition.z 
-                      << "] direction [" << fireDirection.x << ", " << fireDirection.y << ", " << fireDirection.z << "]" << std::endl;
+            // Apply sway deviation to the fire direction
+            if (m_swayStrength > 0.0f && m_weaponDrawn) {
+                // Convert sway offset to angular deviation (more pronounced than camera sway)
+                float swayAngleX = m_swayOffset.x * 0.3f; // Horizontal sway in degrees
+                float swayAngleY = m_swayOffset.y * 0.3f; // Vertical sway in degrees
+                
+                // Get camera's right and up vectors for proper sway application
+                glm::vec3 cameraRight = m_gameCamera->GetRight();
+                glm::vec3 cameraUp = m_gameCamera->GetUp();
+                
+                // Apply horizontal and vertical sway to fire direction
+                fireDirection += cameraRight * tan(glm::radians(swayAngleX));
+                fireDirection += cameraUp * tan(glm::radians(swayAngleY));
+                
+                // Normalize the direction vector
+                fireDirection = glm::normalize(fireDirection);
+            }
+            
+            // Debug: Log projectile spawn info with sway
+            if (m_swayStrength > 0.0f && m_weaponDrawn) {
+                std::cout << "🎯 Projectile spawned with sway offset [" << m_swayOffset.x << ", " << m_swayOffset.y 
+                          << "] at [" << muzzlePosition.x << ", " << muzzlePosition.y << ", " << muzzlePosition.z 
+                          << "] direction [" << fireDirection.x << ", " << fireDirection.y << ", " << fireDirection.z << "]" << std::endl;
+            } else {
+                std::cout << "🎯 Projectile spawned at [" << muzzlePosition.x << ", " << muzzlePosition.y << ", " << muzzlePosition.z 
+                          << "] direction [" << fireDirection.x << ", " << fireDirection.y << ", " << fireDirection.z << "]" << std::endl;
+            }
             
             // Spawn ballistic projectile
             m_projectileManager->spawnProjectile(muzzlePosition, fireDirection, 
@@ -404,7 +462,21 @@ void CEUIRenderer::renderWeaponGeometry(C2CarFile* weapon, Transform& weaponTran
     // Position weapon in world space for perspective view
     glm::vec3 weaponWorldPos(0.f, 0.f, 0.f);  // Offset for first-person positioning
     glm::mat4 weaponTranslation = glm::translate(glm::mat4(1.0f), weaponWorldPos);
-    glm::mat4 model = weaponTranslation * weaponTransform.GetStaticModel();
+    
+    // Apply sway rotation to weapon visual
+    glm::mat4 swayRotation = glm::mat4(1.0f);
+    if (m_swayStrength > 0.0f && m_weaponDrawn) {
+        // Apply visual sway to weapon (less pronounced than accuracy effect)
+        float visualSwayX = m_swayOffset.x * 0.1f; // Visual horizontal sway in degrees
+        float visualSwayY = m_swayOffset.y * 0.1f; // Visual vertical sway in degrees
+        
+        // Create rotation matrices for sway
+        glm::mat4 swayRotX = glm::rotate(glm::mat4(1.0f), glm::radians(visualSwayY), glm::vec3(1.0f, 0.0f, 0.0f));
+        glm::mat4 swayRotY = glm::rotate(glm::mat4(1.0f), glm::radians(visualSwayX), glm::vec3(0.0f, 1.0f, 0.0f));
+        swayRotation = swayRotY * swayRotX;
+    }
+    
+    glm::mat4 model = weaponTranslation * swayRotation * weaponTransform.GetStaticModel();
     
     // Calculate MVP for perspective weapon
     glm::mat4 mvp = perspectiveProjection * view * model;
@@ -512,6 +584,49 @@ void CEUIRenderer::configureAmmo(int maxRounds)
 {
     m_weaponMaxRounds = maxRounds;
     m_weaponCurrentRounds = maxRounds; // Start with full ammo
+}
+
+void CEUIRenderer::configureRecoil(float recoilStrength)
+{
+    m_recoilStrength = recoilStrength;
+}
+
+void CEUIRenderer::configureSway(float swayStrength)
+{
+    m_swayStrength = swayStrength;
+}
+
+void CEUIRenderer::updateSway(double currentTime, float playerVelocityMagnitude)
+{
+    if (m_swayStrength <= 0.0f || !m_gameCamera || !m_weaponDrawn) {
+        return;
+    }
+    
+    // Update sway time
+    m_swayTime = currentTime;
+    
+    // Calculate movement multiplier (1.0 when stationary, up to 2.5 when moving fast)
+    float movementMultiplier = 1.0f + (playerVelocityMagnitude * 0.15f);
+    movementMultiplier = std::min(movementMultiplier, 2.5f); // Cap at 2.5x
+    
+    // Create slower, larger amplitude sway pattern
+    float swaySpeed = 0.6f + sin(currentTime * 0.15f) * 0.1f; // 0.5-0.7 Hz (much slower)
+    float swayRadius = m_swayStrength * movementMultiplier * 2.0f; // Double the amplitude
+    
+    // Primary circular pattern (slower, larger movements)
+    float primaryX = sin(currentTime * swaySpeed) * swayRadius;
+    float primaryY = cos(currentTime * swaySpeed * 0.7f) * swayRadius; // Slightly different frequency for oval
+    
+    // Add secondary micro-movements for realism (also slower)
+    float microX = sin(currentTime * swaySpeed * 1.8f) * swayRadius * 0.2f; // Reduced secondary frequency
+    float microY = cos(currentTime * swaySpeed * 2.1f) * swayRadius * 0.15f;
+    
+    // Combine patterns
+    m_swayOffset.x = primaryX + microX;
+    m_swayOffset.y = primaryY + microY;
+    
+    // Store sway offset for weapon aiming (don't modify camera)
+    // The sway offset will be used when firing projectiles to affect accuracy
 }
 
 void CEUIRenderer::setWeaponAnimation(const std::string& animationName, bool loop)

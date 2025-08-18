@@ -42,12 +42,24 @@ void main()
         return;
     }
     
-    // Original debug rendering for other objects
+    // Use texture for normal rendering
+    vec4 texColor = texture(basic_texture, texCoord0);
+    
+    // Apply basic lighting
+    vec3 lightDir = normalize(-lightDirection);
+    
+    // Simple ambient + diffuse lighting
+    float ambient = ambientStrength;
+    float diffuse = max(dot(vec3(0, 0, 1), lightDir), 0.0) * diffuseStrength; // Assume normal pointing up for simple geo
+    
+    float lightFactor = ambient + diffuse;
+    
+    // Apply shadow if enabled
+    float shadow = 0.0;
     if (enableShadows) {
-        // Shadow-enabled objects = BRIGHT GREEN
-        FragColor = vec4(0.0, 1.0, 0.0, 1.0);  
-    } else {
-        // Regular objects = BRIGHT RED
-        FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+        shadow = ShadowCalculation(FragPosLightSpace);
     }
+    
+    vec3 finalColor = texColor.rgb * lightFactor * (1.0 - shadow * 0.5);
+    FragColor = vec4(finalColor, texColor.a);
 }

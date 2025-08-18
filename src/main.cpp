@@ -107,6 +107,7 @@ struct ImpactEvent {
 struct VisualImpactMarker {
   glm::vec3 position;
   glm::vec3 color;  // Different colors for different impact types
+  glm::vec3 surfaceNormal;  // Surface normal for proper orientation
   double spawnTime;
   std::string surfaceType;
   float scale;
@@ -157,6 +158,47 @@ std::vector<Vertex> generateSphere(float radius, int segments) {
       Vertex vertex(glm::vec3(x, y, z), glm::vec2(u, v), glm::vec3(x, y, z), false, 1.0f, 0, 0); // position, UV, normal, hidden, alpha, owner, flags
       vertices.push_back(vertex);
     }
+  }
+  
+  return vertices;
+}
+
+// Bullet impact geometry generation - creates a crater-like impact mark
+std::vector<Vertex> generateBulletImpact(float radius, int segments) {
+  std::vector<Vertex> vertices;
+  
+  // Center vertex - depressed inward to create crater effect
+  float craterDepth = radius * 0.3f; // 30% of radius depth
+  Vertex centerVertex(glm::vec3(0, -craterDepth, 0), glm::vec2(0.5f, 0.5f), glm::vec3(0, 1, 0), false, 1.0f, 0, 0);
+  vertices.push_back(centerVertex);
+  
+  // Inner ring - slightly depressed
+  float innerRadius = radius * 0.4f;
+  float innerDepth = craterDepth * 0.7f;
+  for (int i = 0; i < segments; i++) {
+    float angle = 2.0f * M_PI * i / segments;
+    float x = innerRadius * cos(angle);
+    float z = innerRadius * sin(angle);
+    float u = 0.5f + 0.2f * cos(angle);
+    float v = 0.5f + 0.2f * sin(angle);
+    
+    Vertex vertex(glm::vec3(x, -innerDepth, z), glm::vec2(u, v), glm::vec3(0, 1, 0), false, 1.0f, 0, 0);
+    vertices.push_back(vertex);
+  }
+  
+  // Outer ring - surface level with radiating cracks effect
+  for (int i = 0; i < segments; i++) {
+    float angle = 2.0f * M_PI * i / segments;
+    float x = radius * cos(angle);
+    float z = radius * sin(angle);
+    float u = 0.5f + 0.5f * cos(angle);
+    float v = 0.5f + 0.5f * sin(angle);
+    
+    // Slight random variation for crack effect
+    float variation = 0.05f * sin(angle * 4.0f); // Creates 4 main "crack" directions
+    
+    Vertex vertex(glm::vec3(x, variation, z), glm::vec2(u, v), glm::vec3(0, 1, 0), false, 1.0f, 0, 0);
+    vertices.push_back(vertex);
   }
   
   return vertices;
@@ -259,9 +301,32 @@ void updateImpactMarkers(double currentTime) {
   
   // Build transforms and colors for each active marker
   for (const auto& marker : visualImpactMarkers) {
-    // Create transform matrix: scale by marker size and translate to position
+    // Create transform matrix: translate, rotate based on surface normal, then scale
     glm::mat4 transform = glm::mat4(1.0f);
-    transform = glm::translate(transform, marker.position);
+    
+    // Offset the marker above the surface along the normal direction
+    glm::vec3 offsetPosition = marker.position + marker.surfaceNormal * 0.1f; // 10cm above surface
+    transform = glm::translate(transform, offsetPosition);
+    
+    // Calculate rotation to orient marker perpendicular to surface normal
+    // The marker geometry is created facing +Y (crater opening upward), so we need to rotate it to face the surface normal
+    glm::vec3 targetDirection = glm::normalize(marker.surfaceNormal);
+    glm::vec3 defaultUp = glm::vec3(0.0f, 1.0f, 0.0f); // Default geometry faces +Y
+    
+    // Avoid issues when normal is parallel to default up direction
+    if (glm::abs(glm::dot(targetDirection, defaultUp)) > 0.99f) {
+      // If surface normal is nearly parallel to +Y, no rotation needed (or minimal)
+      if (glm::dot(targetDirection, defaultUp) < 0.0f) {
+        // Surface normal points down, flip the crater
+        transform = glm::rotate(transform, glm::pi<float>(), glm::vec3(1.0f, 0.0f, 0.0f));
+      }
+    } else {
+      // Create rotation matrix to align +Y with surface normal
+      glm::vec3 rotationAxis = glm::normalize(glm::cross(defaultUp, targetDirection));
+      float rotationAngle = acos(glm::clamp(glm::dot(defaultUp, targetDirection), -1.0f, 1.0f));
+      
+      transform = glm::rotate(transform, rotationAngle, rotationAxis);
+    }
     
     // Fade out markers as they age for better visual effect
     double age = currentTime - marker.spawnTime;
@@ -348,6 +413,7 @@ bool showDebugUI = false; // Set to false to disable all ImGui panels for maximu
 // Forward declarations for external use
 extern void addImpactEvent(const glm::vec3& location, const std::string& surfaceType, float distance, float damage, const std::string& impactType);
 extern void addImpactEvent(const glm::vec3& location, const std::string& surfaceType, float distance, float damage, const std::string& impactType, const std::string& objectName, int objectIndex, int instanceIndex);
+extern void addImpactEvent(const glm::vec3& location, const glm::vec3& surfaceNormal, const std::string& surfaceType, float distance, float damage, const std::string& impactType);
 extern void addFaceIntersectionEvent(const glm::vec3& location, const std::string& surfaceType, float distance, const glm::vec3& normal, const glm::vec3& direction, int tileX, int tileZ, int faceIndex, const std::string& objectName, int objectIndex, int instanceIndex);
 extern void addProjectileTraceLine(const glm::vec3& startPoint, const glm::vec3& endPoint, const std::string& surfaceType);
 extern void addProjectileTraceLineWithMethod(const glm::vec3& startPoint, const glm::vec3& endPoint, const std::string& surfaceType, const std::string& collisionMethod);
@@ -383,9 +449,65 @@ void addImpactEvent(const glm::vec3& location, const std::string& surfaceType, f
   marker.position = location;
   marker.spawnTime = glfwGetTime();
   marker.surfaceType = surfaceType;
-  marker.scale = 0.5f; // Larger for better visibility
+  marker.scale = 0.25f; // Much larger for better visibility
+  marker.surfaceNormal = glm::vec3(0, 1, 0); // Default upward normal
+  
+  std::cout << "🎯 Created impact marker at [" << location.x << ", " << location.y << ", " << location.z 
+            << "] scale: " << marker.scale << " surface: " << surfaceType << std::endl;
   
   // Use dark/muted colors for impact markers (contrast with bright trace lines)
+  if (surfaceType == "terrain") {
+    marker.color = glm::vec3(0.4f, 0.3f, 0.1f); // DARK BROWN for terrain
+  } else if (surfaceType == "water") {
+    marker.color = glm::vec3(0.1f, 0.3f, 0.5f); // DARK BLUE for water
+  } else if (surfaceType == "object") {
+    marker.color = glm::vec3(0.5f, 0.1f, 0.1f); // DARK RED for objects
+  } else if (surfaceType == "out-of-bounds") {
+    marker.color = glm::vec3(0.3f, 0.3f, 0.3f); // DARK GRAY for out-of-bounds
+  } else {
+    marker.color = glm::vec3(0.5f, 0.5f, 0.1f); // DARK YELLOW for unknown
+  }
+  
+  visualImpactMarkers.push_back(marker);
+}
+
+void addImpactEvent(const glm::vec3& location, const glm::vec3& surfaceNormal, const std::string& surfaceType, float distance, float damage, const std::string& impactType) {
+  ImpactEvent event;
+  event.location = location;
+  event.surfaceType = surfaceType;
+  event.distance = distance;
+  event.damage = damage;
+  event.timestamp = glfwGetTime();
+  event.impactType = impactType;
+  event.objectName = "";
+  event.objectIndex = -1;
+  event.instanceIndex = -1;
+  
+  // Store the surface normal
+  event.surfaceNormal = surfaceNormal;
+  event.incomingDirection = glm::vec3(0, 0, 0);
+  event.tileX = -1;
+  event.tileZ = -1;
+  event.faceIndex = -1;
+  
+  recentImpacts.insert(recentImpacts.begin(), event);
+  if (recentImpacts.size() > MAX_IMPACT_HISTORY) {
+    recentImpacts.resize(MAX_IMPACT_HISTORY);
+  }
+  
+  // Create visual impact marker with proper orientation
+  VisualImpactMarker marker;
+  marker.position = location;
+  marker.spawnTime = glfwGetTime();
+  marker.surfaceType = surfaceType;
+  marker.scale = 0.25f;
+  marker.surfaceNormal = surfaceNormal; // Use the actual surface normal
+  
+  std::cout << "🎯 Created oriented impact marker at [" << location.x << ", " << location.y << ", " << location.z 
+            << "] normal: [" << surfaceNormal.x << ", " << surfaceNormal.y << ", " << surfaceNormal.z 
+            << "] surface: " << surfaceType << std::endl;
+  
+  // Use dark/muted colors for impact markers
   if (surfaceType == "terrain") {
     marker.color = glm::vec3(0.4f, 0.3f, 0.1f); // DARK BROWN for terrain
   } else if (surfaceType == "water") {
@@ -432,7 +554,7 @@ void addFaceIntersectionEvent(const glm::vec3& location, const std::string& surf
   marker.position = location;
   marker.spawnTime = glfwGetTime();
   marker.surfaceType = surfaceType;
-  marker.scale = 2.0f;
+  marker.scale = 0.25f;
   
   // Use different colors for different surface types
   if (surfaceType == "terrain") {
@@ -485,7 +607,7 @@ void addImpactEvent(const glm::vec3& location, const std::string& surfaceType, f
   marker.position = location;
   marker.spawnTime = glfwGetTime();
   marker.surfaceType = surfaceType;
-  marker.scale = 0.5f; // Larger for better visibility
+  marker.scale = 0.25f; // Same size as other impact markers
   
   // Use dark/muted colors for impact markers (contrast with bright trace lines)
   if (surfaceType == "terrain") {
@@ -978,15 +1100,52 @@ int main(int argc, const char * argv[])
     std::cerr << "Warning: Failed to initialize player capsule collision - no physics world available" << std::endl;
   }
     
-  // Initialize impact marker geometry (small sphere for collision visualization)
-  std::vector<Vertex> sphereVertices = generateSphere(1.0f, 8); // Small sphere, low detail for performance
+  // Initialize impact marker geometry (bullet impact crater for collision visualization)
+  std::vector<Vertex> impactVertices = generateBulletImpact(1.0f, 16); // Larger bullet impact, good detail
   
-  // Create a simple white texture for markers (16x16 white pixels)
-  const int markerTexSize = 16;
-  std::vector<uint16_t> whiteTextureData(markerTexSize * markerTexSize, 0xFFFF); // All white pixels
-  std::unique_ptr<CETexture> markerTexture = std::make_unique<CETexture>(whiteTextureData, markerTexSize * markerTexSize * 2, markerTexSize, markerTexSize);
+  // Create a bullet impact texture with crater-like appearance
+  const int markerTexSize = 32;
+  std::vector<uint16_t> impactTextureData(markerTexSize * markerTexSize); // ARGB1555 format
   
-  impactMarkerGeometry = std::make_unique<CESimpleGeometry>(sphereVertices, std::move(markerTexture));
+  float center = markerTexSize * 0.5f;
+  for (int y = 0; y < markerTexSize; y++) {
+    for (int x = 0; x < markerTexSize; x++) {
+      float dx = x - center;
+      float dy = y - center;
+      float distance = sqrt(dx * dx + dy * dy) / center;
+      
+      // Create bullet hole effect: very dark center, lighter edges, with radial cracks
+      float intensity;
+      if (distance < 0.15f) {
+        // Very dark solid center - the actual bullet hole
+        intensity = 0.05f; // Almost black center
+      } else if (distance < 0.35f) {
+        // Dark crater ring around center
+        intensity = 0.1f + (distance - 0.15f) * 0.4f; // 0.1 to 0.18
+      } else if (distance < 0.65f) {
+        // Transition zone with damage marks
+        intensity = 0.18f + (distance - 0.35f) * 0.6f; // 0.18 to 0.36
+      } else {
+        // Outer edge with crack pattern and fade
+        float angle = atan2(dy, dx);
+        float crackPattern = 0.7f + 0.3f * sin(angle * 8.0f); // 8 radial cracks for more detail
+        intensity = std::min(1.0f, crackPattern * (0.4f + (1.0f - distance) * 0.6f));
+        intensity = std::max(0.0f, intensity);
+      }
+      
+      intensity = std::max(0.0f, std::min(1.0f, intensity));
+      
+      // Convert to ARGB1555 format (1 bit alpha, 5 bits each for RGB)
+      uint16_t gray5bit = (uint16_t)(intensity * 31); // Convert to 5-bit value
+      uint16_t pixel = (1 << 15) | (gray5bit << 10) | (gray5bit << 5) | gray5bit; // A=1, RGB=gray
+      
+      impactTextureData[y * markerTexSize + x] = pixel;
+    }
+  }
+  
+  std::unique_ptr<CETexture> markerTexture = std::make_unique<CETexture>(impactTextureData, markerTexSize * markerTexSize * 2, markerTexSize, markerTexSize);
+  
+  impactMarkerGeometry = std::make_unique<CESimpleGeometry>(impactVertices, std::move(markerTexture));
   
   // Initialize trace line geometry (simple line for trajectory visualization)
   std::vector<Vertex> lineVertices = generateLine(glm::vec3(0, 0, 0), glm::vec3(1, 0, 0), 2.0f); // Simple horizontal line template
@@ -1385,19 +1544,11 @@ int main(int argc, const char * argv[])
       glDisable(GL_CULL_FACE);
       glEnable(GL_DEPTH_TEST);
       
-      // Get shader and enable custom coloring for impact markers
+      // Get shader and use texture for impact markers
       auto shader = impactMarkerGeometry->getShader();
       if (shader) {
         shader->use();
-        shader->setBool("useCustomColor", true);
-        
-        // For now, use a single color for all markers. 
-        // TODO: Implement per-instance coloring
-        if (!impactMarkerColors.empty()) {
-          shader->setVec3("customColor", impactMarkerColors[0]);
-        } else {
-          shader->setVec3("customColor", glm::vec3(1.0f, 0.0f, 1.0f)); // Magenta fallback
-        }
+        // Don't set useCustomColor at all - let it use default texture mode
       }
       
       // Update instanced transforms for markers
@@ -1405,12 +1556,14 @@ int main(int argc, const char * argv[])
       impactMarkerGeometry->Update(*camera);
       impactMarkerGeometry->DrawInstances();
       
-      // Reset custom color flag to not affect other objects
-      if (shader) {
-        shader->setBool("useCustomColor", false);
-      }
+      // Texture is already being used, no need to reset
       
       glEnable(GL_CULL_FACE);
+    }
+    
+    // Render particle effects
+    if (projectileManager) {
+      projectileManager->renderParticles(camera);
     }
     
     // Render trace lines (always on for debugging) - simulate with large spheres for now

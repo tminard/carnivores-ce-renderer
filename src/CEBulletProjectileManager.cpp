@@ -8,6 +8,7 @@
 #include "CEBulletProjectileManager.h"
 #include "CEBulletProjectile.h"
 #include "CEPhysicsWorld.h"
+#include "CEParticleSystem.h"
 #include "C2MapFile.h"
 #include "C2MapRscFile.h"
 #include "LocalAudioManager.hpp"
@@ -20,6 +21,7 @@
 // Forward declarations for impact event logging  
 extern void addImpactEvent(const glm::vec3& location, const std::string& surfaceType, float distance, float damage, const std::string& impactType);
 extern void addImpactEvent(const glm::vec3& location, const std::string& surfaceType, float distance, float damage, const std::string& impactType, const std::string& objectName, int objectIndex, int instanceIndex);
+extern void addImpactEvent(const glm::vec3& location, const glm::vec3& surfaceNormal, const std::string& surfaceType, float distance, float damage, const std::string& impactType);
 extern void addFaceIntersectionEvent(const glm::vec3& location, const std::string& surfaceType, float distance, const glm::vec3& normal, const glm::vec3& direction, int tileX, int tileZ, int faceIndex, const std::string& objectName, int objectIndex, int instanceIndex);
 extern void addDebugSphere(const glm::vec3& position, float radius, const glm::vec3& color, const std::string& label);
 
@@ -29,7 +31,10 @@ CEBulletProjectileManager::CEBulletProjectileManager(C2MapFile* map, C2MapRscFil
     : m_map(map), m_mapRsc(mapRsc), m_audioManager(audioManager)
 {
     // Initialize physics world with terrain, objects, and water
-    m_physicsWorld = std::make_unique<CEPhysicsWorld>(map, mapRsc);
+    m_physicsWorld.reset(new CEPhysicsWorld(map, mapRsc));
+    
+    // Initialize particle system for impact effects
+    m_particleSystem.reset(new CEParticleSystem(2000)); // Max 2000 particles for intense effects
     
     // Bullet Physics projectile system initialized
 }
@@ -54,12 +59,12 @@ void CEBulletProjectileManager::spawnProjectile(const glm::vec3& origin, const g
     glm::vec3 velocity = glm::normalize(direction) * muzzleVelocity;
     
     // Create new bullet projectile
-    auto projectile = std::make_unique<CEBulletProjectile>(
+    std::unique_ptr<CEBulletProjectile> projectile(new CEBulletProjectile(
         m_physicsWorld->getDynamicsWorld(),
         origin,
         velocity,
         damage
-    );
+    ));
     
     m_activeProjectiles.push_back(std::move(projectile));
     
@@ -70,6 +75,11 @@ void CEBulletProjectileManager::update(double currentTime, double deltaTime)
 {
     // Step the physics simulation
     m_physicsWorld->stepSimulation(static_cast<float>(deltaTime));
+    
+    // Update particle system
+    if (m_particleSystem) {
+        m_particleSystem->update(static_cast<float>(deltaTime));
+    }
     
     // Update all projectiles and check for impacts
     for (auto it = m_activeProjectiles.begin(); it != m_activeProjectiles.end();) {
@@ -116,20 +126,49 @@ void CEBulletProjectileManager::handleImpact(const CEBulletProjectile& projectil
     float distance = projectile.getImpactDistance();
     float damage = projectile.getDamage();
     
-    // Log impact to GUI with object information if available
+    // Log impact to GUI with proper surface normal for orientation
+    glm::vec3 impactNormal = projectile.getImpactNormal();
+    
     if (surfaceType == "object" && !projectile.getImpactObjectName().empty()) {
-        addImpactEvent(hitPoint, surfaceType, distance, damage, "Bullet Impact", 
-                      projectile.getImpactObjectName(), 
-                      projectile.getImpactObjectIndex(), 
-                      projectile.getImpactInstanceIndex());
+        // Use the surface normal version for proper orientation, even for objects
+        addImpactEvent(hitPoint, impactNormal, surfaceType, distance, damage, "Bullet Impact");
     } else {
-        addImpactEvent(hitPoint, surfaceType, distance, damage, "Bullet Impact");
+        // Use the new function with surface normal for proper orientation
+        addImpactEvent(hitPoint, impactNormal, surfaceType, distance, damage, "Bullet Impact");
     }
     
     // Play impact audio with correct surface type
     playImpactAudio(hitPoint, surfaceType);
     
-    // TODO: Add visual impact effects here
+    // Add visual impact effects
+    if (m_particleSystem) {
+        std::cout << "🎆 Emitting particles for " << surfaceType << " impact at [" 
+                  << hitPoint.x << ", " << hitPoint.y << ", " << hitPoint.z << "]" << std::endl;
+        glm::vec3 impactNormal = projectile.getImpactNormal();
+        
+        if (surfaceType == "terrain" || surfaceType == "ground") {
+            // Ground impact: much more dramatic dirt and dust
+            std::cout << "   Emitting 60 ground impact + 40 dust particles" << std::endl;
+            m_particleSystem->emitGroundImpact(hitPoint, impactNormal, 60);
+            m_particleSystem->emitDustCloud(hitPoint, 40);
+        } else if (surfaceType == "object") {
+            // Object impact: explosive debris and sparks
+            glm::vec3 impactDirection = glm::normalize(projectile.getVelocity());
+            m_particleSystem->emitDebris(hitPoint, impactDirection, 35);
+            m_particleSystem->emitGroundImpact(hitPoint, impactNormal, 25); // Heavy dust
+            m_particleSystem->emitDustCloud(hitPoint, 20); // Extra smoke
+        } else if (surfaceType == "water") {
+            // Water impact: massive splash effects
+            m_particleSystem->emitDustCloud(hitPoint, 80); // Major water spray
+            m_particleSystem->emitGroundImpact(hitPoint, impactNormal, 40); // Heavy splash particles
+        } else {
+            // Default impact: heavy debris
+            glm::vec3 impactDirection = glm::normalize(projectile.getVelocity());
+            m_particleSystem->emitGroundImpact(hitPoint, impactNormal, 40);
+            m_particleSystem->emitDebris(hitPoint, impactDirection, 25);
+        }
+    }
+    
     // TODO: Add damage calculation for hit objects/characters
 }
 
@@ -147,6 +186,16 @@ void CEBulletProjectileManager::playImpactAudio(const glm::vec3& position, const
     // audioSrc->setPosition(position);
     // audioSrc->setGain(1.0f);
     // m_audioManager->play(audioSrc);
+}
+
+void CEBulletProjectileManager::renderParticles(Camera* camera)
+{
+    if (m_particleSystem && camera) {
+        size_t activeCount = m_particleSystem->getActiveParticleCount();
+        if (activeCount > 0) {
+          m_particleSystem->render(camera);
+        }
+    }
 }
 
 void CEBulletProjectileManager::processFaceIntersections(CEBulletProjectile& projectile)

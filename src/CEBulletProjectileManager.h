@@ -19,6 +19,7 @@ class C2MapFile;
 class C2MapRscFile;
 class LocalAudioManager;
 class Camera;
+class CEParticleSystem;
 
 class CEBulletProjectileManager
 {
@@ -28,6 +29,7 @@ private:
     C2MapFile* m_map;
     C2MapRscFile* m_mapRsc;
     LocalAudioManager* m_audioManager;
+    std::unique_ptr<CEParticleSystem> m_particleSystem;
     
     // Impact handling
     void handleImpact(const CEBulletProjectile& projectile);
@@ -47,11 +49,17 @@ public:
     // Update all active projectiles (call each frame)
     void update(double currentTime, double deltaTime);
     
+    // Render particle effects
+    void renderParticles(Camera* camera);
+    
     // Get count of active projectiles
     size_t getActiveProjectileCount() const { return m_activeProjectiles.size(); }
     
     // Get physics world for other systems
     CEPhysicsWorld* getPhysicsWorld() const { return m_physicsWorld.get(); }
+    
+    // Get particle system for external access
+    CEParticleSystem* getParticleSystem() const { return m_particleSystem.get(); }
 };
 
 #endif /* defined(__CE_Character_Lab__CEBulletProjectileManager__) */

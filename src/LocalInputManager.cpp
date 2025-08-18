@@ -2,7 +2,6 @@
 #include "camera.h"
 #include "CELocalPlayerController.hpp"
 #include "CEUIRenderer.h"
-#include <imgui.h>
 
 void LocalInputManager::Bind(std::shared_ptr<CELocalPlayerController> player_controller)
 {
@@ -72,26 +71,17 @@ void LocalInputManager::ProcessLocalInput(GLFWwindow* window, float deltaTime)
   double currentTime = glfwGetTime();
   double timeDelta = currentTime - this->lastTime;
   if (this->m_player_controller) {
-    // Always allow ESC to exit
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
       this->m_should_shutdown = true;
-    }
-    
-    // Don't process game input if ImGui wants to capture keyboard input
-    ImGuiIO& io = ImGui::GetIO();
-    if (io.WantCaptureKeyboard) {
-      this->lastTime = currentTime;
-      return;
     }
     
     bool forwardPressed = glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS;
     bool backwardPressed = glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS;
     bool rightPressed = glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS;
     bool leftPressed = glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS;
-    bool jumpPressed = glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS;
     
     if (!noclip) {
-      m_player_controller->move(currentTime, timeDelta, forwardPressed, backwardPressed, rightPressed, leftPressed, jumpPressed);
+      m_player_controller->move(currentTime, timeDelta, forwardPressed, backwardPressed, rightPressed, leftPressed);
     } else {
       if (forwardPressed) m_player_controller->getCamera()->MoveForward(6.25f); // Scaled down 16x (was 100.f)
       if (backwardPressed) m_player_controller->getCamera()->MoveForward(-6.25f); // Scaled down 16x (was -100.f)
@@ -103,7 +93,9 @@ void LocalInputManager::ProcessLocalInput(GLFWwindow* window, float deltaTime)
       m_player_controller->getCamera()->MoveUp(6.25f); // Scaled down 16x (was 100.f)
     }
     
-    // Jump is now handled through the move() method above
+    if (!noclip && glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+      m_player_controller->jump(currentTime);
+    }
     if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS && this->m_last_key_state[GLFW_KEY_O] != GLFW_PRESS) {
       this->m_last_key_state[GLFW_KEY_O] = GLFW_PRESS;
       m_player_controller->DBG_printLocationInformation();

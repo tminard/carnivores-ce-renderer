@@ -933,9 +933,7 @@ int main(int argc, const char * argv[])
   
   // Initialize Bullet Physics projectile manager
   projectileManager = std::make_unique<CEBulletProjectileManager>(cMap.get(), cMapRsc.get(), g_audio_manager.get()); // Re-enabled with performance optimizations
-  
-  g_player_controller->disablePhysics();
-  
+    
   // Initialize impact marker geometry (small sphere for collision visualization)
   std::vector<Vertex> sphereVertices = generateSphere(1.0f, 8); // Small sphere, low detail for performance
   
@@ -1071,8 +1069,7 @@ int main(int argc, const char * argv[])
   // grab a character
   auto charac = characters.at(1);
   g_player_controller->update(glfwGetTime(), 0.0);
-  g_player_controller->enablePhysics(projectileManager->getPhysicsWorld());
-  
+
   while (!glfwWindowShouldClose(window) && !input_manager->GetShouldShutdown()) {
     glfwMakeContextCurrent(window);
     

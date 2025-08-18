@@ -67,6 +67,7 @@
 #include "CEBulletProjectileManager.h"
 #include "CEPhysicsWorld.h"
 #include "CESimpleGeometry.h"
+#include "CECapsuleCollision.h"
 #include "vertex.h"
 
 // ImGui includes
@@ -893,6 +894,7 @@ int main(int argc, const char * argv[])
   GLFWwindow* window = video_manager->GetWindow();
   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
   
+  // Create basic player controller first
   std::shared_ptr<CELocalPlayerController> g_player_controller = std::make_shared<CELocalPlayerController>(cMap->getWidth(), cMap->getHeight(), cMap->getTileLength(), cMap, cMapRsc);
   g_audio_manager->bind(g_player_controller);
   input_manager->Bind(g_player_controller);
@@ -933,6 +935,29 @@ int main(int argc, const char * argv[])
   
   // Initialize Bullet Physics projectile manager
   projectileManager = std::make_unique<CEBulletProjectileManager>(cMap.get(), cMapRsc.get(), g_audio_manager.get()); // Re-enabled with performance optimizations
+  
+  // Initialize player capsule collision component using the physics world
+  if (projectileManager && projectileManager->getPhysicsWorld()) {
+    btDiscreteDynamicsWorld* dynamicsWorld = projectileManager->getPhysicsWorld()->getDynamicsWorld();
+    if (dynamicsWorld) {
+      // Create capsule collision component with appropriate dimensions
+      auto capsuleCollision = std::make_unique<CECapsuleCollision>(
+        dynamicsWorld,
+        cMap->getTileLength() * 0.2f,   // Radius: even narrower for tighter collision
+        cMap->getTileLength() * 1.0f,   // Height: roughly body height  
+        g_player_controller->getPosition()  // Initial position
+      );
+      
+      // Set the capsule collision component on the player controller
+      g_player_controller->setCapsuleCollision(std::move(capsuleCollision));
+      
+      std::cout << "Player capsule collision initialized successfully" << std::endl;
+    } else {
+      std::cerr << "Warning: Failed to get dynamics world for player collision" << std::endl;
+    }
+  } else {
+    std::cerr << "Warning: Failed to initialize player capsule collision - no physics world available" << std::endl;
+  }
     
   // Initialize impact marker geometry (small sphere for collision visualization)
   std::vector<Vertex> sphereVertices = generateSphere(1.0f, 8); // Small sphere, low detail for performance

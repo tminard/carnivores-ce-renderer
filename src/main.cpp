@@ -747,12 +747,20 @@ int main(int argc, const char * argv[])
   glm::vec3 muzzleOffset(0.0f, 0.0f, 0.5f);
   float projectileDamage = 45.0f;
   
+  // Ammo configuration
+  int weaponMaxRounds = 30; // Default ammo capacity
+  
   if (data.contains("weapons") && data["weapons"].is_object()) {
     if (data["weapons"].contains("primary") && data["weapons"]["primary"].is_object()) {
       auto& primaryWeapon = data["weapons"]["primary"];
       
       if (primaryWeapon.contains("file") && primaryWeapon["file"].is_string()) {
         primaryWeaponPath = constructPath(basePath, primaryWeapon["file"].get<std::string>()).string();
+      }
+      
+      // Load weapon ammo configuration
+      if (primaryWeapon.contains("rounds") && primaryWeapon["rounds"].is_number()) {
+        weaponMaxRounds = primaryWeapon["rounds"].get<int>();
       }
       
       if (primaryWeapon.contains("animations") && primaryWeapon["animations"].is_object()) {
@@ -809,6 +817,7 @@ int main(int argc, const char * argv[])
     std::cout << "Muzzle Velocity: " << muzzleVelocity << " m/s" << std::endl;
     std::cout << "Muzzle Offset: [" << muzzleOffset.x << ", " << muzzleOffset.y << ", " << muzzleOffset.z << "]" << std::endl;
     std::cout << "Projectile Damage: " << projectileDamage << std::endl;
+    std::cout << "Weapon Rounds: " << weaponMaxRounds << std::endl;
   }
   
   auto mapType = CEMapType::C2;
@@ -1043,6 +1052,7 @@ int main(int argc, const char * argv[])
       uiRenderer->setProjectileManager(projectileManager.get()); // Re-enabled with performance optimizations
       uiRenderer->setGameCamera(g_player_controller->getCamera());
       uiRenderer->configureProjectiles(muzzleVelocity, muzzleOffset, projectileDamage);
+      uiRenderer->configureAmmo(weaponMaxRounds);
     }
     
     std::cout << "UI renderer initialized" << std::endl;
@@ -1618,6 +1628,54 @@ int main(int argc, const char * argv[])
           ImGui::End();
       } // End showDebugUI
     } // End UI rendering
+    
+    // Always show ammo counter when weapon is drawn (hunter sim style HUD)
+    if (uiRenderer && uiRenderer->isWeaponDrawn()) {
+      ImGuiWindowFlags ammo_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | 
+                                    ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | 
+                                    ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoMove;
+      
+      // Position in lower-right corner (classic hunter sim style)
+      ImVec2 windowSize = ImGui::GetIO().DisplaySize;
+      ImGui::SetNextWindowPos(ImVec2(windowSize.x - 160, windowSize.y - 80), ImGuiCond_Always);
+      ImGui::SetNextWindowBgAlpha(0.8f); // More opaque for important ammo info
+      
+      if (ImGui::Begin("Ammo Counter", nullptr, ammo_flags)) {
+        int currentAmmo = uiRenderer->getCurrentAmmo();
+        int maxAmmo = uiRenderer->getMaxAmmo();
+        
+        // Color-coded ammo display: green=full, yellow=medium, red=low/empty
+        ImVec4 ammoColor;
+        if (currentAmmo <= 0) {
+          ammoColor = ImVec4(1.0f, 0.2f, 0.2f, 1.0f); // Bright red for empty
+        } else if (currentAmmo <= maxAmmo / 3) {
+          ammoColor = ImVec4(1.0f, 0.6f, 0.0f, 1.0f); // Orange for low
+        } else if (currentAmmo <= maxAmmo / 2) {
+          ammoColor = ImVec4(1.0f, 1.0f, 0.0f, 1.0f); // Yellow for medium
+        } else {
+          ammoColor = ImVec4(0.0f, 1.0f, 0.0f, 1.0f); // Green for good
+        }
+        
+        // Push larger font size for better visibility
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8, 4));
+        ImFont* font = ImGui::GetFont();
+        ImGui::PushFont(font);
+        ImGui::SetWindowFontScale(1.8f); // Make text 80% larger
+        
+        // Display ammo in classic style: "12/12" or "0/12" format
+        ImGui::TextColored(ammoColor, "%d/%d", currentAmmo, maxAmmo);
+        
+        // Show reload status if reloading
+        if (uiRenderer->getWeaponState() == CEUIRenderer::WeaponState::RELOADING) {
+          ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "RELOADING...");
+        }
+        
+        ImGui::SetWindowFontScale(1.0f); // Reset font scale
+        ImGui::PopFont();
+        ImGui::PopStyleVar();
+      }
+      ImGui::End();
+    }
     
     // Always render ImGui (even if no UI is shown) to maintain frame consistency
     ImGui::Render();

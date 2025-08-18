@@ -31,7 +31,8 @@ CEUIRenderer::CEUIRenderer(int screenWidth, int screenHeight)
     : m_screenWidth(screenWidth), m_screenHeight(screenHeight), m_weaponDrawn(false),
       m_weaponState(WeaponState::HOLSTERED), m_currentWeaponAnimation(""),
       m_weaponAnimationStartTime(0.0), m_weaponAnimationLastUpdate(0.0), 
-      m_weaponAnimationLoop(false), m_weaponGeometryInitialized(false), m_audioManager(nullptr),
+      m_weaponAnimationLoop(false), m_weaponGeometryInitialized(false), 
+      m_weaponMaxRounds(30), m_weaponCurrentRounds(30), m_audioManager(nullptr),
       m_projectileManager(nullptr), m_gameCamera(nullptr), m_muzzleVelocity(800.0f),
       m_muzzleOffset(0.0f, 0.0f, 0.5f), m_projectileDamage(45.0f),
       m_textVAO(0), m_textVBO(0), m_textInitialized(false)
@@ -269,7 +270,10 @@ void CEUIRenderer::toggleWeapon()
         case WeaponState::HOLSTERING:
         case WeaponState::FIRING:
         case WeaponState::RELOADING:
-            // Ignore toggle during animation
+            // Ignore toggle during animation (especially during reload)
+            if (m_weaponState == WeaponState::RELOADING) {
+                std::cout << "Cannot holster weapon while reloading!" << std::endl;
+            }
             break;
     }
 }
@@ -277,9 +281,14 @@ void CEUIRenderer::toggleWeapon()
 void CEUIRenderer::fireWeapon()
 {
     // Only fire if weapon is fully drawn or currently firing (allow rapid fire)
-    if (m_weaponState == WeaponState::DRAWN || m_weaponState == WeaponState::FIRING) {
+    // Block firing if we're reloading or have no ammo
+    if ((m_weaponState == WeaponState::DRAWN || m_weaponState == WeaponState::FIRING) && m_weaponCurrentRounds > 0) {
         m_weaponState = WeaponState::FIRING;
         setWeaponAnimation(m_weaponFireAnimation, false); // Don't loop fire animation - this resets the animation
+        
+        // Consume ammo
+        m_weaponCurrentRounds--;
+        std::cout << "Shot fired! Ammo remaining: " << m_weaponCurrentRounds << "/" << m_weaponMaxRounds << std::endl;
         
         // Spawn ballistic projectile if system is configured
         if (m_projectileManager && m_gameCamera) {
@@ -304,15 +313,30 @@ void CEUIRenderer::fireWeapon()
             
             // Ballistic projectile fired
         }
+        
+        // Auto-reload if ammo is depleted
+        if (m_weaponCurrentRounds <= 0) {
+            std::cout << "Ammo depleted! Auto-reloading..." << std::endl;
+            // Note: We don't call reloadWeapon() directly here because it would interfere 
+            // with the current firing animation. Instead, we'll trigger reload when 
+            // the firing animation completes in updateWeaponAnimation()
+        }
+    } else if (m_weaponCurrentRounds <= 0 && (m_weaponState == WeaponState::DRAWN || m_weaponState == WeaponState::FIRING)) {
+        // Try to fire with empty magazine - trigger reload
+        std::cout << "Click! Magazine empty. Reloading..." << std::endl;
+        reloadWeapon();
     }
 }
 
 void CEUIRenderer::reloadWeapon()
 {
-    // Only reload if weapon is fully drawn
+    // Only reload if weapon is fully drawn and not already reloading
     if (m_weaponState == WeaponState::DRAWN) {
         m_weaponState = WeaponState::RELOADING;
         setWeaponAnimation(m_weaponReloadAnimation, false); // Don't loop reload animation
+        std::cout << "Reloading weapon..." << std::endl;
+    } else if (m_weaponState == WeaponState::RELOADING) {
+        std::cout << "Already reloading!" << std::endl;
     }
 }
 
@@ -484,6 +508,12 @@ void CEUIRenderer::configureProjectiles(float muzzleVelocity, const glm::vec3& m
     m_projectileDamage = damage;
 }
 
+void CEUIRenderer::configureAmmo(int maxRounds)
+{
+    m_weaponMaxRounds = maxRounds;
+    m_weaponCurrentRounds = maxRounds; // Start with full ammo
+}
+
 void CEUIRenderer::setWeaponAnimation(const std::string& animationName, bool loop)
 {
     // Follow AI pattern: set animation parameters but don't start immediately
@@ -602,11 +632,21 @@ void CEUIRenderer::updateWeaponAnimation(C2CarFile* weapon, double currentTime)
                 m_weaponDrawn = false; // Stop rendering
                 m_currentWeaponAnimation = ""; // Clear animation
             } else if (m_weaponState == WeaponState::FIRING) {
-                // Fire animation complete - return to drawn state
-                m_weaponState = WeaponState::DRAWN;
-                setWeaponAnimation(m_weaponDrawAnimation, false); // Return to draw animation for display
+                // Fire animation complete - check if auto-reload needed
+                if (m_weaponCurrentRounds <= 0) {
+                    // Auto-reload when firing animation completes
+                    std::cout << "Fire animation complete. Auto-reloading..." << std::endl;
+                    m_weaponState = WeaponState::RELOADING;
+                    setWeaponAnimation(m_weaponReloadAnimation, false);
+                } else {
+                    // Return to drawn state
+                    m_weaponState = WeaponState::DRAWN;
+                    setWeaponAnimation(m_weaponDrawAnimation, false); // Return to draw animation for display
+                }
             } else if (m_weaponState == WeaponState::RELOADING) {
-                // Reload animation complete - return to drawn state
+                // Reload animation complete - restore ammo and return to drawn state
+                m_weaponCurrentRounds = m_weaponMaxRounds;
+                std::cout << "Reload complete! Ammo restored: " << m_weaponCurrentRounds << "/" << m_weaponMaxRounds << std::endl;
                 m_weaponState = WeaponState::DRAWN;
                 setWeaponAnimation(m_weaponDrawAnimation, false); // Return to draw animation for display
             }

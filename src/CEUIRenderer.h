@@ -43,6 +43,11 @@ private:
     std::string m_weaponHolsterAnimation; // Holster animation name from config
     std::string m_weaponFireAnimation;    // Fire animation name from config
     std::string m_weaponReloadAnimation;  // Reload animation name from config
+    
+    // Ammo tracking system
+    int m_weaponMaxRounds;        // Maximum ammo capacity
+    int m_weaponCurrentRounds;    // Current ammo remaining
+    
     LocalAudioManager* m_audioManager;
     CEBulletProjectileManager* m_projectileManager;
     Camera* m_gameCamera;
@@ -90,6 +95,11 @@ public:
     void setProjectileManager(CEBulletProjectileManager* projectileManager);
     void setGameCamera(Camera* camera);
     void configureProjectiles(float muzzleVelocity, const glm::vec3& muzzleOffset, float damage);
+    void configureAmmo(int maxRounds);
+    
+    // Ammo information getters
+    int getCurrentAmmo() const { return m_weaponCurrentRounds; }
+    int getMaxAmmo() const { return m_weaponMaxRounds; }
     
     // Set up 2D rendering state
     void begin2DRendering();

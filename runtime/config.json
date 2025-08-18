@@ -23,6 +23,8 @@
          "reload": "Rf2_rld"
        },
        "projectiles": {
+         "accuracy": 0.50,
+         "precision": 0.50,
          "muzzleFlashFrame": 2,
          "muzzleOffset": [0.0, 0.0, 8.0],
          "muzzleVelocity": 4000.0,

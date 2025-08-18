@@ -17,8 +17,8 @@ uniform sampler2D skyTexture;
 uniform float view_distance;
 uniform vec4 distanceColor;
 
-uniform float ambientStrength = 0.05;
-uniform float diffuseStrength = 0.95;
+uniform float ambientStrength = 0.25;
+uniform float diffuseStrength = 0.75;
 uniform sampler2D shadowMap;
 uniform vec3 lightDirection = vec3(0.5, -1.0, 0.5);
 uniform bool enableShadows = false;
@@ -45,21 +45,25 @@ float ShadowCalculation(vec4 fragPosLightSpace)
     // Get depth of current fragment from light's perspective
     float currentDepth = projCoords.z;
     
-    // Calculate bias to prevent shadow acne (reduced for better shadow detection)
-    float bias = 0.0005;
+    // Calculate bias to prevent shadow acne
+    float bias = 0.001;
     
-    // Simple shadow test with PCF for softer edges
+    // Enhanced PCF for smoother shadows (larger sampling area)
     float shadow = 0.0;
     vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
-    for(int x = -1; x <= 1; ++x)
+    int sampleRadius = 2; // Larger radius for smoother shadows
+    int sampleCount = 0;
+    
+    for(int x = -sampleRadius; x <= sampleRadius; ++x)
     {
-        for(int y = -1; y <= 1; ++y)
+        for(int y = -sampleRadius; y <= sampleRadius; ++y)
         {
             float pcfDepth = texture(shadowMap, projCoords.xy + vec2(x, y) * texelSize).r;
             shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
+            sampleCount++;
         }
     }
-    shadow /= 9.0;
+    shadow /= float(sampleCount);
     
     return shadow;
 }
@@ -86,26 +90,29 @@ void main()
         fogFactor = min(fogFactor, 0.45); // Limit the max fill so we keep things visible
     }
 
-    // Lighting
-    vec3 unitSurfaceNormal = normalize(surfaceNormal);
-    vec3 unitToLightVector = normalize(toLightVector);
-
-    float diffuse = max(dot(unitSurfaceNormal, unitToLightVector), 0.0);
-
-    vec4 cloudColor = texture(skyTexture, out_textCoord_clouds);
-    float cloudLuminance = (0.299 * cloudColor.b + 0.587 * cloudColor.g + 0.114 * cloudColor.r) * 2.0;
-
-    float brightness = (ambientStrength + pow(diffuse, 1.0) * diffuseStrength) * pow(cloudLuminance, 1.75);
-
-    // Apply the lighting to the texture color
-    vec3 finalColor = vec3(sC.b, sC.g, sC.r) * brightness;
+    // Real-time lighting (same as world objects)
+    vec3 norm = normalize(surfaceNormal);
+    vec3 lightDir = normalize(-lightDirection); // Use the world object light direction
+    
+    // Convert texture from BGR to RGB format
+    vec3 textureColor = vec3(sC.b, sC.g, sC.r);
+    
+    // Ambient lighting
+    vec3 ambient = ambientStrength * textureColor;
+    
+    // Diffuse lighting
+    float diff = max(dot(norm, lightDir), 0.0);
+    vec3 diffuse = diffuseStrength * diff * textureColor;
+    
+    // Combine ambient and diffuse
+    vec3 finalColor = ambient + diffuse;
     
     // Apply shadows if enabled
     if (enableShadows) {
         float shadow = ShadowCalculation(FragPosLightSpace);
         
         // Apply shadow to the final color - reduce brightness where shadows are cast
-        finalColor = finalColor * (1.0 - shadow * 0.5); // 50% shadow intensity
+        finalColor = finalColor * (1.0 - shadow * 0.3); // 30% shadow intensity
     }
 
     finalColor = mix(finalColor, distanceColor.rgb, fogFactor);

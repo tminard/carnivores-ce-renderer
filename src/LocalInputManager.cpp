@@ -2,6 +2,7 @@
 #include "camera.h"
 #include "CELocalPlayerController.hpp"
 #include "CEUIRenderer.h"
+#include <imgui.h>
 
 void LocalInputManager::Bind(std::shared_ptr<CELocalPlayerController> player_controller)
 {
@@ -71,8 +72,16 @@ void LocalInputManager::ProcessLocalInput(GLFWwindow* window, float deltaTime)
   double currentTime = glfwGetTime();
   double timeDelta = currentTime - this->lastTime;
   if (this->m_player_controller) {
+    // Always allow ESC to exit
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
       this->m_should_shutdown = true;
+    }
+    
+    // Don't process game input if ImGui wants to capture keyboard input
+    ImGuiIO& io = ImGui::GetIO();
+    if (io.WantCaptureKeyboard) {
+      this->lastTime = currentTime;
+      return;
     }
     
     bool forwardPressed = glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS;

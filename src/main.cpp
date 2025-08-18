@@ -955,8 +955,8 @@ int main(int argc, const char * argv[])
   
   traceLineGeometry = std::make_unique<CESimpleGeometry>(lineVertices, std::move(lineTexture));
   
-  // Set light direction to be extremely vertical (like sun directly overhead)
-  shadowManager->setLightDirection(glm::vec3(0.2f, -0.9f, 0.1f));
+  // Set light direction for more interesting angled lighting (like late afternoon sun)
+  shadowManager->setLightDirection(glm::vec3(0.6f, -0.5f, 0.4f));
   
   int width, height;
   glfwGetFramebufferSize(window, &width, &height);

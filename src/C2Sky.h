@@ -33,7 +33,7 @@ class C2Sky
 {
 private:
   const float SKY_DISTANCE = 4000.f;  // Reduced distance to prevent edge artifacts
-  const float SKY_HEIGHT = 400.f;     // Proportionally adjusted height
+  const float SKY_HEIGHT = 250.f;     // Lower cloud plane height
 
   std::unique_ptr<ShaderProgram> m_shader;
 

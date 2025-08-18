@@ -311,6 +311,7 @@ void TerrainRenderer::RenderObjectsWithShadows(Camera& camera, CEShadowManager* 
     // Set shadow/light uniforms
     shader->setMat4("lightSpaceMatrix", shadowManager->getLightSpaceMatrix());
     shader->setVec3("lightDirection", shadowManager->getLightDirection());
+    shader->setVec3("lightPosition", shadowManager->getLightPosition());
     
     // Bind shadow map texture to texture unit 1
     glActiveTexture(GL_TEXTURE1);
@@ -342,6 +343,7 @@ void TerrainRenderer::RenderWithShadows(Camera& camera, CEShadowManager* shadowM
   this->m_shader->setBool("enableShadows", true);
   this->m_shader->setMat4("lightSpaceMatrix", shadowManager->getLightSpaceMatrix());
   this->m_shader->setVec3("lightDirection", shadowManager->getLightDirection());
+  this->m_shader->setVec3("lightPosition", shadowManager->getLightPosition());
   
   // Bind shadow map texture to texture unit 3 (units 1 and 2 are used by other textures)
   glActiveTexture(GL_TEXTURE3);

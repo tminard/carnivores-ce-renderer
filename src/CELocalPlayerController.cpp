@@ -13,7 +13,7 @@
 CELocalPlayerController::CELocalPlayerController(float world_width, float world_height, float tile_size, std::shared_ptr<C2MapFile> map, std::shared_ptr<C2MapRscFile> rsc) : CEBasePlayerController(map, rsc), m_world_width(world_width), m_world_height(world_height), m_tile_size(tile_size) {
   
   m_walk_speed = 60.0f;  // 5.1 m/s running speed - only speed we use (scaled to 1 unit = 8.5cm)
-  m_player_height = 16.0f;  // Lower eye level height for better camera feel
+  m_player_height = 12.0f;  // Lower eye level height for better camera feel
 
   m_current_speed = 0.0f;
   m_target_speed = 0.0f;

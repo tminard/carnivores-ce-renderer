@@ -208,17 +208,16 @@ void CEPhysicsWorld::setupWorldObjects(C2MapRscFile* mapRsc)
         }
         
         // Create triangle mesh from geometry (shared by all instances)
-        btTriangleMesh* triangleMesh = model->getGeometry()->createPhysicsTriangleMesh();
-        if (!triangleMesh || triangleMesh->getNumTriangles() == 0) {
-            delete triangleMesh;
+        btTriangleIndexVertexArray* tiv = model->getGeometry()->getPhysicalMesh();
+        if (!tiv || tiv->getNumSubParts() < 1) {
             continue;
         }
         
         // Create base BVH triangle mesh shape (shared by all instances)
-        btBvhTriangleMeshShape* baseBvhShape = new btBvhTriangleMeshShape(triangleMesh, true);
-        
+        btBvhTriangleMeshShape* baseBvhShape = new btBvhTriangleMeshShape(tiv, true);
+        baseBvhShape->setMargin(0.01f);
+
         // Store base shape and mesh for cleanup
-        m_objectMeshes.push_back(triangleMesh);
         m_baseBvhShapes.push_back(baseBvhShape);
         
         

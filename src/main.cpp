@@ -1007,7 +1007,7 @@ int main(int argc, const char * argv[])
       float spawnHeight = cMap->getPlaceGroundHeight(spawn.position[0], spawn.position[1]);
       glm::vec3 spawnPos = glm::vec3(
                                      (spawn.position[0] * cMap->getTileLength()) + (cMap->getTileLength() / 2),
-                                     spawnHeight - 0.75f, // Scaled down 16x (was 12.f)
+                                     spawnHeight - 0.75f,
                                      (spawn.position[1] * cMap->getTileLength()) + (cMap->getTileLength() / 2)
                                      );
       
@@ -1504,7 +1504,6 @@ int main(int argc, const char * argv[])
         if (model) {
           model->renderBoundingBox(viewProjectionMatrix);
           model->renderRadiusCylinder(viewProjectionMatrix);
-          model->renderPhysicsMeshDebug(viewProjectionMatrix); // Show accurate physics mesh wireframes
         }
       }
     }

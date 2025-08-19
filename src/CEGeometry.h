@@ -15,9 +15,11 @@
 #include <cstdint>
 #include <fstream>
 #include <string>
+#include "g_shared.h"
 
 // Forward declarations
-class btTriangleMesh;
+class btTriangleIndexVertexArray;
+class btGImpactMeshShape;
 class Vertex;
 class CETexture;
 class ShaderProgram;
@@ -33,6 +35,7 @@ private:
   int m_texture_height;
   
   bool m_transparency;
+  bool m_has_physics;
   
   int m_current_frame;
 
@@ -51,8 +54,16 @@ private:
   std::vector < Vertex > m_vertices;
   std::vector < unsigned int > m_indices;
   std::unique_ptr<ShaderProgram> m_shader;
+  
+  // Note: memory managed by Bullet directly
+  btTriangleIndexVertexArray* m_bullet_tiv = nullptr;
+  btGImpactMeshShape* m_gimpact = nullptr;
 
   std::shared_ptr<CETexture> m_texture;
+  void applyAnimFaceOrdered(std::vector<Vertex>& m_vertices,
+                            const std::vector<TFace>& faces,
+                            const short* aniData,
+                            int numVerts, int frameA, int frameB, float t);
 public:
   CEGeometry(std::vector < Vertex > vertices, std::vector < unsigned int > indices, std::shared_ptr<CETexture> texture, std::string shaderName);
   ~CEGeometry();
@@ -67,6 +78,8 @@ public:
   bool SetAnimation(std::weak_ptr<CEAnimation> animation, int atFrame);
   void Draw();
   void DrawNaked();
+  
+  void EnablePhysics();
   
   void ConfigureShaderUniforms(C2MapFile* map, C2MapRscFile* rsc);
   
@@ -85,13 +98,8 @@ public:
   // Methods for shadow rendering that need direct access to OpenGL objects
   GLuint GetVAO() const { return m_vertexArrayObject; }
   size_t GetIndexCount() const { return m_indices.size(); }
-  
-  // Physics mesh generation - ensures 1:1 accuracy with visual mesh
-  class btTriangleMesh* createPhysicsTriangleMesh() const;
+
   std::vector<glm::vec3> getDebugPhysicsVertices() const;
-  
-  // Direct access to geometry data for physics (const to ensure immutability)
-  const std::vector<Vertex>& getVertices() const { return m_vertices; }
-  const std::vector<unsigned int>& getIndices() const { return m_indices; }
+  class btTriangleIndexVertexArray* getPhysicalMesh() const;
 };
 

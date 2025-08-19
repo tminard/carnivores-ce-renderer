@@ -920,86 +920,89 @@ void CEAIGenericAmbientManager::cleanupCollision(CEPhysicsWorld* physicsWorld)
 
 void CEAIGenericAmbientManager::createCollisionBody(CEPhysicsWorld* physicsWorld)
 {
-    if (!m_player_controller || m_collisionBody) {
-        return; // Already has collision body or no player controller
-    }
-    
-    // Get base geometry from car file for collision detection
-    // Note: This uses the base model, not the current animation frame
-    // This is simpler architecturally and avoids accessing private members
-    auto geometry = m_car->getGeometry();
-    if (!geometry) {
-        return;
-    }
-    
-    // Create triangle mesh from character geometry
-    m_collisionMesh = new btTriangleMesh();
-    
-    const auto& vertices = geometry->getVertices();
-    const auto& indices = geometry->getIndices();
-    
-    // Scale factor to match rendered model size (consistent with world scale reduction)
-    const float collisionScale = 0.0625f; // Scale down 16x to match rendered model size
-    
-    // Add triangles from current animation frame vertices with proper scaling
-    for (size_t i = 0; i < indices.size(); i += 3) {
-        if (i + 2 < indices.size()) {
-            const Vertex& v1 = vertices[indices[i]];
-            const Vertex& v2 = vertices[indices[i + 1]];
-            const Vertex& v3 = vertices[indices[i + 2]];
-            
-            // Apply scale factor to match rendered model size
-            glm::vec3 pos1 = v1.getPos() * collisionScale;
-            glm::vec3 pos2 = v2.getPos() * collisionScale;
-            glm::vec3 pos3 = v3.getPos() * collisionScale;
-            
-            btVector3 bt_v1(pos1.x, pos1.y, pos1.z);
-            btVector3 bt_v2(pos2.x, pos2.y, pos2.z);
-            btVector3 bt_v3(pos3.x, pos3.y, pos3.z);
-            
-            m_collisionMesh->addTriangle(bt_v1, bt_v2, bt_v3);
-        }
-    }
-    
-    // Create collision shape from mesh
-    m_collisionShape = new btBvhTriangleMeshShape(m_collisionMesh, true);
-    
-    // Create rigid body at character position
-    glm::vec3 position = m_player_controller->getPosition();
-    btTransform transform;
-    transform.setIdentity();
-    transform.setOrigin(btVector3(position.x, position.y, position.z));
-    
-    // Apply character rotation
-    btQuaternion rotation;
-    rotation.setEulerZYX(0, 0, 0); // TODO: Add facing direction tracking
-    transform.setRotation(rotation);
-    
-    // Create kinematic body (moves with character but doesn't respond to physics)
-    btDefaultMotionState* motionState = new btDefaultMotionState(transform);
-    btRigidBody::btRigidBodyConstructionInfo rbInfo(0, motionState, m_collisionShape);
-    m_collisionBody = new btRigidBody(rbInfo);
-    
-    // Set as kinematic (controlled by us, not physics)
-    m_collisionBody->setCollisionFlags(m_collisionBody->getCollisionFlags() | 
-                                       btCollisionObject::CF_KINEMATIC_OBJECT);
-    
-    // Set collision filtering for AI characters
-    short aiGroup = CEPhysicsWorld::AI_GROUP;
-    short aiMask = CEPhysicsWorld::PROJECTILE_GROUP; // Only collide with projectiles
-    
-    physicsWorld->getDynamicsWorld()->addRigidBody(m_collisionBody, aiGroup, aiMask);
-    
-    // Set AI manager as user pointer for projectile hit routing
-    m_collisionBody->setUserPointer(this);
-    
-    // Register AI character in physics world object info map
-    CEPhysicsWorld::CollisionObjectInfo aiInfo;
-    aiInfo.type = CEPhysicsWorld::CollisionObjectType::AI_CHARACTER;
-    aiInfo.objectName = "AI Character";
-    physicsWorld->registerCollisionObject(m_collisionBody, aiInfo);
-    
-    std::cout << "💀 Created collision body for AI character (managed by AI)" << std::endl;
+  // disable for now. We need to switch to https://pybullet.org/Bullet/BulletFull/classbtGImpactMeshShape.html
+   return;
+
+//    if (!m_player_controller || m_collisionBody) {
+//        return; // Already has collision body or no player controller
+//    }
+//    
+//    // Get base geometry from car file for collision detection
+//    // Note: This uses the base model, not the current animation frame
+//    // This is simpler architecturally and avoids accessing private members
+//    auto geometry = m_car->getGeometry();
+//    if (!geometry) {
+//        return;
+//    }
+//    
+//    // Create triangle mesh from character geometry
+//    m_collisionMesh = new btTriangleMesh();
+//    
+//    const auto& vertices = geometry->getVertices();
+//    const auto& indices = geometry->getIndices();
+//    
+//    // Scale factor to match rendered model size (consistent with world scale reduction)
+//    const float collisionScale = 0.0625f; // Scale down 16x to match rendered model size
+//    
+//    // Add triangles from current animation frame vertices with proper scaling
+//    for (size_t i = 0; i < indices.size(); i += 3) {
+//        if (i + 2 < indices.size()) {
+//            const Vertex& v1 = vertices[indices[i]];
+//            const Vertex& v2 = vertices[indices[i + 1]];
+//            const Vertex& v3 = vertices[indices[i + 2]];
+//            
+//            // Apply scale factor to match rendered model size
+//            glm::vec3 pos1 = v1.getPos() * collisionScale;
+//            glm::vec3 pos2 = v2.getPos() * collisionScale;
+//            glm::vec3 pos3 = v3.getPos() * collisionScale;
+//            
+//            btVector3 bt_v1(pos1.x, pos1.y, pos1.z);
+//            btVector3 bt_v2(pos2.x, pos2.y, pos2.z);
+//            btVector3 bt_v3(pos3.x, pos3.y, pos3.z);
+//            
+//            m_collisionMesh->addTriangle(bt_v1, bt_v2, bt_v3);
+//        }
+//    }
+//    
+//    // Create collision shape from mesh
+//    m_collisionShape = new btBvhTriangleMeshShape(m_collisionMesh, true);
+//    
+//    // Create rigid body at character position
+//    glm::vec3 position = m_player_controller->getPosition();
+//    btTransform transform;
+//    transform.setIdentity();
+//    transform.setOrigin(btVector3(position.x, position.y, position.z));
+//    
+//    // Apply character rotation
+//    btQuaternion rotation;
+//    rotation.setEulerZYX(0, 0, 0); // TODO: Add facing direction tracking
+//    transform.setRotation(rotation);
+//    
+//    // Create kinematic body (moves with character but doesn't respond to physics)
+//    btDefaultMotionState* motionState = new btDefaultMotionState(transform);
+//    btRigidBody::btRigidBodyConstructionInfo rbInfo(0, motionState, m_collisionShape);
+//    m_collisionBody = new btRigidBody(rbInfo);
+//    
+//    // Set as kinematic (controlled by us, not physics)
+//    m_collisionBody->setCollisionFlags(m_collisionBody->getCollisionFlags() | 
+//                                       btCollisionObject::CF_KINEMATIC_OBJECT);
+//    
+//    // Set collision filtering for AI characters
+//    short aiGroup = CEPhysicsWorld::AI_GROUP;
+//    short aiMask = CEPhysicsWorld::PROJECTILE_GROUP; // Only collide with projectiles
+//    
+//    physicsWorld->getDynamicsWorld()->addRigidBody(m_collisionBody, aiGroup, aiMask);
+//    
+//    // Set AI manager as user pointer for projectile hit routing
+//    m_collisionBody->setUserPointer(this);
+//    
+//    // Register AI character in physics world object info map
+//    CEPhysicsWorld::CollisionObjectInfo aiInfo;
+//    aiInfo.type = CEPhysicsWorld::CollisionObjectType::AI_CHARACTER;
+//    aiInfo.objectName = "AI Character";
+//    physicsWorld->registerCollisionObject(m_collisionBody, aiInfo);
+//    
+//    std::cout << "💀 Created collision body for AI character (managed by AI)" << std::endl;
 }
 
 void CEAIGenericAmbientManager::removeCollisionBody(CEPhysicsWorld* physicsWorld)

@@ -1,9 +1,9 @@
 {
   "basePath": "../../runtime/cce/",
   "map": {
-    "type": "C1",
-    "map": "../game/c1/area2.map",
-    "rsc": "../game/c1/area2.rsc"
+    "type": "C2",
+    "map": "../game/c2/area1.map",
+    "rsc": "../game/c2/area1.rsc"
   },
   "video": {
     "fullscreen": false
@@ -36,19 +36,11 @@
   },
   "impactSounds": {
     "terrain": [
-      "../../runtime/cce/game/audio/IMPACT/GROUND1.wav",
-      "../../runtime/cce/game/audio/IMPACT/GROUND2.wav",
-      "../../runtime/cce/game/audio/IMPACT/GROUND3.wav"
     ],
     "object": [
-      "../../runtime/cce/game/audio/IMPACT/MODEL1.wav",
-      "../../runtime/cce/game/audio/IMPACT/MODEL2.wav",
-      "../../runtime/cce/game/audio/IMPACT/MODEL3.wav"
+      "../../runtime/cce/game/audio/IMPACT/MODEL1.wav"
     ],
     "water": [
-      "../../runtime/cce/game/audio/IMPACT/WATER1.wav",
-      "../../runtime/cce/game/audio/IMPACT/WATER2.wav",
-      "../../runtime/cce/game/audio/IMPACT/WATER3.wav"
     ]
   },
   "ui": {
@@ -96,6 +88,156 @@
       "controller": "GenericAmbient",
       "args": {
         "name": "Spino1",
+        "animations": {
+          "WALK": "So_wlk",
+          "IDLE": ["So_idle1", "So_idle2"],
+          "RUN": "So_run",
+          "DIE": "So_die"
+        },
+        "behavior": {
+          "vision": 20.0,
+          "maxAttackChance": 0.0,
+          "minAttackChance": 0.0,
+          "damageOnContact": false
+        },
+        "character": {
+          "walkSpeed": 2.65,
+          "roamRange": 24.0
+        }
+      }
+    }
+  },
+  {
+    "file": "../../runtime/cce/game/models/SPINO.CAR",
+    "animation": "So_wlk",
+    "position": [
+      129,
+      205
+    ],
+    "attachAI": {
+      "controller": "GenericAmbient",
+      "args": {
+        "name": "Spino2",
+        "animations": {
+          "WALK": "So_wlk",
+          "IDLE": ["So_idle1", "So_idle2"],
+          "RUN": "So_run",
+          "DIE": "So_die"
+        },
+        "behavior": {
+          "vision": 20.0,
+          "maxAttackChance": 0.0,
+          "minAttackChance": 0.0,
+          "damageOnContact": false
+        },
+        "character": {
+          "walkSpeed": 2.65,
+          "roamRange": 24.0
+        }
+      }
+    }
+  },
+  {
+    "file": "../../runtime/cce/game/models/SPINO.CAR",
+    "animation": "So_wlk",
+    "position": [
+      127,
+      203
+    ],
+    "attachAI": {
+      "controller": "GenericAmbient",
+      "args": {
+        "name": "Spino3",
+        "animations": {
+          "WALK": "So_wlk",
+          "IDLE": ["So_idle1", "So_idle2"],
+          "RUN": "So_run",
+          "DIE": "So_die"
+        },
+        "behavior": {
+          "vision": 20.0,
+          "maxAttackChance": 0.0,
+          "minAttackChance": 0.0,
+          "damageOnContact": false
+        },
+        "character": {
+          "walkSpeed": 2.65,
+          "roamRange": 24.0
+        }
+      }
+    }
+  },
+  {
+    "file": "../../runtime/cce/game/models/SPINO.CAR",
+    "animation": "So_wlk",
+    "position": [
+      129,
+      204
+    ],
+    "attachAI": {
+      "controller": "GenericAmbient",
+      "args": {
+        "name": "Spino4",
+        "animations": {
+          "WALK": "So_wlk",
+          "IDLE": ["So_idle1", "So_idle2"],
+          "RUN": "So_run",
+          "DIE": "So_die"
+        },
+        "behavior": {
+          "vision": 20.0,
+          "maxAttackChance": 0.0,
+          "minAttackChance": 0.0,
+          "damageOnContact": false
+        },
+        "character": {
+          "walkSpeed": 2.65,
+          "roamRange": 24.0
+        }
+      }
+    }
+  },
+  {
+    "file": "../../runtime/cce/game/models/SPINO.CAR",
+    "animation": "So_wlk",
+    "position": [
+      130,
+      204
+    ],
+    "attachAI": {
+      "controller": "GenericAmbient",
+      "args": {
+        "name": "Spino5",
+        "animations": {
+          "WALK": "So_wlk",
+          "IDLE": ["So_idle1", "So_idle2"],
+          "RUN": "So_run",
+          "DIE": "So_die"
+        },
+        "behavior": {
+          "vision": 20.0,
+          "maxAttackChance": 0.0,
+          "minAttackChance": 0.0,
+          "damageOnContact": false
+        },
+        "character": {
+          "walkSpeed": 2.65,
+          "roamRange": 24.0
+        }
+      }
+    }
+  },
+  {
+    "file": "../../runtime/cce/game/models/SPINO.CAR",
+    "animation": "So_wlk",
+    "position": [
+      131,
+      204
+    ],
+    "attachAI": {
+      "controller": "GenericAmbient",
+      "args": {
+        "name": "Spino6",
         "animations": {
           "WALK": "So_wlk",
           "IDLE": ["So_idle1", "So_idle2"],

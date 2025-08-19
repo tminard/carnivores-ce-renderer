@@ -891,18 +891,12 @@ void CEAIGenericAmbientManager::startDeathAnimation(double currentTime)
     m_isDead = true;
     
     // Try to find a death animation using the JSON config pattern
-    if (m_player_controller) {
+    if (m_player_controller && !m_config.DeathAnimName.empty()) {
         auto deathAnim = m_car->getAnimationByName(m_config.DeathAnimName).lock();
         if (deathAnim) {
-            m_deathAnimationName = m_config.DeathAnimName;
-            // Use the new helper method for cleaner death animation control
+            // Use the helper method - animation system will handle final frame locking
             m_player_controller->setAnimationAndFreeze(m_config.DeathAnimName);
-            
-            // Calculate when death animation ends (m_total_time is in milliseconds)
-            float animDuration = deathAnim->m_total_time / 1000.0f; // Convert to seconds
-            m_deathAnimationEndTime = currentTime + animDuration;
-            
-            std::cout << "💀 Playing death animation '" << m_config.DeathAnimName << "' for " << animDuration << " seconds" << std::endl;
+            std::cout << "💀 Playing death animation '" << m_config.DeathAnimName << "'" << std::endl;
             return;
         }
     }
@@ -910,13 +904,8 @@ void CEAIGenericAmbientManager::startDeathAnimation(double currentTime)
     // If no death animation found, just freeze current animation
     std::cout << "💀 No death animation found, freezing current animation" << std::endl;
     m_player_controller->holdCurrentFrame();
-    m_deathAnimationEndTime = currentTime;
 }
 
-bool CEAIGenericAmbientManager::isDeathAnimation(const std::string& animationName)
-{
-    return animationName == m_config.DeathAnimName;
-}
 
 // Collision management methods
 void CEAIGenericAmbientManager::initializeCollision(CEPhysicsWorld* physicsWorld)

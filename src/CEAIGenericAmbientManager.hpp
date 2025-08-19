@@ -125,8 +125,6 @@ class CEAIGenericAmbientManager {
   
   // Death state management
   bool m_isDead = false;
-  double m_deathAnimationEndTime = 0.0;
-  std::string m_deathAnimationName = "";
   
   // Collision detection for projectile hits
   btRigidBody* m_collisionBody = nullptr;
@@ -170,7 +168,6 @@ public:
   void onProjectileHit(double currentTime);
   bool isDead() const { return m_isDead; }
   void startDeathAnimation(double currentTime);
-  bool isDeathAnimation(const std::string& animationName);
   
   // Collision management
   void initializeCollision(CEPhysicsWorld* physicsWorld);

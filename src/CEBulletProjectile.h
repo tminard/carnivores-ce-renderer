@@ -73,6 +73,7 @@ private:
     glm::vec3 m_impactNormal;
     std::string m_impactSurfaceType;
     float m_impactDistance;
+    btRigidBody* m_hitBody;
     
     // Object impact information
     std::string m_impactObjectName;
@@ -115,6 +116,7 @@ public:
     glm::vec3 getImpactNormal() const { return m_impactNormal; }
     std::string getImpactSurfaceType() const { return m_impactSurfaceType; }
     float getImpactDistance() const { return m_impactDistance; }
+    btRigidBody* getHitBody() const { return m_hitBody; }
     
     // Object impact information getters
     std::string getImpactObjectName() const { return m_impactObjectName; }

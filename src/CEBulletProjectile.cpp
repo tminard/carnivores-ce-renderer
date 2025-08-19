@@ -59,6 +59,7 @@ CEBulletProjectile::CEBulletProjectile(btDiscreteDynamicsWorld* world,
     , m_impactPoint(0, 0, 0)
     , m_impactNormal(0, 1, 0)
     , m_impactSurfaceType("unknown")
+    , m_hitBody(nullptr)
     , m_impactDistance(0.0f)
     , m_impactObjectName("")
     , m_impactObjectIndex(-1)
@@ -155,6 +156,7 @@ bool CEBulletProjectile::update(double currentTime, CEPhysicsWorld* physics)
         m_impactNormal = rayResult.hitNormal;
         m_impactDistance = glm::distance(m_impactPoint, m_spawnPosition);
         m_currentPosition = rayResult.hitPoint;
+        m_hitBody = rayResult.hitBody;
         
         // Set surface type
         switch (rayResult.objectInfo.type) {
@@ -171,6 +173,10 @@ bool CEBulletProjectile::update(double currentTime, CEPhysicsWorld* physics)
             case CEPhysicsWorld::CollisionObjectType::WATER_PLANE:
                 m_impactSurfaceType = "water";
                 break;
+            case CEPhysicsWorld::CollisionObjectType::AI_CHARACTER:
+                m_impactSurfaceType = "ai_character";
+                m_impactObjectName = rayResult.objectInfo.objectName;
+                break;
             default:
                 m_impactSurfaceType = "unknown";
                 break;
@@ -184,6 +190,8 @@ bool CEBulletProjectile::update(double currentTime, CEPhysicsWorld* physics)
             impactColor = glm::vec3(0.0f, 0.8f, 1.0f);
         } else if (m_impactSurfaceType == "object") {
             impactColor = glm::vec3(1.0f, 0.0f, 0.5f);
+        } else if (m_impactSurfaceType == "ai_character") {
+            impactColor = glm::vec3(1.0f, 0.0f, 0.0f); // Red for AI character hits
         }
         
         addDebugSphere(m_impactPoint, 2.0f, impactColor, "impact");

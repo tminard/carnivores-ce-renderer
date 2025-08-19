@@ -419,7 +419,7 @@ CEPhysicsWorld::RaycastResult CEPhysicsWorld::raycast(const glm::vec3& from, con
     
     // Simple collision filtering - hit all visible objects
     rayCallback.m_collisionFilterGroup = PROJECTILE_GROUP;
-    rayCallback.m_collisionFilterMask = TERRAIN_GROUP | OBJECT_GROUP | WATER_GROUP;
+    rayCallback.m_collisionFilterMask = TERRAIN_GROUP | OBJECT_GROUP | WATER_GROUP | AI_GROUP;
     
     m_dynamicsWorld->rayTest(btFrom, btTo, rayCallback);
     
@@ -571,4 +571,11 @@ void CEPhysicsWorld::renderPhysicsDebug(const glm::mat4& viewProjectionMatrix, c
     
     // Render accumulated debug lines
     m_debugDrawer->endFrame();
+}
+
+void CEPhysicsWorld::registerCollisionObject(btRigidBody* body, const CollisionObjectInfo& info)
+{
+    if (body) {
+        m_objectInfoMap[body] = info;
+    }
 }

@@ -37,7 +37,7 @@ private:
     std::vector<std::string> m_waterSoundPaths;
     
     // Impact handling
-    void handleImpact(const CEBulletProjectile& projectile);
+    void handleImpact(const CEBulletProjectile& projectile, double currentTime);
     void playImpactAudio(const glm::vec3& position, const std::string& surfaceType);
     void loadImpactSoundConfig();
     

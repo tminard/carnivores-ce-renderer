@@ -1015,11 +1015,14 @@ int main(int argc, const char * argv[])
       
       if (spawn.aiControllerName == "GenericAmbient") {
         auto aiArgs = spawn.data["attachAI"]["args"];
+        auto carFile = cFileLoad->fetch(spawn.file); // Get the same car file used for character
         auto ambientMg = std::make_unique<CEAIGenericAmbientManager>(
                                                                      aiArgs,
                                                                      character,
                                                                      cMap,
-                                                                     cMapRsc);
+                                                                     cMapRsc,
+                                                                     carFile);
+        // AI manager manages collision directly - no reference needed in character
         ambients.push_back(std::move(ambientMg));
       }
       
@@ -1076,6 +1079,15 @@ int main(int argc, const char * argv[])
   
   // Initialize Bullet Physics projectile manager
   projectileManager = std::make_unique<CEBulletProjectileManager>(cMap.get(), cMapRsc.get(), g_audio_manager.get()); // Re-enabled with performance optimizations
+  
+  // Initialize collision detection for all AI characters through their managers
+  std::cout << "💀 Initializing collision detection for " << ambients.size() << " AI characters" << std::endl;
+  for (auto& ambient : ambients) {
+    if (ambient) {
+      ambient->initializeCollision(projectileManager->getPhysicsWorld());
+      std::cout << "💀 Collision initialized for AI character" << std::endl;
+    }
+  }
   
   // Initialize player capsule collision component using the physics world
   if (projectileManager && projectileManager->getPhysicsWorld()) {
@@ -1861,6 +1873,14 @@ int main(int argc, const char * argv[])
     const int frameDelay = 1000 / FPS; // Compute frame delay from FPS
     if (frameDuration.count() < frameDelay) {
       std::this_thread::sleep_for(std::chrono::milliseconds(frameDelay) - frameDuration);
+    }
+  }
+  
+  // Cleanup AI character collision bodies through their managers
+  std::cout << "💀 Cleaning up collision detection for AI characters" << std::endl;
+  for (auto& ambient : ambients) {
+    if (ambient && projectileManager) {
+      ambient->cleanupCollision(projectileManager->getPhysicsWorld());
     }
   }
   

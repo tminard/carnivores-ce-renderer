@@ -42,7 +42,8 @@ public:
         TERRAIN = 0,
         WORLD_OBJECT = 1,
         WATER_PLANE = 2,
-        HEIGHTFIELD_TERRAIN = 3
+        HEIGHTFIELD_TERRAIN = 3,
+        AI_CHARACTER = 4
     };
     
     // Collision groups for different object types
@@ -51,7 +52,8 @@ public:
         TERRAIN_GROUP = 1 << 1,
         OBJECT_GROUP = 1 << 2,
         WATER_GROUP = 1 << 3,
-        PLAYER_GROUP = 1 << 4
+        PLAYER_GROUP = 1 << 4,
+        AI_GROUP = 1 << 5
     };
     
     struct CollisionObjectInfo {
@@ -155,6 +157,9 @@ public:
     // Debug rendering
     void enablePhysicsDebugRendering(bool enable);
     void renderPhysicsDebug(const glm::mat4& viewProjectionMatrix, const glm::vec3& cameraPosition);
+    
+    // Object registration for raycast identification
+    void registerCollisionObject(btRigidBody* body, const CollisionObjectInfo& info);
     
     // Cleanup
     void removeRigidBody(btRigidBody* body);

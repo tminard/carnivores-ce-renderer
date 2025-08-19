@@ -13,6 +13,7 @@
 #include "C2MapRscFile.h"
 #include "LocalAudioManager.hpp"
 #include "CEAudioSource.hpp"
+#include "CEAIGenericAmbientManager.hpp"
 #include "dependency/libAF/af2-sound.h"
 
 #include <iostream>
@@ -21,6 +22,7 @@
 #include <filesystem>
 #include <random>
 #include <nlohmann/json.hpp>
+#include <btBulletDynamicsCommon.h>
 
 // Forward declarations for impact event logging  
 extern void addImpactEvent(const glm::vec3& location, const std::string& surfaceType, float distance, float damage, const std::string& impactType);
@@ -147,7 +149,7 @@ void CEBulletProjectileManager::update(double currentTime, double deltaTime)
         bool impacted = projectile->update(currentTime, m_physicsWorld.get());
         
         if (impacted) {
-            handleImpact(*projectile);
+            handleImpact(*projectile, currentTime);
         }
         
         // Process face intersections for effects (even if not impacted yet)
@@ -175,7 +177,7 @@ void CEBulletProjectileManager::update(double currentTime, double deltaTime)
     }
 }
 
-void CEBulletProjectileManager::handleImpact(const CEBulletProjectile& projectile)
+void CEBulletProjectileManager::handleImpact(const CEBulletProjectile& projectile, double currentTime)
 {
     if (!projectile.hasImpacted()) return;
     
@@ -197,6 +199,20 @@ void CEBulletProjectileManager::handleImpact(const CEBulletProjectile& projectil
     
     // Play impact audio with correct surface type
     playImpactAudio(hitPoint, surfaceType);
+    
+    // Check for AI character hits
+    if (surfaceType == "ai_character") {
+        // Get the hit body from the projectile's raycast result
+        btRigidBody* hitBody = projectile.getHitBody();
+        if (hitBody && hitBody->getUserPointer()) {
+            CEAIGenericAmbientManager* aiManager = static_cast<CEAIGenericAmbientManager*>(hitBody->getUserPointer());
+            if (aiManager && !aiManager->isDead()) {
+                // AI character was hit - trigger death
+                aiManager->onProjectileHit(currentTime);
+                std::cout << "💀 AI character hit! Triggering death sequence" << std::endl;
+            }
+        }
+    }
     
     // Add visual impact effects
     if (m_particleSystem) {

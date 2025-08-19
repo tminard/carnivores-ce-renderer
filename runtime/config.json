@@ -70,7 +70,8 @@
         "animations": {
           "WALK": "Bf_wlk",
           "IDLE": ["Bf_idle1", "Bf_idle2", "bf_idle3", "Bf_hero"],
-          "RUN": "Bf_run"
+          "RUN": "Bf_run",
+          "DIE": "Bf_die"
         },
         "behavior": {
           "vision": 40.0,
@@ -98,7 +99,8 @@
         "animations": {
           "WALK": "So_wlk",
           "IDLE": ["So_idle1", "So_idle2"],
-          "RUN": "So_run"
+          "RUN": "So_run",
+          "DIE": "So_die"
         },
         "behavior": {
           "vision": 20.0,
@@ -127,7 +129,8 @@
         "animations": {
           "WALK": "Tx_walk",
           "IDLE": ["Tx_sml1", "Tx_sml2"],
-          "RUN": "Tx_run1"
+          "RUN": "Tx_run1",
+          "DIE": "Tx_die1"
         },
         "behavior": {
           "vision": 20.0,
@@ -155,7 +158,8 @@
         "animations": {
           "WALK": "Sr_wlk",
           "RUN": "Sr_run",
-          "IDLE": ["Sr_idle1", "Sr_idle2"]
+          "IDLE": ["Sr_idle1", "Sr_idle2"],
+          "DIE": "Sr_die"
         },
         "behavior": {
           "vision": 6.0,

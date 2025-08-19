@@ -25,6 +25,8 @@
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtc/constants.hpp>
 
+#include "vertex.h"
+
 CERemotePlayerController::CERemotePlayerController(std::shared_ptr<LocalAudioManager> audioManager, std::shared_ptr<C2CarFile> carFile, std::shared_ptr<C2MapFile> map, std::shared_ptr<C2MapRscFile> rsc, std::string initialAnimationName): CEBasePlayerController(map, rsc), m_car(carFile), m_current_animation(initialAnimationName), m_g_audio_manager(audioManager)
 {
   m_current_speed = 0.f;
@@ -102,6 +104,12 @@ void CERemotePlayerController::setNextAnimation(std::string animationName, bool 
   m_current_animation = animationName;
   m_animation_started_at = glfwGetTime();
   m_is_looping_anim = loop;
+  
+  // Reset lock flag unless this is a freeze-at-end animation
+  if (loop) {
+    m_shouldLockAtEnd = false; // Looping animations never lock
+  }
+  // Note: Non-looping animations preserve the flag state (set by setAnimationAndFreeze)
 }
 
 bool CERemotePlayerController::isAnimPlaying(double currentTime) {
@@ -121,8 +129,10 @@ void CERemotePlayerController::update(double currentTime, double deltaTime)
 
 void CERemotePlayerController::updateWithObserver(double currentTime, Transform &baseTransform, Camera &observerCamera, glm::vec2 observerWorldPosition)
 {
+  // Calculate distance for LOD optimizations
   auto worldPos = getWorldPosition();
   auto dist = glm::distance(worldPos, observerWorldPosition);
+  
   auto anim = m_car->getAnimationByName(m_current_animation);
   
   // Slower updates above 80 tiles
@@ -146,8 +156,9 @@ void CERemotePlayerController::updateWithObserver(double currentTime, Transform 
   // Calculate dynamic animation speed based on current movement speed and animation type
   float animationPlaybackSpeed = calculateAnimationPlaybackSpeed();
   
-  bool didUpdate = m_geo->SetAnimation(anim, currentTime, m_animation_started_at, m_animation_last_update_at, deferUpdate, maxFPS, notVisible, animationPlaybackSpeed, m_is_looping_anim);
-  
+  bool didUpdate = false;
+  didUpdate = m_geo->SetAnimation(anim, currentTime, m_animation_started_at, m_animation_last_update_at, deferUpdate, maxFPS, notVisible, animationPlaybackSpeed, m_is_looping_anim, m_shouldLockAtEnd);
+
   if (didUpdate) {
     auto audioSrc = m_car->getSoundForAnimation(m_current_animation);
     if (audioSrc != nullptr && m_geo->GetCurrentFrame() == 0 && !audioSrc->isPlaying()) {
@@ -160,6 +171,8 @@ void CERemotePlayerController::updateWithObserver(double currentTime, Transform 
     }
     m_animation_last_update_at = currentTime;
   }
+  
+  // Update collision body to match character geometry and transform
 }
 
 void CERemotePlayerController::Render()
@@ -176,6 +189,41 @@ void CERemotePlayerController::StopMovement()
 void CERemotePlayerController::jump(double currentTime)
 {
   // TODO: add jump
+}
+
+void CERemotePlayerController::setAnimationAndFreeze(const std::string& animationName)
+{
+  // Set animation to play once (non-looping) and flag it to lock at final frame
+  setNextAnimation(animationName, false);
+  m_shouldLockAtEnd = true; // This animation should lock when it finishes
+}
+
+void CERemotePlayerController::holdCurrentFrame()
+{
+  // Freeze animation at current frame
+  freezeAnimation();
+}
+
+void CERemotePlayerController::lockAtFinalFrame(Transform& transform, Camera& camera)
+{
+  // Get the animation and lock it at the final frame
+  auto anim = m_car->getAnimationByName(m_current_animation).lock();
+  if (anim) {
+    int finalFrame = anim->m_number_of_frames - 1; // Get last frame (0-indexed)
+    m_geo->SetAnimation(anim, finalFrame); // Set to specific frame
+  }
+  freezeAnimation(); // Now freeze to prevent any further updates
+}
+
+bool CERemotePlayerController::hasAnimationFinished(double currentTime)
+{
+  // If animation is looping, it never "finishes"
+  if (m_is_looping_anim) {
+    return false;
+  }
+  
+  // Check if non-looping animation has reached its end
+  return !isAnimPlaying(currentTime);
 }
 
 void CERemotePlayerController::uploadStateToHardware()
@@ -647,3 +695,4 @@ float CERemotePlayerController::calculateAnimationPlaybackSpeed() {
     
     return playbackSpeed;
 }
+

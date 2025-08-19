@@ -21,10 +21,16 @@ class C2MapRscFile;
 class C2CarFile;
 class CEPhysicsWorld;
 class btRigidBody;
-class btTriangleMesh;
-class btBvhTriangleMeshShape;
+class btGImpactMeshShape;
+class btTriangleIndexVertexArray;
 
 using json = nlohmann::json;
+
+struct AnimatedCollider {
+  btTriangleIndexVertexArray* tiv = nullptr;
+  btGImpactMeshShape*         shape = nullptr;
+  btRigidBody*                body  = nullptr;
+};
 
 struct AIGenericAmbientManagerConfig {
   std::string AiName;
@@ -127,9 +133,7 @@ class CEAIGenericAmbientManager {
   bool m_isDead = false;
   
   // Collision detection for projectile hits
-  btRigidBody* m_collisionBody = nullptr;
-  btTriangleMesh* m_collisionMesh = nullptr;
-  btBvhTriangleMeshShape* m_collisionShape = nullptr;
+  AnimatedCollider* m_collider = nullptr;
   
   std::vector<glm::vec2> m_path_waypoints = {};
   
@@ -155,7 +159,7 @@ class CEAIGenericAmbientManager {
 
 public:
   CEAIGenericAmbientManager(json jsonConfig, std::shared_ptr<CERemotePlayerController> playerController, std::shared_ptr<C2MapFile> map, std::shared_ptr<C2MapRscFile> rsc, std::shared_ptr<C2CarFile> car);
-  void Process(double currentTime);
+  void Process(double currentTime, CEPhysicsWorld* physicsWorld);
   bool SetCurrentTarget(glm::vec3 position, double currentTime);
   void Reset(double currentTime);
   void ReportNotableEvent(glm::vec3 position, std::string eventType, double currentTime);
@@ -172,5 +176,5 @@ public:
   // Collision management
   void initializeCollision(CEPhysicsWorld* physicsWorld);
   void cleanupCollision(CEPhysicsWorld* physicsWorld);
-  void updateCollisionTransform();
+  void updateCollisionTransform(CEPhysicsWorld* physicsWorld);
 };

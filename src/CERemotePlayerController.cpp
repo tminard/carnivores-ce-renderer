@@ -127,6 +127,11 @@ void CERemotePlayerController::update(double currentTime, double deltaTime)
   // This method is called by the base controller system
 }
 
+CEGeometry* CERemotePlayerController::getGeometry() const
+{
+  return m_geo.get();
+}
+
 void CERemotePlayerController::updateWithObserver(double currentTime, Transform &baseTransform, Camera &observerCamera, glm::vec2 observerWorldPosition)
 {
   // Calculate distance for LOD optimizations

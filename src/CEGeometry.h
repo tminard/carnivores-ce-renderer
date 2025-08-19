@@ -100,6 +100,7 @@ public:
   size_t GetIndexCount() const { return m_indices.size(); }
 
   std::vector<glm::vec3> getDebugPhysicsVertices() const;
-  class btTriangleIndexVertexArray* getPhysicalMesh() const;
+  btTriangleIndexVertexArray* getPhysicalMesh() const;
+  btGImpactMeshShape* getImpactShape() const;
 };
 

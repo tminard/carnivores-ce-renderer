@@ -6,8 +6,28 @@
 #include <cstring>
 #include <string>
 #include <memory>
+#include <iostream>
 
-#include <AudioFile.h>
+// Try to include AudioFile.h, but make it optional for Windows builds
+#ifdef _WIN32
+    // On Windows, AudioFile.h might not be available due to path issues
+    #ifndef DISABLE_AUDIOFILE
+        #ifdef __has_include
+            #if __has_include(<AudioFile.h>)
+                #include <AudioFile.h>
+                #define AUDIOFILE_AVAILABLE
+            #endif
+        #else
+            // Fallback for older compilers
+            #include <AudioFile.h>
+            #define AUDIOFILE_AVAILABLE
+        #endif
+    #endif
+#else
+    // On non-Windows platforms, include normally
+    #include <AudioFile.h>
+    #define AUDIOFILE_AVAILABLE
+#endif
 
 using namespace libAF2;
 
@@ -21,6 +41,7 @@ Sound::Sound()
 
 Sound::Sound(const std::string file)
 {
+#ifdef AUDIOFILE_AVAILABLE
   std::unique_ptr<AudioFile<int16_t>> audioFile = std::make_unique<AudioFile<int16_t>>();
   audioFile->load(file);
   
@@ -28,9 +49,22 @@ Sound::Sound(const std::string file)
   m_channels = audioFile->getNumChannels();
   m_length = audioFile->getNumSamplesPerChannel() * (audioFile->getNumChannels() * m_bitdepth / 8);
   m_frequency = audioFile->getSampleRate();
+#else
+  // AudioFile not available - initialize with default values
+  m_bitdepth = 16;
+  m_channels = 2;
+  m_length = 0;
+  m_frequency = 44100;
+  std::cerr << "Warning: AudioFile.h not available, cannot load audio file: " << file << std::endl;
+#endif
   
+#ifdef AUDIOFILE_AVAILABLE
   // Copy the data
   m_data = audioFile->samples[0];
+#else
+  // No data available when AudioFile is not present
+  m_data.clear();
+#endif
 }
 
 Sound::Sound(const Sound& other)

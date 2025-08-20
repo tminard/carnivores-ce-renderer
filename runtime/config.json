@@ -1,12 +1,12 @@
 {
   "basePath": "../../runtime/cce/",
   "map": {
-    "type": "C1",
-    "map": "../game/c1/area1.map",
-    "rsc": "../game/c1/area1.rsc"
+    "type": "C2",
+    "map": "../game/ice/area1.map",
+    "rsc": "../game/ice/area1.rsc"
   },
   "video": {
-    "fullscreen": false
+    "fullscreen": true
   },
   "debug": {
     "shadowDebug": false,
@@ -258,6 +258,156 @@
     }
   },
   {
+    "file": "../../runtime/cce/game/models/velo2.car",
+    "animation": "Vel_wlk",
+    "position": [
+      100,
+      135
+    ],
+    "attachAI": {
+      "controller": "GenericAmbient",
+      "args": {
+        "name": "Raptor1",
+        "animations": {
+          "WALK": "Vel_wlk",
+          "IDLE": ["Vel_eat"],
+          "RUN": "Vel_run1",
+          "DIE": "Vel_die1"
+        },
+        "behavior": {
+          "vision": 5.0,
+          "maxAttackChance": 30.0,
+          "minAttackChance": 15.0,
+          "damageOnContact": false
+        },
+        "character": {
+          "walkSpeed": 1.75,
+          "roamRange": 3.0
+        }
+      }
+    }
+  },
+  {
+    "file": "../../runtime/cce/game/models/velo2.car",
+    "animation": "Vel_wlk",
+    "position": [
+      101,
+      135
+    ],
+    "attachAI": {
+      "controller": "GenericAmbient",
+      "args": {
+        "name": "Raptor1",
+        "animations": {
+          "WALK": "Vel_wlk",
+          "IDLE": ["Vel_eat"],
+          "RUN": "Vel_run1",
+          "DIE": "Vel_die1"
+        },
+        "behavior": {
+          "vision": 5.0,
+          "maxAttackChance": 30.0,
+          "minAttackChance": 15.0,
+          "damageOnContact": false
+        },
+        "character": {
+          "walkSpeed": 1.75,
+          "roamRange": 3.0
+        }
+      }
+    }
+  },
+  {
+    "file": "../../runtime/cce/game/models/velo2.car",
+    "animation": "Vel_wlk",
+    "position": [
+      102,
+      135
+    ],
+    "attachAI": {
+      "controller": "GenericAmbient",
+      "args": {
+        "name": "Raptor3",
+        "animations": {
+          "WALK": "Vel_wlk",
+          "IDLE": ["Vel_eat"],
+          "RUN": "Vel_run1",
+          "DIE": "Vel_die1"
+        },
+        "behavior": {
+          "vision": 5.0,
+          "maxAttackChance": 30.0,
+          "minAttackChance": 15.0,
+          "damageOnContact": false
+        },
+        "character": {
+          "walkSpeed": 1.75,
+          "roamRange": 3.0
+        }
+      }
+    }
+  },
+  {
+    "file": "../../runtime/cce/game/models/velo2.car",
+    "animation": "Vel_wlk",
+    "position": [
+      104,
+      135
+    ],
+    "attachAI": {
+      "controller": "GenericAmbient",
+      "args": {
+        "name": "Raptor4",
+        "animations": {
+          "WALK": "Vel_wlk",
+          "IDLE": ["Vel_eat"],
+          "RUN": "Vel_run1",
+          "DIE": "Vel_die1"
+        },
+        "behavior": {
+          "vision": 5.0,
+          "maxAttackChance": 30.0,
+          "minAttackChance": 15.0,
+          "damageOnContact": false
+        },
+        "character": {
+          "walkSpeed": 1.75,
+          "roamRange": 3.0
+        }
+      }
+    }
+  },
+  {
+    "file": "../../runtime/cce/game/models/velo2.car",
+    "animation": "Vel_wlk",
+    "position": [
+      105,
+      135
+    ],
+    "attachAI": {
+      "controller": "GenericAmbient",
+      "args": {
+        "name": "Raptor5",
+        "animations": {
+          "WALK": "Vel_wlk",
+          "IDLE": ["Vel_eat"],
+          "RUN": "Vel_run1",
+          "DIE": "Vel_die1"
+        },
+        "behavior": {
+          "vision": 5.0,
+          "maxAttackChance": 30.0,
+          "minAttackChance": 15.0,
+          "damageOnContact": false
+        },
+        "character": {
+          "walkSpeed": 1.75,
+          "roamRange": 3.0
+        }
+      }
+    }
+  },
+  {
     "file": "../../runtime/cce/game/models/TIREX.CAR",
     "animation": "Tx_walk",
     "position": [
@@ -275,9 +425,9 @@
           "DIE": "Tx_die1"
         },
         "behavior": {
-          "vision": 20.0,
-          "maxAttackChance": 0.0,
-          "minAttackChance": 0.0,
+          "vision": 4.0,
+          "maxAttackChance": 1.0,
+          "minAttackChance": 1.0,
           "damageOnContact": false
         },
         "character": {

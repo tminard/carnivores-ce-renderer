@@ -172,13 +172,14 @@ void CEShadowManager::calculateLightMatrices(const glm::vec3& center, float size
     float farPlane = size * 4.0f;
     glm::mat4 lightProjection = glm::ortho(-halfSize, halfSize, -halfSize, halfSize, nearPlane, farPlane);
     
-    // Position light high above the scene center and look down at it
-    glm::vec3 lightPos = center + glm::vec3(0.0f, size * 2.0f, 0.0f);
+    // Position light far away in direction opposite to light direction (like distant sun)
+    // Light direction points toward scene, so negate it for light position
+    glm::vec3 lightPos = center + (-m_light_direction) * (size * 3.0f);
     
-    // Create view matrix looking down from above the scene center
-    glm::mat4 lightView = glm::lookAt(lightPos,                      // Eye position (above scene center)
+    // Create view matrix for angled directional light
+    glm::mat4 lightView = glm::lookAt(lightPos,                      // Eye position (distant sun position)
                                      center,                         // Look at scene center
-                                     glm::vec3(0.0f, 0.0f, -1.0f)); // Up vector (north)
+                                     glm::vec3(0.0f, 1.0f, 0.0f));  // Up vector (world up)
     
     m_light_view_matrix = lightView;
     m_light_projection_matrix = lightProjection;

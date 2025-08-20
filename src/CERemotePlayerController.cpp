@@ -25,6 +25,8 @@
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtc/constants.hpp>
 
+#include "vertex.h"
+
 CERemotePlayerController::CERemotePlayerController(std::shared_ptr<LocalAudioManager> audioManager, std::shared_ptr<C2CarFile> carFile, std::shared_ptr<C2MapFile> map, std::shared_ptr<C2MapRscFile> rsc, std::string initialAnimationName): CEBasePlayerController(map, rsc), m_car(carFile), m_current_animation(initialAnimationName), m_g_audio_manager(audioManager)
 {
   m_current_speed = 0.f;
@@ -62,7 +64,7 @@ CERemotePlayerController::CERemotePlayerController(std::shared_ptr<LocalAudioMan
   // the original geometry.
   m_geo = std::make_unique<CEGeometry>(m_loader->getVertices(), m_loader->getIndices(), carFile->getGeometry()->getTexture().lock(), "dinosaur");
   
-  Transform transform(glm::vec3(0.f), glm::vec3(0, glm::radians(180.f), 0), glm::vec3(1.f));
+  Transform transform(glm::vec3(0.f), glm::vec3(0, glm::radians(180.f), 0), glm::vec3(0.0625f)); // Scaled down 16x
   std::vector<glm::mat4> model = { transform.GetStaticModel() };
   
   // Only ever ONE instance!
@@ -102,6 +104,12 @@ void CERemotePlayerController::setNextAnimation(std::string animationName, bool 
   m_current_animation = animationName;
   m_animation_started_at = glfwGetTime();
   m_is_looping_anim = loop;
+  
+  // Reset lock flag unless this is a freeze-at-end animation
+  if (loop) {
+    m_shouldLockAtEnd = false; // Looping animations never lock
+  }
+  // Note: Non-looping animations preserve the flag state (set by setAnimationAndFreeze)
 }
 
 bool CERemotePlayerController::isAnimPlaying(double currentTime) {
@@ -121,8 +129,10 @@ void CERemotePlayerController::update(double currentTime, double deltaTime)
 
 void CERemotePlayerController::updateWithObserver(double currentTime, Transform &baseTransform, Camera &observerCamera, glm::vec2 observerWorldPosition)
 {
+  // Calculate distance for LOD optimizations
   auto worldPos = getWorldPosition();
   auto dist = glm::distance(worldPos, observerWorldPosition);
+  
   auto anim = m_car->getAnimationByName(m_current_animation);
   
   // Slower updates above 80 tiles
@@ -146,20 +156,23 @@ void CERemotePlayerController::updateWithObserver(double currentTime, Transform 
   // Calculate dynamic animation speed based on current movement speed and animation type
   float animationPlaybackSpeed = calculateAnimationPlaybackSpeed();
   
-  bool didUpdate = m_geo->SetAnimation(anim, currentTime, m_animation_started_at, m_animation_last_update_at, deferUpdate, maxFPS, notVisible, animationPlaybackSpeed, m_is_looping_anim);
-  
+  bool didUpdate = false;
+  didUpdate = m_geo->SetAnimation(anim, currentTime, m_animation_started_at, m_animation_last_update_at, deferUpdate, maxFPS, notVisible, animationPlaybackSpeed, m_is_looping_anim, m_shouldLockAtEnd);
+
   if (didUpdate) {
     auto audioSrc = m_car->getSoundForAnimation(m_current_animation);
     if (audioSrc != nullptr && m_geo->GetCurrentFrame() == 0 && !audioSrc->isPlaying()) {
       audioSrc->setPosition(m_camera.GetPosition());
       audioSrc->setLooped(false);
-      audioSrc->setMaxDistance(256*60);
+      audioSrc->setMaxDistance(16*60); // Scaled down 16x (was 256*60)
       audioSrc->setGain(2.f);
-      audioSrc->setClampDistance(256*6);
+      audioSrc->setClampDistance(16*6); // Scaled down 16x (was 256*6)
       m_g_audio_manager->play(audioSrc);
     }
     m_animation_last_update_at = currentTime;
   }
+  
+  // Update collision body to match character geometry and transform
 }
 
 void CERemotePlayerController::Render()
@@ -176,6 +189,41 @@ void CERemotePlayerController::StopMovement()
 void CERemotePlayerController::jump(double currentTime)
 {
   // TODO: add jump
+}
+
+void CERemotePlayerController::setAnimationAndFreeze(const std::string& animationName)
+{
+  // Set animation to play once (non-looping) and flag it to lock at final frame
+  setNextAnimation(animationName, false);
+  m_shouldLockAtEnd = true; // This animation should lock when it finishes
+}
+
+void CERemotePlayerController::holdCurrentFrame()
+{
+  // Freeze animation at current frame
+  freezeAnimation();
+}
+
+void CERemotePlayerController::lockAtFinalFrame(Transform& transform, Camera& camera)
+{
+  // Get the animation and lock it at the final frame
+  auto anim = m_car->getAnimationByName(m_current_animation).lock();
+  if (anim) {
+    int finalFrame = anim->m_number_of_frames - 1; // Get last frame (0-indexed)
+    m_geo->SetAnimation(anim, finalFrame); // Set to specific frame
+  }
+  freezeAnimation(); // Now freeze to prevent any further updates
+}
+
+bool CERemotePlayerController::hasAnimationFinished(double currentTime)
+{
+  // If animation is looping, it never "finishes"
+  if (m_is_looping_anim) {
+    return false;
+  }
+  
+  // Check if non-looping animation has reached its end
+  return !isAnimPlaying(currentTime);
 }
 
 void CERemotePlayerController::uploadStateToHardware()
@@ -200,7 +248,7 @@ void CERemotePlayerController::uploadStateToHardware()
   
   // Apply terrain alignment angles (fix both pitch and roll inversion)
   glm::vec3 rotation(-pitch, yaw, -roll); // Negate both pitch and roll to fix inversions
-  Transform transform(position, rotation, glm::vec3(1.f));
+  Transform transform(position, rotation, glm::vec3(0.0625f)); // Scaled down 16x
   
   // Update instance data
   std::vector<glm::mat4> model = { transform.GetStaticModel() };
@@ -556,7 +604,7 @@ float CERemotePlayerController::calculateTerrainRoll(const glm::vec3& position, 
     
     // Clamp to restrictive bounds - creatures can't lean too far sideways
     // Max 15 degrees left/right (much more restrictive for roll)
-    return std::max(-glm::radians(15.0f), std::min(glm::radians(15.0f), rollAngle));
+    return std::max(-glm::radians(5.0f), std::min(glm::radians(5.0f), rollAngle));
 }
 
 float CERemotePlayerController::calculateFootprintHeight(const glm::vec3& centerPosition, const glm::vec3& facingDirection) {
@@ -647,3 +695,4 @@ float CERemotePlayerController::calculateAnimationPlaybackSpeed() {
     
     return playbackSpeed;
 }
+

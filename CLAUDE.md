@@ -117,3 +117,4 @@ The renderer includes a static shadow mapping system for map objects:
 - **Caching**: Shadow maps are cached to `runtime/cache/shadows/` and reused on subsequent loads
 - **Soft Shadows**: Uses PCF (Percentage-Closer Filtering) for realistic shadow edges
 - **Performance**: Generated once per map and reused throughout the session
+- remember how to build on macos: cmake --build build --target CarnivoresRenderer

@@ -9,6 +9,7 @@
 
 class C2MapFile;
 class C2MapRscFile;
+class ICapsuleCollision;
 
 class CELocalPlayerController : public CEBasePlayerController, public CEObservable
 {
@@ -34,6 +35,9 @@ private:
   float getPredictiveHeight(const glm::vec3& currentPos, const glm::vec3& movementDir, float speed, float deltaTime);
   float getAdaptiveSmoothingFactor(float heightDifference, float speed, float slopeAngle);
   
+  // Collision sliding helpers
+  glm::vec3 calculateSlideMovement(const glm::vec3& intendedMovement, const glm::vec3& collisionNormal) const;
+  
   const float maxSlopeAngle = 45.0f;
   float m_previousHeight = 0.0f;
   
@@ -54,9 +58,18 @@ private:
   double m_died_at = 0.0;
   bool m_dead = false;
   glm::vec3 m_body_at;
+  
+  // Optional capsule collision component for world object collision
+  std::unique_ptr<ICapsuleCollision> m_capsuleCollision;
 
 public:
   CELocalPlayerController(float world_width, float world_height, float tile_size, std::shared_ptr<C2MapFile> map, std::shared_ptr<C2MapRscFile> rsc);
+  
+  // Constructor with capsule collision component
+  CELocalPlayerController(float world_width, float world_height, float tile_size, std::shared_ptr<C2MapFile> map, std::shared_ptr<C2MapRscFile> rsc, std::unique_ptr<ICapsuleCollision> capsuleCollision);
+  
+  // Explicit destructor to handle unique_ptr with incomplete type
+  ~CELocalPlayerController();
 
   // CEBasePlayerController interface implementation
   glm::vec3 getPosition() const override;
@@ -85,4 +98,27 @@ public:
   void DBG_printLocationInformation() const;
   
   bool isAlive(double currentTime);
+  
+  // Movement information getters
+  float getCurrentSpeed() const { return m_current_speed; }
+  
+  // Capsule collision management
+  
+  /**
+   * Set or replace the capsule collision component.
+   * @param capsuleCollision New collision component (can be nullptr to disable)
+   */
+  void setCapsuleCollision(std::unique_ptr<ICapsuleCollision> capsuleCollision);
+  
+  /**
+   * Get the current capsule collision component.
+   * @return Pointer to collision component (can be nullptr if not set)
+   */
+  ICapsuleCollision* getCapsuleCollision() const;
+  
+  /**
+   * Check if capsule collision is enabled and active.
+   * @return true if collision detection is active
+   */
+  bool hasCapsuleCollision() const;
 };

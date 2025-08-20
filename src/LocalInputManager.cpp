@@ -1,11 +1,17 @@
 #include "LocalInputManager.hpp"
 #include "camera.h"
 #include "CELocalPlayerController.hpp"
+#include "CEUIRenderer.h"
 
 void LocalInputManager::Bind(std::shared_ptr<CELocalPlayerController> player_controller)
 {
   this->m_player_controller = player_controller;
   this->lastTime = glfwGetTime();
+}
+
+void LocalInputManager::BindUIRenderer(CEUIRenderer* ui_renderer)
+{
+  this->m_ui_renderer = ui_renderer;
 }
 
 float horizontalAngle = glm::radians(3.14f);
@@ -77,14 +83,14 @@ void LocalInputManager::ProcessLocalInput(GLFWwindow* window, float deltaTime)
     if (!noclip) {
       m_player_controller->move(currentTime, timeDelta, forwardPressed, backwardPressed, rightPressed, leftPressed);
     } else {
-      if (forwardPressed) m_player_controller->getCamera()->MoveForward(100.f);
-      if (backwardPressed) m_player_controller->getCamera()->MoveForward(-100.f);
-      if (rightPressed) m_player_controller->getCamera()->MoveRight(-100.f);
-      if (leftPressed) m_player_controller->getCamera()->MoveRight(100.f);
+      if (forwardPressed) m_player_controller->getCamera()->MoveForward(6.25f); // Scaled down 16x (was 100.f)
+      if (backwardPressed) m_player_controller->getCamera()->MoveForward(-6.25f); // Scaled down 16x (was -100.f)
+      if (rightPressed) m_player_controller->getCamera()->MoveRight(-6.25f); // Scaled down 16x (was -100.f)
+      if (leftPressed) m_player_controller->getCamera()->MoveRight(6.25f); // Scaled down 16x (was 100.f)
     }
     
     if (noclip && glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-      m_player_controller->getCamera()->MoveUp(100.f);
+      m_player_controller->getCamera()->MoveUp(6.25f); // Scaled down 16x (was 100.f)
     }
     
     if (!noclip && glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
@@ -105,7 +111,7 @@ void LocalInputManager::ProcessLocalInput(GLFWwindow* window, float deltaTime)
         noclip = false;
       } else {
         float currentHeight = m_player_controller->getCamera()->GetHeight();
-        m_player_controller->getCamera()->SetHeight(currentHeight + 256.f);
+        m_player_controller->getCamera()->SetHeight(currentHeight + 16.f); // Scaled down 16x (was 256.f)
         noclip = true;
       }
     } else if (glfwGetKey(window, GLFW_KEY_L) == GLFW_RELEASE) {
@@ -126,6 +132,76 @@ void LocalInputManager::ProcessLocalInput(GLFWwindow* window, float deltaTime)
     }
     else if (glfwGetKey(window, GLFW_KEY_P) == GLFW_RELEASE) {
       this->m_last_key_state[GLFW_KEY_P] = GLFW_RELEASE;
+    }
+    
+    // Handle B key for bounding box visualization toggle
+    if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS && this->m_last_key_state[GLFW_KEY_B] != GLFW_PRESS) {
+      this->m_last_key_state[GLFW_KEY_B] = GLFW_PRESS;
+      
+      this->m_show_bounding_boxes = !this->m_show_bounding_boxes;
+      
+      if (this->m_show_bounding_boxes) {
+        std::cout << "Debug: Bounding box visualization ENABLED" << std::endl;
+      } else {
+        std::cout << "Debug: Bounding box visualization DISABLED" << std::endl;
+      }
+    }
+    else if (glfwGetKey(window, GLFW_KEY_B) == GLFW_RELEASE) {
+      this->m_last_key_state[GLFW_KEY_B] = GLFW_RELEASE;
+    }
+    
+    // Handle X key for physics debug visualization toggle
+    if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS && this->m_last_key_state[GLFW_KEY_X] != GLFW_PRESS) {
+      this->m_last_key_state[GLFW_KEY_X] = GLFW_PRESS;
+      
+      this->m_show_physics_debug = !this->m_show_physics_debug;
+      
+      if (this->m_show_physics_debug) {
+        std::cout << "Debug: Bullet Physics debug visualization ENABLED" << std::endl;
+      } else {
+        std::cout << "Debug: Bullet Physics debug visualization DISABLED" << std::endl;
+      }
+    }
+    else if (glfwGetKey(window, GLFW_KEY_X) == GLFW_RELEASE) {
+      this->m_last_key_state[GLFW_KEY_X] = GLFW_RELEASE;
+    }
+    
+    // Handle right mouse button for weapon toggle
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS && 
+        this->m_last_mouse_state[GLFW_MOUSE_BUTTON_RIGHT] != GLFW_PRESS) {
+      this->m_last_mouse_state[GLFW_MOUSE_BUTTON_RIGHT] = GLFW_PRESS;
+      
+      if (this->m_ui_renderer) {
+        this->m_ui_renderer->toggleWeapon();
+      }
+    }
+    else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_RELEASE) {
+      this->m_last_mouse_state[GLFW_MOUSE_BUTTON_RIGHT] = GLFW_RELEASE;
+    }
+    
+    // Handle left mouse button for weapon firing
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS && 
+        this->m_last_mouse_state[GLFW_MOUSE_BUTTON_LEFT] != GLFW_PRESS) {
+      this->m_last_mouse_state[GLFW_MOUSE_BUTTON_LEFT] = GLFW_PRESS;
+      
+      if (this->m_ui_renderer) {
+        this->m_ui_renderer->fireWeapon();
+      }
+    }
+    else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE) {
+      this->m_last_mouse_state[GLFW_MOUSE_BUTTON_LEFT] = GLFW_RELEASE;
+    }
+    
+    // Handle R key for weapon reload
+    if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS && this->m_last_key_state[GLFW_KEY_R] != GLFW_PRESS) {
+      this->m_last_key_state[GLFW_KEY_R] = GLFW_PRESS;
+      
+      if (this->m_ui_renderer) {
+        this->m_ui_renderer->reloadWeapon();
+      }
+    }
+    else if (glfwGetKey(window, GLFW_KEY_R) == GLFW_RELEASE) {
+      this->m_last_key_state[GLFW_KEY_R] = GLFW_RELEASE;
     }
   }
   

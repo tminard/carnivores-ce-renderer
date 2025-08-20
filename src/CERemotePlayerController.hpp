@@ -77,6 +77,11 @@ private:
   float m_baseWalkAnimSpeed = 1.0f;   // Base speed for walk animation
   float m_baseRunAnimSpeed = 1.0f;    // Base speed for run animation
   
+  // Death/frozen state
+  bool m_isFrozen = false;
+  bool m_shouldLockAtEnd = false; // Flag to lock at final frame when animation finishes
+  
+  
   bool m_is_jumping = false;
   float m_vertical_speed = 0.0f;
   const float m_jump_speed = 12.f;
@@ -100,6 +105,7 @@ private:
   float calculateTerrainRoll(const glm::vec3& position, const glm::vec3& rightDirection);
   float calculateFootprintHeight(const glm::vec3& centerPosition, const glm::vec3& facingDirection);
   glm::vec3 extractEulerAngles(const glm::mat3& rotMatrix);
+  
   
 public:
   void uploadStateToHardware();
@@ -135,6 +141,17 @@ public:
   bool isTurning();
   
   void jump(double currentTime);
+  
+  // Death state management
+  void freezeAnimation() { m_isFrozen = true; }
+  void unfreezeAnimation() { m_isFrozen = false; }
+  bool isFrozen() const { return m_isFrozen; }
+  void lockAtFinalFrame(Transform& transform, Camera& camera); // Lock animation at final frame
+  
+  // Animation control helpers
+  void setAnimationAndFreeze(const std::string& animationName); // Play once then freeze at final frame
+  void holdCurrentFrame(); // Stop animation progression but keep current frame
+  bool hasAnimationFinished(double currentTime); // Check if current non-looping animation has finished
   
   void Render();
 };

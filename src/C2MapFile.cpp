@@ -97,7 +97,7 @@ int C2MapFile::getHeight()
 
 float C2MapFile::getTileLength()
 {
-  return 256.f;
+  return 16.f; // Maximum physics optimization (1 tile = 4m, 4 units/meter)
 }
 
 int C2MapFile::getWaterTextureIDAt(int xy, int water_texture_id)
@@ -363,6 +363,29 @@ float C2MapFile::getHeightAt(int xy)
   return (scaled_height);
 }
 
+float C2MapFile::getTerrainHeightAt(int xy)
+{
+  if (xy < 0 || xy >= m_heightmap_data.size()) {
+    std::cerr << "OOB terrain height requested! Returning -1" << std::endl;
+    return -1.f;
+  }
+
+  float scaled_height;
+  
+  if (m_type == CEMapType::C2) {
+    // For C2, heightmap contains terrain height directly
+    scaled_height = this->m_heightmap_data.at(xy) * this->getHeightmapScale();
+  } else {
+    // For C1, we need the actual ground height for depth calculations
+    // m_watermap contains the ground level, m_heightmap contains surface level
+    // For terrain height (ground), use watermap value directly
+    auto c1GroundHeight = this->m_watermap_data.at(xy);
+    scaled_height = c1GroundHeight * this->getHeightmapScale();
+  }
+
+  return scaled_height;
+}
+
 void C2MapFile::setGroundLevelAt(int x, int y, float level, float slopeDegrees)
 {
   int xy = (y * this->getWidth()) + x;
@@ -400,19 +423,38 @@ bool C2MapFile::hasWaterAt(int xy)
     uint8_t flags = this->getFlagsAt(xy);
     if (flags & 0x0080 || flags & 0x8000) return true;
 
+    uint8_t surfaceHeight = this->m_heightmap_data.at(xy);
+    uint8_t groundHeight = this->m_watermap_data.at(xy);
+    
+    // Fix for false water detection in mountains:
+    // When both heights max out (255), it's due to heightmap data limits, not water
+    if (surfaceHeight == 255 && groundHeight == 255) {
+      return false;
+    }
+    
+    // Additional check: if ground height is at max but surface isn't maxed, 
+    // it's likely a steep slope rather than water
+    if (groundHeight == 255 && surfaceHeight < 255) {
+      return false;
+    }
+    
+    // Original C1 logic: Water exists when GetLandUpH() - GetLandH() > threshold
+    // In our case: surface height - ground height should be significantly > 48
+    int heightDifference = (int)surfaceHeight - (int)groundHeight;
+    if (heightDifference <= 48) {
+      return false; // No water if difference is 48 or less
+    }
+    
+    // Even if height delta indicates water, check texture IDs for confirmation
     int id = int(this->m_texturec1_A_index_data.at(xy));
     int id_second = int(this->m_texturec1_B_index_data.at(xy));
     if (!id || !id_second) {
-      // Has a water texture, but not set to water in flag. Original engine did the same check.
+      // Texture ID 0 is always water
       return true;
     }
     
-    // Note some mountains in C1 have a slight delta and incorrectly add water....
-    if (this->m_watermap_data.at(xy) != this->m_heightmap_data.at(xy) + 48) {
-      return true;
-    };
-
-    return false;
+    // If we reach here, height difference suggests water and textures aren't water-specific
+    return true;
   }
 }
 
@@ -434,7 +476,21 @@ bool C2MapFile::hasOriginalWaterAt(int xy)
     return false;
   } else {
     if (flags & 0x0080) return true;
-    return (this->m_watermap_data.at(xy) != this->m_heightmap_data.at(xy) + 48);
+    
+    uint8_t surfaceHeight = this->m_heightmap_data.at(xy);
+    uint8_t groundHeight = this->m_watermap_data.at(xy);
+    
+    // Apply same mountain fix as hasWaterAt()
+    if (surfaceHeight == 255 && groundHeight == 255) {
+      return false;
+    }
+    if (groundHeight == 255 && surfaceHeight < 255) {
+      return false;
+    }
+    
+    // Original logic with proper comparison
+    int heightDifference = (int)surfaceHeight - (int)groundHeight;
+    return (heightDifference > 48);
   }
 }
 
@@ -602,15 +658,39 @@ float C2MapFile::getHeightAtWorldPosition(const glm::vec3& worldPos) {
 */
 int C2MapFile::getObjectHeightForRadius(int x, int y, int R)
 {
-    x = (x<<8) + 128;
-    y = (y<<8) + 128;
-    float hr,h;
-    hr = getHeightAt((y*getWidth())+(x));
+    // Replicate original GetObjectH function exactly
+    // x,y are tile coordinates, R is radius in world units
     
-    h = getHeightAt( ((y)*getWidth()) + (x+R) ); if (h < hr && h != 0) hr = h;
-    h = getHeightAt( ((y)*getWidth()) + (x-R) ); if (h < hr && h != 0) hr = h;
-    h = getHeightAt( ((y+R)*getWidth()) + (x) ); if (h < hr && h != 0) hr = h;
-    h = getHeightAt( ((y-R)*getWidth()) + (x) ); if (h < hr && h != 0) hr = h;
+    // Convert tile coordinates to world coordinates (original: x = (x<<8) + 128)
+    // In original: 1 tile = 256 units, center at +128
+    // In CE: 1 tile = 16 units, so scale accordingly
+    float world_x = (x * 16.0f) + 8.0f; // Tile center in world coordinates
+    float world_y = (y * 16.0f) + 8.0f;
+    
+    // Scale radius to match our coordinate system
+    // Original radius was in 256-unit system, ours is 16-unit system
+    float scaled_R = R * (16.0f / 256.0f);
+    
+    // Find lowest height among center and 4 cardinal directions
+    float hr = getInterpolatedGroundHeight(world_x, world_y);
+    float h;
+    
+    h = getInterpolatedGroundHeight(world_x + scaled_R, world_y);
+    if (h < hr) hr = h;
+    
+    h = getInterpolatedGroundHeight(world_x - scaled_R, world_y); 
+    if (h < hr) hr = h;
+    
+    h = getInterpolatedGroundHeight(world_x, world_y + scaled_R);
+    if (h < hr) hr = h;
+    
+    h = getInterpolatedGroundHeight(world_x, world_y - scaled_R);
+    if (h < hr) hr = h;
+    
+    // Add 15 units like original (scaled to our coordinate system)
+    hr += 15.0f * (getHeightmapScale() / 64.0f); // Original added 15, scaled by ctHScale ratio
+    
+    // Return as integer (original divided by ctHScale, but we're already in scaled units)
     return (int)hr;
 }
 
@@ -665,7 +745,7 @@ glm::vec3 C2MapFile::getRandomLanding()
   int xy = (landing.y * getWidth()) + landing.x;
   return glm::vec3(
     (landing.x * getTileLength()) + (getTileLength() / 2),
-    getHeightAt(xy) + 1024.f,
+    getHeightAt(xy) + 64.f, // Scaled down 16x (was 1024.f)
     (landing.y * getTileLength()) + (getTileLength() / 2)
   );
 }
@@ -700,6 +780,21 @@ bool C2MapFile::hasDangerTileAt(std::shared_ptr<C2MapRscFile> rsc, glm::vec2 til
   }
   
   return false;
+}
+
+int C2MapFile::getFogIndexAt(int x, int y)
+{
+  // Fog data is at half resolution, so divide coordinates by 2
+  int xy = (((int)y >> 1) * (getWidth() >> 1)) + ((int)x >> 1);
+  int fogIndex = m_fog_data.at(xy);
+  
+  // Return 0-based index (-1 if no fog)
+  return fogIndex > 0 ? fogIndex - 1 : -1;
+}
+
+bool C2MapFile::hasFogAt(int x, int y)
+{
+  return getFogIndexAt(x, y) >= 0;
 }
 
 void C2MapFile::postProcess(std::weak_ptr<C2MapRscFile> rsc)

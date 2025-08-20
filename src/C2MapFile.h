@@ -51,8 +51,8 @@ private:
 
   constexpr static const int SIZE = 1024;
   constexpr static const int SIZE_C1 = 512;
-  constexpr static const float HEIGHT_SCALE = 64.f;
-  constexpr static const float HEIGHT_SCALE_C1 = 32.f;
+  constexpr static const float HEIGHT_SCALE = 4.f; // Scaled down 16x for new world scale (was 64.f)
+  constexpr static const float HEIGHT_SCALE_C1 = 2.f; // Scaled down 16x for new world scale (was 32.f)
   
   void postProcess(std::weak_ptr<C2MapRscFile> rsc);
   void fillWater(int x, int y, int src_x, int src_y);
@@ -80,6 +80,9 @@ public:
   float getWaterHeightAt(int x, int y);
   int getObjectHeightForRadius(int x, int y, int R);
   int getObjectAt(int xy);
+  
+  // Get terrain height (excluding water) for depth calculations
+  float getTerrainHeightAt(int xy);
 
   int getTextureIDAt(int xy);
   int getSecondaryTextureIDAt(int xy);
@@ -116,6 +119,8 @@ public:
   bool hasDynamicWaterAt(int xy);
   bool hasDynamicWaterAt(int x, int y);
   bool hasDangerTileAt(std::shared_ptr<C2MapRscFile> rsc, glm::vec2 tile);
+  int getFogIndexAt(int x, int y);
+  bool hasFogAt(int x, int y);
 
   void setWaterAt(int x, int y); // for C2
   void setWaterAt(int x, int y, int water_height);// c1

@@ -3,6 +3,8 @@
 #include "CELocalPlayerController.hpp"
 #include "C2MapFile.h"
 #include "C2MapRscFile.h"
+#include "C2CarFile.h"
+#include "CEAnimation.h"
 #include <glm/glm.hpp>
 #include <glm/gtx/hash.hpp>
 #include <unordered_map>
@@ -11,6 +13,11 @@
 #include <algorithm>
 
 #include "CEWalkableTerrainPathFinder.hpp"
+#include "CEPhysicsWorld.h"
+#include "vertex.h"
+#include <btBulletDynamicsCommon.h>
+#include <BulletCollision/CollisionShapes/btBvhTriangleMeshShape.h>
+#include <BulletCollision/CollisionShapes/btTriangleMesh.h>
 
 #include "jps.hpp"
 
@@ -36,10 +43,12 @@ CEAIGenericAmbientManager::CEAIGenericAmbientManager(
                                                      json jsonConfig,
                                                      std::shared_ptr<CERemotePlayerController> playerController,
                                                      std::shared_ptr<C2MapFile> map,
-                                                     std::shared_ptr<C2MapRscFile> rsc)
+                                                     std::shared_ptr<C2MapRscFile> rsc,
+                                                     std::shared_ptr<C2CarFile> car)
 : m_player_controller(playerController),
 m_map(map),
 m_rsc(rsc),
+m_car(car),
 m_last_process_time(0),
 m_target_expire_time(0)
 {
@@ -62,6 +71,7 @@ m_target_expire_time(0)
 
   m_config.WalkAnimName = jsonConfig["animations"]["WALK"];
   m_config.RunAnimName = jsonConfig["animations"].value("RUN", m_config.WalkAnimName);
+  m_config.DeathAnimName = jsonConfig["animations"].value("DIE", "DIE");
   m_config.AiName = namedAI;
   m_config.m_idle_odds = jsonConfig["character"].value("idleOdds", 0.3f);
   m_config.m_pf_range = jsonConfig["character"].value("roamRange", 128.f);
@@ -431,6 +441,29 @@ void CEAIGenericAmbientManager::updateInflightPathsearch(double currentTime)
 }
 
 void CEAIGenericAmbientManager::Process(double currentTime) {
+  // Handle death state - limit processing but maintain essential updates
+  if (m_isDead) {
+    // Stop all movement and AI decision making
+    m_player_controller->StopMovement();
+    m_player_controller->setTargetSpeed(0.0f);
+    
+    // No special handling needed - animation system will automatically
+    // lock at final frame when non-looping animation finishes
+    
+    // Still update collision transform and upload state for rendering
+    updateCollisionTransform();
+    
+    // Upload state to hardware at regular intervals for rendering
+    const double minInterval = 1.0 / 30.0;
+    if (currentTime - m_last_upload_time >= minInterval) {
+      m_player_controller->uploadStateToHardware();
+      m_last_upload_time = currentTime;
+    }
+    
+    m_last_process_time = currentTime;
+    return; // Skip all AI logic but maintain essential updates
+  }
+  
   // Update pathfinding
   double deltaTime = currentTime - m_last_process_time;
   
@@ -557,6 +590,9 @@ void CEAIGenericAmbientManager::Process(double currentTime) {
     m_player_controller->uploadStateToHardware();
     m_last_upload_time = currentTime;
   }
+  
+  // Update collision body transform if present
+  updateCollisionTransform();
   
   m_last_process_time = currentTime;
 }
@@ -837,4 +873,120 @@ float CEAIGenericAmbientManager::CalculateAttackChance(float distance, float max
     // Linear interpolation between min and max attack chance
     float attackChance = minAttackChance + (maxAttackChance - minAttackChance) * (distance / maxDist);
     return attackChance;
+}
+
+// Death state management methods
+void CEAIGenericAmbientManager::onProjectileHit(double currentTime)
+{
+    if (m_isDead) {
+        return; // Already dead
+    }
+    
+    std::cout << "💀 AI character hit by projectile - starting death sequence" << std::endl;
+    startDeathAnimation(currentTime);
+}
+
+void CEAIGenericAmbientManager::startDeathAnimation(double currentTime)
+{
+    m_isDead = true;
+    
+    // Try to find a death animation using the JSON config pattern
+    if (m_player_controller && !m_config.DeathAnimName.empty()) {
+        auto deathAnim = m_car->getAnimationByName(m_config.DeathAnimName).lock();
+        if (deathAnim) {
+            // Use the helper method - animation system will handle final frame locking
+            m_player_controller->setAnimationAndFreeze(m_config.DeathAnimName);
+            std::cout << "💀 Playing death animation '" << m_config.DeathAnimName << "'" << std::endl;
+            return;
+        }
+    }
+    
+    // If no death animation found, just freeze current animation
+    std::cout << "💀 No death animation found, freezing current animation" << std::endl;
+    m_player_controller->holdCurrentFrame();
+}
+
+
+// Collision management methods
+void CEAIGenericAmbientManager::initializeCollision(CEPhysicsWorld* physicsWorld)
+{
+    createCollisionBody(physicsWorld);
+}
+
+void CEAIGenericAmbientManager::cleanupCollision(CEPhysicsWorld* physicsWorld)
+{
+    removeCollisionBody(physicsWorld);
+}
+
+void CEAIGenericAmbientManager::createCollisionBody(CEPhysicsWorld* physicsWorld)
+{
+  auto pos = m_player_controller->getPosition();
+  auto geo = m_car->getGeometry();
+  geo->EnablePhysics();
+  auto baseBvhShape = geo->getMeshShape();
+  btVector3 scale(0.0625f, 0.0625f, 0.0625f);
+  btScaledBvhTriangleMeshShape* scaledShape = new btScaledBvhTriangleMeshShape(baseBvhShape, scale);
+  btRigidBody* instanceBody = physicsWorld->createStaticBody(scaledShape, pos);
+  instanceBody->setUserPointer(this);
+  
+  short objectGroup = CEPhysicsWorld::CollisionGroups::AI_GROUP;
+  short objectMask = -1; // Collide with everything
+  physicsWorld->getDynamicsWorld()->removeRigidBody(instanceBody);
+  physicsWorld->getDynamicsWorld()->addRigidBody(instanceBody, objectGroup, objectMask);
+  
+  CEPhysicsWorld::CollisionObjectInfo info;
+  info.type = CEPhysicsWorld::CollisionObjectType::AI_CHARACTER;
+  info.objectName = "AI Character";
+  physicsWorld->registerCollisionObject(instanceBody, info);
+  
+  m_collisionBody = instanceBody;
+}
+
+void CEAIGenericAmbientManager::removeCollisionBody(CEPhysicsWorld* physicsWorld)
+{
+    if (m_collisionBody && physicsWorld) {
+        physicsWorld->getDynamicsWorld()->removeRigidBody(m_collisionBody);
+        // Unregister from physics world object info map
+        physicsWorld->registerCollisionObject(m_collisionBody, {}); // Empty info removes entry
+        delete m_collisionBody;
+        m_collisionBody = nullptr;
+    }
+    
+    if (m_collisionShape) {
+        delete m_collisionShape;
+        m_collisionShape = nullptr;
+    }
+    
+    if (m_collisionMesh) {
+        delete m_collisionMesh;
+        m_collisionMesh = nullptr;
+    }
+}
+
+void CEAIGenericAmbientManager::updateCollisionTransform()
+{
+    if (!m_collisionBody || !m_player_controller) {
+        return;
+    }
+    
+    // Get current character transform (position, rotation, scale)
+    glm::vec3 position = m_player_controller->getPosition();
+    
+    // Create Bullet transform
+    btTransform transform;
+    transform.setIdentity();
+    transform.setOrigin(btVector3(position.x, position.y, position.z));
+    
+    // Calculate rotation from facing direction
+    // Note: The facing direction is stored in the camera's forward direction
+    glm::vec3 forward = m_player_controller->getCamera()->GetForward();
+    float yaw = atan2f(forward.x, forward.z); // Yaw rotation around Y-axis
+    
+    btQuaternion rotation;
+    rotation.setEulerZYX(0, yaw, 0); // Only rotate around Y-axis for character facing
+    transform.setRotation(rotation);
+    
+    // Apply transform to collision body
+    m_collisionBody->getMotionState()->setWorldTransform(transform);
+    m_collisionBody->setWorldTransform(transform);
 }

@@ -18,6 +18,11 @@ class CERemotePlayerController;
 class CELocalPlayerController;
 class C2MapFile;
 class C2MapRscFile;
+class C2CarFile;
+class CEPhysicsWorld;
+class btRigidBody;
+class btTriangleMesh;
+class btBvhTriangleMeshShape;
 
 using json = nlohmann::json;
 
@@ -26,6 +31,7 @@ struct AIGenericAmbientManagerConfig {
   std::string WalkAnimName;
   std::vector<std::string> IdleAnimNames;
   std::string RunAnimName;
+  std::string DeathAnimName;
   // Odds we choose to idle
   float m_idle_odds;
   // Range in tiles when selecting next destination
@@ -66,6 +72,7 @@ class CEAIGenericAmbientManager {
   std::shared_ptr<CERemotePlayerController> m_player_controller;
   std::shared_ptr<C2MapFile> m_map;
   std::shared_ptr<C2MapRscFile> m_rsc;
+  std::shared_ptr<C2CarFile> m_car;
   
   AIGenericAmbientManagerConfig m_config;
   
@@ -116,6 +123,14 @@ class CEAIGenericAmbientManager {
   double m_last_speed_update = 0.0;
   const double m_speed_update_interval = 0.1; // Update speed calculations every 100ms
   
+  // Death state management
+  bool m_isDead = false;
+  
+  // Collision detection for projectile hits
+  btRigidBody* m_collisionBody = nullptr;
+  btTriangleMesh* m_collisionMesh = nullptr;
+  btBvhTriangleMeshShape* m_collisionShape = nullptr;
+  
   std::vector<glm::vec2> m_path_waypoints = {};
   
   void chooseNewTarget(glm::vec3 currentPosition, double currentTime);
@@ -133,9 +148,13 @@ class CEAIGenericAmbientManager {
   float CalculateAttackChance(float distance, float maxDist, float minAttackChance, float maxAttackChance);
   
   glm::vec3 findSafeTarget(glm::vec3 direction);
+  
+  // Collision helper methods
+  void createCollisionBody(CEPhysicsWorld* physicsWorld);
+  void removeCollisionBody(CEPhysicsWorld* physicsWorld);
 
 public:
-  CEAIGenericAmbientManager(json jsonConfig, std::shared_ptr<CERemotePlayerController> playerController, std::shared_ptr<C2MapFile> map, std::shared_ptr<C2MapRscFile> rsc);
+  CEAIGenericAmbientManager(json jsonConfig, std::shared_ptr<CERemotePlayerController> playerController, std::shared_ptr<C2MapFile> map, std::shared_ptr<C2MapRscFile> rsc, std::shared_ptr<C2CarFile> car);
   void Process(double currentTime);
   bool SetCurrentTarget(glm::vec3 position, double currentTime);
   void Reset(double currentTime);
@@ -144,4 +163,14 @@ public:
   bool NoticesPlayerFromSensory(double currentTime);
   bool IsDangerous();
   std::shared_ptr<CERemotePlayerController> GetPlayerController();
+  
+  // Death state management
+  void onProjectileHit(double currentTime);
+  bool isDead() const { return m_isDead; }
+  void startDeathAnimation(double currentTime);
+  
+  // Collision management
+  void initializeCollision(CEPhysicsWorld* physicsWorld);
+  void cleanupCollision(CEPhysicsWorld* physicsWorld);
+  void updateCollisionTransform();
 };

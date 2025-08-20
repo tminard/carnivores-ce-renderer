@@ -16,6 +16,10 @@
 
 #include "IndexedMeshLoader.h"
 
+// Bullet Physics for mesh collision generation
+#include <btBulletCollisionCommon.h>
+#include <BulletCollision/Gimpact/btGImpactShape.h>
+
 namespace fs = std::filesystem;
 using json = nlohmann::json;
 
@@ -24,6 +28,7 @@ CEGeometry::CEGeometry(std::vector < Vertex > vertices, std::vector < uint32_t >
 {
   this->loadObjectIntoMemoryBuffer(shaderName);
   m_current_frame = 0;
+  m_has_physics = false;
 }
 
 CEGeometry::~CEGeometry()
@@ -98,7 +103,86 @@ void CEGeometry::loadObjectIntoMemoryBuffer(std::string shaderName)
   glBindVertexArray(0);
 }
 
-bool CEGeometry::SetAnimation(std::weak_ptr<CEAnimation> animation, double atTime, double startAt, double lastUpdateAt, bool deferUpdate, bool maxFPS, bool notVisible, float playbackSpeed, bool loop) {
+bool CEGeometry::SetAnimation(std::weak_ptr<CEAnimation> animation, int atFrame) {
+  std::shared_ptr<CEAnimation> ani = animation.lock();
+  if (!ani) {
+    // Handle the case where the animation is no longer available or doesn't exist
+    return false;
+  }
+  
+  if (m_current_frame == atFrame) {
+    return true;
+  }
+  
+  if (atFrame >= ani->m_number_of_frames || atFrame < 0) {
+    return false;
+  }
+
+  double timePerFrame = 1.0 / double(ani->m_kps);
+  double atTime = timePerFrame*atFrame;
+  
+  return SetAnimation(animation, atTime, 0, 0, false, true, false, 1.0f, false, true);
+}
+
+void CEGeometry::applyAnimFaceOrdered(std::vector<Vertex>& m_vertices,
+                          const std::vector<TFace>& faces,
+                          const short* aniData,
+                          int numVerts, int frameA, int frameB, float t)
+{
+  const int stride = numVerts * 3; // units per frame
+  const short* A = aniData + frameA * stride;
+  const short* B = aniData + frameB * stride;
+  const float k1 = 1.f - t, k2 = t;
+  const bool doLoop = frameA != frameB;
+
+  for (size_t f = 0; f < faces.size(); ++f) {
+    const auto& fc = faces[f];
+
+    auto fetch = [&](uint32_t vi) -> glm::vec3 {
+      const int o = int(vi) * 3;
+      if (doLoop) {
+        const float x = (A[o+0]*k1 + B[o+0]*k2) / 8.f;
+        const float y = (A[o+1]*k1 + B[o+1]*k2) / 8.f;
+        const float z = (A[o+2]*k1 + B[o+2]*k2) / 8.f;
+        
+        return {x, y, z};
+      }
+      
+      const float x = (A[o+0]*k1) / 8.f;
+      const float y = (A[o+1]*k1) / 8.f;
+      const float z = (A[o+2]*k1) / 8.f;
+      return {x,y,z};
+    };
+
+    m_vertices[f*3 + 0].setPos(fetch(fc.v1));
+    m_vertices[f*3 + 1].setPos(fetch(fc.v2));
+    m_vertices[f*3 + 2].setPos(fetch(fc.v3));
+  }
+}
+
+inline glm::vec3 fetchPosNoInterp(const short* A, int vi) {
+  const int o = vi * 3;
+  constexpr float s = 1.0f / 8.0f;
+  return { A[o+0]*s, A[o+1]*s, A[o+2]*s };
+}
+
+void applyAnimFaceOrdered_NoInterp(std::vector<Vertex>& m_vertices,
+                                   const std::vector<TFace>& faces,
+                                   const short* aniData, int numVerts,
+                                   int frameA)
+{
+  const int stride = numVerts * 3;
+  const short* A = aniData + frameA * stride;
+
+  for (size_t f = 0; f < faces.size(); ++f) {
+    const auto& fc = faces[f];
+    m_vertices[f*3 + 0].setPos(fetchPosNoInterp(A, fc.v1));
+    m_vertices[f*3 + 1].setPos(fetchPosNoInterp(A, fc.v2));
+    m_vertices[f*3 + 2].setPos(fetchPosNoInterp(A, fc.v3));
+  }
+}
+
+bool CEGeometry::SetAnimation(std::weak_ptr<CEAnimation> animation, double atTime, double startAt, double lastUpdateAt, bool deferUpdate, bool maxFPS, bool notVisible, float playbackSpeed, bool loop, bool noInterpolation) {
   std::shared_ptr<CEAnimation> ani = animation.lock();
   if (!ani) {
     // Handle the case where the animation is no longer available or doesn't exist
@@ -149,51 +233,44 @@ bool CEGeometry::SetAnimation(std::weak_ptr<CEAnimation> animation, double atTim
   
   m_current_frame = currentFrame;
   
-  float k2 = static_cast<float>(exactFrameIndex - currentFrame); // Interpolation factor
-  float k1 = 1.0f - k2;
-  
   auto aniData = *ani->GetAnimationData();
   auto origVData = ani->GetOriginalVertices();
   assert(aniData.size() % 3 == 0);
   size_t numVertices = origVData->size();
   
-  // We need to copy original vertices to updatedVertices for modification
-  std::vector<TPoint3d> updatedVertices;
-  updatedVertices.resize(numVertices);
-  
-  int aniOffset = currentFrame * (int)numVertices * 3;
-  int nextFrameOffset = nextFrame * (int)numVertices * 3;
-  
-  for (size_t v = 0; v < numVertices; v++) {
-    updatedVertices[v].x = (aniData[aniOffset + (v * 3 + 0)] * k1 + aniData[nextFrameOffset + (v * 3 + 0)] * k2) / 8.f;
-    updatedVertices[v].y = (aniData[aniOffset + (v * 3 + 1)] * k1 + aniData[nextFrameOffset + (v * 3 + 1)] * k2) / 8.f;
-    updatedVertices[v].z = ((aniData[aniOffset + (v * 3 + 2)] * k1 + aniData[nextFrameOffset + (v * 3 + 2)] * k2)) / 8.f;
+  auto faces = *ani->GetFaces();
+  if (noInterpolation) {
+    // Use discrete frames without interpolation (for weapons)
+    applyAnimFaceOrdered_NoInterp(m_vertices, faces, aniData.data(), static_cast<int>(numVertices), currentFrame);
+  } else {
+    float k2 = static_cast<float>(exactFrameIndex - currentFrame); // Interpolation factor
+    applyAnimFaceOrdered(m_vertices, faces, aniData.data(), static_cast<int>(numVertices), currentFrame, nextFrame, k2);
   }
   
-  // Recompute vertex and index buffer using face data
-  std::unique_ptr<IndexedMeshLoader> m_loader(new IndexedMeshLoader(updatedVertices, *ani->GetFaces()));
-  m_vertices = m_loader->getVertices();
-  m_indices = m_loader->getIndices();
-  
-  // Update the vertex buffer
   glBindBuffer(GL_ARRAY_BUFFER, this->m_vertexArrayBuffers[VERTEX_VB]);
-  glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizei>(m_vertices.size() * sizeof(Vertex)), m_vertices.data(), GL_DYNAMIC_DRAW);
-  // Update the index buffer
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_vertexArrayBuffers[INDEX_VB]);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, static_cast<GLsizei>(m_indices.size() * sizeof(unsigned int)), m_indices.data(), GL_DYNAMIC_DRAW);
+  auto sizeBytes = static_cast<GLsizei>(m_vertices.size() * sizeof(Vertex));
+  void* ptr = glMapBufferRange(GL_ARRAY_BUFFER, 0, sizeBytes,
+      GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+  std::memcpy(ptr, m_vertices.data(), sizeBytes);
+  glUnmapBuffer(GL_ARRAY_BUFFER);
   
   return true;
 }
 
-void CEGeometry::Draw()
+void CEGeometry::DrawNaked()
 {
-  m_shader->use();
   m_texture->use();
   glBindVertexArray(this->m_vertexArrayObject);
   
   glDrawElementsBaseVertex(GL_TRIANGLES, (int)this->m_indices.size(), GL_UNSIGNED_INT, 0, 0);
   
   glBindVertexArray(0);
+}
+
+void CEGeometry::Draw()
+{
+  m_shader->use();
+  this->DrawNaked();
 }
 
 void CEGeometry::ConfigureShaderUniforms(C2MapFile* map, C2MapRscFile* rsc)
@@ -274,6 +351,77 @@ const std::vector<Vertex>& CEGeometry::GetVertices() const {
   return m_vertices;
 }
 
+const std::vector<unsigned int>& CEGeometry::GetIndices() const {
+  return m_indices;
+}
+
 const int CEGeometry::GetCurrentFrame() const {
   return m_current_frame;
+}
+
+void CEGeometry::setShader(std::string shaderName)
+{
+  std::ifstream f("config.json");
+  json data = json::parse(f);
+  
+  fs::path basePath = fs::path(data["basePath"].get<std::string>());
+  fs::path shaderPath = basePath / "shaders";
+  
+  // Replace the current shader with a new one
+  this->m_shader = std::unique_ptr<ShaderProgram>(new ShaderProgram((shaderPath / (shaderName + ".vs")).string(), (shaderPath / (shaderName + ".fs")).string()));
+  this->m_shader->use();
+  this->m_shader->setBool("enable_transparency", true);
+}
+
+void CEGeometry::EnablePhysics()
+{
+  if (m_has_physics) {
+    return;
+  }
+
+  btTriangleIndexVertexArray* tiv = new btTriangleIndexVertexArray();
+
+  btIndexedMesh im;
+  im.m_numTriangles      = static_cast<int>(m_indices.size() / 3);
+  im.m_triangleIndexBase = reinterpret_cast<const unsigned char*>(m_indices.data());
+  im.m_triangleIndexStride = sizeof(uint32_t) * 3;
+  im.m_indexType         = PHY_INTEGER; // 32-bit indices
+
+  im.m_numVertices       = static_cast<int>(m_vertices.size());
+  im.m_vertexBase        = reinterpret_cast<const unsigned char*>(m_vertices.data()); // position at offset 0
+  im.m_vertexStride      = sizeof(Vertex);
+  im.m_vertexType        = PHY_FLOAT;   // btScalar == float
+
+  tiv->addIndexedMesh(im, PHY_INTEGER);
+  this->m_bullet_tiv = tiv;
+  
+  // build the non-static model in case the game needs it
+  m_gimpact = new btBvhTriangleMeshShape(tiv, true);
+  m_gimpact->setMargin(0.01f);
+  
+  m_has_physics = true;
+}
+
+btTriangleIndexVertexArray* CEGeometry::getPhysicalMesh() const
+{
+  assert(m_has_physics);
+
+  return m_bullet_tiv;
+}
+
+btBvhTriangleMeshShape* CEGeometry::getMeshShape() const
+{
+  return m_gimpact;
+}
+
+std::vector<glm::vec3> CEGeometry::getDebugPhysicsVertices() const
+{
+    std::vector<glm::vec3> debugVertices;
+    
+    // Extract vertex positions for debug visualization
+    for (const auto& vertex : m_vertices) {
+        debugVertices.push_back(vertex.getPos());
+    }
+    
+    return debugVertices;
 }

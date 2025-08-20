@@ -14,8 +14,8 @@ uniform bool enable_transparency;
 uniform float view_distance;
 uniform vec4 distanceColor;
 
-uniform float ambientStrength = 0.65;
-uniform float diffuseStrength = 0.35;
+uniform float ambientStrength = 0.45;
+uniform float diffuseStrength = 0.55;
 uniform float time;
 uniform sampler2D shadowMap;
 uniform vec3 lightDirection = vec3(0.5, -1.0, 0.5);
@@ -44,20 +44,24 @@ float ShadowCalculation(vec4 fragPosLightSpace)
     float currentDepth = projCoords.z;
     
     // Calculate bias to prevent shadow acne
-    float bias = 0.002;
+    float bias = 0.001;
     
-    // Simple shadow test with PCF for softer edges
+    // Enhanced PCF for smoother shadows (larger sampling area)
     float shadow = 0.0;
     vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
-    for(int x = -1; x <= 1; ++x)
+    int sampleRadius = 2; // Larger radius for smoother shadows
+    int sampleCount = 0;
+    
+    for(int x = -sampleRadius; x <= sampleRadius; ++x)
     {
-        for(int y = -1; y <= 1; ++y)
+        for(int y = -sampleRadius; y <= sampleRadius; ++y)
         {
             float pcfDepth = texture(shadowMap, projCoords.xy + vec2(x, y) * texelSize).r;
             shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
+            sampleCount++;
         }
     }
-    shadow /= 9.0;
+    shadow /= float(sampleCount);
     
     return shadow;
 }
@@ -85,7 +89,7 @@ void main()
     // Apply shadows if enabled
     if (enableShadows) {
         float shadow = ShadowCalculation(FragPosLightSpace);
-        finalColor = finalColor * (1.0 - shadow * 0.4); // Natural shadow darkening
+        finalColor = finalColor * (1.0 - shadow * 0.3); // Softer shadow darkening
     }
 
     // Fog effect

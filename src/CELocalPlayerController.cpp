@@ -3,11 +3,12 @@
 #include "C2MapFile.h"
 #include "C2MapRscFile.h"
 #include "CEWorldModel.h"
+#include "ICapsuleCollision.h"
 
 #include <iostream>
 #include <string>
 
-CELocalPlayerController::CELocalPlayerController(float world_width, float world_height, float tile_size, std::shared_ptr<C2MapFile> map, std::shared_ptr<C2MapRscFile> rsc) : CEBasePlayerController(map, rsc), m_world_width(world_width), m_world_height(world_height), m_tile_size(tile_size) {
+CELocalPlayerController::CELocalPlayerController(float world_width, float world_height, float tile_size, std::shared_ptr<C2MapFile> map, std::shared_ptr<C2MapRscFile> rsc) : CEBasePlayerController(map, rsc), m_world_width(world_width), m_world_height(world_height), m_tile_size(tile_size), m_capsuleCollision(nullptr) {
   
   m_walk_speed = m_tile_size * 2.8f;
   m_player_height = m_tile_size * 1.25f;
@@ -25,6 +26,36 @@ CELocalPlayerController::CELocalPlayerController(float world_width, float world_
   
   // Configure sensory capabilities for local player (god view enabled)
   setSensoryCapabilities(1000.0f, 1000.0f, 1000.0f, true);
+}
+
+CELocalPlayerController::CELocalPlayerController(float world_width, float world_height, float tile_size, std::shared_ptr<C2MapFile> map, std::shared_ptr<C2MapRscFile> rsc, std::unique_ptr<ICapsuleCollision> capsuleCollision) 
+  : CELocalPlayerController(world_width, world_height, tile_size, map, rsc) // Delegate to main constructor
+{
+  // Set the capsule collision component
+  m_capsuleCollision = std::move(capsuleCollision);
+  
+  // Initialize the capsule collision with player dimensions if provided
+  if (m_capsuleCollision) {
+    // Convert player height to capsule dimensions (player height includes head)
+    float capsuleRadius = m_tile_size * 0.2f;   // Even narrower for tighter collision
+    float capsuleHeight = m_player_height * 0.8f; // Body height without head
+    
+    m_capsuleCollision->setDimensions(capsuleRadius, capsuleHeight);
+    
+    // Set initial position if we have a valid camera position
+    glm::vec3 initialPos = m_camera.GetPosition();
+    // Position capsule at player's feet (camera position - player height)
+    initialPos.y -= m_player_height;
+    m_capsuleCollision->updatePosition(initialPos);
+    
+    std::cout << "CELocalPlayerController: Capsule collision component initialized" << std::endl;
+  }
+}
+
+CELocalPlayerController::~CELocalPlayerController()
+{
+  // Destructor implementation - unique_ptr cleanup happens automatically
+  // This explicit definition ensures the complete type is available for unique_ptr destructor
 }
 
 void CELocalPlayerController::lookAt(glm::vec3 direction)
@@ -91,6 +122,13 @@ glm::vec2 CELocalPlayerController::getWorldPosition() const
 void CELocalPlayerController::setPosition(glm::vec3 position)
 {
   this->m_camera.SetPos(position);
+  
+  // Sync capsule collision position when player position is set manually
+  if (hasCapsuleCollision()) {
+    glm::vec3 capsulePos = position;
+    capsulePos.y -= m_player_height; // Convert camera position to capsule position
+    m_capsuleCollision->updatePosition(capsulePos);
+  }
 }
 
 void CELocalPlayerController::setElevation(float elevation)
@@ -210,11 +248,11 @@ float CELocalPlayerController::computeSlope(float x, float z) {
 
 void CELocalPlayerController::panAroundBody(double currentTime) {
     float angle = (currentTime - m_died_at) * 0.5f;
-    float radius = 10.0f;
+    float radius = 0.625f; // Scaled down 16x (was 10.0f)
     glm::vec3 bodyPosition = getPosition();
     float x = bodyPosition.x + radius * cos(angle);
     float z = bodyPosition.z + radius * sin(angle);
-    float y = bodyPosition.y + 5.0f;
+    float y = bodyPosition.y + 0.3125f; // Scaled down 16x (was 5.0f)
 
     glm::vec3 cameraPosition = glm::vec3(x, y, z);
     setPosition(cameraPosition);
@@ -326,19 +364,81 @@ void CELocalPlayerController::move(double currentTime, double deltaTime, bool fo
     maxClimbHeight = m_player_height * 2.f;
   }
 
-  if ((slopeAngle <= maxSlopeAngle ||
-      predictiveHeight < currentWorldHeight ||
-      abs(predictiveHeight - currentWorldHeight) < maxClimbHeight) && !outOfBounds) {
+  // Terrain-based movement validation (existing logic)
+  bool terrainAllowsMovement = (slopeAngle <= maxSlopeAngle ||
+                                predictiveHeight < currentWorldHeight ||
+                                abs(predictiveHeight - currentWorldHeight) < maxClimbHeight) && !outOfBounds;
+  
+  // Object collision validation with sliding (enhanced logic)
+  bool objectAllowsMovement = true;
+  glm::vec3 finalMovementPos = pos; // This might get adjusted for sliding
+  
+  if (hasCapsuleCollision()) {
+    // Test collision from current position to new position
+    glm::vec3 currentCapsulePos = currentPos;
+    currentCapsulePos.y -= m_player_height; // Convert camera position to capsule position
+    
+    glm::vec3 targetCapsulePos = pos;
+    targetCapsulePos.y -= m_player_height;
+    
+    glm::vec3 collisionNormal;
+    objectAllowsMovement = m_capsuleCollision->checkMovementWithNormal(currentCapsulePos, targetCapsulePos, collisionNormal);
+    
+    // If collision detected, try sliding movement
+    if (!objectAllowsMovement) {
+      glm::vec3 intendedMovement = targetCapsulePos - currentCapsulePos;
+      glm::vec3 slideMovement = calculateSlideMovement(intendedMovement, collisionNormal);
+      
+      // Test if sliding movement is possible
+      glm::vec3 slideCapsulePos = currentCapsulePos + slideMovement;
+      if (m_capsuleCollision->checkMovement(currentCapsulePos, slideCapsulePos)) {
+        // Sliding successful - update final position
+        finalMovementPos = currentPos + slideMovement;
+        finalMovementPos.y += m_player_height; // Convert back to camera position
+        objectAllowsMovement = true; // Allow sliding movement
+        
+        // Debug output for sliding
+        static int slideDebugCounter = 0;
+        if (slideDebugCounter++ % 30 == 0) {
+          std::cout << "Object collision - sliding along surface" << std::endl;
+        }
+      } else {
+        // Sliding also blocked - no movement possible
+        static int collisionDebugCounter = 0;
+        if (collisionDebugCounter++ % 30 == 0) {
+          std::cout << "Object collision detected - movement completely blocked" << std::endl;
+        }
+      }
+    }
+  }
+
+  // Allow movement only if both terrain and objects permit it
+  if (terrainAllowsMovement && objectAllowsMovement) {
     
     if (!m_is_jumping) {
-      pos.y = smoothedHeight + m_player_height + bobbleOffset;
+      finalMovementPos.y = smoothedHeight + m_player_height + bobbleOffset;
     }
 
-      this->m_camera.SetPos(pos);
+    this->m_camera.SetPos(finalMovementPos);
+    
+    // Sync capsule collision position with successful movement
+    if (hasCapsuleCollision()) {
+      glm::vec3 capsulePos = finalMovementPos;
+      capsulePos.y -= m_player_height;
+      m_capsuleCollision->updatePosition(capsulePos);
+    }
+    
   } else {
-      currentPos.y = currentWorldHeight + m_player_height + bobbleOffset;
-
-      this->m_camera.SetPos(currentPos);
+    // Movement blocked - stay at current position
+    currentPos.y = currentWorldHeight + m_player_height + bobbleOffset;
+    this->m_camera.SetPos(currentPos);
+    
+    // Keep capsule at current position
+    if (hasCapsuleCollision()) {
+      glm::vec3 capsulePos = currentPos;
+      capsulePos.y -= m_player_height;
+      m_capsuleCollision->updatePosition(capsulePos);
+    }
   }
   
   // Update bobble time if the player is moving
@@ -357,7 +457,7 @@ void CELocalPlayerController::move(double currentTime, double deltaTime, bool fo
       // Check for landing using interpolated height
       glm::vec3 jumpWorldPos(pos.x, pos.y, pos.z);
       float groundHeight = m_map->getHeightAtWorldPosition(jumpWorldPos) + m_player_height;
-      if (pos.y <= groundHeight - 24.f) {
+      if (pos.y <= groundHeight - 1.5f) { // Scaled down 16x (was 24.f)
           m_is_jumping = false;
           m_vertical_speed = 0.0f;
           m_last_jump_time = currentTime;
@@ -467,3 +567,57 @@ void CELocalPlayerController::kill(double killedAt) {
   m_current_speed = 0.0;
 }
 
+// Capsule collision management methods
+
+void CELocalPlayerController::setCapsuleCollision(std::unique_ptr<ICapsuleCollision> capsuleCollision)
+{
+  m_capsuleCollision = std::move(capsuleCollision);
+  
+  if (m_capsuleCollision) {
+    // Initialize with current player dimensions and position
+    float capsuleRadius = m_tile_size * 0.2f;
+    float capsuleHeight = m_player_height * 0.8f;
+    
+    m_capsuleCollision->setDimensions(capsuleRadius, capsuleHeight);
+    
+    // Set to current player position (at feet level)
+    glm::vec3 currentPos = m_camera.GetPosition();
+    currentPos.y -= m_player_height;
+    m_capsuleCollision->updatePosition(currentPos);
+    
+    std::cout << "CELocalPlayerController: Capsule collision component set and initialized" << std::endl;
+  }
+}
+
+ICapsuleCollision* CELocalPlayerController::getCapsuleCollision() const
+{
+  return m_capsuleCollision.get();
+}
+
+bool CELocalPlayerController::hasCapsuleCollision() const
+{
+  return m_capsuleCollision != nullptr && m_capsuleCollision->isEnabled();
+}
+
+// Collision sliding helpers
+
+glm::vec3 CELocalPlayerController::calculateSlideMovement(const glm::vec3& intendedMovement, const glm::vec3& collisionNormal) const
+{
+  // Project the intended movement onto the collision surface
+  // This removes the component of movement that would go "into" the surface
+  glm::vec3 slidingMovement = intendedMovement - glm::dot(intendedMovement, collisionNormal) * collisionNormal;
+  
+  // Keep only the sliding component, scaled to preserve movement magnitude along surface
+  float originalLength = glm::length(intendedMovement);
+  float slidingLength = glm::length(slidingMovement);
+  
+  if (slidingLength > 0.0001f) { // Avoid division by zero
+    // Preserve original movement speed in the sliding direction
+    slidingMovement = glm::normalize(slidingMovement) * originalLength * 0.8f; // 0.8f for slight friction effect
+  } else {
+    // If movement is perfectly perpendicular to surface, no sliding
+    slidingMovement = glm::vec3(0.0f);
+  }
+  
+  return slidingMovement;
+}

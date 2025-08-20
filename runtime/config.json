@@ -2,21 +2,50 @@
   "basePath": "../../runtime/cce/",
   "map": {
     "type": "C2",
-    "map": "../game/lost/area2.map",
-    "rsc": "../game/lost/area2.rsc"
+    "map": "../game/ice/area1.map",
+    "rsc": "../game/ice/area1.rsc"
   },
   "video": {
-    "fullscreen": false
+    "fullscreen": true
   },
   "debug": {
     "shadowDebug": false,
     "renderDebug": false
   },
-  "weapons": [
-  {
-    "file": "../../runtime/cce/game/models/rifle.car"
-  }
-  ],
+  "weapons": {
+    "primary": {
+      "file": "game/models/rifle.car",
+      "rounds": 12,
+      "animations": {
+         "draw": "Rf2_get",
+         "holster": "Rf2_put",
+         "fire": "Rf2_fire",
+         "reload": "Rf2_rld"
+       },
+       "projectiles": {
+         "muzzleFlashFrame": 2,
+         "muzzleOffset": [0.0, 0.0, 8.0],
+         "muzzleVelocity": 4000.0,
+         "maxRange": 50000.0,
+         "damage": 45,
+         "projectileType": "ballistic",
+         "recoil": 0.5,
+         "sway": 0.0
+       }
+    }
+  },
+  "impactSounds": {
+    "terrain": [
+    ],
+    "object": [
+      "../../runtime/cce/game/audio/IMPACT/MODEL1.wav"
+    ],
+    "water": [
+    ]
+  },
+  "ui": {
+    "compass": "game/models/compas.car"
+  },
   "spawns": [
   {
     "file": "../../runtime/cce/game/models/Bigfoot.car",
@@ -33,13 +62,14 @@
         "animations": {
           "WALK": "Bf_wlk",
           "IDLE": ["Bf_idle1", "Bf_idle2", "bf_idle3", "Bf_hero"],
-          "RUN": "Bf_run"
+          "RUN": "Bf_run",
+          "DIE": "Bf_die"
         },
         "behavior": {
           "vision": 40.0,
-          "maxAttackChance": 90.0,
-          "minAttackChance": 20.0,
-          "damageOnContact": true
+          "maxAttackChance": 0.0,
+          "minAttackChance": 0.0,
+          "damageOnContact": false
         },
         "character": {
           "walkSpeed": 2.25
@@ -61,17 +91,318 @@
         "animations": {
           "WALK": "So_wlk",
           "IDLE": ["So_idle1", "So_idle2"],
-          "RUN": "So_run"
+          "RUN": "So_run",
+          "DIE": "So_die"
         },
         "behavior": {
           "vision": 20.0,
-          "maxAttackChance": 60.0,
-          "minAttackChance": 20.0,
-          "damageOnContact": true
+          "maxAttackChance": 0.0,
+          "minAttackChance": 0.0,
+          "damageOnContact": false
         },
         "character": {
           "walkSpeed": 2.65,
           "roamRange": 24.0
+        }
+      }
+    }
+  },
+  {
+    "file": "../../runtime/cce/game/models/SPINO.CAR",
+    "animation": "So_wlk",
+    "position": [
+      129,
+      205
+    ],
+    "attachAI": {
+      "controller": "GenericAmbient",
+      "args": {
+        "name": "Spino2",
+        "animations": {
+          "WALK": "So_wlk",
+          "IDLE": ["So_idle1", "So_idle2"],
+          "RUN": "So_run",
+          "DIE": "So_die"
+        },
+        "behavior": {
+          "vision": 20.0,
+          "maxAttackChance": 0.0,
+          "minAttackChance": 0.0,
+          "damageOnContact": false
+        },
+        "character": {
+          "walkSpeed": 2.65,
+          "roamRange": 24.0
+        }
+      }
+    }
+  },
+  {
+    "file": "../../runtime/cce/game/models/SPINO.CAR",
+    "animation": "So_wlk",
+    "position": [
+      127,
+      203
+    ],
+    "attachAI": {
+      "controller": "GenericAmbient",
+      "args": {
+        "name": "Spino3",
+        "animations": {
+          "WALK": "So_wlk",
+          "IDLE": ["So_idle1", "So_idle2"],
+          "RUN": "So_run",
+          "DIE": "So_die"
+        },
+        "behavior": {
+          "vision": 20.0,
+          "maxAttackChance": 0.0,
+          "minAttackChance": 0.0,
+          "damageOnContact": false
+        },
+        "character": {
+          "walkSpeed": 2.65,
+          "roamRange": 24.0
+        }
+      }
+    }
+  },
+  {
+    "file": "../../runtime/cce/game/models/SPINO.CAR",
+    "animation": "So_wlk",
+    "position": [
+      129,
+      204
+    ],
+    "attachAI": {
+      "controller": "GenericAmbient",
+      "args": {
+        "name": "Spino4",
+        "animations": {
+          "WALK": "So_wlk",
+          "IDLE": ["So_idle1", "So_idle2"],
+          "RUN": "So_run",
+          "DIE": "So_die"
+        },
+        "behavior": {
+          "vision": 20.0,
+          "maxAttackChance": 0.0,
+          "minAttackChance": 0.0,
+          "damageOnContact": false
+        },
+        "character": {
+          "walkSpeed": 2.65,
+          "roamRange": 24.0
+        }
+      }
+    }
+  },
+  {
+    "file": "../../runtime/cce/game/models/SPINO.CAR",
+    "animation": "So_wlk",
+    "position": [
+      130,
+      204
+    ],
+    "attachAI": {
+      "controller": "GenericAmbient",
+      "args": {
+        "name": "Spino5",
+        "animations": {
+          "WALK": "So_wlk",
+          "IDLE": ["So_idle1", "So_idle2"],
+          "RUN": "So_run",
+          "DIE": "So_die"
+        },
+        "behavior": {
+          "vision": 20.0,
+          "maxAttackChance": 0.0,
+          "minAttackChance": 0.0,
+          "damageOnContact": false
+        },
+        "character": {
+          "walkSpeed": 2.65,
+          "roamRange": 24.0
+        }
+      }
+    }
+  },
+  {
+    "file": "../../runtime/cce/game/models/SPINO.CAR",
+    "animation": "So_wlk",
+    "position": [
+      131,
+      204
+    ],
+    "attachAI": {
+      "controller": "GenericAmbient",
+      "args": {
+        "name": "Spino6",
+        "animations": {
+          "WALK": "So_wlk",
+          "IDLE": ["So_idle1", "So_idle2"],
+          "RUN": "So_run",
+          "DIE": "So_die"
+        },
+        "behavior": {
+          "vision": 20.0,
+          "maxAttackChance": 0.0,
+          "minAttackChance": 0.0,
+          "damageOnContact": false
+        },
+        "character": {
+          "walkSpeed": 2.65,
+          "roamRange": 24.0
+        }
+      }
+    }
+  },
+  {
+    "file": "../../runtime/cce/game/models/velo2.car",
+    "animation": "Vel_wlk",
+    "position": [
+      100,
+      135
+    ],
+    "attachAI": {
+      "controller": "GenericAmbient",
+      "args": {
+        "name": "Raptor1",
+        "animations": {
+          "WALK": "Vel_wlk",
+          "IDLE": ["Vel_eat"],
+          "RUN": "Vel_run1",
+          "DIE": "Vel_die1"
+        },
+        "behavior": {
+          "vision": 5.0,
+          "maxAttackChance": 30.0,
+          "minAttackChance": 15.0,
+          "damageOnContact": false
+        },
+        "character": {
+          "walkSpeed": 1.75,
+          "roamRange": 3.0
+        }
+      }
+    }
+  },
+  {
+    "file": "../../runtime/cce/game/models/velo2.car",
+    "animation": "Vel_wlk",
+    "position": [
+      101,
+      135
+    ],
+    "attachAI": {
+      "controller": "GenericAmbient",
+      "args": {
+        "name": "Raptor1",
+        "animations": {
+          "WALK": "Vel_wlk",
+          "IDLE": ["Vel_eat"],
+          "RUN": "Vel_run1",
+          "DIE": "Vel_die1"
+        },
+        "behavior": {
+          "vision": 5.0,
+          "maxAttackChance": 30.0,
+          "minAttackChance": 15.0,
+          "damageOnContact": false
+        },
+        "character": {
+          "walkSpeed": 1.75,
+          "roamRange": 3.0
+        }
+      }
+    }
+  },
+  {
+    "file": "../../runtime/cce/game/models/velo2.car",
+    "animation": "Vel_wlk",
+    "position": [
+      102,
+      135
+    ],
+    "attachAI": {
+      "controller": "GenericAmbient",
+      "args": {
+        "name": "Raptor3",
+        "animations": {
+          "WALK": "Vel_wlk",
+          "IDLE": ["Vel_eat"],
+          "RUN": "Vel_run1",
+          "DIE": "Vel_die1"
+        },
+        "behavior": {
+          "vision": 5.0,
+          "maxAttackChance": 30.0,
+          "minAttackChance": 15.0,
+          "damageOnContact": false
+        },
+        "character": {
+          "walkSpeed": 1.75,
+          "roamRange": 3.0
+        }
+      }
+    }
+  },
+  {
+    "file": "../../runtime/cce/game/models/velo2.car",
+    "animation": "Vel_wlk",
+    "position": [
+      104,
+      135
+    ],
+    "attachAI": {
+      "controller": "GenericAmbient",
+      "args": {
+        "name": "Raptor4",
+        "animations": {
+          "WALK": "Vel_wlk",
+          "IDLE": ["Vel_eat"],
+          "RUN": "Vel_run1",
+          "DIE": "Vel_die1"
+        },
+        "behavior": {
+          "vision": 5.0,
+          "maxAttackChance": 30.0,
+          "minAttackChance": 15.0,
+          "damageOnContact": false
+        },
+        "character": {
+          "walkSpeed": 1.75,
+          "roamRange": 3.0
+        }
+      }
+    }
+  },
+  {
+    "file": "../../runtime/cce/game/models/velo2.car",
+    "animation": "Vel_wlk",
+    "position": [
+      105,
+      135
+    ],
+    "attachAI": {
+      "controller": "GenericAmbient",
+      "args": {
+        "name": "Raptor5",
+        "animations": {
+          "WALK": "Vel_wlk",
+          "IDLE": ["Vel_eat"],
+          "RUN": "Vel_run1",
+          "DIE": "Vel_die1"
+        },
+        "behavior": {
+          "vision": 5.0,
+          "maxAttackChance": 30.0,
+          "minAttackChance": 15.0,
+          "damageOnContact": false
+        },
+        "character": {
+          "walkSpeed": 1.75,
+          "roamRange": 3.0
         }
       }
     }
@@ -90,13 +421,14 @@
         "animations": {
           "WALK": "Tx_walk",
           "IDLE": ["Tx_sml1", "Tx_sml2"],
-          "RUN": "Tx_run1"
+          "RUN": "Tx_run1",
+          "DIE": "Tx_die1"
         },
         "behavior": {
-          "vision": 20.0,
-          "maxAttackChance": 100.0,
-          "minAttackChance": 100.0,
-          "damageOnContact": true
+          "vision": 4.0,
+          "maxAttackChance": 1.0,
+          "minAttackChance": 1.0,
+          "damageOnContact": false
         },
         "character": {
           "walkSpeed": 2.65,
@@ -118,7 +450,8 @@
         "animations": {
           "WALK": "Sr_wlk",
           "RUN": "Sr_run",
-          "IDLE": ["Sr_idle1", "Sr_idle2"]
+          "IDLE": ["Sr_idle1", "Sr_idle2"],
+          "DIE": "Sr_die"
         },
         "behavior": {
           "vision": 6.0,

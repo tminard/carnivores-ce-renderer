@@ -412,20 +412,21 @@ void C2MapRscFile::load(const std::string &file_name, std::filesystem::path base
 
       std::unique_ptr<CEAudioSource> src(new CEAudioSource(snd));
 
-      src->setClampDistance((256*2));
-      src->setMaxDistance((256*200));
+      src->setClampDistance((16*2)); // Scaled down 16x (was 256*2)
+      src->setMaxDistance((16*200)); // Scaled down 16x (was 256*200)
       src->setGain(1.f);
       src->setLooped(false);
 
       this->m_random_audio_sources.push_back(std::move(src));
     }
 
-    // TODO: Skip table for now
+    // Load ambient sounds and their associated area data
+    // In the original engine, each ambient sound has embedded area data (TAmbient structure)
     infile.read(reinterpret_cast<char *>(&this->m_ambient_sounds_count), 4);
     for (int i = 0; i < this->m_ambient_sounds_count; i++)
     {
+      // Load the sound data first (matches original TSFX loading)
       std::shared_ptr<Sound> snd(new Sound());
-
       std::vector<int16_t> snd_data;
       uint32_t length = 0;
       infile.read((char*)&length, sizeof(uint32_t));
@@ -444,11 +445,25 @@ void C2MapRscFile::load(const std::string &file_name, std::filesystem::path base
 
       this->m_ambient_audio_sources.push_back(std::move(src));
 
-      // TODO: read random play areas (needed to restrict randoms to specific areas)
-      infile.seekg((16*16) + 8, std::ios_base::cur);
-
-      // read data first, then a 16x16 table
-      // For each of these ambient sounds, read a table 16 entries long that maps to the random sounds, and describes which random sounds play in the ambient area and how frequent, time of day, etc
+      // Load area-specific random sound data immediately after each sound (matches TAmbient structure)
+      AmbientArea area;
+      
+      // Read the random sound data array (16 entries)
+      infile.read(reinterpret_cast<char*>(area.rdata), sizeof(RandomSoundData) * 16);
+      
+      // Read RSFXCount and AVolume
+      infile.read(reinterpret_cast<char*>(&area.RSFXCount), 4);
+      infile.read(reinterpret_cast<char*>(&area.AVolume), 4);
+      
+      // Initialize random timer like original engine
+      if (area.RSFXCount > 0) {
+        int baseFreq = area.rdata[0].RFreq;
+        area.RndTime = (baseFreq / 2 + (rand() % baseFreq)) * 1000;
+      } else {
+        area.RndTime = 0;
+      }
+      
+      this->m_ambient_areas.push_back(area);
     }
 
     if (m_type == CEMapType::C1) {
@@ -561,4 +576,73 @@ const FogData& C2MapRscFile::getFog(int i) const
     i = 0;
   }
   return this->m_fogs.at(i);
+}
+
+std::shared_ptr<CEAudioSource> C2MapRscFile::getRandomAudioForArea(int ambientAreaId, int x, int y, int z)
+{
+  if (ambientAreaId < 0 || ambientAreaId >= m_ambient_areas.size()) {
+    return nullptr;
+  }
+  
+  const AmbientArea& area = m_ambient_areas[ambientAreaId];
+  if (area.RSFXCount == 0) {
+    return nullptr;
+  }
+  
+  // Pick a random sound from this area's available sounds (matches original engine logic)
+  int rr = rand() % area.RSFXCount;
+  int soundIndex = area.rdata[rr].RNumber;
+  
+  // Validate sound index
+  if (soundIndex < 0 || soundIndex >= m_random_audio_sources.size()) {
+    return nullptr;
+  }
+  
+  std::shared_ptr<CEAudioSource> src = m_random_audio_sources[soundIndex];
+  
+  // Set random position around player (matches original engine)
+  float min = -4096.0f;
+  float max = 4096.0f;
+  float randomX = x + getRandomFloat(min, max);
+  float randomY = y + getRandomFloat(min, 256.0f);
+  float randomZ = z + getRandomFloat(min, max);
+  
+  src->setPosition(glm::vec3(randomX, randomY, randomZ));
+  
+  // Set volume from area data
+  float volume = area.rdata[rr].RVolume / 256.0f; // Normalize to 0-1 range
+  src->setGain(volume);
+  
+  return src;
+}
+
+bool C2MapRscFile::shouldPlayRandomSound(int ambientAreaId, double currentTime)
+{
+  if (ambientAreaId < 0 || ambientAreaId >= m_ambient_areas.size()) {
+    return false;
+  }
+  
+  const AmbientArea& area = m_ambient_areas[ambientAreaId];
+  return area.RSFXCount > 0 && area.RndTime <= 0;
+}
+
+void C2MapRscFile::updateRandomSoundTimer(int ambientAreaId, double timeDelta)
+{
+  if (ambientAreaId < 0 || ambientAreaId >= m_ambient_areas.size()) {
+    return;
+  }
+  
+  AmbientArea& area = m_ambient_areas[ambientAreaId];
+
+  // If timer expired, reset it (matches original engine logic)
+  // IMPORTANT: check for reset BEFORE reducing RndTime so render loop has a chance to
+  // catch the reset.
+  if (area.RndTime <= 0) {
+    int baseFreq = area.rdata[0].RFreq;
+    area.RndTime = (baseFreq / 2 + (rand() % baseFreq)) * 1000;
+  }
+
+  if (area.RSFXCount > 0) {
+    area.RndTime -= (int)(timeDelta * 1000); // Convert to milliseconds like original engine
+  }
 }

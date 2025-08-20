@@ -10,6 +10,11 @@
 
 #include <glm/glm.hpp>
 
+enum class ParticleType {
+    DEFAULT,
+    BLOOD_STREAK
+};
+
 struct CEParticle {
     glm::vec3 position;
     glm::vec3 velocity;
@@ -18,9 +23,10 @@ struct CEParticle {
     float maxLife;     // Maximum life duration
     float size;        // Particle size
     float gravity;     // Gravity effect strength
+    ParticleType type; // Particle type for texture selection
     
     CEParticle() : position(0.0f), velocity(0.0f), color(1.0f), 
-                   life(0.0f), maxLife(1.0f), size(1.0f), gravity(-9.8f) {}
+                   life(0.0f), maxLife(1.0f), size(1.0f), gravity(-9.8f), type(ParticleType::DEFAULT) {}
     
     bool isAlive() const { return life > 0.0f; }
     

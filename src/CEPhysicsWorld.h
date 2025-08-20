@@ -117,12 +117,13 @@ private:
     void setupHeightfieldTerrain(C2MapFile* mapFile);
     void setupWorldObjects(C2MapRscFile* mapRsc);
     void setupWaterPlanes(C2MapFile* mapFile);
-    btRigidBody* createStaticBody(btCollisionShape* shape, const glm::vec3& position);
-    btRigidBody* createStaticBody(btCollisionShape* shape, const glm::vec3& position, const glm::vec3& rotation);
     
 public:
     CEPhysicsWorld(C2MapFile* mapFile, C2MapRscFile* mapRsc);
     ~CEPhysicsWorld();
+
+  btRigidBody* createStaticBody(btCollisionShape* shape, const glm::vec3& position);
+  btRigidBody* createStaticBody(btCollisionShape* shape, const glm::vec3& position, const glm::vec3& rotation);
     
     // Core physics operations
     void stepSimulation(float deltaTime);

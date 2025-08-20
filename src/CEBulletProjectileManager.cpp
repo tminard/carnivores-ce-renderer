@@ -232,9 +232,13 @@ void CEBulletProjectileManager::handleImpact(const CEBulletProjectile& projectil
             m_particleSystem->emitGroundImpact(hitPoint, impactNormal, 25); // Heavy dust
             m_particleSystem->emitDustCloud(hitPoint, 20); // Extra smoke
         } else if (surfaceType == "water") {
-            // Water impact: massive splash effects
-            m_particleSystem->emitDustCloud(hitPoint, 80); // Major water spray
-            m_particleSystem->emitGroundImpact(hitPoint, impactNormal, 40); // Heavy splash particles
+          // Water impact: massive splash effects
+          m_particleSystem->emitDustCloud(hitPoint, 80); // Major water spray
+          m_particleSystem->emitGroundImpact(hitPoint, impactNormal, 40); // Heavy splash particles
+        } else if (surfaceType == "ai_character") {
+          glm::vec3 impactDirection = glm::normalize(projectile.getVelocity());
+          m_particleSystem->emitDustCloud(hitPoint, 30);
+          m_particleSystem->emitBloodSplash(hitPoint, impactNormal, 120);
         } else {
             // Default impact: heavy debris
             glm::vec3 impactDirection = glm::normalize(projectile.getVelocity());

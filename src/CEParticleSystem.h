@@ -28,12 +28,15 @@ private:
     GLuint m_VBO;
     std::unique_ptr<ShaderProgram> m_shader;
     GLuint m_textureID;
+    GLuint m_bloodStreakTextureID;
     
     // Rendering data
     std::vector<float> m_instanceData; // Position, size, color data for instanced rendering
     
     void initializeOpenGL();
     void createDefaultTexture();
+    void createBloodStreakTexture();
+    void renderParticleBatch(const std::vector<float>& instanceData);
     size_t findDeadParticle();
 
 public:
@@ -44,6 +47,7 @@ public:
     void emitGroundImpact(const glm::vec3& position, const glm::vec3& normal, int count = 20);
     void emitDustCloud(const glm::vec3& position, int count = 15);
     void emitDebris(const glm::vec3& position, const glm::vec3& impactDirection, int count = 10);
+    void emitBloodSplash(const glm::vec3& position, const glm::vec3& normal, int count = 25);
     
     // System management
     void update(float deltaTime);

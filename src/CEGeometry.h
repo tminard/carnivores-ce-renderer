@@ -19,7 +19,7 @@
 
 // Forward declarations
 class btTriangleIndexVertexArray;
-class btGImpactMeshShape;
+class btBvhTriangleMeshShape;
 class Vertex;
 class CETexture;
 class ShaderProgram;
@@ -57,7 +57,7 @@ private:
   
   // Note: memory managed by Bullet directly
   btTriangleIndexVertexArray* m_bullet_tiv = nullptr;
-  btGImpactMeshShape* m_gimpact = nullptr;
+  btBvhTriangleMeshShape* m_gimpact = nullptr;
 
   std::shared_ptr<CETexture> m_texture;
   void applyAnimFaceOrdered(std::vector<Vertex>& m_vertices,
@@ -100,6 +100,7 @@ public:
   size_t GetIndexCount() const { return m_indices.size(); }
 
   std::vector<glm::vec3> getDebugPhysicsVertices() const;
-  class btTriangleIndexVertexArray* getPhysicalMesh() const;
+  btTriangleIndexVertexArray* getPhysicalMesh() const;
+  btBvhTriangleMeshShape* getMeshShape() const;
 };
 

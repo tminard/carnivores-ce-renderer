@@ -220,7 +220,6 @@ void CEPhysicsWorld::setupWorldObjects(C2MapRscFile* mapRsc)
         // Store base shape and mesh for cleanup
         m_baseBvhShapes.push_back(baseBvhShape);
         
-        
         // Create instances using btScaledBvhTriangleMeshShape
         const auto& transforms = model->getTransforms();
         int instanceIndex = 0;

@@ -20,13 +20,14 @@ namespace fs = std::filesystem;
 using json = nlohmann::json;
 
 CEParticleSystem::CEParticleSystem(size_t maxParticles) 
-    : m_maxParticles(maxParticles), m_nextParticleIndex(0), m_VAO(0), m_VBO(0), m_textureID(0)
+    : m_maxParticles(maxParticles), m_nextParticleIndex(0), m_VAO(0), m_VBO(0), m_textureID(0), m_bloodStreakTextureID(0)
 {
     m_particles.resize(m_maxParticles);
     m_instanceData.reserve(m_maxParticles * 7); // position(3) + size(1) + color(3)
     
     initializeOpenGL();
     createDefaultTexture();
+    createBloodStreakTexture();
 }
 
 CEParticleSystem::~CEParticleSystem()
@@ -34,6 +35,7 @@ CEParticleSystem::~CEParticleSystem()
     if (m_VAO) glDeleteVertexArrays(1, &m_VAO);
     if (m_VBO) glDeleteBuffers(1, &m_VBO);
     if (m_textureID) glDeleteTextures(1, &m_textureID);
+    if (m_bloodStreakTextureID) glDeleteTextures(1, &m_bloodStreakTextureID);
 }
 
 void CEParticleSystem::initializeOpenGL()
@@ -115,6 +117,46 @@ void CEParticleSystem::createDefaultTexture()
     glGenTextures(1, &m_textureID);
     glBindTexture(GL_TEXTURE_2D, m_textureID);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, size, size, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureData.data());
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+}
+
+void CEParticleSystem::createBloodStreakTexture()
+{
+    // Create an elongated streak texture for blood particles
+    const int width = 64;
+    const int height = 16;
+    std::vector<unsigned char> textureData(width * height * 4);
+    
+    float centerY = height * 0.5f;
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            float distFromCenterY = abs(y - centerY);
+            float verticalFalloff = 1.0f - (distFromCenterY / centerY);
+            verticalFalloff = std::max(0.0f, verticalFalloff);
+            
+            // Create horizontal gradient that's stronger at the leading edge
+            float horizontalPos = x / (float)width;
+            float horizontalFalloff = 1.0f - horizontalPos * 0.7f; // Fade towards the tail
+            
+            // Add some noise for organic look
+            float noise = (rand() % 100) / 300.0f; // Small random variation
+            float alpha = verticalFalloff * horizontalFalloff * (0.8f + noise);
+            alpha = std::max(0.0f, std::min(1.0f, alpha));
+            
+            int index = (y * width + x) * 4;
+            textureData[index + 0] = 255; // R
+            textureData[index + 1] = 255; // G  
+            textureData[index + 2] = 255; // B
+            textureData[index + 3] = (unsigned char)(alpha * 255); // A
+        }
+    }
+    
+    glGenTextures(1, &m_bloodStreakTextureID);
+    glBindTexture(GL_TEXTURE_2D, m_bloodStreakTextureID);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureData.data());
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -243,6 +285,69 @@ void CEParticleSystem::emitDebris(const glm::vec3& position, const glm::vec3& im
     }
 }
 
+void CEParticleSystem::emitBloodSplash(const glm::vec3& position, const glm::vec3& normal, int count)
+{
+    for (int i = 0; i < count; i++) {
+        size_t index = findDeadParticle();
+        CEParticle& particle = m_particles[index];
+        
+        // Start slightly above impact point for realistic splatter
+        particle.position = position + normal * 0.1f + glm::vec3(
+            (rand() % 100 / 100.0f - 0.5f) * 0.3f,
+            (rand() % 100 / 100.0f) * 0.2f,
+            (rand() % 100 / 100.0f - 0.5f) * 0.3f
+        );
+        
+        // Explosive splatter with some particles going backwards for drama
+        float angle = (rand() % 628) / 100.0f; // Random angle in radians
+        float speed = 8.0f + (rand() % 100) / 12.0f; // 8-16 speed
+        float upwardBias = 0.3f + (rand() % 70) / 100.0f; // 0.3-1.0 upward component
+        
+        glm::vec3 splatterDir = glm::vec3(
+            cos(angle) * (0.8f + (rand() % 40) / 100.0f),
+            upwardBias,
+            sin(angle) * (0.8f + (rand() % 40) / 100.0f)
+        );
+        
+        // Some particles fly backwards for extra carnage
+        if (rand() % 4 == 0) {
+            splatterDir = -splatterDir * 0.6f;
+        }
+        
+        particle.velocity = normal * 2.0f + splatterDir * speed;
+        
+        // Much darker blood red with variations
+        float redIntensity = 0.3f + (rand() % 20) / 100.0f; // 0.3-0.5 (much darker red)
+        float darkening = 0.7f + (rand() % 20) / 100.0f; // 0.7-0.9 (overall darkening factor)
+        
+        if (rand() % 4 == 0) {
+            // More frequent darker, coagulated drops - very dark
+            particle.color = glm::vec4(0.15f, 0.02f, 0.02f, 1.0f);
+        } else if (rand() % 10 == 0) {
+            // Rare brighter arterial spray - still darker than before
+            particle.color = glm::vec4(0.5f, 0.08f, 0.05f, 1.0f);
+        } else {
+            // Standard dark blood color - much darker red
+            particle.color = glm::vec4(redIntensity * darkening, 0.04f, 0.02f, 1.0f);
+        }
+        
+        particle.life = 1.0f;
+        particle.maxLife = 2.0f + (rand() % 150) / 100.0f; // 2.0-3.5 seconds (faster splashing)
+        
+        // Variable sizes for realistic splatter pattern
+        if (rand() % 6 == 0) {
+            // Large dramatic drops
+            particle.size = 0.12f + (rand() % 100) / 600.0f; // 0.12-0.28 (slightly smaller)
+        } else {
+            // Smaller spray particles
+            particle.size = 0.03f + (rand() % 100) / 1200.0f; // 0.03-0.11 (smaller)
+        }
+        
+        particle.gravity = -18.0f - (rand() % 100) / 15.0f; // -18 to -24 for faster splashing
+        particle.type = ParticleType::BLOOD_STREAK;
+    }
+}
+
 void CEParticleSystem::update(float deltaTime)
 {
     for (auto& particle : m_particles) {
@@ -256,26 +361,34 @@ void CEParticleSystem::render(Camera* camera)
 {
     if (!camera || !m_shader) return;
     
-    // Prepare instance data
-    m_instanceData.clear();
+    // Separate particles by type for batch rendering
+    std::vector<float> defaultParticles;
+    std::vector<float> bloodParticles;
+    
     for (const auto& particle : m_particles) {
         if (particle.isAlive()) {
-            // Position (3 floats)
-            m_instanceData.push_back(particle.position.x);
-            m_instanceData.push_back(particle.position.y);
-            m_instanceData.push_back(particle.position.z);
+            std::vector<float>& targetData = (particle.type == ParticleType::BLOOD_STREAK) ? bloodParticles : defaultParticles;
             
-            // Size (1 float)
-            m_instanceData.push_back(particle.size);
+            // Position (3 floats)
+            targetData.push_back(particle.position.x);
+            targetData.push_back(particle.position.y);
+            targetData.push_back(particle.position.z);
+            
+            // Size (1 float) - make blood streaks wider
+            float size = particle.size;
+            if (particle.type == ParticleType::BLOOD_STREAK) {
+                size *= 2.5f; // Make blood streaks more elongated
+            }
+            targetData.push_back(size);
             
             // Color (3 floats) - alpha handled by life
-            m_instanceData.push_back(particle.color.r);
-            m_instanceData.push_back(particle.color.g);
-            m_instanceData.push_back(particle.color.b);
+            targetData.push_back(particle.color.r);
+            targetData.push_back(particle.color.g);
+            targetData.push_back(particle.color.b);
         }
     }
     
-    if (m_instanceData.empty()) return;
+    if (defaultParticles.empty() && bloodParticles.empty()) return;
     
     // Set up rendering state
     glEnable(GL_BLEND);
@@ -287,17 +400,40 @@ void CEParticleSystem::render(Camera* camera)
     m_shader->setMat4("projection", camera->getProjectionMatrix());
     m_shader->setFloat("alphaMultiplier", 1.0f);
     
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, m_textureID);
-    m_shader->setInt("particleTexture", 0);
-    
     glBindVertexArray(m_VAO);
     
+    // Render default particles
+    if (!defaultParticles.empty()) {
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, m_textureID);
+        m_shader->setInt("particleTexture", 0);
+        
+        renderParticleBatch(defaultParticles);
+    }
+    
+    // Render blood streak particles
+    if (!bloodParticles.empty()) {
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, m_bloodStreakTextureID);
+        m_shader->setInt("particleTexture", 0);
+        
+        renderParticleBatch(bloodParticles);
+    }
+    
+    glBindVertexArray(0);
+    
+    // Restore rendering state
+    glDepthMask(GL_TRUE);
+    glDisable(GL_BLEND);
+}
+
+void CEParticleSystem::renderParticleBatch(const std::vector<float>& instanceData)
+{
     // Upload instance data
     GLuint instanceVBO;
     glGenBuffers(1, &instanceVBO);
     glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
-    glBufferData(GL_ARRAY_BUFFER, m_instanceData.size() * sizeof(float), m_instanceData.data(), GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, instanceData.size() * sizeof(float), instanceData.data(), GL_DYNAMIC_DRAW);
     
     // Set up instance attributes
     size_t stride = 7 * sizeof(float);
@@ -314,7 +450,7 @@ void CEParticleSystem::render(Camera* camera)
     glVertexAttribDivisor(4, 1);
     
     // Render instances
-    int instanceCount = m_instanceData.size() / 7;
+    int instanceCount = instanceData.size() / 7;
     glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, instanceCount);
     
     // Cleanup
@@ -322,11 +458,6 @@ void CEParticleSystem::render(Camera* camera)
     glVertexAttribDivisor(2, 0);
     glVertexAttribDivisor(3, 0);
     glVertexAttribDivisor(4, 0);
-    glBindVertexArray(0);
-    
-    // Restore rendering state
-    glDepthMask(GL_TRUE);
-    glDisable(GL_BLEND);
 }
 
 void CEParticleSystem::clear()

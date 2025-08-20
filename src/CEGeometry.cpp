@@ -396,9 +396,8 @@ void CEGeometry::EnablePhysics()
   this->m_bullet_tiv = tiv;
   
   // build the non-static model in case the game needs it
-  m_gimpact = new btGImpactMeshShape(m_bullet_tiv);
-  m_gimpact->setMargin(0.02f);
-  m_gimpact->updateBound();
+  m_gimpact = new btBvhTriangleMeshShape(tiv, true);
+  m_gimpact->setMargin(0.01f);
   
   m_has_physics = true;
 }
@@ -408,6 +407,11 @@ btTriangleIndexVertexArray* CEGeometry::getPhysicalMesh() const
   assert(m_has_physics);
 
   return m_bullet_tiv;
+}
+
+btBvhTriangleMeshShape* CEGeometry::getMeshShape() const
+{
+  return m_gimpact;
 }
 
 std::vector<glm::vec3> CEGeometry::getDebugPhysicsVertices() const

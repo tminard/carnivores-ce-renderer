@@ -2,8 +2,8 @@
   "basePath": "../../runtime/cce/",
   "map": {
     "type": "C2",
-    "map": "../game/lost/area2.map",
-    "rsc": "../game/lost/area2.rsc"
+    "map": "../game/enchanted/area2.map",
+    "rsc": "../game/enchanted/area2.rsc"
   },
   "video": {
     "fullscreen": true

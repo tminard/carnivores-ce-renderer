@@ -33,7 +33,7 @@ private:
     
     // Collision filtering constants
     static const short PLAYER_COLLISION_GROUP = 1 << 4;  // PLAYER_GROUP (bit 4)
-    static const short PLAYER_COLLISION_MASK = (1 << 2) | (1 << 3);  // Collide with OBJECT_GROUP and WATER_GROUP
+    static const short PLAYER_COLLISION_MASK = (1 << 2) | (1 << 3) | (1 << 5);  // Collide with OBJECT_GROUP and WATER_GROUP and AI
     
     // Current state
     glm::vec3 m_position;

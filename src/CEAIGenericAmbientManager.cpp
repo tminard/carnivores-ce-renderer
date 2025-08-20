@@ -927,6 +927,7 @@ void CEAIGenericAmbientManager::createCollisionBody(CEPhysicsWorld* physicsWorld
   btVector3 scale(0.0625f, 0.0625f, 0.0625f);
   btScaledBvhTriangleMeshShape* scaledShape = new btScaledBvhTriangleMeshShape(baseBvhShape, scale);
   btRigidBody* instanceBody = physicsWorld->createStaticBody(scaledShape, pos);
+  instanceBody->setUserPointer(this);
   
   short objectGroup = CEPhysicsWorld::CollisionGroups::AI_GROUP;
   short objectMask = -1; // Collide with everything

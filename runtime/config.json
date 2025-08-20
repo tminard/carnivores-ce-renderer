@@ -29,8 +29,8 @@
          "maxRange": 50000.0,
          "damage": 45,
          "projectileType": "ballistic",
-         "recoil": 2.5,
-         "sway": 1.8
+         "recoil": 0.5,
+         "sway": 0.0
        }
     }
   },

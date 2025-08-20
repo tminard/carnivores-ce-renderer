@@ -32,6 +32,22 @@ class CEAudioSource;
 
 struct CEWaterEntity;
 
+// Random sound data structure - matches original engine TRD
+struct RandomSoundData {
+  int RNumber;   // Index into random sound array
+  int RVolume;   // Volume for this random sound
+  int RFreq;     // Frequency/time interval for playing
+  int Flags;     // Day/night flags (bit 0 = day, bit 1 = night)
+};
+
+// Ambient area data structure - matches original engine TAmbient
+struct AmbientArea {
+  RandomSoundData rdata[16];  // Array of random sound mappings
+  int RSFXCount;              // Number of random sounds available in this area
+  int AVolume;                // Ambient volume
+  int RndTime;                // Current countdown timer for next random sound
+};
+
 class C2MapRscFile
 {
 private:
@@ -61,6 +77,7 @@ private:
   std::vector<std::shared_ptr<CEAudioSource>> m_random_audio_sources;
   std::vector<std::shared_ptr<Sound>> m_ambient_sounds;
   std::vector<std::shared_ptr<CEAudioSource>> m_ambient_audio_sources;
+  std::vector<AmbientArea> m_ambient_areas;  // Area-specific random sound data
 
   int m_num_waters;
   std::vector<CEWaterEntity> m_waters;
@@ -103,6 +120,10 @@ public:
 
   std::shared_ptr<CEAudioSource> getAmbientAudio(int i);
   std::shared_ptr<CEAudioSource> getRandomAudio(int x, int y, int z);
+  std::shared_ptr<CEAudioSource> getRandomAudioForArea(int ambientAreaId, int x, int y, int z);
+  
+  bool shouldPlayRandomSound(int ambientAreaId, double currentTime);
+  void updateRandomSoundTimer(int ambientAreaId, double timeDelta);
 
   void playRandomAudio(int x, int y, int z);
   void playAmbientAudio(int i);

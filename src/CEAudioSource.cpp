@@ -44,13 +44,13 @@ void CEAudioSource::upload()
     alSource3f(m_audio_source, AL_VELOCITY, 0, 0, 0);
 
     alSourcei(m_audio_source, AL_ROLLOFF_FACTOR, 1); // decline in gain starting at ref distance, through max distance
-    alSourcei(m_audio_source, AL_MAX_DISTANCE, (256*100*2)); // distance until gain is 0
-    alSourcei(m_audio_source, AL_REFERENCE_DISTANCE, (256*1*2)); // clamped distance; up to distance where gain is always 1
+    alSourcei(m_audio_source, AL_MAX_DISTANCE, (16*100*2)); // Scaled down 16x (was 256*100*2)
+    alSourcei(m_audio_source, AL_REFERENCE_DISTANCE, (16*1*2)); // Scaled down 16x (was 256*1*2)
 
     alGenBuffers(1, &m_audio_buffer);
 
     // Use MONO since channels is always 1 and bits is always 16. TODO: change this when this is no longer the case.
-    alBufferData(m_audio_buffer, AL_FORMAT_MONO16, (ALvoid*)this->m_original_audio->getWaveData().data(), (ALsizei)this->m_original_audio->getLength(), (ALsizei)this->m_original_audio->getFrequency());
+    alBufferData(m_audio_buffer, AL_FORMAT_MONO16, (ALvoid*)this->m_original_audio->getWaveDataInternal().data(), (ALsizei)this->m_original_audio->getLength(), (ALsizei)this->m_original_audio->getFrequency());
 
     if (alGetError() != AL_NO_ERROR) {
         throw std::runtime_error("Failed to buffer audio source from wav data. FATAL.");
@@ -87,7 +87,7 @@ void CEAudioSource::setNoDistance(float gain)
 {
     alSourcef(m_audio_source, AL_GAIN, gain);
     alSourcei(m_audio_source, AL_SOURCE_RELATIVE, AL_TRUE); // true means the below pos is an offset against the current listener position
-    alSource3f(m_audio_source, AL_POSITION, 0.0, -1.0, 0.0); // TODO: make this an enum of "at, behind, right" etc
+    alSource3f(m_audio_source, AL_POSITION, 0.0, 1.0, 0.0); // TODO: make this an enum of "at, behind, right" etc
 }
 
 void CEAudioSource::setMaxDistance(int distance)
@@ -113,6 +113,11 @@ void CEAudioSource::setPosition(glm::vec3 position)
 {
     alSource3f(m_audio_source, AL_POSITION, position.x, position.y, position.z);
 }
+
+void CEAudioSource::setGain(float gain) { 
+  alSourcef(m_audio_source, AL_GAIN, gain);
+}
+
 
 
 

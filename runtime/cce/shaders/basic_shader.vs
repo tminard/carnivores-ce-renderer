@@ -10,6 +10,8 @@ out vec2 texCoord0;
 out float faceAlpha0;
 out vec3 surfaceNormal;
 out vec3 toLightVector;
+out vec3 FragPos;
+out vec4 FragPosLightSpace;
 
 uniform highp mat4 MVP;
 uniform mat4 model;
@@ -20,6 +22,8 @@ uniform float terrainHeight;
 uniform float tileWidth;
 uniform vec3 cameraPos;
 uniform float time;
+uniform mat4 lightSpaceMatrix;
+uniform bool enableShadows = false;
 
 void main()
 {
@@ -34,6 +38,11 @@ void main()
 
     texCoord0 = texCoord;
     faceAlpha0 = faceAlpha;
+    FragPos = worldPosition.xyz;
+    
+    if (enableShadows) {
+        FragPosLightSpace = lightSpaceMatrix * worldPosition;
+    }
 
     gl_Position = projectedPosition;
 }

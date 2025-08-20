@@ -1,835 +1,472 @@
 {
   "basePath": "../../runtime/cce/",
   "map": {
-    "type": "C1",
-    "map": "../game/c1/area6.map",
-    "rsc": "../game/c1/area6.rsc"
+    "type": "C2",
+    "map": "../game/ice/area5.map",
+    "rsc": "../game/ice/area5.rsc",
+    "sky": "flat"
   },
   "video": {
-    "fullscreen": true
+    "fullscreen": false
+  },
+  "debug": {
+    "shadowDebug": false,
+    "renderDebug": false
+  },
+  "weapons": {
+    "primary": {
+      "file": "game/models/shotgun.car",
+      "rounds": 6,
+      "animations": {
+         "draw": "Sg4_get",
+         "holster": "Sg4_put",
+         "fire": "Sg5_fire",
+         "reload": "Sg5_rld"
+       },
+       "projectiles": {
+         "muzzleFlashFrame": 2,
+         "muzzleOffset": [0.0, 0.0, 8.0],
+         "muzzleVelocity": 4000.0,
+         "maxRange": 50000.0,
+         "damage": 45,
+         "projectileType": "ballistic",
+         "recoil": 0.5,
+         "sway": 0.0
+       }
+    }
+  },
+  "impactSounds": {
+    "terrain": [
+    ],
+    "object": [
+      "../../runtime/cce/game/audio/IMPACT/MODEL1.wav"
+    ],
+    "water": [
+    ]
+  },
+  "ui": {
+    "compass": "game/models/compas.car"
   },
   "spawns": [
-    {
-      "file": "../../runtime/cce/game/models/TIREX.CAR",
-      "animation": "Tx_walk",
-      "position": [
-        212,
-        212
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "animations": {
-            "WALK": "Tx_walk",
-            "RUN": "Vel_run1",
-            "DIE": "Vel_die1",
-            "SLEEP": "Vel_slp"
-          },
-          "character": {
-            "walkSpeed": 2.85,
-            "runSpeed": 6
-          }
-        }
-      }
-    },
-    {
-      "file": "../../runtime/cce/game/models/TIREX.CAR",
-      "animation": "Tx_walk",
-      "position": [
-        210,
-        210
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "animations": {
-            "WALK": "Tx_walk",
-            "RUN": "Vel_run1",
-            "DIE": "Vel_die1",
-            "SLEEP": "Vel_slp"
-          },
-          "character": {
-            "walkSpeed": 2.85,
-            "runSpeed": 6
-          }
-        }
-      }
-    },
-    {
-      "file": "../../runtime/cce/game/models/TIREX.CAR",
-      "animation": "Tx_walk",
-      "position": [
-        214,
-        214
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "animations": {
-            "WALK": "Tx_walk",
-            "RUN": "Vel_run1",
-            "DIE": "Vel_die1",
-            "SLEEP": "Vel_slp"
-          },
-          "character": {
-            "walkSpeed": 2.85,
-            "runSpeed": 6
-          }
-        }
-      }
-    },
-    {
-      "file": "../../runtime/cce/game/models/TIREX.CAR",
-      "animation": "Tx_walk",
-      "position": [
-        208,
-        208
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "animations": {
-            "WALK": "Tx_walk",
-            "RUN": "Vel_run1",
-            "DIE": "Vel_die1",
-            "SLEEP": "Vel_slp"
-          },
-          "character": {
-            "walkSpeed": 2.85,
-            "runSpeed": 6
-          }
-        }
-      }
-    },
-    {
-      "file": "../../runtime/cce/game/models/TIREX.CAR",
-      "animation": "Tx_walk",
-      "position": [
-        216,
-        216
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "animations": {
-            "WALK": "Tx_walk",
-            "RUN": "Vel_run1",
-            "DIE": "Vel_die1",
-            "SLEEP": "Vel_slp"
-          },
-          "character": {
-            "walkSpeed": 2.85,
-            "runSpeed": 6
-          }
-        }
-      }
-    },
-    {
-      "file": "../../runtime/cce/game/models/TIREX.CAR",
-      "animation": "Tx_walk",
-      "position": [
-        206,
-        206
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "animations": {
-            "WALK": "Tx_walk",
-            "RUN": "Vel_run1",
-            "DIE": "Vel_die1",
-            "SLEEP": "Vel_slp"
-          },
-          "character": {
-            "walkSpeed": 2.85,
-            "runSpeed": 6
-          }
-        }
-      }
-    },
-    {
-      "file": "../../runtime/cce/game/models/GALL.CAR",
-      "animation": "Gall_wlk",
-      "position": [
-        256,
-        256
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "animations": {
-            "WALK": "Gall_wlk",
-            "RUN": "Vel_run1",
-            "DIE": "Vel_die1",
-            "SLEEP": "Vel_slp"
-          },
-          "character": {
-            "walkSpeed": 1,
-            "runSpeed": 6
-          }
-        }
-      }
-    },
-    {
-      "file": "../../runtime/cce/game/models/GALL.CAR",
-      "animation": "Gall_wlk",
-      "position": [
-        256,
-        256
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "animations": {
-            "WALK": "Gall_wlk",
-            "RUN": "Vel_run1",
-            "DIE": "Vel_die1",
-            "SLEEP": "Vel_slp"
-          },
-          "character": {
-            "walkSpeed": 1,
-            "runSpeed": 6
-          }
-        }
-      }
-    },
-    {
-      "file": "../../runtime/cce/game/models/GALL.CAR",
-      "animation": "Gall_wlk",
-      "position": [
-        256,
-        256
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "animations": {
-            "WALK": "Gall_wlk",
-            "RUN": "Vel_run1",
-            "DIE": "Vel_die1",
-            "SLEEP": "Vel_slp"
-          },
-          "character": {
-            "walkSpeed": 1,
-            "runSpeed": 6
-          }
-        }
-      }
-    },
-    {
-      "file": "../../runtime/cce/game/models/GALL.CAR",
-      "animation": "Gall_wlk",
-      "position": [
-        256,
-        256
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "animations": {
-            "WALK": "Gall_wlk",
-            "RUN": "Vel_run1",
-            "DIE": "Vel_die1",
-            "SLEEP": "Vel_slp"
-          },
-          "character": {
-            "walkSpeed": 1,
-            "runSpeed": 6
-          }
-        }
-      }
-    },
-    {
-      "file": "../../runtime/cce/game/models/GALL.CAR",
-      "animation": "Gall_wlk",
-      "position": [
-        256,
-        256
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "animations": {
-            "WALK": "Gall_wlk",
-            "RUN": "Vel_run1",
-            "DIE": "Vel_die1",
-            "SLEEP": "Vel_slp"
-          },
-          "character": {
-            "walkSpeed": 1,
-            "runSpeed": 6
-          }
-        }
-      }
-    },
-    {
-      "file": "../../runtime/cce/game/models/STEGO.CAR",
-      "animation": "Sr_wlk",
-      "position": [
-        256,
-        256
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "animations": {
-            "WALK": "Sr_wlk",
-            "RUN": "Vel_run1",
-            "DIE": "Vel_die1",
-            "SLEEP": "Vel_slp"
-          },
-          "character": {
-            "walkSpeed": 0.8,
-            "runSpeed": 6
-          }
-        }
-      }
-    },
-    {
-      "file": "../../runtime/cce/game/models/STEGO.CAR",
-      "animation": "Sr_wlk",
-      "position": [
-        256,
-        256
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "animations": {
-            "WALK": "Sr_wlk",
-            "RUN": "Vel_run1",
-            "DIE": "Vel_die1",
-            "SLEEP": "Vel_slp"
-          },
-          "character": {
-            "walkSpeed": 0.8,
-            "runSpeed": 6
-          }
-        }
-      }
-    },
-    {
-      "file": "../../runtime/cce/game/models/STEGO.CAR",
-      "animation": "Sr_wlk",
-      "position": [
-        256,
-        256
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "animations": {
-            "WALK": "Sr_wlk",
-            "RUN": "Vel_run1",
-            "DIE": "Vel_die1",
-            "SLEEP": "Vel_slp"
-          },
-          "character": {
-            "walkSpeed": 0.8,
-            "runSpeed": 6
-          }
-        }
-      }
-    },
-    {
-      "file": "../../runtime/cce/game/models/STEGO.CAR",
-      "animation": "Sr_wlk",
-      "position": [
-        256,
-        256
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "animations": {
-            "WALK": "Sr_wlk",
-            "RUN": "Vel_run1",
-            "DIE": "Vel_die1",
-            "SLEEP": "Vel_slp"
-          },
-          "character": {
-            "walkSpeed": 0.8,
-            "runSpeed": 6
-          }
-        }
-      }
-    },
-    {
-      "file": "../../runtime/cce/game/models/STEGO.CAR",
-      "animation": "Sr_wlk",
-      "position": [
-        256,
-        256
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "animations": {
-            "WALK": "Sr_wlk",
-            "RUN": "Vel_run1",
-            "DIE": "Vel_die1",
-            "SLEEP": "Vel_slp"
-          },
-          "character": {
-            "walkSpeed": 0.8,
-            "runSpeed": 6
-          }
-        }
-      }
-    },
-    {
-      "file": "../../runtime/cce/game/models/STEGO.CAR",
-      "animation": "Sr_wlk",
-      "position": [
-        256,
-        256
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "animations": {
-            "WALK": "Sr_wlk",
-            "RUN": "Vel_run1",
-            "DIE": "Vel_die1",
-            "SLEEP": "Vel_slp"
-          },
-          "character": {
-            "walkSpeed": 0.8,
-            "runSpeed": 6
-          }
-        }
-      }
-    },
-    {
-      "file": "../../runtime/cce/game/models/STEGO.CAR",
-      "animation": "Sr_wlk",
-      "position": [
-        256,
-        256
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "animations": {
-            "WALK": "Sr_wlk",
-            "RUN": "Vel_run1",
-            "DIE": "Vel_die1",
-            "SLEEP": "Vel_slp"
-          },
-          "character": {
-            "walkSpeed": 0.8,
-            "runSpeed": 6
-          }
-        }
-      }
-    },
-    {
-      "file": "../../runtime/cce/game/models/STEGO.CAR",
-      "animation": "Sr_wlk",
-      "position": [
-        256,
-        256
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "animations": {
-            "WALK": "Sr_wlk",
-            "RUN": "Vel_run1",
-            "DIE": "Vel_die1",
-            "SLEEP": "Vel_slp"
-          },
-          "character": {
-            "walkSpeed": 0.8,
-            "runSpeed": 6
-          }
-        }
-      }
-    },
-    {
-      "file": "../../runtime/cce/game/models/STEGO.CAR",
-      "animation": "Sr_wlk",
-      "position": [
-        256,
-        256
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "animations": {
-            "WALK": "Sr_wlk",
-            "RUN": "Vel_run1",
-            "DIE": "Vel_die1",
-            "SLEEP": "Vel_slp"
-          },
-          "character": {
-            "walkSpeed": 0.8,
-            "runSpeed": 6
-          }
-        }
-      }
-    },
-    {
-      "file": "../../runtime/cce/game/models/ALLO.CAR",
-      "animation": "Rap_wlk",
-      "position": [
-        257,
-        256
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "animations": {
-            "WALK": "Rap_wlk",
-            "RUN": "Vel_run1",
-            "DIE": "Vel_die1",
-            "SLEEP": "Vel_slp"
-          },
-          "character": {
-            "walkSpeed": 1.2,
-            "runSpeed": 6
-          }
-        }
-      }
-    },
-    {
-      "file": "../../runtime/cce/game/models/ALLO.CAR",
-      "animation": "Rap_wlk",
-      "position": [
-        258,
-        256
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "animations": {
-            "WALK": "Rap_wlk",
-            "RUN": "Vel_run1",
-            "DIE": "Vel_die1",
-            "SLEEP": "Vel_slp"
-          },
-          "character": {
-            "walkSpeed": 1.2,
-            "runSpeed": 6
-          }
-        }
-      }
-    },
-    {
-      "file": "../../runtime/cce/game/models/ALLO.CAR",
-      "animation": "Rap_wlk",
-      "position": [
-        259,
-        256
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "animations": {
-            "WALK": "Rap_wlk",
-            "RUN": "Vel_run1",
-            "DIE": "Vel_die1",
-            "SLEEP": "Vel_slp"
-          },
-          "character": {
-            "walkSpeed": 1.2,
-            "runSpeed": 6
-          }
+  {
+    "file": "../../runtime/cce/game/models/Bigfoot.car",
+    "animation": "Bf_wlk",
+    "position": [
+      256,
+      256
+    ],
+    "attachAI": {
+      "controller": "GenericAmbient",
+      "args": {
+        "DEBUG": false,
+        "name": "Bigfoot1",
+        "animations": {
+          "WALK": "Bf_wlk",
+          "IDLE": ["Bf_idle1", "Bf_idle2", "bf_idle3", "Bf_hero"],
+          "RUN": "Bf_run",
+          "DIE": "Bf_die"
+        },
+        "behavior": {
+          "vision": 40.0,
+          "maxAttackChance": 0.0,
+          "minAttackChance": 0.0,
+          "damageOnContact": false
+        },
+        "character": {
+          "walkSpeed": 2.25
         }
       }
     }
-    ,
-    {
-      "file": "../../runtime/cce/game/models/MOSH.CAR",
-      "animation": "Ms_wlk1",
-      "position": [
-        259,
-        256
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "animations": {
-            "WALK": "Ms_wlk1",
-            "RUN": "Vel_run1",
-            "DIE": "Vel_die1",
-            "SLEEP": "Vel_slp"
-          },
-          "character": {
-            "heightOffset": 3.0,
-            "walkSpeed": 0.7,
-            "runSpeed": 6
-          }
+  },
+  {
+    "file": "../../runtime/cce/game/models/SPINO.CAR",
+    "animation": "So_wlk",
+    "position": [
+      128,
+      204
+    ],
+    "attachAI": {
+      "controller": "GenericAmbient",
+      "args": {
+        "name": "Spino1",
+        "animations": {
+          "WALK": "So_wlk",
+          "IDLE": ["So_idle1", "So_idle2"],
+          "RUN": "So_run",
+          "DIE": "So_die"
+        },
+        "behavior": {
+          "vision": 20.0,
+          "maxAttackChance": 0.0,
+          "minAttackChance": 0.0,
+          "damageOnContact": false
+        },
+        "character": {
+          "walkSpeed": 2.65,
+          "roamRange": 24.0
         }
       }
     }
-    ,
-    {
-      "file": "../../runtime/cce/game/models/MOSH.CAR",
-      "animation": "Ms_wlk1",
-      "position": [
-        260,
-        256
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "animations": {
-            "WALK": "Ms_wlk1",
-            "RUN": "Vel_run1",
-            "DIE": "Vel_die1",
-            "SLEEP": "Vel_slp"
-          },
-          "character": {
-            "heightOffset": 3.0,
-            "walkSpeed": 0.7,
-            "runSpeed": 6
-          }
+  },
+  {
+    "file": "../../runtime/cce/game/models/SPINO.CAR",
+    "animation": "So_wlk",
+    "position": [
+      129,
+      205
+    ],
+    "attachAI": {
+      "controller": "GenericAmbient",
+      "args": {
+        "name": "Spino2",
+        "animations": {
+          "WALK": "So_wlk",
+          "IDLE": ["So_idle1", "So_idle2"],
+          "RUN": "So_run",
+          "DIE": "So_die"
+        },
+        "behavior": {
+          "vision": 20.0,
+          "maxAttackChance": 0.0,
+          "minAttackChance": 0.0,
+          "damageOnContact": false
+        },
+        "character": {
+          "walkSpeed": 2.65,
+          "roamRange": 24.0
         }
       }
     }
-    ,
-    {
-      "file": "../../runtime/cce/game/models/MOSH.CAR",
-      "animation": "Ms_wlk1",
-      "position": [
-        261,
-        256
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "animations": {
-            "WALK": "Ms_wlk1",
-            "RUN": "Vel_run1",
-            "DIE": "Vel_die1",
-            "SLEEP": "Vel_slp"
-          },
-          "character": {
-            "heightOffset": 3.0,
-            "walkSpeed": 0.7,
-            "runSpeed": 6
-          }
+  },
+  {
+    "file": "../../runtime/cce/game/models/SPINO.CAR",
+    "animation": "So_wlk",
+    "position": [
+      127,
+      203
+    ],
+    "attachAI": {
+      "controller": "GenericAmbient",
+      "args": {
+        "name": "Spino3",
+        "animations": {
+          "WALK": "So_wlk",
+          "IDLE": ["So_idle1", "So_idle2"],
+          "RUN": "So_run",
+          "DIE": "So_die"
+        },
+        "behavior": {
+          "vision": 20.0,
+          "maxAttackChance": 0.0,
+          "minAttackChance": 0.0,
+          "damageOnContact": false
+        },
+        "character": {
+          "walkSpeed": 2.65,
+          "roamRange": 24.0
         }
       }
     }
-    ,
-    {
-      "file": "../../runtime/cce/game/models/MOSH.CAR",
-      "animation": "Ms_wlk1",
-      "position": [
-        262,
-        256
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "animations": {
-            "WALK": "Ms_wlk1",
-            "RUN": "Vel_run1",
-            "DIE": "Vel_die1",
-            "SLEEP": "Vel_slp"
-          },
-          "character": {
-            "heightOffset": 3.0,
-            "walkSpeed": 0.7,
-            "runSpeed": 6
-          }
+  },
+  {
+    "file": "../../runtime/cce/game/models/SPINO.CAR",
+    "animation": "So_wlk",
+    "position": [
+      129,
+      204
+    ],
+    "attachAI": {
+      "controller": "GenericAmbient",
+      "args": {
+        "name": "Spino4",
+        "animations": {
+          "WALK": "So_wlk",
+          "IDLE": ["So_idle1", "So_idle2"],
+          "RUN": "So_run",
+          "DIE": "So_die"
+        },
+        "behavior": {
+          "vision": 20.0,
+          "maxAttackChance": 0.0,
+          "minAttackChance": 0.0,
+          "damageOnContact": false
+        },
+        "character": {
+          "walkSpeed": 2.65,
+          "roamRange": 24.0
         }
       }
     }
-    ,
-    {
-      "file": "../../runtime/cce/game/models/MOSH.CAR",
-      "animation": "Ms_wlk1",
-      "position": [
-        263,
-        256
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "animations": {
-            "WALK": "Ms_wlk1",
-            "RUN": "Vel_run1",
-            "DIE": "Vel_die1",
-            "SLEEP": "Vel_slp"
-          },
-          "character": {
-            "heightOffset": 3.0,
-            "walkSpeed": 0.7,
-            "runSpeed": 6
-          }
-        }
-      }
-    },
-    {
-      "file": "../../runtime/cce/game/models/ptero2.CAR",
-      "animation": "f3",
-      "position": [
-        263,
-        256
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "animations": {
-            "WALK": "g2",
-            "RUN": "Vel_run1",
-            "DIE": "Vel_die1",
-            "SLEEP": "Vel_slp"
-          },
-          "character": {
-            "heightOffset": 2048,
-            "walkSpeed": 6.0,
-            "runSpeed": 6
-          }
-        }
-      }
-    },
-    {
-      "file": "../../runtime/cce/game/models/ptero2.CAR",
-      "animation": "f3",
-      "position": [
-        266,
-        256
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "animations": {
-            "WALK": "g2",
-            "RUN": "Vel_run1",
-            "DIE": "Vel_die1",
-            "SLEEP": "Vel_slp"
-          },
-          "character": {
-            "heightOffset": 2048,
-            "walkSpeed": 6.0,
-            "runSpeed": 6
-          }
-        }
-      }
-    },
-    {
-      "file": "../../runtime/cce/game/models/ptero2.CAR",
-      "animation": "f3",
-      "position": [
-        268,
-        256
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "animations": {
-            "WALK": "g2",
-            "RUN": "Vel_run1",
-            "DIE": "Vel_die1",
-            "SLEEP": "Vel_slp"
-          },
-          "character": {
-            "heightOffset": 2048,
-            "walkSpeed": 6.0,
-            "runSpeed": 6
-          }
-        }
-      }
-    },
-    {
-      "file": "../../runtime/cce/game/models/ptero2.CAR",
-      "animation": "f3",
-      "position": [
-        269,
-        256
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "animations": {
-            "WALK": "g2",
-            "RUN": "Vel_run1",
-            "DIE": "Vel_die1",
-            "SLEEP": "Vel_slp"
-          },
-          "character": {
-            "heightOffset": 2048,
-            "walkSpeed": 6.0,
-            "runSpeed": 6
-          }
-        }
-      }
-    },
-    {
-      "file": "../../runtime/cce/game/models/ptero2.CAR",
-      "animation": "f3",
-      "position": [
-        0,
-        0
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "animations": {
-            "WALK": "g2",
-            "RUN": "Vel_run1",
-            "DIE": "Vel_die1",
-            "SLEEP": "Vel_slp"
-          },
-          "character": {
-            "heightOffset": 2048,
-            "walkSpeed": 6.0,
-            "runSpeed": 6
-          }
-        }
-      }
-    },
-    {
-      "file": "../../runtime/cce/game/models/par2.CAR",
-      "animation": "Par_wlk",
-      "position": [
-        256,
-        256
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "animations": {
-            "WALK": "Par_wlk",
-            "RUN": "Vel_run1",
-            "DIE": "Vel_die1",
-            "SLEEP": "Vel_slp"
-          },
-          "character": {
-            "heightOffset": 0,
-            "walkSpeed": 1.0,
-            "runSpeed": 6
-          }
-        }
-      }
-    },
-    {
-      "file": "../../runtime/cce/game/models/dimor2.CAR",
-      "animation": "Dim_fly1",
-      "position": [
-        269,
-        256
-      ],
-      "attachAI": {
-        "controller": "GenericAmbient",
-        "args": {
-          "animations": {
-            "WALK": "Dim_fly1",
-            "RUN": "Vel_run1",
-            "DIE": "Vel_die1",
-            "SLEEP": "Vel_slp"
-          },
-          "character": {
-            "heightOffset": 2048,
-            "walkSpeed": 3.0,
-            "runSpeed": 6
-          }
+  },
+  {
+    "file": "../../runtime/cce/game/models/SPINO.CAR",
+    "animation": "So_wlk",
+    "position": [
+      130,
+      204
+    ],
+    "attachAI": {
+      "controller": "GenericAmbient",
+      "args": {
+        "name": "Spino5",
+        "animations": {
+          "WALK": "So_wlk",
+          "IDLE": ["So_idle1", "So_idle2"],
+          "RUN": "So_run",
+          "DIE": "So_die"
+        },
+        "behavior": {
+          "vision": 20.0,
+          "maxAttackChance": 0.0,
+          "minAttackChance": 0.0,
+          "damageOnContact": false
+        },
+        "character": {
+          "walkSpeed": 2.65,
+          "roamRange": 24.0
         }
       }
     }
+  },
+  {
+    "file": "../../runtime/cce/game/models/SPINO.CAR",
+    "animation": "So_wlk",
+    "position": [
+      131,
+      204
+    ],
+    "attachAI": {
+      "controller": "GenericAmbient",
+      "args": {
+        "name": "Spino6",
+        "animations": {
+          "WALK": "So_wlk",
+          "IDLE": ["So_idle1", "So_idle2"],
+          "RUN": "So_run",
+          "DIE": "So_die"
+        },
+        "behavior": {
+          "vision": 20.0,
+          "maxAttackChance": 0.0,
+          "minAttackChance": 0.0,
+          "damageOnContact": false
+        },
+        "character": {
+          "walkSpeed": 2.65,
+          "roamRange": 24.0
+        }
+      }
+    }
+  },
+  {
+    "file": "../../runtime/cce/game/models/velo2.car",
+    "animation": "Vel_wlk",
+    "position": [
+      100,
+      135
+    ],
+    "attachAI": {
+      "controller": "GenericAmbient",
+      "args": {
+        "name": "Raptor1",
+        "animations": {
+          "WALK": "Vel_wlk",
+          "IDLE": ["Vel_eat"],
+          "RUN": "Vel_run1",
+          "DIE": "Vel_die1"
+        },
+        "behavior": {
+          "vision": 5.0,
+          "maxAttackChance": 30.0,
+          "minAttackChance": 15.0,
+          "damageOnContact": false
+        },
+        "character": {
+          "walkSpeed": 1.75,
+          "roamRange": 3.0
+        }
+      }
+    }
+  },
+  {
+    "file": "../../runtime/cce/game/models/velo2.car",
+    "animation": "Vel_wlk",
+    "position": [
+      101,
+      135
+    ],
+    "attachAI": {
+      "controller": "GenericAmbient",
+      "args": {
+        "name": "Raptor1",
+        "animations": {
+          "WALK": "Vel_wlk",
+          "IDLE": ["Vel_eat"],
+          "RUN": "Vel_run1",
+          "DIE": "Vel_die1"
+        },
+        "behavior": {
+          "vision": 5.0,
+          "maxAttackChance": 30.0,
+          "minAttackChance": 15.0,
+          "damageOnContact": false
+        },
+        "character": {
+          "walkSpeed": 1.75,
+          "roamRange": 3.0
+        }
+      }
+    }
+  },
+  {
+    "file": "../../runtime/cce/game/models/velo2.car",
+    "animation": "Vel_wlk",
+    "position": [
+      102,
+      135
+    ],
+    "attachAI": {
+      "controller": "GenericAmbient",
+      "args": {
+        "name": "Raptor3",
+        "animations": {
+          "WALK": "Vel_wlk",
+          "IDLE": ["Vel_eat"],
+          "RUN": "Vel_run1",
+          "DIE": "Vel_die1"
+        },
+        "behavior": {
+          "vision": 5.0,
+          "maxAttackChance": 30.0,
+          "minAttackChance": 15.0,
+          "damageOnContact": false
+        },
+        "character": {
+          "walkSpeed": 1.75,
+          "roamRange": 3.0
+        }
+      }
+    }
+  },
+  {
+    "file": "../../runtime/cce/game/models/velo2.car",
+    "animation": "Vel_wlk",
+    "position": [
+      104,
+      135
+    ],
+    "attachAI": {
+      "controller": "GenericAmbient",
+      "args": {
+        "name": "Raptor4",
+        "animations": {
+          "WALK": "Vel_wlk",
+          "IDLE": ["Vel_eat"],
+          "RUN": "Vel_run1",
+          "DIE": "Vel_die1"
+        },
+        "behavior": {
+          "vision": 5.0,
+          "maxAttackChance": 30.0,
+          "minAttackChance": 15.0,
+          "damageOnContact": false
+        },
+        "character": {
+          "walkSpeed": 1.75,
+          "roamRange": 3.0
+        }
+      }
+    }
+  },
+  {
+    "file": "../../runtime/cce/game/models/velo2.car",
+    "animation": "Vel_wlk",
+    "position": [
+      105,
+      135
+    ],
+    "attachAI": {
+      "controller": "GenericAmbient",
+      "args": {
+        "name": "Raptor5",
+        "animations": {
+          "WALK": "Vel_wlk",
+          "IDLE": ["Vel_eat"],
+          "RUN": "Vel_run1",
+          "DIE": "Vel_die1"
+        },
+        "behavior": {
+          "vision": 5.0,
+          "maxAttackChance": 30.0,
+          "minAttackChance": 15.0,
+          "damageOnContact": false
+        },
+        "character": {
+          "walkSpeed": 1.75,
+          "roamRange": 3.0
+        }
+      }
+    }
+  },
+  {
+    "file": "../../runtime/cce/game/models/TIREX.CAR",
+    "animation": "Tx_walk",
+    "position": [
+      359,
+      100
+    ],
+    "attachAI": {
+      "controller": "GenericAmbient",
+      "args": {
+        "name": "Rex1",
+        "animations": {
+          "WALK": "Tx_walk",
+          "IDLE": ["Tx_sml1", "Tx_sml2"],
+          "RUN": "Tx_run1",
+          "DIE": "Tx_die1"
+        },
+        "behavior": {
+          "vision": 4.0,
+          "maxAttackChance": 1.0,
+          "minAttackChance": 1.0,
+          "damageOnContact": false
+        },
+        "character": {
+          "walkSpeed": 2.65,
+          "roamRange": 64.0
+        }
+      }
+    }
+  },
+  {
+    "file": "../../runtime/cce/game/models/STEGO.CAR",
+    "animation": "Sr_wlk",
+    "position": [
+      256,
+      256
+    ],
+    "attachAI": {
+      "controller": "GenericAmbient",
+      "args": {
+        "animations": {
+          "WALK": "Sr_wlk",
+          "RUN": "Sr_run",
+          "IDLE": ["Sr_idle1", "Sr_idle2"],
+          "DIE": "Sr_die"
+        },
+        "behavior": {
+          "vision": 6.0,
+          "maxAttackChance": 0.0,
+          "minAttackChance": 0.0,
+          "damageOnContact": false
+        },
+        "character": {
+          "walkSpeed": 1.0,
+          "roamRange": 12.0,
+          "idleOdds": 0.5
+        }
+      }
+    }
+  }
   ]
 }

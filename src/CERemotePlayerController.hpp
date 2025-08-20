@@ -22,7 +22,6 @@ class C2MapRscFile;
 class LocalAudioManager;
 struct Camera;
 struct Transform;
-class CEGeometry;
 
 /**
  Class for remote controlled entities. This includes local AI control or avatars represented by remote human players.
@@ -153,8 +152,6 @@ public:
   void setAnimationAndFreeze(const std::string& animationName); // Play once then freeze at final frame
   void holdCurrentFrame(); // Stop animation progression but keep current frame
   bool hasAnimationFinished(double currentTime); // Check if current non-looping animation has finished
-  
-  CEGeometry* getGeometry() const;
   
   void Render();
 };

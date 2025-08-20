@@ -1022,6 +1022,7 @@ int main(int argc, const char * argv[])
                                                                      cMap,
                                                                      cMapRsc,
                                                                      carFile);
+        // AI manager manages collision directly - no reference needed in character
         ambients.push_back(std::move(ambientMg));
       }
       
@@ -1353,7 +1354,7 @@ int main(int argc, const char * argv[])
     
     for (const auto& ambient : ambients) {
       if (ambient) {
-        ambient->Process(currentTime, projectileManager->getPhysicsWorld());
+        ambient->Process(currentTime);
         
         // TODO: totally change this for multi-player?
         // For now, it's only enabled if you spawn GenericAmbients, but we'd probably want to update it to track all "players" or entities.

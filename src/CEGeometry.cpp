@@ -188,34 +188,34 @@ bool CEGeometry::SetAnimation(std::weak_ptr<CEAnimation> animation, double atTim
     // Handle the case where the animation is no longer available or doesn't exist
     return false;
   }
-
+  
   const double minInterval = 1.0 / 30.0;
   if (atTime - lastUpdateAt < minInterval) {
     return false;
   }
-
+  
   double animationStartTime = startAt;
   int totalFrames = ani->m_number_of_frames;
-
+  
   // Calculate the elapsed time since the animation started
   double elapsedTime = atTime - animationStartTime;
   double lastUpdateDelta = atTime - lastUpdateAt;
-
+  
   // Calculate the time per frame based on KPS (Keyframes Per Second)
   double timePerFrame = 1.0 / double(ani->m_kps);
-
+  
   // Optimization: do not update if time delta is < kps unless the player is very close
   // Also, run at minimum FPS unless very close
   double maxUpdateThreshold = maxFPS ? timePerFrame / 16.0 : timePerFrame;
   if (lastUpdateDelta < maxUpdateThreshold) {
     return false;
   }
-
+  
   // Optimization: no need to run through animations if dino is very far or we're not visible
   if (deferUpdate && (notVisible || lastUpdateDelta < timePerFrame * 4.0)) {
     return false;
   }
-
+  
   // Calculate the total time for the animation cycle
   double totalTime = totalFrames * timePerFrame;
   
@@ -225,19 +225,19 @@ bool CEGeometry::SetAnimation(std::weak_ptr<CEAnimation> animation, double atTim
 
   // Wrap the elapsed time around the total animation time
   double currentTime = fmod(elapsedTime, totalTime);
-
+  
   // Determine the frame index and interpolation factor
   double exactFrameIndex = currentTime / timePerFrame;
   int currentFrame = static_cast<int>(exactFrameIndex) % totalFrames;
   int nextFrame = (currentFrame + 1) % totalFrames;
-
+  
   m_current_frame = currentFrame;
-
+  
   auto aniData = *ani->GetAnimationData();
   auto origVData = ani->GetOriginalVertices();
   assert(aniData.size() % 3 == 0);
   size_t numVertices = origVData->size();
-
+  
   auto faces = *ani->GetFaces();
   if (noInterpolation) {
     // Use discrete frames without interpolation (for weapons)
@@ -246,7 +246,7 @@ bool CEGeometry::SetAnimation(std::weak_ptr<CEAnimation> animation, double atTim
     float k2 = static_cast<float>(exactFrameIndex - currentFrame); // Interpolation factor
     applyAnimFaceOrdered(m_vertices, faces, aniData.data(), static_cast<int>(numVertices), currentFrame, nextFrame, k2);
   }
-
+  
   glBindBuffer(GL_ARRAY_BUFFER, this->m_vertexArrayBuffers[VERTEX_VB]);
   auto sizeBytes = static_cast<GLsizei>(m_vertices.size() * sizeof(Vertex));
   void* ptr = glMapBufferRange(GL_ARRAY_BUFFER, 0, sizeBytes,
@@ -254,16 +254,7 @@ bool CEGeometry::SetAnimation(std::weak_ptr<CEAnimation> animation, double atTim
   std::memcpy(ptr, m_vertices.data(), sizeBytes);
   glUnmapBuffer(GL_ARRAY_BUFFER);
   
-  if (m_has_physics) {
-    m_gimpact->updateBound();
-  }
-
   return true;
-}
-
-btGImpactMeshShape* CEGeometry::getImpactShape() const
-{
-  return m_gimpact;
 }
 
 void CEGeometry::DrawNaked()
@@ -404,12 +395,9 @@ void CEGeometry::EnablePhysics()
   tiv->addIndexedMesh(im, PHY_INTEGER);
   this->m_bullet_tiv = tiv;
   
-  float scale = 0.0625f;
-  
   // build the non-static model in case the game needs it
   m_gimpact = new btGImpactMeshShape(m_bullet_tiv);
   m_gimpact->setMargin(0.02f);
-  m_gimpact->setLocalScaling(btVector3(scale, scale, scale));
   m_gimpact->updateBound();
   
   m_has_physics = true;

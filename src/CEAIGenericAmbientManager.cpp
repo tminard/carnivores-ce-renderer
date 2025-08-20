@@ -15,11 +15,9 @@
 #include "CEWalkableTerrainPathFinder.hpp"
 #include "CEPhysicsWorld.h"
 #include "vertex.h"
-
 #include <btBulletDynamicsCommon.h>
-#include <BulletCollision/Gimpact/btGImpactShape.h>
-#include <BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h>
-#include <BulletCollision/CollisionShapes/btTriangleIndexVertexArray.h>
+#include <BulletCollision/CollisionShapes/btBvhTriangleMeshShape.h>
+#include <BulletCollision/CollisionShapes/btTriangleMesh.h>
 
 #include "jps.hpp"
 
@@ -40,9 +38,6 @@ glm::vec3 rotateVector(const glm::vec3& vector, float angleRad) {
   rotatedVector.y = vector.y; // Keep the y component the same as we are rotating in the XZ plane.
   return rotatedVector;
 }
-
-static inline btVector3 toBt(const glm::vec3& v){ return btVector3(v.x, v.y, v.z); }
-static inline btQuaternion toBt(const glm::quat& q){ return btQuaternion(q.x, q.y, q.z, q.w); }
 
 CEAIGenericAmbientManager::CEAIGenericAmbientManager(
                                                      json jsonConfig,
@@ -445,7 +440,7 @@ void CEAIGenericAmbientManager::updateInflightPathsearch(double currentTime)
   if (m_debug) std::cout << currentTime << " " << m_config.AiName << " DEBUG: " << " - updateInflightPathsearch() No path to target found? Keeping existing in case we find target" << std::endl;
 }
 
-void CEAIGenericAmbientManager::Process(double currentTime, CEPhysicsWorld* physicsWorld) {
+void CEAIGenericAmbientManager::Process(double currentTime) {
   // Handle death state - limit processing but maintain essential updates
   if (m_isDead) {
     // Stop all movement and AI decision making
@@ -456,7 +451,7 @@ void CEAIGenericAmbientManager::Process(double currentTime, CEPhysicsWorld* phys
     // lock at final frame when non-looping animation finishes
     
     // Still update collision transform and upload state for rendering
-    updateCollisionTransform(physicsWorld);
+    updateCollisionTransform();
     
     // Upload state to hardware at regular intervals for rendering
     const double minInterval = 1.0 / 30.0;
@@ -590,14 +585,14 @@ void CEAIGenericAmbientManager::Process(double currentTime, CEPhysicsWorld* phys
   // Use interpolated target for smooth look-at direction
   m_player_controller->UpdateLookAtDirection(m_interpolated_target, currentTime);
   
-  const double minInterval = 1.0 / 90.0;
+  const double minInterval = 1.0 / 30.0;
   if (currentTime - m_last_upload_time >= minInterval) {
     m_player_controller->uploadStateToHardware();
     m_last_upload_time = currentTime;
   }
   
   // Update collision body transform if present
-  updateCollisionTransform(physicsWorld);
+  updateCollisionTransform();
   
   m_last_process_time = currentTime;
 }
@@ -925,58 +920,115 @@ void CEAIGenericAmbientManager::cleanupCollision(CEPhysicsWorld* physicsWorld)
 
 void CEAIGenericAmbientManager::createCollisionBody(CEPhysicsWorld* physicsWorld)
 {
-  auto* world      = physicsWorld->getDynamicsWorld();
-  auto* dispatcher = static_cast<btCollisionDispatcher*>(world->getDispatcher());
-  auto* geo = m_player_controller->getGeometry();
-  auto ani = m_car->getFirstAnimation();
-  geo->EnablePhysics();
-  geo->SetAnimation(ani, 0);
-  auto* impactShape = geo->getImpactShape();
-
-  btGImpactCollisionAlgorithm::registerAlgorithm(dispatcher);
-
-  btRigidBody::btRigidBodyConstructionInfo ci(/*mass*/0.f, /*motion*/nullptr, geo->getImpactShape());
-  auto* body = new btRigidBody(ci);
-  body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
-  body->setActivationState(DISABLE_DEACTIVATION); // it’s driven each frame
-  body->setUserPointer(this);
-
-  // Set the initial transform (replace with your instance transform)
-  btTransform xf; xf.setIdentity();
-  // xf.setOrigin(toBt(initialPosition));
-  // xf.setRotation(toBt(initialOrientation));
-  body->setWorldTransform(xf);
-
-  CEPhysicsWorld::CollisionObjectInfo aiInfo;
-  aiInfo.type = CEPhysicsWorld::CollisionObjectType::AI_CHARACTER;
-  aiInfo.objectName = "AI Character";
-  short aiGroup = CEPhysicsWorld::AI_GROUP;
-  short aiMask = CEPhysicsWorld::PROJECTILE_GROUP; // Only collide with projectiles
-  // Add to the world with group/mask
-  world->addRigidBody(body, aiGroup, aiMask);
-
-  m_collider = new AnimatedCollider{
-    .tiv =  geo->getPhysicalMesh(), .shape =  geo->getImpactShape(), body
-  };
-  
-  physicsWorld->registerCollisionObject(body, aiInfo);
-  
+  // disable for now. We need to switch to https://pybullet.org/Bullet/BulletFull/classbtGImpactMeshShape.html
    return;
+
+//    if (!m_player_controller || m_collisionBody) {
+//        return; // Already has collision body or no player controller
+//    }
+//    
+//    // Get base geometry from car file for collision detection
+//    // Note: This uses the base model, not the current animation frame
+//    // This is simpler architecturally and avoids accessing private members
+//    auto geometry = m_car->getGeometry();
+//    if (!geometry) {
+//        return;
+//    }
+//    
+//    // Create triangle mesh from character geometry
+//    m_collisionMesh = new btTriangleMesh();
+//    
+//    const auto& vertices = geometry->getVertices();
+//    const auto& indices = geometry->getIndices();
+//    
+//    // Scale factor to match rendered model size (consistent with world scale reduction)
+//    const float collisionScale = 0.0625f; // Scale down 16x to match rendered model size
+//    
+//    // Add triangles from current animation frame vertices with proper scaling
+//    for (size_t i = 0; i < indices.size(); i += 3) {
+//        if (i + 2 < indices.size()) {
+//            const Vertex& v1 = vertices[indices[i]];
+//            const Vertex& v2 = vertices[indices[i + 1]];
+//            const Vertex& v3 = vertices[indices[i + 2]];
+//            
+//            // Apply scale factor to match rendered model size
+//            glm::vec3 pos1 = v1.getPos() * collisionScale;
+//            glm::vec3 pos2 = v2.getPos() * collisionScale;
+//            glm::vec3 pos3 = v3.getPos() * collisionScale;
+//            
+//            btVector3 bt_v1(pos1.x, pos1.y, pos1.z);
+//            btVector3 bt_v2(pos2.x, pos2.y, pos2.z);
+//            btVector3 bt_v3(pos3.x, pos3.y, pos3.z);
+//            
+//            m_collisionMesh->addTriangle(bt_v1, bt_v2, bt_v3);
+//        }
+//    }
+//    
+//    // Create collision shape from mesh
+//    m_collisionShape = new btBvhTriangleMeshShape(m_collisionMesh, true);
+//    
+//    // Create rigid body at character position
+//    glm::vec3 position = m_player_controller->getPosition();
+//    btTransform transform;
+//    transform.setIdentity();
+//    transform.setOrigin(btVector3(position.x, position.y, position.z));
+//    
+//    // Apply character rotation
+//    btQuaternion rotation;
+//    rotation.setEulerZYX(0, 0, 0); // TODO: Add facing direction tracking
+//    transform.setRotation(rotation);
+//    
+//    // Create kinematic body (moves with character but doesn't respond to physics)
+//    btDefaultMotionState* motionState = new btDefaultMotionState(transform);
+//    btRigidBody::btRigidBodyConstructionInfo rbInfo(0, motionState, m_collisionShape);
+//    m_collisionBody = new btRigidBody(rbInfo);
+//    
+//    // Set as kinematic (controlled by us, not physics)
+//    m_collisionBody->setCollisionFlags(m_collisionBody->getCollisionFlags() | 
+//                                       btCollisionObject::CF_KINEMATIC_OBJECT);
+//    
+//    // Set collision filtering for AI characters
+//    short aiGroup = CEPhysicsWorld::AI_GROUP;
+//    short aiMask = CEPhysicsWorld::PROJECTILE_GROUP; // Only collide with projectiles
+//    
+//    physicsWorld->getDynamicsWorld()->addRigidBody(m_collisionBody, aiGroup, aiMask);
+//    
+//    // Set AI manager as user pointer for projectile hit routing
+//    m_collisionBody->setUserPointer(this);
+//    
+//    // Register AI character in physics world object info map
+//    CEPhysicsWorld::CollisionObjectInfo aiInfo;
+//    aiInfo.type = CEPhysicsWorld::CollisionObjectType::AI_CHARACTER;
+//    aiInfo.objectName = "AI Character";
+//    physicsWorld->registerCollisionObject(m_collisionBody, aiInfo);
+//    
+//    std::cout << "💀 Created collision body for AI character (managed by AI)" << std::endl;
 }
 
 void CEAIGenericAmbientManager::removeCollisionBody(CEPhysicsWorld* physicsWorld)
 {
-  auto* world = physicsWorld->getDynamicsWorld();
-  world->removeRigidBody(m_collider->body);
-  delete m_collider->body;
-  delete m_collider->shape;
-  delete m_collider->tiv;     // only if it uniquely owns the pointers you passed in
-  delete m_collider;
+    if (m_collisionBody && physicsWorld) {
+        physicsWorld->getDynamicsWorld()->removeRigidBody(m_collisionBody);
+        // Unregister from physics world object info map
+        physicsWorld->registerCollisionObject(m_collisionBody, {}); // Empty info removes entry
+        delete m_collisionBody;
+        m_collisionBody = nullptr;
+    }
+    
+    if (m_collisionShape) {
+        delete m_collisionShape;
+        m_collisionShape = nullptr;
+    }
+    
+    if (m_collisionMesh) {
+        delete m_collisionMesh;
+        m_collisionMesh = nullptr;
+    }
 }
 
-void CEAIGenericAmbientManager::updateCollisionTransform(CEPhysicsWorld* physicsWorld)
+void CEAIGenericAmbientManager::updateCollisionTransform()
 {
-    if (!m_collider || !m_player_controller) {
+    if (!m_collisionBody || !m_player_controller) {
         return;
     }
     
@@ -988,18 +1040,16 @@ void CEAIGenericAmbientManager::updateCollisionTransform(CEPhysicsWorld* physics
     transform.setIdentity();
     transform.setOrigin(btVector3(position.x, position.y, position.z));
     
-    glm::vec3 f = glm::normalize(m_player_controller->getCamera()->GetForward());
-    f.y = 0.0f;
-    if (glm::length(f) < 1e-6f) f = {0,0,1};     // fallback
-
-    // If your mesh’s *local* forward is -Z (common in OpenGL), flip here:
-    f = -f;
-
-    float yaw = std::atan2(f.x, f.z);             // RH, Y-up
-    btQuaternion q(btVector3(0,1,0), yaw);
-    transform.setRotation(q);
-      
+    // Calculate rotation from facing direction
+    // Note: The facing direction is stored in the camera's forward direction
+    glm::vec3 forward = m_player_controller->getCamera()->GetForward();
+    float yaw = atan2f(forward.x, forward.z); // Yaw rotation around Y-axis
+    
+    btQuaternion rotation;
+    rotation.setEulerZYX(0, yaw, 0); // Only rotate around Y-axis for character facing
+    transform.setRotation(rotation);
+    
     // Apply transform to collision body
-    m_collider->body->setWorldTransform(transform);
-    physicsWorld->getDynamicsWorld()->updateSingleAabb(m_collider->body);
+    m_collisionBody->getMotionState()->setWorldTransform(transform);
+    m_collisionBody->setWorldTransform(transform);
 }

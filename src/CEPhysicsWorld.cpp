@@ -19,6 +19,7 @@
 #include <btBulletDynamicsCommon.h>
 #include <BulletCollision/CollisionShapes/btBvhTriangleMeshShape.h>
 #include <BulletCollision/CollisionShapes/btScaledBvhTriangleMeshShape.h>
+#include <BulletCollision/CollisionShapes/btTriangleMesh.h>
 
 #include <iostream>
 #include <GLFW/glfw3.h>
@@ -417,7 +418,7 @@ CEPhysicsWorld::RaycastResult CEPhysicsWorld::raycast(const glm::vec3& from, con
     
     // Simple collision filtering - hit all visible objects
     rayCallback.m_collisionFilterGroup = PROJECTILE_GROUP;
-    rayCallback.m_collisionFilterMask = /*TERRAIN_GROUP | OBJECT_GROUP | WATER_GROUP |*/ AI_GROUP;
+    rayCallback.m_collisionFilterMask = TERRAIN_GROUP | OBJECT_GROUP | WATER_GROUP | AI_GROUP;
     
     m_dynamicsWorld->rayTest(btFrom, btTo, rayCallback);
     

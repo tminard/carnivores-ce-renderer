@@ -1,9 +1,9 @@
 {
   "basePath": "../../runtime/cce/",
   "map": {
-    "type": "C1",
-    "map": "../game/c1/trophy.map",
-    "rsc": "../game/c1/trophy.rsc"
+    "type": "C2",
+    "map": "../game/c2/area1.map",
+    "rsc": "../game/c2/area1.rsc"
   },
   "video": {
     "fullscreen": false
@@ -66,7 +66,7 @@
           "DIE": "Bf_die"
         },
         "behavior": {
-          "vision": 0.0,
+          "vision": 40.0,
           "maxAttackChance": 0.0,
           "minAttackChance": 0.0,
           "damageOnContact": false
@@ -95,7 +95,7 @@
           "DIE": "So_die"
         },
         "behavior": {
-          "vision": 0.0,
+          "vision": 20.0,
           "maxAttackChance": 0.0,
           "minAttackChance": 0.0,
           "damageOnContact": false
@@ -125,7 +125,7 @@
           "DIE": "So_die"
         },
         "behavior": {
-          "vision": 0.0,
+          "vision": 20.0,
           "maxAttackChance": 0.0,
           "minAttackChance": 0.0,
           "damageOnContact": false
@@ -155,7 +155,7 @@
           "DIE": "So_die"
         },
         "behavior": {
-          "vision": 0.0,
+          "vision": 20.0,
           "maxAttackChance": 0.0,
           "minAttackChance": 0.0,
           "damageOnContact": false
@@ -185,7 +185,7 @@
           "DIE": "So_die"
         },
         "behavior": {
-          "vision": 0.0,
+          "vision": 20.0,
           "maxAttackChance": 0.0,
           "minAttackChance": 0.0,
           "damageOnContact": false
@@ -215,7 +215,7 @@
           "DIE": "So_die"
         },
         "behavior": {
-          "vision": 0.0,
+          "vision": 20.0,
           "maxAttackChance": 0.0,
           "minAttackChance": 0.0,
           "damageOnContact": false
@@ -245,7 +245,7 @@
           "DIE": "So_die"
         },
         "behavior": {
-          "vision": 0.0,
+          "vision": 20.0,
           "maxAttackChance": 0.0,
           "minAttackChance": 0.0,
           "damageOnContact": false
@@ -275,7 +275,7 @@
           "DIE": "Tx_die1"
         },
         "behavior": {
-          "vision": 0.0,
+          "vision": 20.0,
           "maxAttackChance": 0.0,
           "minAttackChance": 0.0,
           "damageOnContact": false
@@ -304,7 +304,7 @@
           "DIE": "Sr_die"
         },
         "behavior": {
-          "vision": 0.0,
+          "vision": 6.0,
           "maxAttackChance": 0.0,
           "minAttackChance": 0.0,
           "damageOnContact": false

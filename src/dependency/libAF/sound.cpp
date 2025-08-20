@@ -7,7 +7,7 @@
 #include <string>
 #include <memory>
 
-#include "AudioFile.h"
+#include <AudioFile.h>
 
 using namespace libAF2;
 

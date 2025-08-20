@@ -1,9 +1,9 @@
 {
   "basePath": "../../runtime/cce/",
   "map": {
-    "type": "C2",
-    "map": "../game/ice/area1.map",
-    "rsc": "../game/ice/area1.rsc"
+    "type": "C1",
+    "map": "../game/c1/area3.map",
+    "rsc": "../game/c1/area3.rsc"
   },
   "video": {
     "fullscreen": true
@@ -14,13 +14,13 @@
   },
   "weapons": {
     "primary": {
-      "file": "game/models/rifle.car",
-      "rounds": 12,
+      "file": "game/models/shotgun.car",
+      "rounds": 6,
       "animations": {
-         "draw": "Rf2_get",
-         "holster": "Rf2_put",
-         "fire": "Rf2_fire",
-         "reload": "Rf2_rld"
+         "draw": "Sg4_get",
+         "holster": "Sg4_put",
+         "fire": "Sg5_fire",
+         "reload": "Sg5_rld"
        },
        "projectiles": {
          "muzzleFlashFrame": 2,

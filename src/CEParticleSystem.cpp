@@ -5,6 +5,10 @@
 //  Particle system implementation for impact effects
 //
 
+#ifdef _WIN32
+#define NOMINMAX  // Prevent Windows min/max macros from interfering with std::min/max
+#endif
+
 #include "CEParticleSystem.h"
 #include "shader_program.h"
 #include "camera.h"

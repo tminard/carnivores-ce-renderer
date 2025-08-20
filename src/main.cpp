@@ -6,6 +6,9 @@
 //  Copyright (c) 2015 Tyler Minard. All rights reserved.
 //
 #define GLM_ENABLE_EXPERIMENTAL
+#ifdef _WIN32
+#define NOMINMAX  // Prevent Windows min/max macros from interfering with std::min/max
+#endif
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>

@@ -12,16 +12,20 @@
 
 #include <iostream>
 
-const std::shared_ptr<C2CarFile>& C2CarFilePreloader::fetch(std::string file_name) {
+const std::shared_ptr<C2CarFile>& C2CarFilePreloader::fetch(std::filesystem::path file_name, bool pixelPerfectTextures) {
+  bool enable = false;
   std::map<std::string, std::shared_ptr<C2CarFile>>::iterator it;
   
-  it = _files.find(file_name);
+  // Create different cache keys based on texture filtering to avoid conflicts
+  std::string cache_key = file_name.string() + (pixelPerfectTextures ? "_pixelperfect" : "_linear");
+  
+  it = _files.find(cache_key);
 
-  if (it != _files.end()) {
+  if (enable && it != _files.end()) {
     return it->second;
   } else {
-    _files[file_name] = std::shared_ptr<C2CarFile>(new C2CarFile(file_name));
+    _files[cache_key] = std::shared_ptr<C2CarFile>(new C2CarFile(file_name.string(), pixelPerfectTextures));
 
-    return _files[file_name];
+    return _files[cache_key];
   }
 }

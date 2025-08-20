@@ -33,8 +33,8 @@ CETexture::~CETexture()
   glDeleteTextures(1, &this->m_texture_id);
 }
 
-CETexture::CETexture(const std::vector<uint16_t>& raw_texture_data, int texture_size, int texture_height, int texture_width)
-: m_raw_data(raw_texture_data), m_height(texture_height), m_width(texture_width)
+CETexture::CETexture(const std::vector<uint16_t>& raw_texture_data, int texture_size, int texture_height, int texture_width, bool pixelPerfect)
+: m_raw_data(raw_texture_data), m_height(texture_height), m_width(texture_width), m_pixelPerfect(pixelPerfect)
 {
   this->loadTextureIntoHardwareMemory();
 }
@@ -58,8 +58,16 @@ void CETexture::loadTextureIntoHardwareMemory()
     }
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 12);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    
+    // Set filtering based on pixel perfect flag
+    if (m_pixelPerfect) {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+    } else {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    }
+    
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     
@@ -103,6 +111,14 @@ void CETexture::saveToBMPFile(std::string file_name)
   } else {
     std::cout << "Failed to save bitmap! set bits failed";
   }
+}
+
+void CETexture::setPixelPerfectFiltering()
+{
+    glBindTexture(GL_TEXTURE_2D, m_texture_id);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 std::vector<uint16_t>* CETexture::getRawData()

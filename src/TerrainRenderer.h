@@ -14,6 +14,7 @@
 #include <memory>
 
 #include "transform.h"
+#include "g_shared.h"
 
 class Vertex;
 class C2MapFile;
@@ -24,6 +25,7 @@ class ShaderProgram;
 struct CETerrainVertex;
 struct Transform;
 struct Camera;
+class CEShadowManager;
 
 class TerrainRenderer
 {
@@ -43,7 +45,23 @@ private:
     int m_num_indices = 0;
   };
 
+  struct _FogVolume {
+    GLuint m_vao = 0;
+    GLuint m_vab = 0;
+    GLuint m_iab = 0;
+    int m_fog_id = 0;
+    int m_texture_id = 0;
+    FogData m_fog_data;
+    glm::vec2 m_center; // Center position of fog zone
+    glm::vec2 m_size;   // Size of fog zone
+    std::vector<Vertex> m_vertices;
+    std::vector<unsigned int> m_indices;
+    int m_vertex_count = 0;
+    int m_num_indices = 0;
+  };
+
   std::vector <_Water> m_waters;
+  std::vector <_FogVolume> m_fog_volumes;
 
   std::vector < CETerrainVertex > m_vertices;
   std::vector < unsigned int > m_indices;
@@ -56,9 +74,11 @@ private:
   GLuint m_indices_array_buffer;
   
   GLuint underwaterStateTexture;
+  GLuint heightmapTexture;
   
   std::unique_ptr<ShaderProgram> m_shader;
   std::unique_ptr<ShaderProgram> m_water_shader;
+  std::unique_ptr<ShaderProgram> m_fog_shader;
   
   std::shared_ptr<C2MapFile> m_cmap_data_weak;
   std::shared_ptr<C2MapRscFile> m_crsc_data_weak;
@@ -70,16 +90,21 @@ private:
   
   void loadWaterIntoMemory();
   void loadWaterAt(int x, int y);
+  void loadWaterAtWithIndex(int x, int y, int forceWaterIndex);
 
   glm::vec2 calcAtlasUV(int texID, glm::vec2 uv);
   glm::vec2 scaleAtlasUV(glm::vec2 atlas_uv, int texture_id);
   glm::vec4 getScaledAtlasUVQuad(glm::vec2 atlas_uv, int texture_id_1, int texture_id_2);
 
   glm::vec3 calcWorldVertex(int tile_x, int tile_y, bool water, float water_height_scaled);
-  float calcWaterAlpha(int tile_x, int tile_y, float water_height_scaled);
 
   std::array<glm::vec2, 4> calcUVMapForQuad(int x, int y, bool quad_reversed, int rotation_code);
   void updateUnderwaterStateTexture(const std::vector<float>& data);
+  void createHeightmapTexture();
+  
+  void loadFogVolumesIntoMemory();
+  void generateFogVolume(int fog_id, const FogData& fog_data, glm::vec2 center, glm::vec2 size);
+  void createFogVolumeGeometry(_FogVolume& fog_volume, int num_layers = 3);
 public:
   constexpr static const float TCMAX = 255.5f;
   constexpr static const float TCMIN = 0.5f;
@@ -88,7 +113,10 @@ public:
   ~TerrainRenderer();
   
   void RenderObjects(Camera& camera);
+  void RenderObjectsWithShadows(Camera& camera, CEShadowManager* shadowManager);
   void Render();
+  void RenderWithShadows(Camera& camera, CEShadowManager* shadowManager);
   void Update(Transform& transform, Camera& camera);
   void RenderWater();
+  void RenderFogVolumes();
 };

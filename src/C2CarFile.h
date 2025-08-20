@@ -38,9 +38,9 @@ class Vertex;
 class C2CarFile {
     
 public:
-    C2CarFile(std::string file_name);
+    C2CarFile(std::string file_name, bool pixelPerfectTextures = false);
     ~C2CarFile();
-    void load_file(std::string file_name);
+    void load_file(std::string file_name, bool pixelPerfectTextures = false);
     
     std::shared_ptr<CEGeometry> getGeometry();
     std::weak_ptr<CEAnimation> getAnimationByName(std::string animation_name);

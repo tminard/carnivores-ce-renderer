@@ -31,16 +31,6 @@ float noise(vec2 st) {
 
 void main()
 {
-    // Generate noise based on the TexCoords and time
-    //float n = noise(TexCoords.xy + time * 0.1);
-
-    // Modulate the sky color with the noise to create a glimmer effect
-    //vec4 dynamicSkyColor = sky_color + vec4(vec3(n) * 0.05, 0.0);
-
-    // Sample the skybox texture
-    //vec4 sampledSkybox = texture(skybox, TexCoords);
-
-    // Combine the dynamic sky color with the sampled skybox texture, favoring the sky color more
-    // outputColor = mix(dynamicSkyColor, sampledSkybox, 0.05); // Adjusted mix factor for stronger sky color influence
+    // Simple sky color output - the skybox texture is used for clouds, not background
     outputColor = sky_color;
 }
